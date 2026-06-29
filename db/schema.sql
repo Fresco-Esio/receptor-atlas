@@ -3,7 +3,8 @@ CREATE TABLE IF NOT EXISTS receptors (
   label TEXT NOT NULL,
   system TEXT,
   hall TEXT,
-  sort_order INTEGER
+  sort_order INTEGER,
+  stahl_note TEXT          -- free-text note about the Stahl reading (RX.note)
 );
 CREATE TABLE IF NOT EXISTS receptor_volumes (
   receptor_id TEXT NOT NULL REFERENCES receptors(id),
@@ -25,6 +26,8 @@ CREATE TABLE IF NOT EXISTS receptor_sources (
   receptor_id TEXT NOT NULL REFERENCES receptors(id),
   source_id INTEGER REFERENCES sources(id),
   status TEXT NOT NULL DEFAULT 'needs-source',
+  correction_note TEXT,    -- citation-correction provenance (RX.note2), e.g. wrong-PMID fixes
+  search_query TEXT,       -- PubMed search recipe for needs-source receptors (RX.search)
   PRIMARY KEY (receptor_id)
 );
 CREATE TABLE IF NOT EXISTS stahl_loci (

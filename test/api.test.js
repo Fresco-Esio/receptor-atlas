@@ -55,6 +55,19 @@ test('GET /api/receptors/:id returns 404 for an unknown id', async () => {
   assert.equal(res.status, 404);
 });
 
+test('detail includes volumes and the deferred note/note2/search fields', async () => {
+  const m1 = await (await fetch(`${base}/api/receptors/m1`)).json();
+  assert.ok(Array.isArray(m1.volumes), 'volumes should be an array');
+  assert.ok(m1.volumes.includes('archive') && m1.volumes.includes('cabinet'), 'm1 volume membership');
+  assert.match(m1.note2, /24445063|corrected/, 'm1 should carry the citation-correction note');
+  assert.equal(typeof m1.note, 'string'); // the Stahl note is present
+
+  const d3 = await (await fetch(`${base}/api/receptors/d3`)).json();
+  assert.ok(d3.volumes.includes('archive'), 'd3 in archive volume');
+  assert.match(d3.search, /dopamine D3/i, 'd3 should carry a PubMed search recipe');
+  assert.equal(d3.note2, null); // d3 has no correction note
+});
+
 test('GET /api/atlas/:volume returns the receptors in that volume', async () => {
   const res = await fetch(`${base}/api/atlas/archive`);
   assert.equal(res.status, 200);

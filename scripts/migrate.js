@@ -23,10 +23,10 @@ export function migrate(db) {
   if (existing > 0) return { skipped: true, receptors: existing };
 
   const tx = db.transaction(() => {
-    const rcpt = db.prepare('INSERT INTO receptors (id,label,system,hall,sort_order) VALUES (?,?,?,?,?)');
+    const rcpt = db.prepare('INSERT INTO receptors (id,label,system,hall,sort_order,stahl_note) VALUES (?,?,?,?,?,?)');
     const vol  = db.prepare('INSERT OR IGNORE INTO receptor_volumes (receptor_id,volume) VALUES (?,?)');
     const src  = db.prepare('INSERT INTO sources (authors,year,title,journal,pmid,doi) VALUES (?,?,?,?,?,?)');
-    const link = db.prepare('INSERT INTO receptor_sources (receptor_id,source_id,status) VALUES (?,?,?)');
+    const link = db.prepare('INSERT INTO receptor_sources (receptor_id,source_id,status,correction_note,search_query) VALUES (?,?,?,?,?)');
     const st   = db.prepare('INSERT INTO stahl_loci (receptor_id,chapter) VALUES (?,?)');
     const clm  = db.prepare('INSERT INTO claims (receptor_id,text) VALUES (?,?)');
     const qz   = db.prepare('INSERT INTO quizzes (receptor_id,prompt) VALUES (?,?)');
@@ -38,7 +38,7 @@ export function migrate(db) {
     const sourceByKey = new Map();
 
     RX.forEach((r, i) => {
-      rcpt.run(r.id, r.nm, r.hall, r.hall, i);
+      rcpt.run(r.id, r.nm, r.hall, r.hall, i, r.note ?? null);
       (r.vols || []).forEach(v => vol.run(r.id, v.toLowerCase()));
       (r.stahl || []).forEach(arr => st.run(r.id, arr[0]));
       if (r.claim) clm.run(r.id, r.claim);
@@ -56,7 +56,7 @@ export function migrate(db) {
           if (key) sourceByKey.set(key, sourceId);
         }
       }
-      link.run(r.id, sourceId, r.cs || 'needs-source');
+      link.run(r.id, sourceId, r.cs || 'needs-source', r.note2 ?? null, r.search ?? null);
     });
   });
   tx();
