@@ -12,3 +12,22 @@ test('schema creates all expected tables', () => {
     'stahl_loci','claims','quizzes','review_state','section_activity'
   ]) assert.ok(names.includes(t), `missing table: ${t}`);
 });
+
+test('foreign keys are enforced', () => {
+  const db = openDb(':memory:');
+  // inserting a child row for a non-existent receptor must be rejected
+  assert.throws(
+    () => db.prepare("INSERT INTO receptor_volumes (receptor_id, volume) VALUES ('nope','archive')").run(),
+    /FOREIGN KEY/
+  );
+});
+
+test('composite primary keys prevent duplicate rows', () => {
+  const db = openDb(':memory:');
+  db.prepare("INSERT INTO receptors (id,label) VALUES ('d2','Dopamine D2')").run();
+  db.prepare("INSERT INTO receptor_volumes (receptor_id,volume) VALUES ('d2','archive')").run();
+  assert.throws(
+    () => db.prepare("INSERT INTO receptor_volumes (receptor_id,volume) VALUES ('d2','archive')").run(),
+    /UNIQUE|PRIMARY KEY/
+  );
+});
