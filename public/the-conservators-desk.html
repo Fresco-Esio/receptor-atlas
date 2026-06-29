@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Conservator's Desk · Atlas Accuracy &amp; Mastery Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Schibsted+Grotesk:wght@400;500;700&family=Fragment+Mono&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --wall-atrium: oklch(17% 0.012 75);
+  --wall-panel:  oklch(20% 0.013 75);
+  --wall-recess: oklch(14% 0.011 75);
+  --bone:        oklch(93% 0.012 85);
+  --bone-dim:    oklch(72% 0.015 85);
+  --bone-faint:  oklch(63% 0.013 85);
+  --vermilion:   oklch(62% 0.19 35);
+  --brass:       oklch(70% 0.055 80);
+  --brass-line:  oklch(70% 0.055 80 / 0.28);
+  --brass-faint: oklch(70% 0.055 80 / 0.14);
+  --good:        oklch(78% 0.085 158);   /* green  — verified / done */
+  --warn:        oklch(66% 0.185 38);    /* red    — conflicting / flag */
+  --info:        oklch(72% 0.10 245);    /* blue   — needs-source / todo */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --mast-h: 70px;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0; background:var(--wall-atrium); color:var(--bone);
+  font-family:"Schibsted Grotesk",sans-serif; font-size:16px; line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--vermilion); color:var(--wall-recess);}
+a{color:var(--bone-dim); text-decoration:none; border-bottom:1px solid var(--brass-line); transition:color .25s var(--ease), border-color .25s var(--ease);}
+a:hover{color:var(--vermilion); border-color:var(--vermilion);}
+.mono{font-family:"Fragment Mono",monospace; letter-spacing:.06em;}
+.eyebrow{font-family:"Fragment Mono",monospace; font-size:.6875rem; letter-spacing:.18em; text-transform:uppercase; color:var(--bone-faint);}
+h1,h2,h3{font-family:"Marcellus",serif; font-weight:400; letter-spacing:.03em; margin:0;}
+
+/* ---------- Masthead ---------- */
+header.mast{
+  position:sticky; top:0; z-index:50; background:var(--wall-recess);
+  border-bottom:1px solid var(--brass-line);
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;
+  gap:.6rem 1.2rem; padding:.85rem clamp(1rem,3.5vw,2.4rem); transition:box-shadow .4s var(--ease);
+}
+header.mast.is-scrolled{box-shadow:0 1px 0 var(--brass-faint),0 8px 28px oklch(0% 0 0 / 0.35);}
+.brand{display:flex; align-items:baseline; gap:.7rem; min-width:0;}
+.brand .tick{width:9px;height:9px;background:var(--vermilion);transform:rotate(45deg);flex:none;}
+.brand .wm{font-family:"Marcellus",serif; font-size:1.18rem; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap;}
+.brand .sub{font-family:"Fragment Mono",monospace; font-size:.62rem; letter-spacing:.16em; text-transform:uppercase; color:var(--bone-faint); white-space:nowrap;}
+.mast-tools{display:flex; align-items:center; gap:.45rem; flex-wrap:wrap;}
+button.ctrl{
+  font-family:"Fragment Mono",monospace; font-size:.64rem; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--bone-faint); background:var(--wall-recess); border:1px solid var(--brass-line); border-radius:2px;
+  padding:.5rem .7rem; cursor:pointer; transition:color .25s var(--ease), border-color .25s var(--ease);
+}
+button.ctrl:hover{color:var(--bone); border-color:var(--brass);}
+button.ctrl.accent:hover{color:var(--vermilion); border-color:var(--vermilion);}
+
+/* ---------- Layout ---------- */
+main{max-width:1180px; margin:0 auto; padding:clamp(1.4rem,4vw,3rem) clamp(1rem,3.5vw,2.4rem) 6rem;}
+section{margin-bottom:clamp(2.2rem,5vw,3.6rem);}
+.lead{max-width:70ch;}
+.lead h1{font-size:clamp(1.9rem,4.4vw,3rem); line-height:1.04; text-transform:uppercase; margin-bottom:.8rem;}
+.lead p{color:var(--bone-dim); margin:.4rem 0;}
+.rule{height:1px;background:var(--brass-line);border:0;margin:1.6rem 0;}
+
+/* ---------- Dashboard summary ---------- */
+.dash{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.4fr); gap:clamp(1rem,3vw,2.2rem); align-items:start;}
+@media(max-width:760px){.dash{grid-template-columns:1fr;}}
+.ring-wrap{display:flex; align-items:center; gap:1.4rem;}
+.ring{position:relative; width:148px; height:148px; flex:none;}
+.ring svg{transform:rotate(-90deg);}
+.ring .pct{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
+.ring .pct b{font-family:"Marcellus",serif; font-size:2.1rem; line-height:1;}
+.ring .pct span{font-family:"Fragment Mono",monospace; font-size:.58rem; letter-spacing:.14em; text-transform:uppercase; color:var(--bone-faint); margin-top:.25rem;}
+.tallies{display:flex; flex-direction:column; gap:.55rem;}
+.tally{display:flex; align-items:baseline; gap:.55rem;}
+.tally b{font-family:"Marcellus",serif; font-size:1.45rem; min-width:2.4ch; text-align:right;}
+.tally span{font-family:"Fragment Mono",monospace; font-size:.64rem; letter-spacing:.1em; text-transform:uppercase; color:var(--bone-faint);}
+
+/* status chips inline */
+.statline{display:flex; flex-wrap:wrap; gap:.5rem; margin-top:1rem;}
+.schip{font-family:"Fragment Mono",monospace; font-size:.6rem; letter-spacing:.08em; text-transform:uppercase; padding:.34rem .55rem; border-radius:2px; border:1px solid var(--brass-line); color:var(--bone-dim); display:flex; gap:.45rem; align-items:center;}
+.dot{width:8px;height:8px;border-radius:50%;flex:none;}
+.dot.good{background:var(--good);} .dot.warn{background:var(--warn);} .dot.info{background:var(--info);} .dot.brass{background:var(--brass);} .dot.faint{background:var(--bone-faint);}
+
+/* per-hall progress in summary */
+.halls-prog{display:flex; flex-direction:column; gap:.9rem;}
+.hp-row{display:grid; grid-template-columns:1fr auto; gap:.3rem .8rem; align-items:center;}
+.hp-row .hp-name{font-family:"Fragment Mono",monospace; font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; color:var(--bone-dim);}
+.hp-row .hp-val{font-family:"Fragment Mono",monospace; font-size:.62rem; color:var(--bone-faint);}
+.bar{grid-column:1 / -1; height:5px; background:var(--wall-recess); border-radius:3px; overflow:hidden;}
+.bar > i{display:block; height:100%; width:0; background:var(--brass); border-radius:3px; transition:width .8s var(--ease);}
+.bar > i.full{background:var(--good);}
+
+/* ---------- Protocol cards ---------- */
+.proto{display:grid; grid-template-columns:repeat(auto-fit,minmax(225px,1fr)); gap:1px; background:var(--brass-faint); border:1px solid var(--brass-line); border-radius:3px; overflow:hidden;}
+.proto .cell{background:var(--wall-panel); padding:1.15rem 1.2rem;}
+.proto .cell .n{font-family:"Fragment Mono",monospace; font-size:.62rem; letter-spacing:.14em; color:var(--vermilion);}
+.proto .cell h3{font-size:1.12rem; margin:.35rem 0 .4rem;}
+.proto .cell p{font-size:.86rem; color:var(--bone-dim); margin:0;}
+
+.callout{border:1px solid var(--brass-line); border-left:2px solid var(--vermilion); border-radius:3px; background:var(--wall-panel); padding:1.1rem 1.3rem;}
+.callout h3{font-size:1.05rem; margin-bottom:.5rem; letter-spacing:.04em;}
+.callout p{margin:.3rem 0; color:var(--bone-dim); font-size:.9rem;}
+.callout .find{display:flex; gap:.6rem; align-items:flex-start; margin:.5rem 0;}
+.callout .find .dot{margin-top:.5rem;}
+
+/* ---------- Filter rail ---------- */
+.rail{display:flex; flex-wrap:wrap; gap:.45rem; align-items:center; position:sticky; top:var(--mast-h); z-index:30; background:var(--wall-atrium); padding:.7rem 0; border-bottom:1px solid var(--brass-faint);}
+.rail .lab{font-family:"Fragment Mono",monospace; font-size:.6rem; letter-spacing:.14em; text-transform:uppercase; color:var(--bone-faint); margin-right:.2rem;}
+.seg{font-family:"Fragment Mono",monospace; font-size:.62rem; letter-spacing:.08em; text-transform:uppercase; color:var(--bone-faint); background:var(--wall-recess); border:1px solid var(--brass-line); border-radius:2px; padding:.42rem .6rem; cursor:pointer; transition:color .2s var(--ease), border-color .2s var(--ease);}
+.seg:hover{color:var(--bone-dim);}
+.seg.active{color:var(--wall-recess); background:var(--brass); border-color:var(--brass);}
+.rail .spacer{flex:1;}
+#nextBtn{font-family:"Fragment Mono",monospace; font-size:.62rem; letter-spacing:.1em; text-transform:uppercase; color:var(--vermilion); background:transparent; border:1px solid var(--vermilion); border-radius:2px; padding:.42rem .7rem; cursor:pointer;}
+#nextBtn:hover{background:var(--vermilion); color:var(--wall-recess);}
+
+/* ---------- Hall + specimen rows ---------- */
+.hall{margin-top:2.4rem;}
+.hall-head{display:flex; align-items:baseline; gap:1rem; flex-wrap:wrap; padding-bottom:.5rem; border-bottom:1px solid var(--brass-line);}
+.hall-head .hnum{font-family:"Fragment Mono",monospace; font-size:.66rem; letter-spacing:.16em; color:var(--vermilion);}
+.hall-head h2{font-size:clamp(1.4rem,3vw,1.9rem); text-transform:uppercase;}
+.hall-head .hmeta{font-family:"Fragment Mono",monospace; font-size:.62rem; color:var(--bone-faint); margin-left:auto;}
+
+.spec{border-bottom:1px solid var(--brass-faint); transition:opacity .3s var(--ease), transform .3s var(--ease);}
+.spec-head{display:grid; grid-template-columns:auto 1fr auto auto; gap:.7rem 1rem; align-items:center; padding:1.05rem .3rem; cursor:pointer;}
+@media(max-width:680px){.spec-head{grid-template-columns:auto 1fr auto;}}
+.idx{font-family:"Fragment Mono",monospace; font-size:.64rem; color:var(--bone-faint); min-width:3ch;}
+.spec-id{display:flex; flex-direction:column; gap:.18rem; min-width:0;}
+.spec-id .nm{font-family:"Marcellus",serif; font-size:1.2rem; letter-spacing:.02em; color:var(--bone); transition:color .25s var(--ease);}
+.spec:hover .nm{color:var(--vermilion);}
+.spec-id .vols{display:flex; gap:.35rem; flex-wrap:wrap;}
+.vchip{font-family:"Fragment Mono",monospace; font-size:.54rem; letter-spacing:.06em; text-transform:uppercase; color:var(--bone-faint); border:1px solid var(--brass-faint); border-radius:2px; padding:.12rem .35rem;}
+/* mini check pips */
+.pips{display:flex; gap:.32rem; align-items:center;}
+.pip{width:13px;height:13px;border-radius:50%;border:1px solid var(--brass-line); position:relative; transition:background .25s var(--ease), border-color .25s var(--ease);}
+.pip.on{background:var(--good); border-color:var(--good);}
+.spec-stat{font-family:"Fragment Mono",monospace; font-size:.58rem; letter-spacing:.1em; text-transform:uppercase; text-align:right; min-width:8ch; color:var(--bone-faint);}
+.spec-stat.review{color:var(--brass);} .spec-stat.done{color:var(--good);}
+.conf-mini{display:flex; gap:2px; justify-content:flex-end; margin-top:.2rem;}
+.conf-mini i{width:6px;height:6px;border-radius:50%;background:var(--wall-recess);border:1px solid var(--brass-faint);}
+.conf-mini i.on{background:var(--vermilion);border-color:var(--vermilion);}
+
+/* expanded body */
+.spec-body{display:none; padding:.2rem .3rem 1.6rem; }
+.spec.open .spec-body{display:block; animation:reveal .34s var(--ease);}
+@keyframes reveal{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+.body-grid{display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:1.4rem;}
+@media(max-width:760px){.body-grid{grid-template-columns:1fr;}}
+
+.subchecks{display:flex; flex-direction:column; gap:.5rem;}
+.check{display:grid; grid-template-columns:auto 1fr; gap:.7rem; align-items:start; padding:.6rem .7rem; background:var(--wall-recess); border:1px solid var(--brass-faint); border-radius:3px; cursor:pointer; transition:border-color .2s var(--ease);}
+.check:hover{border-color:var(--brass-line);}
+.box{width:18px;height:18px;border:1px solid var(--brass); border-radius:2px; margin-top:.15rem; position:relative; flex:none; transition:background .2s var(--ease);}
+.check.on .box{background:var(--good); border-color:var(--good);}
+.check.on .box::after{content:"";position:absolute;left:5px;top:1px;width:5px;height:10px;border:solid var(--wall-recess);border-width:0 2px 2px 0;transform:rotate(45deg);}
+.check .ctitle{font-family:"Fragment Mono",monospace; font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; color:var(--bone);}
+.check.on .ctitle{color:var(--bone-dim);}
+.check .chint{font-size:.82rem; color:var(--bone-faint); margin-top:.2rem; line-height:1.5;}
+
+.claim{background:var(--wall-panel); border:1px solid var(--brass-faint); border-radius:3px; padding:.85rem 1rem; margin-top:.2rem;}
+.claim .ck{font-family:"Fragment Mono",monospace; font-size:.58rem; letter-spacing:.14em; text-transform:uppercase; color:var(--vermilion);}
+.claim p{margin:.35rem 0 0; font-size:.9rem; color:var(--bone-dim);}
+
+/* side rail in body */
+.side{display:flex; flex-direction:column; gap:1rem;}
+.panel{background:var(--wall-panel); border:1px solid var(--brass-faint); border-radius:3px; padding:.9rem 1rem;}
+.panel .pk{font-family:"Fragment Mono",monospace; font-size:.58rem; letter-spacing:.14em; text-transform:uppercase; color:var(--bone-faint); margin-bottom:.5rem;}
+.srcline{font-size:.82rem; color:var(--bone-dim); margin:.3rem 0; line-height:1.5;}
+.srclink{display:inline-flex; gap:.35rem; align-items:center; font-family:"Fragment Mono",monospace; font-size:.62rem; letter-spacing:.06em; margin-right:.7rem;}
+.stahl-item{margin:.35rem 0; font-size:.8rem; color:var(--bone-dim); line-height:1.45;}
+.stahl-item a{font-family:inherit;}
+
+/* citation status segmented */
+.citestat{display:flex; gap:.3rem; flex-wrap:wrap; margin-top:.5rem;}
+.cs{font-family:"Fragment Mono",monospace; font-size:.55rem; letter-spacing:.06em; text-transform:uppercase; padding:.3rem .45rem; border-radius:2px; border:1px solid var(--brass-faint); color:var(--bone-faint); cursor:pointer; background:transparent; transition:all .2s var(--ease);}
+.cs[data-v="verified"].on{background:var(--good);color:var(--wall-recess);border-color:var(--good);}
+.cs[data-v="provided"].on{background:var(--brass);color:var(--wall-recess);border-color:var(--brass);}
+.cs[data-v="conflicting"].on{background:var(--warn);color:var(--wall-recess);border-color:var(--warn);}
+.cs[data-v="needs-source"].on{background:var(--info);color:var(--wall-recess);border-color:var(--info);}
+
+/* confidence picker */
+.confrow{display:flex; align-items:center; gap:.6rem; margin-top:.3rem;}
+.confdots{display:flex; gap:.4rem;}
+.cdot{width:16px;height:16px;border-radius:50%;background:var(--wall-recess);border:1px solid var(--brass-line);cursor:pointer;transition:background .2s var(--ease),transform .2s var(--ease);}
+.cdot:hover{transform:scale(1.15);}
+.cdot.on{background:var(--vermilion);border-color:var(--vermilion);}
+.conflabel{font-family:"Fragment Mono",monospace;font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;color:var(--bone-faint);}
+
+/* notes + quiz */
+textarea.notes{width:100%; min-height:74px; resize:vertical; background:var(--wall-recess); border:1px solid var(--brass-line); border-radius:2px; color:var(--bone); font-family:"Schibsted Grotesk",sans-serif; font-size:.86rem; padding:.6rem .7rem; line-height:1.5;}
+textarea.notes:focus{outline:1px solid var(--brass); outline-offset:2px; border-color:var(--brass);}
+.quiz{margin-top:.5rem;}
+.quiz button{font-family:"Fragment Mono",monospace; font-size:.6rem; letter-spacing:.1em; text-transform:uppercase; color:var(--bone-faint); background:transparent; border:1px dashed var(--brass-line); border-radius:2px; padding:.45rem .6rem; cursor:pointer; width:100%; text-align:left;}
+.quiz button:hover{color:var(--bone-dim); border-color:var(--brass);}
+.quiz .q{display:none; font-size:.86rem; color:var(--bone-dim); margin-top:.5rem; padding-left:.6rem; border-left:1px solid var(--vermilion);}
+.quiz.show .q{display:block; animation:reveal .3s var(--ease);}
+.quiz.show button{color:var(--vermilion); border-style:solid; border-color:var(--vermilion);}
+
+footer{max-width:1180px; margin:0 auto; padding:2rem clamp(1rem,3.5vw,2.4rem) 4rem; border-top:1px solid var(--brass-faint); color:var(--bone-faint); font-size:.78rem;}
+footer .mono{font-size:.62rem; letter-spacing:.1em;}
+
+.hidden{display:none !important;}
+@media(prefers-reduced-motion:reduce){*{animation:none !important; transition:none !important;}}
+input[type=file]{display:none;}
+</style>
+</head>
+<body>
+
+<header class="mast" id="mast">
+  <div class="brand">
+    <span class="tick"></span>
+    <span class="wm">The Conservator&rsquo;s Desk</span>
+    <span class="sub">Atlas Review &middot; Accuracy &amp; Mastery</span>
+  </div>
+  <div class="mast-tools">
+    <button class="ctrl" id="expandAll">Expand all</button>
+    <button class="ctrl" id="collapseAll">Collapse all</button>
+    <button class="ctrl" id="exportBtn">Export ⤓</button>
+    <button class="ctrl" id="importBtn">Import ⤒</button>
+    <input type="file" id="importFile" accept="application/json" />
+    <button class="ctrl accent" id="resetBtn">Reset</button>
+  </div>
+</header>
+
+<main>
+  <section class="lead">
+    <span class="eyebrow">A working protocol for verifying The Receptor Atlas</span>
+    <h1>Authenticate every specimen<br/>before it goes on the wall</h1>
+    <p>This desk holds the accuracy review for the three volumes of the Atlas &mdash; <i>The Receptor Cabinet</i>, <i>The Clinical Ledger</i>, and <i>The Receptor Archive</i>. Each of the <b id="rcount">24</b> receptor specimens is examined against four checks, cross-referenced to a specific locus in <i>Stahl&rsquo;s Essential Psychopharmacology</i> (5th ed., 2021) and a peer-reviewed source, and rated for your own command of the material.</p>
+    <p style="color:var(--bone-faint); font-size:.86rem;">Work the halls in order &mdash; dopamine first, then serotonin, noradrenaline, glutamate &amp; GABA, and the neuromodulators. The sequence builds the conceptual scaffolding the way the systems build on one another. Progress is saved in this browser automatically; export a copy regularly.</p>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section>
+    <div class="dash">
+      <div>
+        <span class="eyebrow">Overall completion</span>
+        <div class="ring-wrap" style="margin-top:.8rem;">
+          <div class="ring">
+            <svg width="148" height="148" viewBox="0 0 148 148">
+              <circle cx="74" cy="74" r="64" fill="none" stroke="var(--wall-recess)" stroke-width="10"/>
+              <circle id="ringArc" cx="74" cy="74" r="64" fill="none" stroke="var(--vermilion)" stroke-width="10" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/>
+            </svg>
+            <div class="pct"><b id="ringPct">0%</b><span>reviewed</span></div>
+          </div>
+          <div class="tallies">
+            <div class="tally"><b id="tSpec">0</b><span>of 24 specimens cleared</span></div>
+            <div class="tally"><b id="tCheck">0</b><span>of 96 checks done</span></div>
+            <div class="tally"><b id="tConf">0.0</b><span>mean mastery / 5</span></div>
+          </div>
+        </div>
+        <div class="statline" id="citeTally"></div>
+      </div>
+      <div>
+        <span class="eyebrow">Progress by neurotransmitter system</span>
+        <div class="halls-prog" id="hallsProg" style="margin-top:.9rem;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROTOCOL -->
+  <section>
+    <span class="eyebrow">The review protocol &mdash; what each pass examines</span>
+    <div class="proto" style="margin-top:.9rem;">
+      <div class="cell"><div class="n">CHECK 01</div><h3>Mechanism</h3><p>Is the molecular story right? Ionotropic vs metabotropic, the G-protein (Gi / Gs / Gq) or channel, location (pre- vs post-synaptic, auto- vs heteroreceptor), and direction of effect.</p></div>
+      <div class="cell"><div class="n">CHECK 02</div><h3>Affinity / pKi data</h3><p>Do the binding values and the agonist / antagonist / partial labels in the affinity plate match a real source? Confirm relative potencies and that the radar / matrix encodes them correctly.</p></div>
+      <div class="cell"><div class="n">CHECK 03</div><h3>Clinical claim</h3><p>Does receptor &rarr; action &rarr; presentation hold? Cross-check the mapping against Stahl Table 2-4 (receptors) / 2-5 (transporters) and the clinical chapters.</p></div>
+      <div class="cell"><div class="n">CHECK 04</div><h3>Citation</h3><p>Does the cited paper actually support the claim, and does the PMID resolve to that paper? Set the citation status &mdash; verified, provided, conflicting, or needs-source.</p></div>
+    </div>
+  </section>
+
+  <!-- SEED FINDINGS -->
+  <section>
+    <div class="callout">
+      <h3>Conservator&rsquo;s opening findings</h3>
+      <p>Two issues were already surfaced while assembling this desk &mdash; treat them as the first entries on your fix-list:</p>
+      <div class="find"><span class="dot warn"></span><p><b>Muscarinic M1 &amp; M3 citation &mdash; wrong PMID.</b> The atlas cites PMID 24445063 for Kruse et al. (2014) <i>Muscarinic acetylcholine receptors</i>. That PMID resolves to an unrelated geriatrics paper. The correct identifier for that DOI (10.1038/nrd4295) is <b>PMID 24903776</b>. Both rows are pre-flagged <span class="mono" style="color:var(--warn)">conflicting</span>.</p></div>
+      <div class="find"><span class="dot info"></span><p><b>Three specimens have no peer-reviewed source yet.</b> D3, DAT, and 5-HT3 appear in the Archive without a dedicated citation. Each is pre-flagged <span class="mono" style="color:var(--info)">needs-source</span> with a one-click PubMed search to start from.</p></div>
+      <p style="font-size:.82rem; color:var(--bone-faint); margin-top:.7rem;">Eight Cabinet citations are marked <span class="mono" style="color:var(--brass)">provided</span> &mdash; present in the atlas but not yet independently re-verified here. Eleven were confirmed against PubMed and are marked <span class="mono" style="color:var(--good)">verified</span>.</p>
+    </div>
+  </section>
+
+  <!-- FILTER RAIL -->
+  <div class="rail" id="rail">
+    <span class="lab">Show</span>
+    <button class="seg active" data-filter="all">All</button>
+    <button class="seg" data-filter="todo">Not started</button>
+    <button class="seg" data-filter="review">In review</button>
+    <button class="seg" data-filter="done">Cleared</button>
+    <button class="seg" data-filter="flag">Flagged</button>
+    <button class="seg" data-filter="lowconf">Low mastery</button>
+    <span class="spacer"></span>
+    <button id="nextBtn">Next up &rarr;</button>
+  </div>
+
+  <div id="halls"></div>
+</main>
+
+<footer>
+  <p class="mono">THE CONSERVATOR&rsquo;S DESK &middot; companion to THE RECEPTOR ATLAS</p>
+  <p>Stahl loci reference <i>Stahl&rsquo;s Essential Psychopharmacology: Neuroscientific Basis and Practical Applications</i>, 5th ed. (Cambridge University Press, 2021); chapter / page ranges link to the publisher. Peer-reviewed sources retrieved from PubMed; each links to its PMID and DOI. Citation statuses and notes are your own working judgments, stored locally in this browser. Export regularly &mdash; clearing site data erases unsaved progress.</p>
+</footer>
+
+<script>
+/* ============ STAHL 5e CHAPTER MAP ============ */
+const B="https://www.cambridge.org/core/books/stahls-essential-psychopharmacology/";
+const CH={
+ 1:{t:"Chemical Neurotransmission",p:"1–28",u:B+"chemical-neurotransmission/3480EFF4825666B1849F65D2E2D18755"},
+ 2:{t:"Transporters, Receptors & Enzymes as Targets",p:"29–50",u:B+"transporters-receptors-and-enzymes-as-targets-of-psychopharmacological-drug-action/A87FE28EA57F0979564CECDDF7669E64"},
+ 3:{t:"Ion Channels as Targets",p:"51–76",u:B+"ion-channels-as-targets-of-psychopharmacological-drug-action/66227162D984BCFAB41599BA7CCDC43F"},
+ 4:{t:"Psychosis, Schizophrenia & DA/5-HT/Glu Networks",p:"77–158",u:B+"psychosis-schizophrenia-and-the-neurotransmitter-networks-dopamine-serotonin-and-glutamate/5EF5FEC4BFAC4D5C187A613DD13B19E1"},
+ 5:{t:'Targeting DA & 5-HT Receptors — “Antipsychotics”',p:"159–243",u:B+"targeting-dopamine-and-serotonin-receptors-for-psychosis-mood-and-beyond-socalled-antipsychotics/AF924EA27653A7C5476F96B02D2DE9C5"},
+ 6:{t:"Mood Disorders & NE/GABA Networks",p:"244–282",u:B+"mood-disorders-and-the-neurotransmitter-networks-norepinephrine-and-aminobutyric-acid-gaba/E19B1F16E6E200D0AC56A1B5A23DB977"},
+ 7:{t:'Treatments for Mood Disorders — “Antidepressants”',p:"283–358",u:B+"treatments-for-mood-disorders-socalled-antidepressants-and-mood-stabilizers/34B9F39A0E1B735C4DF3B9964AB58A6A"},
+ 8:{t:"Anxiety, Trauma & Treatment",p:"359–378",u:B+"anxiety-trauma-and-treatment/FA9BDE6ED394D37B6E6CF34EC79A7E6C"},
+ 9:{t:"Chronic Pain & Its Treatment",p:"379–400",u:B+"chronic-pain-and-its-treatment/1DA3240B840C91E91D5C8B8E157422AC"},
+ 10:{t:"Sleep & Wakefulness — Histamine & Orexin",p:"401–448",u:B+"disorders-of-sleep-and-wakefulness-and-their-treatment-neurotransmitter-networks-for-histamine-and-orexin/AD708ABF284B3B87C8F72E338D80817F"},
+ 11:{t:"ADHD & Its Treatment",p:"449–485",u:B+"attention-deficit-hyperactivity-disorder-and-its-treatment/CA44BC16C611CBBF7A29A048B27F1FB2"},
+ 12:{t:"Dementia & the Acetylcholine Network",p:"486–537",u:B+"dementia-causes-symptomatic-treatments-and-the-neurotransmitter-network-acetylcholine/642008AD227B9B4409362D209048A4C2"},
+ 13:{t:"Impulsivity, Compulsivity & Addiction",p:"538–578",u:B+"impulsivity-compulsivity-and-addiction/FE9291DCA21A30BB63CB1DA478026B43"}
+};
+const HALLS={
+ dopamine:{n:"I",t:"The Dopamine System"},
+ serotonin:{n:"II",t:"The Serotonin System"},
+ noradrenergic:{n:"III",t:"The Noradrenergic System"},
+ glutamate_gaba:{n:"IV",t:"Glutamate & GABA"},
+ neuromod:{n:"V",t:"Neuromodulators & Other Gates"}
+};
+function pm(id){return "https://pubmed.ncbi.nlm.nih.gov/"+id+"/";}
+function doiU(d){return "https://doi.org/"+d;}
+function pmSearch(q){return "https://pubmed.ncbi.nlm.nih.gov/?term="+encodeURIComponent(q);}
+
+/* ============ RECEPTOR DATA ============ */
+const RX=[
+/* ---- DOPAMINE ---- */
+{id:"d1",nm:"Dopamine D1",hall:"dopamine",vols:["Ledger","Archive"],
+ stahl:[[5],[4],[2]],note:"Table 2-4 receptor action; prefrontal D1 in Ch 4–5.",
+ claim:"Prefrontal D1 is the dominant cortical DA receptor; tone follows an inverted-U — too little or too much degrades working memory.",
+ ref:{a:"Jones-Tabah et al.",y:2022,t:"The Signaling and Pharmacology of the Dopamine D1 Receptor",pmid:"35110997",doi:"10.3389/fncel.2021.806618"},cs:"verified",
+ quiz:"Which DA receptor dominates prefrontal signalling, and what does Stahl’s ‘inverted-U’ say about its tone?"},
+{id:"d2",nm:"Dopamine D2",hall:"dopamine",vols:["Cabinet","Ledger","Archive"],
+ stahl:[[5],[4],[2]],note:"Table 2-4; psychosis pathways Ch 4; antipsychotic action Ch 5.",
+ claim:"Antipsychotic efficacy = mesolimbic D2 blockade; EPS = nigrostriatal and hyperprolactinemia = tuberoinfundibular D2 blockade.",
+ ref:{a:"Ford CP",y:2014,t:"The role of D2-autoreceptors in regulating dopamine neuron activity and transmission",pmid:"24463000",doi:"10.1016/j.neuroscience.2014.01.025"},cs:"provided",
+ quiz:"Antipsychotic efficacy tracks D2 blockade in which pathway? EPS and hyperprolactinemia in which two?"},
+{id:"d3",nm:"Dopamine D3",hall:"dopamine",vols:["Archive"],
+ stahl:[[5],[2]],note:"Table 2-4; D3-preferring partial agonism Ch 5.",
+ claim:"D3 partial agonism (cariprazine) is implicated in negative symptoms, motivation and anhedonia.",
+ ref:null,search:'"dopamine D3 receptor"[Title] AND (review[pt] OR antipsychotic)',cs:"needs-source",
+ quiz:"Which newer antipsychotic is a D3-preferring partial agonist, and what symptom domain is D3 tied to?"},
+{id:"dat",nm:"DAT — Dopamine Transporter",hall:"dopamine",vols:["Ledger","Archive"],
+ stahl:[[11],[13],[2]],note:"Table 2-5 transporters; stimulants Ch 11; addiction Ch 13.",
+ claim:"Methylphenidate blocks DAT; amphetamine reverses it — both raise synaptic DA.",
+ ref:null,search:'"dopamine transporter"[Title] AND (review[pt]) AND (psychostimulant OR cocaine OR ADHD)',cs:"needs-source",
+ quiz:"How do methylphenidate and amphetamine differ in their action at DAT?"},
+/* ---- SEROTONIN ---- */
+{id:"ht1a",nm:"Serotonin 5-HT1A",hall:"serotonin",vols:["Ledger","Archive"],
+ stahl:[[7],[5],[2]],note:"Table 2-4; antidepressant/anxiety roles Ch 7; partial agonist antipsychotics Ch 5.",
+ claim:"5-HT1A partial agonism is anxiolytic, reduces parkinsonism and augments SSRI/antipsychotic effect; autoreceptor desensitization underlies antidepressant delay.",
+ ref:{a:"Albert & Vahid-Ansari",y:2018,t:"The 5-HT1A receptor: Signaling to behavior",pmid:"31079617",doi:"10.1016/j.biochi.2018.10.015"},cs:"verified",
+ quiz:"Contrast 5-HT1A as somatodendritic autoreceptor vs postsynaptic heteroreceptor in antidepressant onset."},
+{id:"ht2a",nm:"Serotonin 5-HT2A",hall:"serotonin",vols:["Cabinet","Ledger","Archive"],
+ stahl:[[5],[4],[2]],note:"Table 2-4; ‘atypicality’ and psychosis Ch 4–5.",
+ claim:"5-HT2A antagonism disinhibits nigrostriatal DA, reducing EPS — the basis of ‘atypicality’; agonism underlies psychedelics.",
+ ref:{a:"Nichols DE",y:2016,t:"Psychedelics",pmid:"26841800",doi:"10.1124/pr.115.011478"},cs:"verified",
+ quiz:"What does 5-HT2A antagonism do to nigrostriatal dopamine, and how does that reduce EPS?"},
+{id:"ht2c",nm:"Serotonin 5-HT2C",hall:"serotonin",vols:["Ledger","Archive"],
+ stahl:[[5],[7],[2]],note:"Table 2-4; weight gain Ch 5; DA/NE disinhibition Ch 7.",
+ claim:"5-HT2C antagonism disinhibits prefrontal DA/NE (antidepressant) but drives weight gain.",
+ ref:{a:"Reynolds et al.",y:2006,t:"The 5-HT2C receptor and antipsychotic-induced weight gain — mechanisms and genetics",pmid:"16785265",doi:"10.1177/1359786806066040"},cs:"verified",
+ quiz:"Why does 5-HT2C antagonism cause weight gain yet also contribute to antidepressant effects?"},
+{id:"ht3",nm:"Serotonin 5-HT3",hall:"serotonin",vols:["Archive"],
+ stahl:[[7],[3],[2]],note:"Ligand-gated channel (Ch 3); antiemetic / antidepressant context Ch 7.",
+ claim:"5-HT3 antagonism (mirtazapine, vortioxetine) reduces nausea and may aid cognition.",
+ ref:null,search:'"5-HT3 receptor"[Title] AND review[pt]',cs:"needs-source",
+ quiz:"Which antidepressants’ 5-HT3 antagonism contributes to an antiemetic / pro-cognitive profile?"},
+{id:"sert",nm:"SERT — Serotonin Transporter",hall:"serotonin",vols:["Cabinet","Ledger","Archive"],
+ stahl:[[7],[2]],note:"Table 2-5 transporters; SSRIs/SNRIs Ch 7.",
+ claim:"SERT inhibition by SSRIs/SNRIs is the foundational antidepressant/anxiolytic mechanism; ~80% occupancy needed, with delayed onset.",
+ ref:{a:"Murthy MK",y:2025,t:"Molecular pathways linking the serotonin transporter (SERT) to depression",pmid:"40789515",doi:"10.1016/j.neuroscience.2025.08.009"},cs:"provided",
+ quiz:"Roughly what SERT occupancy is needed for SSRI efficacy, and what explains the therapeutic delay?"},
+/* ---- NORADRENERGIC ---- */
+{id:"a1",nm:"Alpha-1 Adrenergic",hall:"noradrenergic",vols:["Cabinet","Ledger","Archive"],
+ stahl:[[5],[8],[2]],note:"Table 2-4; antipsychotic α1 antagonism Ch 5; PTSD nightmares (prazosin) Ch 8.",
+ claim:"α1 antagonism improves PTSD nightmares (prazosin) and agitation, but causes orthostasis and sedation.",
+ ref:{a:"Kulkarni & Wilkinson",y:2024,t:"Adrenoceptors and Hypertension",pmid:"38890192",doi:"10.1007/164_2024_719"},cs:"provided",
+ quiz:"Name two clinical uses of α1 antagonism and its main adverse effect."},
+{id:"a2",nm:"Alpha-2 Adrenergic",hall:"noradrenergic",vols:["Cabinet","Ledger","Archive"],
+ stahl:[[7],[11],[2]],note:"Table 2-4; mirtazapine α2 antagonism Ch 7; guanfacine/clonidine ADHD Ch 11.",
+ claim:"Postsynaptic α2A agonism (guanfacine, clonidine) strengthens prefrontal connectivity; presynaptic α2 antagonism (mirtazapine) boosts NE/5-HT.",
+ ref:{a:"Szabo B",y:2024,t:"Presynaptic Adrenoceptors",pmid:"38755350",doi:"10.1007/164_2024_714"},cs:"provided",
+ quiz:"Distinguish presynaptic α2 autoreceptor function from postsynaptic α2A action in prefrontal cortex."},
+{id:"b1",nm:"Beta-1 (β1) Adrenergic",hall:"noradrenergic",vols:["Cabinet","Ledger","Archive"],
+ stahl:[[8],[2]],note:"Table 2-4; limited central role; propranolol in anxiety Ch 8.",
+ claim:"Central β role in psychiatry is limited; propranolol is used for performance/somatic anxiety and akathisia.",
+ ref:{a:"Ahles & Engelhardt",y:2014,t:"Polymorphic variants of adrenoceptors: pharmacology, physiology",pmid:"24928328",doi:"10.1124/pr.113.008219"},cs:"provided",
+ quiz:"Why is β-blockade of limited central psychiatric use, and what is its classic anxiety indication?"},
+{id:"net",nm:"NET — Norepinephrine Transporter",hall:"noradrenergic",vols:["Cabinet","Ledger","Archive"],
+ stahl:[[7],[11],[2]],note:"Table 2-5 transporters; NRIs/SNRIs Ch 7; atomoxetine Ch 11.",
+ claim:"NET inhibition (atomoxetine, SNRIs, TCAs) raises NE — and DA in prefrontal cortex (sparse DAT) — treating ADHD/depression.",
+ ref:{a:"Mwesigwa & Shibao",y:2024,t:"Norepinephrine Reuptake Inhibition, an Emergent Treatment…",pmid:"38766862",doi:"10.1161/HYPERTENSIONAHA.124.22069"},cs:"provided",
+ quiz:"Why does NET inhibition raise dopamine in prefrontal cortex but not striatum?"},
+/* ---- GLUTAMATE & GABA ---- */
+{id:"nmda",nm:"NMDA Glutamate Receptor",hall:"glutamate_gaba",vols:["Cabinet","Ledger","Archive"],
+ stahl:[[3],[4],[7]],note:"Ion channel Ch 3; glutamate hypofunction Ch 4; ketamine Ch 7; memantine Ch 12.",
+ claim:"NMDA hypofunction is a leading model of schizophrenia’s negative/cognitive symptoms; ketamine (high-affinity) vs memantine (low-affinity) open-channel block differ clinically.",
+ ref:{a:"Hansen et al.",y:2018,t:"Structure, function, and allosteric modulation of NMDA receptors",pmid:"30037851",doi:"10.1085/jgp.201812032"},cs:"verified",
+ quiz:"State the NMDA-hypofunction hypothesis, and how ketamine vs memantine differ in their block."},
+{id:"ampa",nm:"AMPA Receptor",hall:"glutamate_gaba",vols:["Archive"],
+ stahl:[[3],[4],[7]],note:"Ion channel Ch 3; glutamate Ch 4; ketamine downstream Ch 7.",
+ claim:"Increased AMPA throughput downstream of NMDA blockade is proposed for ketamine’s rapid antidepressant effect.",
+ ref:{a:"Diering & Huganir",y:2018,t:"The AMPA Receptor Code of Synaptic Plasticity",pmid:"30359599",doi:"10.1016/j.neuron.2018.10.018"},cs:"verified",
+ quiz:"How does the ‘ketamine → AMPA throughput’ hypothesis explain rapid antidepressant action?"},
+{id:"gabaa",nm:"GABA-A Receptor",hall:"glutamate_gaba",vols:["Cabinet","Archive"],
+ stahl:[[3],[8],[10]],note:"Ion channel Ch 3; benzodiazepines/anxiety Ch 8; Z-drugs/sleep Ch 10.",
+ claim:"GABA-A positive allosteric modulation (benzodiazepines, Z-drugs, barbiturates) is anxiolytic/hypnotic; the benzodiazepine ceiling vs barbiturate direct gating explains overdose safety.",
+ ref:{a:"Ghit et al.",y:2021,t:"GABA-A receptors: structure, function, pharmacology, and related disorders",pmid:"34417930",doi:"10.1186/s43141-021-00224-0"},cs:"verified",
+ quiz:"Where do benzodiazepines vs barbiturates act on GABA-A, and how does that affect overdose safety?"},
+{id:"gabab",nm:"GABA-B Receptor",hall:"glutamate_gaba",vols:["Archive"],
+ stahl:[[3],[6]],note:"Metabotropic; ion-channel context Ch 3; GABA networks Ch 6.",
+ claim:"GABA-B is metabotropic (slow K⁺/Ca²⁺ modulation); baclofen is the clinical agonist.",
+ ref:{a:"Bowery NG",y:1993,t:"GABA-B receptor pharmacology",pmid:"8388192",doi:"10.1146/annurev.pa.33.040193.000545"},cs:"verified",
+ quiz:"Which GABA-B agonist is used clinically, and why is its response slower than GABA-A?"},
+/* ---- NEUROMODULATORS ---- */
+{id:"h1",nm:"Histamine H1",hall:"neuromod",vols:["Cabinet","Ledger","Archive"],
+ stahl:[[10],[5],[2]],note:"Table 2-4; sedation/weight Ch 5; histamine & wakefulness Ch 10.",
+ claim:"Central H1 antagonism causes sedation and weight gain (olanzapine, quetiapine); peripheral effects underlie antihistamine use.",
+ ref:{a:"Panula et al.",y:2015,t:"International Union of Basic and Clinical Pharmacology: Histamine receptors",pmid:"26084539",doi:"10.1124/pr.114.010249"},cs:"provided",
+ quiz:"Name two adverse effects of central H1 antagonism and the antipsychotic most associated."},
+{id:"m1",nm:"Muscarinic M1",hall:"neuromod",vols:["Cabinet","Ledger","Archive"],
+ stahl:[[12],[5],[2]],note:"Table 2-4; anticholinergic effects/xanomeline Ch 5; ACh & dementia Ch 12.",
+ claim:"M1 agonism (xanomeline) is procognitive/antipsychotic; M1 blockade causes anticholinergic effects but can reduce EPS.",
+ ref:{a:"Kruse et al.",y:2014,t:"Muscarinic acetylcholine receptors: novel opportunities for drug discovery",pmid:"24903776",doi:"10.1038/nrd4295"},cs:"conflicting",
+ note2:"Atlas PMID 24445063 is wrong → corrected to 24903776. Update the source file.",
+ quiz:"What underlies M1-agonist (xanomeline) antipsychotic action, and what follows M1 blockade?"},
+{id:"m3",nm:"Muscarinic M3",hall:"neuromod",vols:["Cabinet"],
+ stahl:[[5],[2]],note:"Table 2-4; metabolic (insulin) and anticholinergic effects Ch 5.",
+ claim:"M3 blockade by some antipsychotics impairs insulin release, contributing to metabolic risk.",
+ ref:{a:"Kruse et al.",y:2014,t:"Muscarinic acetylcholine receptors: novel opportunities for drug discovery",pmid:"24903776",doi:"10.1038/nrd4295"},cs:"conflicting",
+ note2:"Atlas PMID 24445063 is wrong → corrected to 24903776. Update the source file.",
+ quiz:"What metabolic adverse effect is linked to M3 blockade by some antipsychotics?"},
+{id:"nachr",nm:"Nicotinic ACh Receptor (nAChR)",hall:"neuromod",vols:["Archive"],
+ stahl:[[12],[13],[2]],note:"ACh & dementia Ch 12; nicotine addiction Ch 13.",
+ claim:"α7 nAChR signaling supports cognition; α4β2 mediates nicotine reinforcement (varenicline).",
+ ref:{a:"Buckingham et al.",y:2009,t:"Nicotinic acetylcholine receptor signalling: roles in Alzheimer’s disease and amyloid neuroprotection",pmid:"19293145",doi:"10.1124/pr.108.000562"},cs:"verified",
+ quiz:"What are the roles of α7 and α4β2 nAChR in cognition and nicotine addiction respectively?"},
+{id:"mor",nm:"μ-Opioid Receptor (MOR)",hall:"neuromod",vols:["Cabinet","Ledger","Archive"],
+ stahl:[[13],[9],[2]],note:"Table 2-4; chronic pain Ch 9; addiction / buprenorphine Ch 13.",
+ claim:"MOR full agonism (morphine), partial agonism (buprenorphine), and antagonism (naloxone) span analgesia, OUD treatment, and reversal.",
+ ref:{a:"Pasternak GW",y:2018,t:"Mu Opioid Pharmacology: 40 Years to the Promised Land",pmid:"29413524",doi:"10.1016/bs.apha.2017.09.006"},cs:"provided",
+ quiz:"Contrast full agonism, partial agonism, and antagonism at MOR in terms of clinical use."},
+{id:"mt",nm:"Melatonin MT1 / MT2",hall:"neuromod",vols:["Archive"],
+ stahl:[[10],[2]],note:"Sleep / circadian Ch 10; receptor table Ch 2.",
+ claim:"MT1 promotes sleep onset; MT2 mediates circadian phase-shifting; ramelteon / melatonin / agomelatine target them.",
+ ref:{a:"Liu et al.",y:2015,t:"MT1 and MT2 Melatonin Receptors: A Therapeutic Perspective",pmid:"26514204",doi:"10.1146/annurev-pharmtox-010814-124742"},cs:"verified",
+ quiz:"Which receptor — MT1 or MT2 — is primarily tied to sleep onset vs circadian phase-shifting?"},
+{id:"ox",nm:"Orexin OX1 / OX2",hall:"neuromod",vols:["Archive"],
+ stahl:[[10]],note:"Orexin & wakefulness; DORAs for insomnia, Ch 10.",
+ claim:"Dual orexin receptor antagonists (suvorexant, lemborexant, daridorexant) treat insomnia by reducing wake drive rather than GABAergic sedation.",
+ ref:{a:"Muehlan et al.",y:2023,t:"The orexin story and orexin receptor antagonists for the treatment of insomnia",pmid:"37086045",doi:"10.1111/jsr.13902"},cs:"verified",
+ quiz:"How do DORAs treat insomnia differently from benzodiazepines mechanistically?"}
+];
+const CHECK_KEYS=["mechanism","affinity","clinical","citation"];
+const CHECK_LABEL={mechanism:"Mechanism",affinity:"Affinity / pKi",clinical:"Clinical claim",citation:"Citation"};
+
+/* ============ STATE ============ */
+const LS_KEY="conservators-desk-v1";
+let STATE=load();
+function blank(){const o={};RX.forEach(r=>{o[r.id]={mechanism:false,affinity:false,clinical:false,citation:false,conf:0,note:"",cs:r.cs};});return o;}
+function load(){try{const s=JSON.parse(localStorage.getItem(LS_KEY));if(!s)return blank();const b=blank();for(const id in b){if(s[id])Object.assign(b[id],s[id]);}return b;}catch(e){return blank();}}
+function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(STATE));}catch(e){}}
+
+/* ============ RENDER ============ */
+const hallsEl=document.getElementById("halls");
+function specStatus(id){const s=STATE[id];const n=CHECK_KEYS.filter(k=>s[k]).length;return n===4?"done":n>0?"review":"todo";}
+function build(){
+  hallsEl.innerHTML="";
+  Object.keys(HALLS).forEach(hk=>{
+    const meta=HALLS[hk];const list=RX.filter(r=>r.hall===hk);
+    const hall=document.createElement("div");hall.className="hall";hall.dataset.hall=hk;
+    hall.innerHTML=`<div class="hall-head"><span class="hnum">HALL ${meta.n}</span><h2>${meta.t}</h2><span class="hmeta" id="hm-${hk}"></span></div>`;
+    list.forEach(r=>hall.appendChild(specRow(r)));
+    hallsEl.appendChild(hall);
+  });
+  refresh();
+}
+function volChips(v){return v.map(x=>`<span class="vchip">${x}</span>`).join("");}
+function stahlBlock(r){
+  return r.stahl.map(arr=>{const c=arr[0];const ch=CH[c];return `<div class="stahl-item">&bull; <a href="${ch.u}" target="_blank" rel="noopener">Ch ${c} &mdash; ${ch.t}</a> <span class="mono" style="color:var(--bone-faint)">pp ${ch.p}</span></div>`;}).join("")
+   + (r.note?`<div class="srcline" style="color:var(--bone-faint);font-size:.74rem;margin-top:.4rem;">${r.note}</div>`:"");
+}
+function refBlock(r){
+  if(r.ref){const e=r.ref;return `<div class="srcline">${e.a} (${e.y}). <i>${e.t}.</i></div>
+    <div><a class="srclink" href="${pm(e.pmid)}" target="_blank" rel="noopener">PMID ${e.pmid} ↗</a>
+    <a class="srclink" href="${doiU(e.doi)}" target="_blank" rel="noopener">DOI ↗</a></div>`
+    + (r.note2?`<div class="srcline" style="color:var(--warn);font-size:.76rem;">⚠ ${r.note2}</div>`:"");}
+  return `<div class="srcline" style="color:var(--bone-faint)">No peer-reviewed source assigned yet.</div>
+    <div><a class="srclink" href="${pmSearch(r.search)}" target="_blank" rel="noopener">Search PubMed ↗</a></div>`;
+}
+function specRow(r){
+  const el=document.createElement("div");el.className="spec";el.dataset.id=r.id;el.id="spec-"+r.id;
+  el.innerHTML=`
+   <div class="spec-head">
+     <span class="idx">${String(RX.indexOf(r)+1).padStart(2,"0")}</span>
+     <div class="spec-id"><span class="nm">${r.nm}</span><div class="vols">${volChips(r.vols)}</div></div>
+     <div class="pips" aria-hidden="true">${CHECK_KEYS.map(k=>`<span class="pip" data-k="${k}"></span>`).join("")}</div>
+     <div><div class="spec-stat"></div><div class="conf-mini">${[1,2,3,4,5].map(()=>'<i></i>').join("")}</div></div>
+   </div>
+   <div class="spec-body">
+     <div class="body-grid">
+       <div>
+         <div class="claim"><span class="ck">Claim under review</span><p>${r.claim}</p></div>
+         <div class="subchecks" style="margin-top:.8rem;">
+           ${CHECK_KEYS.map(k=>`<div class="check" data-k="${k}"><div class="box"></div><div><div class="ctitle">${CHECK_LABEL[k]}</div><div class="chint">${hint(k)}</div></div></div>`).join("")}
+         </div>
+       </div>
+       <div class="side">
+         <div class="panel"><div class="pk">Stahl 5e &mdash; where to read</div>${stahlBlock(r)}</div>
+         <div class="panel"><div class="pk">Peer-reviewed source</div>${refBlock(r)}
+            <div class="citestat">${["verified","provided","conflicting","needs-source"].map(v=>`<button class="cs" data-v="${v}">${v}</button>`).join("")}</div>
+         </div>
+         <div class="panel">
+           <div class="pk">Mastery &amp; notes</div>
+           <div class="confrow"><div class="confdots">${[1,2,3,4,5].map(n=>`<span class="cdot" data-n="${n}"></span>`).join("")}</div><span class="conflabel"></span></div>
+           <div class="quiz"><button type="button">Self-quiz ▸</button><div class="q">${r.quiz}</div></div>
+           <textarea class="notes" placeholder="Correction, discrepancy, or learning note…"></textarea>
+         </div>
+       </div>
+     </div>
+   </div>`;
+  // header toggle
+  el.querySelector(".spec-head").addEventListener("click",e=>{if(e.target.closest("a"))return;el.classList.toggle("open");});
+  // subchecks
+  el.querySelectorAll(".check").forEach(c=>{c.addEventListener("click",()=>{const k=c.dataset.k;STATE[r.id][k]=!STATE[r.id][k];save();paintRow(r);refresh();});});
+  // citation status
+  el.querySelectorAll(".cs").forEach(b=>{b.addEventListener("click",()=>{STATE[r.id].cs=b.dataset.v;save();paintRow(r);refresh();});});
+  // confidence
+  el.querySelectorAll(".cdot").forEach(d=>{d.addEventListener("click",()=>{const n=+d.dataset.n;STATE[r.id].conf=(STATE[r.id].conf===n?0:n);save();paintRow(r);refresh();});});
+  // quiz
+  const qz=el.querySelector(".quiz");qz.querySelector("button").addEventListener("click",()=>qz.classList.toggle("show"));
+  // notes
+  const ta=el.querySelector(".notes");ta.addEventListener("input",()=>{STATE[r.id].note=ta.value;save();});
+  paintRow(r,el);
+  return el;
+}
+function hint(k){return{
+ mechanism:"Confirm receptor family, transduction (Gi/Gs/Gq or channel), location, and the direction of the effect described.",
+ affinity:"Check the agonist / antagonist / partial labels and relative affinities in the plate against a real source.",
+ clinical:"Verify receptor → action → presentation against Stahl Table 2-4 / 2-5 and the clinical chapters.",
+ citation:"Open the source — does it support the claim, and does the PMID resolve to that paper?"
+}[k];}
+function paintRow(r,el){
+  el=el||document.getElementById("spec-"+r.id);if(!el)return;const s=STATE[r.id];
+  CHECK_KEYS.forEach(k=>{
+    el.querySelector(`.pip[data-k="${k}"]`).classList.toggle("on",!!s[k]);
+    el.querySelector(`.check[data-k="${k}"]`).classList.toggle("on",!!s[k]);
+  });
+  const st=specStatus(r.id);const lab=el.querySelector(".spec-stat");
+  lab.textContent=st==="done"?"cleared":st==="review"?"in review":"not started";
+  lab.className="spec-stat "+(st==="done"?"done":st==="review"?"review":"");
+  el.querySelectorAll(".conf-mini i").forEach((i,ix)=>i.classList.toggle("on",ix<s.conf));
+  el.querySelectorAll(".cdot").forEach(d=>d.classList.toggle("on",+d.dataset.n<=s.conf));
+  el.querySelector(".conflabel").textContent=s.conf?`mastery ${s.conf}/5`:"unrated";
+  el.querySelectorAll(".cs").forEach(b=>b.classList.toggle("on",b.dataset.v===s.cs));
+  el.querySelector(".notes").value=s.note||"";
+  applyFilter(el,r);
+}
+/* ============ SUMMARY ============ */
+function refresh(){
+  let done=0,checks=0,confSum=0,confN=0;const csCount={verified:0,provided:0,conflicting:0,"needs-source":0};
+  RX.forEach(r=>{const s=STATE[r.id];const n=CHECK_KEYS.filter(k=>s[k]).length;checks+=n;if(n===4)done++;if(s.conf){confSum+=s.conf;confN++;}csCount[s.cs]=(csCount[s.cs]||0)+1;});
+  const totalChecks=RX.length*4;const pct=Math.round(checks/totalChecks*100);
+  document.getElementById("ringPct").textContent=pct+"%";
+  document.getElementById("ringArc").style.strokeDashoffset=(402*(1-checks/totalChecks)).toFixed(1);
+  document.getElementById("tSpec").textContent=done;
+  document.getElementById("tCheck").textContent=checks;
+  document.getElementById("tConf").textContent=(confN?confSum/confN:0).toFixed(1);
+  // cite tally
+  document.getElementById("citeTally").innerHTML=
+    `<span class="schip"><span class="dot good"></span>${csCount.verified} verified</span>
+     <span class="schip"><span class="dot brass"></span>${csCount.provided} provided</span>
+     <span class="schip"><span class="dot warn"></span>${csCount.conflicting} conflicting</span>
+     <span class="schip"><span class="dot info"></span>${csCount["needs-source"]} needs-source</span>`;
+  // halls
+  const hp=document.getElementById("hallsProg");hp.innerHTML="";
+  Object.keys(HALLS).forEach(hk=>{
+    const list=RX.filter(r=>r.hall===hk);let c=0;list.forEach(r=>c+=CHECK_KEYS.filter(k=>STATE[r.id][k]).length);
+    const tot=list.length*4;const p=Math.round(c/tot*100);
+    const row=document.createElement("div");row.className="hp-row";
+    row.innerHTML=`<span class="hp-name">${HALLS[hk].t}</span><span class="hp-val">${c}/${tot} &middot; ${p}%</span><div class="bar"><i class="${p===100?'full':''}" style="width:${p}%"></i></div>`;
+    hp.appendChild(row);
+    const hm=document.getElementById("hm-"+hk);if(hm)hm.textContent=`${list.length} specimens · ${p}%`;
+  });
+}
+/* ============ FILTER ============ */
+let FILTER="all";
+function applyFilter(el,r){
+  const s=STATE[r.id];const st=specStatus(r.id);let show=true;
+  if(FILTER==="todo")show=st==="todo";
+  else if(FILTER==="review")show=st==="review";
+  else if(FILTER==="done")show=st==="done";
+  else if(FILTER==="flag")show=(s.cs==="conflicting"||s.cs==="needs-source");
+  else if(FILTER==="lowconf")show=(s.conf>0&&s.conf<3);
+  el.classList.toggle("hidden",!show);
+}
+function runFilter(){RX.forEach(r=>applyFilter(document.getElementById("spec-"+r.id),r));
+  // hide empty halls
+  Object.keys(HALLS).forEach(hk=>{const h=document.querySelector(`.hall[data-hall="${hk}"]`);const any=[...h.querySelectorAll(".spec")].some(s=>!s.classList.contains("hidden"));h.classList.toggle("hidden",!any);});}
+document.getElementById("rail").addEventListener("click",e=>{const b=e.target.closest(".seg");if(!b)return;document.querySelectorAll(".rail .seg").forEach(x=>x.classList.remove("active"));b.classList.add("active");FILTER=b.dataset.filter;runFilter();});
+document.getElementById("nextBtn").addEventListener("click",()=>{const r=RX.find(r=>specStatus(r.id)!=="done");if(!r){alert("Every specimen is cleared. Fine work.");return;}const el=document.getElementById("spec-"+r.id);el.classList.remove("hidden");el.classList.add("open");el.scrollIntoView({behavior:"smooth",block:"center"});});
+
+/* ============ TOOLBAR ============ */
+document.getElementById("expandAll").addEventListener("click",()=>document.querySelectorAll(".spec").forEach(s=>s.classList.add("open")));
+document.getElementById("collapseAll").addEventListener("click",()=>document.querySelectorAll(".spec").forEach(s=>s.classList.remove("open")));
+document.getElementById("resetBtn").addEventListener("click",()=>{if(confirm("Reset all checks, ratings, notes, and citation flags to their seed state? This cannot be undone unless you exported a copy.")){STATE=blank();save();build();}});
+document.getElementById("exportBtn").addEventListener("click",()=>{
+  const blob=new Blob([JSON.stringify({app:"conservators-desk",date:new Date().toISOString(),state:STATE},null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="atlas-review-progress-"+new Date().toISOString().slice(0,10)+".json";a.click();
+});
+document.getElementById("importBtn").addEventListener("click",()=>document.getElementById("importFile").click());
+document.getElementById("importFile").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const j=JSON.parse(rd.result);const src=j.state||j;const b=blank();for(const id in b){if(src[id])Object.assign(b[id],src[id]);}STATE=b;save();build();alert("Progress imported.");}catch(err){alert("Could not read that file.");}};rd.readAsText(f);});
+
+/* ============ MAST SHADOW ============ */
+const mast=document.getElementById("mast");
+addEventListener("scroll",()=>mast.classList.toggle("is-scrolled",scrollY>8));
+
+/* ============ PAGE-LOAD REVEAL ============ */
+build();
+document.getElementById("rcount").textContent=RX.length;
+if(window.matchMedia && !matchMedia("(prefers-reduced-motion: reduce)").matches){
+  const rows=[...document.querySelectorAll(".spec")];
+  rows.forEach((s,i)=>{s.style.opacity="0";s.style.transform="translateY(8px)";
+    setTimeout(()=>{s.style.opacity="";s.style.transform="";},80+i*22);});
+}
+</script>
+</body>
+</html>

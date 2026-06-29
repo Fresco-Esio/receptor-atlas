@@ -1,0 +1,3197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Receptor Cabinet · Neuroreceptor Pharmacology</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Schibsted+Grotesk:wght@400;500;700&family=Fragment+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* wall paint, the cabinet stands in the warm-charcoal atrium */
+    --wall-atrium:    oklch(17% 0.012 75);
+    --wall-panel:     oklch(20% 0.013 75);   /* lifted surface, one shade up */
+    --wall-recess:    oklch(14% 0.011 75);   /* sunk wells, one shade down */
+
+    /* the three diagnostic rooms, selecting a state repaints the exhibit wall */
+    --st-normal:      oklch(78% 0.085 158);
+    --st-over:        oklch(66% 0.185 38);
+    --st-under:       oklch(72% 0.10 245);
+    --wall-normal:    oklch(18% 0.030 158);
+    --wall-over:      oklch(23% 0.060 28);
+    --wall-under:     oklch(18% 0.045 255);
+
+    /* ink and metal */
+    --bone:       oklch(93% 0.012 85);
+    --bone-dim:   oklch(72% 0.015 85);
+    --bone-read:  oklch(86% 0.013 85);
+    --bone-faint: oklch(63% 0.013 85);
+    --vermilion:  oklch(62% 0.19 35);
+    --brass:      oklch(70% 0.055 80);
+    --brass-line: oklch(70% 0.055 80 / 0.28);
+    --brass-faint:oklch(70% 0.055 80 / 0.14);
+
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --row-stagger: 60ms;
+    --block-stagger: 80ms;
+    --stroke-stagger: 140ms;
+
+    --display: "Marcellus", serif;
+    --body: "Schibsted Grotesk", sans-serif;
+    --mono: "Fragment Mono", monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; font-size: clamp(16px, 13.5px + 0.2vw, 19px); }
+
+  body {
+    background-color: var(--wall-atrium);
+    color: var(--bone);
+    font-family: var(--body);
+    font-size: 1rem;
+    line-height: 1.65;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--vermilion); color: var(--wall-recess); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--brass-line); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--brass); }
+
+  :focus-visible { outline: 1px solid var(--brass); outline-offset: 3px; }
+
+  .mono {
+    font-family: var(--mono);
+    text-transform: uppercase;
+  }
+
+  /* ====================== masthead ====================== */
+  .masthead {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: var(--wall-recess);
+    border-bottom: 1px solid var(--brass-line);
+  }
+  .masthead-in {
+    max-width: 108rem;
+    margin-inline: auto;
+    padding: 1.15rem clamp(1.2rem, 5vw, 3.5rem);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
+  .brand { display: flex; align-items: center; gap: 1rem; }
+  .brand-mark {
+    width: 44px; height: 44px; flex: none;
+    border: 1px solid var(--brass-line);
+    border-radius: 2px;
+    display: grid; place-content: center;
+    background: var(--wall-recess);
+  }
+  .brand-mark svg { width: 26px; height: 26px; overflow: visible; }
+  .brand-est {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.15em;
+    color: var(--bone-faint);
+    text-transform: uppercase;
+  }
+  .brand h1 {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(1.15rem, 2.4vw, 1.7rem);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    line-height: 1.1;
+    margin-top: 0.15rem;
+  }
+  .brand-cat {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    color: var(--vermilion);
+    text-transform: uppercase;
+    margin-left: 0.6rem;
+    border: 1px solid var(--brass-line);
+    padding: 0.15rem 0.45rem;
+    border-radius: 2px;
+    vertical-align: 0.18em;
+    white-space: nowrap;
+  }
+
+  .tools { display: flex; flex-wrap: wrap; align-items: center; gap: 0.9rem; }
+
+  /* search field, archival */
+  .search {
+    position: relative;
+    width: clamp(13rem, 22vw, 17rem);
+  }
+  .search svg {
+    position: absolute;
+    left: 0.85rem; top: 50%; translate: 0 -50%;
+    width: 14px; height: 14px;
+    color: var(--bone-faint);
+    pointer-events: none;
+  }
+  .search input {
+    width: 100%;
+    background: var(--wall-recess);
+    border: 1px solid var(--brass-line);
+    border-radius: 2px;
+    color: var(--bone);
+    font-family: var(--body);
+    font-size: 0.85rem;
+    padding: 0.6rem 0.9rem 0.6rem 2.3rem;
+    transition: border-color 0.4s var(--ease);
+  }
+  .search input::placeholder { color: var(--bone-faint); }
+  .search input:focus { outline: none; border-color: var(--brass); }
+
+  /* segmented brass control */
+  .segmented {
+    display: inline-flex;
+    border: 1px solid var(--brass-line);
+    border-radius: 2px;
+    overflow: hidden;
+    background: var(--wall-recess);
+  }
+  .segmented button {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    border-left: 1px solid var(--brass-faint);
+    cursor: pointer;
+    color: var(--bone-faint);
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 0.6rem 0.95rem;
+    display: inline-flex; align-items: center; gap: 0.45rem;
+    transition: color 0.3s var(--ease), background-color 0.3s var(--ease);
+  }
+  .segmented button:first-child { border-left: 0; }
+  .segmented button:hover { color: var(--bone); }
+  .segmented button.is-active {
+    color: var(--bone);
+    background: oklch(93% 0.012 85 / 0.06);
+  }
+  .seg-dot { width: 5px; height: 5px; rotate: 45deg; border: 1px solid currentColor; }
+  .segmented button.is-active .seg-dot { background: var(--vermilion); border-color: var(--vermilion); }
+
+  /* ====================== layout ====================== */
+  main {
+    max-width: 108rem;
+    margin-inline: auto;
+    padding: clamp(2rem, 5vw, 3.5rem) clamp(1.2rem, 5vw, 3.5rem) 5rem;
+  }
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--bone-faint);
+  }
+  .count-badge {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.14em;
+    color: var(--bone-dim);
+    border: 1px solid var(--brass-line);
+    padding: 0.18rem 0.5rem;
+    border-radius: 2px;
+  }
+
+  .explorer.hidden { display: none; }
+  .explorer {
+    display: grid;
+    /* a fixed-measure card-catalog rail beside a fluid exhibit plate: the index
+       stops widening past ~21rem so short specimen names don't strand in dead
+       space on large monitors, and the plate takes all remaining room. */
+    grid-template-columns: minmax(15rem, 21rem) minmax(0, 1fr);
+    gap: clamp(1.5rem, 3vw, 3rem);
+    align-items: stretch;
+  }
+  @media (max-width: 940px) { .explorer { grid-template-columns: 1fr; } }
+
+  /* ---------- catalog index (left) ---------- */
+  .index-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--brass-line);
+    margin-bottom: 0.4rem;
+  }
+  .index-col { display: flex; flex-direction: column; }
+  .index-list { display: flex; flex-direction: column; flex: 1; }
+  .index-foot {
+    margin-top: 1.1rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--brass-line);
+    display: flex; justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--bone-faint);
+  }
+  @media (min-width: 941px) {
+    .index-col { position: sticky; top: calc(var(--mast-h, 5.5rem) + 0.6rem); }
+  }
+
+  .specimen-row {
+    appearance: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    background: transparent;
+    color: inherit;
+    border: 0;
+    border-bottom: 1px solid var(--brass-faint);
+    padding: 1.15rem 0.4rem 1.15rem 0;
+    display: block;
+    position: relative;
+    transition: background-color 0.5s var(--ease);
+    opacity: 0;
+    translate: -22px 0;
+    animation: row-in 0.7s var(--ease) forwards;
+    animation-delay: calc(var(--i, 0) * var(--row-stagger));
+  }
+  @keyframes row-in { to { opacity: 1; translate: 0 0; } }
+  .specimen-inner {
+    display: grid;
+    grid-template-columns: 2.8rem 1fr auto;
+    gap: 0.4rem 1rem;
+    align-items: baseline;
+    transition: translate 0.5s var(--ease);
+  }
+  .specimen-row:hover .specimen-inner { translate: 0.5rem 0; }
+  .specimen-row:hover { background: oklch(93% 0.012 85 / 0.035); }
+  .specimen-no {
+    grid-row: span 2;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.08em;
+    color: var(--bone-faint);
+    align-self: center;
+    transition: color 0.4s var(--ease);
+  }
+  .specimen-row:hover .specimen-no,
+  .specimen-row.is-selected .specimen-no { color: var(--vermilion); }
+  .specimen-name {
+    font-family: var(--display);
+    font-size: 1.125rem;
+    letter-spacing: 0.03em;
+    color: var(--bone-dim);
+    transition: color 0.4s var(--ease);
+  }
+  .specimen-row:hover .specimen-name,
+  .specimen-row.is-selected .specimen-name { color: var(--bone); }
+  .specimen-class {
+    grid-column: 2;
+    font-size: 0.875rem;
+    color: var(--bone-faint);
+    line-height: 1.45;
+  }
+  .specimen-kind {
+    grid-row: span 2;
+    align-self: center;
+    font-family: var(--mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.12em;
+    color: var(--bone-faint);
+    text-transform: uppercase;
+    text-align: right;
+  }
+  /* lit ledger tick for the selected specimen */
+  .specimen-row.is-selected {
+    background: oklch(62% 0.19 35 / 0.08);
+    outline: 1px solid oklch(62% 0.19 35 / 0.28);
+    outline-offset: -1px;
+  }
+  .specimen-tags {
+    grid-column: 2;
+    margin-top: 0.5rem;
+    display: flex; gap: 1rem;
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    color: var(--bone-faint);
+    text-transform: uppercase;
+  }
+  .specimen-tags span::before { content: "◆ "; color: var(--brass); font-size: 0.5em; vertical-align: 0.2em; }
+
+  .index-empty {
+    padding: 2.5rem 1rem;
+    text-align: center;
+    color: var(--bone-faint);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    border: 1px dashed var(--brass-line);
+    border-radius: 2px;
+  }
+
+  /* ---------- exhibit plate (right) ---------- */
+  .plate {
+    border: 1px solid var(--brass-line);
+    border-radius: 3px;
+    background: var(--wall-panel);
+    overflow: hidden;
+    transition: background-color 1.1s var(--ease), border-color 0.6s var(--ease);
+  }
+  .plate[data-state="normal"]       { background: var(--wall-normal); --st: var(--st-normal); }
+  .plate[data-state="overstimulated"]   { background: var(--wall-over);   --st: var(--st-over); }
+  .plate[data-state="understimulated"]  { background: var(--wall-under);  --st: var(--st-under); }
+
+  .plate-head {
+    padding: clamp(1.4rem, 3vw, 2rem) clamp(1.4rem, 3vw, 2.2rem);
+    border-bottom: 1px solid var(--brass-line);
+    display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between;
+    gap: clamp(0.8rem, 2vw, 1.6rem);
+    background: oklch(0% 0 0 / 0.12);
+  }
+  .plate-kicker {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--bone-faint);
+    display: flex; flex-wrap: wrap; gap: 0.5rem 0.9rem;
+    margin-bottom: 0.7rem;
+  }
+  .plate-kicker .k-class { color: var(--st, var(--brass)); }
+  .plate-kicker .k-sub { text-transform: none; letter-spacing: 0.01em; color: var(--bone-faint); }
+  .plate-title {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(1.7rem, 3.6vw, 2.6rem);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1.05;
+  }
+
+  /* state simulator, brass dial */
+  .sim-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem; }
+  .sim-axis-label {
+    font-family: var(--mono);
+    font-size: 0.5625rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--bone-faint);
+  }
+  .sim {
+    display: inline-flex;
+    border: 1px solid var(--brass-line);
+    border-radius: 2px;
+    overflow: hidden;
+    background: var(--wall-recess);
+  }
+  .sim button {
+    appearance: none; background: transparent; border: 0;
+    border-left: 1px solid var(--brass-faint);
+    cursor: pointer;
+    color: var(--bone-dim);
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.62rem 0.95rem;
+    transition: color 0.3s var(--ease), background-color 0.3s var(--ease);
+  }
+  .sim button:first-child { border-left: 0; }
+  .sim button:hover { color: var(--bone); background: oklch(93% 0.012 85 / 0.06); }
+  .sim button.is-active { color: var(--wall-recess); font-weight: 500; }
+  .sim button.is-active.s-normal { background: var(--st-normal); }
+  .sim button.is-active.s-over   { background: var(--st-over); }
+  .sim button.is-active.s-under  { background: var(--st-under); }
+
+  .plate-body { padding: clamp(1.6rem, 3.5vw, 2.4rem); }
+
+  .stage {
+    display: grid;
+    grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+    gap: clamp(1.5rem, 3vw, 2.4rem);
+    align-items: start;
+  }
+  @media (max-width: 720px) { .stage { grid-template-columns: 1fr; } }
+
+  /* specimen monitor / avatar */
+  .monitor {
+    border: 1px solid var(--brass-faint);
+    border-radius: 2px;
+    background: oklch(0% 0 0 / 0.18);
+    padding: clamp(1.4rem, 3vw, 2rem) clamp(1rem, 2vw, 1.6rem);
+    text-align: center;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  /* ── archival receptor engraving system ── */
+  .engraving {
+    width: 100%;
+    max-width: 188px;
+    aspect-ratio: 1;
+    margin: 0 auto 1.6rem;
+  }
+  .engraving svg { width: 100%; height: 100%; overflow: visible; }
+  .e-line {
+    fill: none;
+    stroke: var(--st, var(--brass));
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+    stroke-linecap: round; stroke-linejoin: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    transition: stroke-dashoffset 1.1s var(--ease);
+    transition-delay: calc(var(--dl, 0) * 100ms);
+  }
+  .engraving.drawn .e-line { stroke-dashoffset: 0; }
+  .e-dim {
+    fill: none;
+    stroke: var(--st, var(--brass));
+    stroke-width: 0.75;
+    opacity: 0.5;
+    vector-effect: non-scaling-stroke;
+    stroke-linecap: round; stroke-linejoin: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    transition: stroke-dashoffset 1.1s var(--ease);
+    transition-delay: calc(var(--dl, 0) * 100ms);
+  }
+  .engraving.drawn .e-dim { stroke-dashoffset: 0; }
+  .e-dash { fill: none; stroke: var(--brass); stroke-width: 0.6; opacity: 0.3; }
+  .e-fill { fill: var(--st, var(--brass)); fill-opacity: 0.14; }
+  .e-text {
+    font-family: "Fragment Mono", monospace;
+    font-size: 7px;
+    fill: var(--bone-faint);
+    letter-spacing: 0.04em;
+  }
+  .monitor-label {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--bone-faint);
+    margin-bottom: 0.7rem;
+  }
+  .monitor-status {
+    font-family: var(--display);
+    font-size: 1.125rem;
+    letter-spacing: 0.03em;
+    color: var(--st, var(--bone));
+    line-height: 1.25;
+  }
+  .monitor-sub {
+    margin-top: 0.7rem;
+    font-family: var(--mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--bone-faint);
+    border: 1px solid var(--brass-faint);
+    padding: 0.22rem 0.55rem;
+    border-radius: 2px;
+  }
+
+  .breakdown { display: flex; flex-direction: column; gap: clamp(1.6rem, 2.5vw, 2.4rem); }
+  .field-head {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--bone-faint);
+    margin-bottom: 0.7rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .field-head::before { content: "◆"; color: var(--st, var(--brass)); font-size: 0.5em; }
+
+  .mechanism {
+    background: oklch(0% 0 0 / 0.18);
+    border: 1px solid var(--brass-faint);
+    border-top: 2px solid var(--st, var(--brass));
+    border-radius: 2px;
+    padding: 1rem 1.2rem;
+    font-family: var(--mono);
+    font-size: 0.875rem;
+    line-height: 1.65;
+    color: var(--bone-dim);
+    max-width: 70ch;
+  }
+
+  /* pharmacologic action descriptor */
+  .pharm-action { max-width: 70ch; }
+  .pharm-detail {
+    font-size: 0.9375rem;
+    line-height: 1.65;
+    color: var(--bone-dim);
+    margin-bottom: 0.8rem;
+  }
+  .pharm-detail b { color: var(--st, var(--bone)); font-weight: 500; }
+  .concept-tags .tag {
+    cursor: pointer;
+    border-color: var(--st, var(--brass-faint));
+    color: var(--st, var(--bone-dim));
+    background: oklch(0% 0 0 / 0.16);
+    transition: background-color 0.3s var(--ease);
+  }
+  .concept-tags .tag:hover { background: oklch(0% 0 0 / 0.30); }
+  .concept-tags .tag::before { content: "▸ "; color: var(--st, var(--brass)); }
+
+  /* clinical plaque (warning) */
+  .plaque {
+    border: 1px solid var(--st, var(--brass));
+    border-radius: 2px;
+    background: oklch(0% 0 0 / 0.16);
+    padding: 1.1rem 1.3rem;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.3rem 0.9rem;
+  }
+  .plaque-mark { color: var(--st, var(--brass)); font-size: 1.1rem; grid-row: span 2; align-self: start; }
+  .plaque-title {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--st, var(--bone));
+  }
+  .plaque-text { font-size: 0.9375rem; color: var(--bone-read); line-height: 1.65; max-width: 70ch; }
+  .plaque.hidden { display: none; }
+
+  .present-list { list-style: none; display: flex; flex-direction: column; gap: 0.55rem; max-width: 70ch; }
+  .present-list li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.7rem;
+    font-size: 0.9375rem;
+    color: var(--bone-read);
+    line-height: 1.65;
+  }
+  .present-list li::before {
+    content: "◆";
+    color: var(--st, var(--brass));
+    font-size: 0.55em;
+    line-height: 1.9;
+  }
+  .term-link {
+    color: var(--vermilion);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--brass);
+    cursor: pointer;
+    transition: border-color 0.3s var(--ease);
+  }
+  .term-link:hover { border-color: var(--vermilion); }
+
+  .rule { height: 1px; background: var(--brass-line); margin: 2.8rem 0 1.4rem; border: 0; }
+
+  .agents-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: clamp(1.2rem, 2.5vw, 2rem);
+  }
+  @media (max-width: 620px) { .agents-grid { grid-template-columns: 1fr; } }
+  .tag-wrap { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .tag {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    padding: 0.32rem 0.6rem;
+    border-radius: 2px;
+    border: 1px solid var(--brass-faint);
+    color: var(--bone-dim);
+    background: oklch(0% 0 0 / 0.12);
+  }
+  .tag.agonist { border-color: oklch(78% 0.085 158 / 0.45); color: var(--st-normal); }
+  .tag.antagonist { border-color: oklch(66% 0.185 38 / 0.45); color: var(--st-over); }
+
+  /* provenance footer */
+  .provenance {
+    padding: 1.1rem clamp(1.4rem, 3vw, 2.2rem);
+    border-top: 1px solid var(--brass-line);
+    background: oklch(0% 0 0 / 0.16);
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: 0.7rem 1.5rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+  }
+  .prov-cite { color: var(--bone-dim); }
+  .prov-cite b { color: var(--bone-faint); font-weight: 400; letter-spacing: 0.16em; text-transform: uppercase; margin-right: 0.5rem; }
+  .prov-cite i { font-style: italic; }
+  .prov-links { display: flex; align-items: center; gap: 1.2rem; color: var(--bone-faint); letter-spacing: 0.1em; }
+  .prov-links a {
+    color: var(--bone);
+    text-decoration: none;
+    border-bottom: 1px solid var(--brass-line);
+    transition: color 0.3s var(--ease), border-color 0.3s var(--ease);
+  }
+  .prov-links a:hover { color: var(--vermilion); border-color: var(--vermilion); }
+
+  /* block reveal on (re)render */
+  .rv { opacity: 0; translate: 0 16px; animation: block-in 0.7s var(--ease) forwards; }
+  .rv-1 { animation-delay: 0.02s; }
+  .rv-2 { animation-delay: 0.10s; }
+  .rv-3 { animation-delay: 0.18s; }
+  .rv-4 { animation-delay: 0.26s; }
+  @keyframes block-in { to { opacity: 1; translate: 0 0; } }
+
+  /* ====================== matrix (catalogue table) ====================== */
+  #view-matrix.hidden { display: none; }
+  .catalogue {
+    border: 1px solid var(--brass-line);
+    border-radius: 3px;
+    background: var(--wall-panel);
+    display: flex;
+    flex-direction: column;
+    /* The catalogue is a self-contained pane that fills the viewport below the
+       masthead, so the MATRIX scrolls (keeping its column headers pinned) rather
+       than the page. Subtracted values mirror main's vertical padding
+       (top clamp + 5rem bottom) so the page does not scroll in catalogue view. */
+    max-height: calc(100svh - var(--mast-h, 5.5rem) - clamp(2rem, 5vw, 3.5rem) - 1.5rem);
+  }
+  .catalogue-head { flex: none; }
+  /* Reclaim the page's tall bottom padding while the catalogue pane is active,
+     so the pane (and thus the matrix) gets more height before the page scrolls. */
+  main:has(#view-matrix:not(.hidden)) { padding-bottom: 1.5rem; }
+  .catalogue-head {
+    padding: 1.4rem clamp(1.4rem, 3vw, 2rem);
+    border-bottom: 1px solid var(--brass-line);
+    border-radius: 3px 3px 0 0;
+    display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1.2rem;
+    background: oklch(0% 0 0 / 0.12);
+  }
+  .catalogue-head h3 {
+    font-family: var(--display); font-weight: 400;
+    font-size: clamp(1.3rem, 2.6vw, 1.9rem);
+    letter-spacing: 0.05em; text-transform: uppercase;
+  }
+  .catalogue-head p { font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--bone-faint); margin-top: 0.4rem; }
+
+  /* Binding Affinity Plate legend */
+  .legend { display: flex; flex-direction: column; gap: 0.55rem; align-items: flex-end; }
+  .legend-row { display: flex; gap: 1.1rem; font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--bone-faint); flex-wrap: wrap; }
+  .legend-row span { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .lk { width: 9px; height: 9px; border-radius: 50%; }
+  .lk.ag { background: var(--st-normal); }
+  .lk.an { background: var(--st-over); }
+  .lk.pa { background: var(--brass); }
+  .lk.ri { background: var(--st-under); }
+
+  /* Binding Affinity Plate body */
+  .cat-body { display: grid; grid-template-columns: minmax(300px, 24rem) minmax(0, 1fr); flex: 1 1 auto; min-height: 0; }
+  .radar-col { border-right: 1px solid var(--brass-line); background: oklch(0% 0 0 / 0.06); min-height: 0; overflow-y: auto; }
+  .radar-sticky { position: sticky; top: 0; padding: clamp(1.4rem, 3vw, 2rem); }
+  .matrix-col { min-width: 0; display: flex; flex-direction: column; min-height: 0; }
+  @media (max-width: 880px) {
+    /* On phones the radar and the matrix can't share one screen, so drop the
+       fixed pane: the page flows (radar on top), and the matrix becomes a
+       bounded inner-scroll region that keeps its column headers pinned. */
+    .catalogue { display: block; max-height: none; }
+    .cat-body { display: block; }
+    .radar-col { overflow: visible; border-right: 0; border-bottom: 1px solid var(--brass-line); }
+    .radar-sticky { position: static; background: var(--wall-recess); padding-block: 1rem; }
+    .radar { max-width: 240px; margin-inline: auto; }
+    .matrix-col { display: block; }
+    .matrix { flex: none; max-height: clamp(320px, 62svh, 560px); }
+  }
+  .radar svg { width: 100%; height: auto; overflow: visible; }
+  .ring { fill: none; stroke: var(--brass-faint); }
+  .ring.outer { stroke: var(--brass-line); }
+  .axis { stroke: var(--brass-faint); }
+  .axis-label { font-family: var(--mono); font-size: var(--axis-fs, 13px); letter-spacing: 0.04em; fill: var(--bone-dim); text-transform: uppercase; transition: fill 0.3s var(--ease); }
+  .axis-label.lit { fill: var(--vermilion); }
+  .ring-tick { font-family: var(--mono); font-size: var(--tick-fs, 10px); fill: var(--bone-faint); }
+  .poly-stroke { transition: opacity 0.3s var(--ease); }
+
+  .radar-caption h4 { font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--bone-faint); margin-bottom: 0.8rem; }
+  .radar-caption p { font-size: 0.9rem; color: var(--bone-dim); margin-bottom: 0.9rem; }
+  .radar-legend { font-family: var(--mono); font-size: 0.78rem; display: flex; flex-direction: column; gap: 0.4rem; border-top: 1px solid var(--brass-faint); padding-top: 0.8rem; min-height: 3.5em; }
+  .radar-legend span { letter-spacing: 0.02em; }
+  .radar-legend .hint { color: var(--bone-faint); text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.12em; }
+
+  .matrix-head { padding: 1.1rem clamp(1.4rem, 3vw, 2rem) 0; font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--bone-faint); }
+  .matrix {
+    padding: 0 clamp(1.0rem, 3vw, 2rem) 1.2rem;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--brass-faint) transparent;
+  }
+  .matrix::-webkit-scrollbar { width: 9px; height: 9px; }
+  .matrix::-webkit-scrollbar-thumb { background: var(--brass-faint); border-radius: 2px; }
+  .matrix::-webkit-scrollbar-track { background: transparent; }
+  .grid { display: grid; grid-template-columns: clamp(10.5rem, 30vw, 13rem) repeat(13, minmax(56px, 1fr)); }
+  .col-head { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--bone-dim); text-align: center; padding: 0.6rem 0.2rem; border-bottom: 1px solid var(--brass-line); display: flex; align-items: flex-end; justify-content: center; position: sticky; top: 0; z-index: 2; background: var(--wall-recess); transition: color 0.3s var(--ease); cursor: default; }
+  .col-head.corner { left: 0; z-index: 3; }
+  .group-label { grid-column: 1 / -1; font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brass); padding: 0.9rem 0 0.35rem; border-bottom: 1px solid var(--brass-faint); margin-bottom: 0.15rem; position: sticky; left: 0; z-index: 1; background: var(--wall-panel); }
+  .agent-name { font-size: 0.875rem; color: var(--bone-dim); padding: 0.45rem 0.7rem 0.45rem 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: sticky; left: 0; z-index: 1; background: var(--wall-panel); border-right: 1px solid var(--brass-line); transition: color 0.3s var(--ease); cursor: pointer; }
+  .cell { display: grid; place-content: center; border-left: 1px solid var(--brass-faint); padding: 0.35rem 0; }
+  .dot { border-radius: 50%; transition: transform 0.3s var(--ease); }
+  .dot.ag { background: var(--st-normal); }
+  .dot.an { background: var(--st-over); }
+  .dot.pa { background: var(--brass); }
+  .dot.ri { background: var(--st-under); }
+  .row { display: contents; }
+  .row.dim .agent-name, .row.dim .dot { opacity: 0.22; }
+  .row.lit .agent-name { color: var(--bone); }
+  .row.lit .dot { transform: scale(1.25); }
+  .row.pinned .agent-name { color: var(--bone); }
+  .row.pinned .agent-name::before { content: "◆ "; color: var(--vermilion); font-size: 0.7em; }
+  .col-head.lit { color: var(--vermilion); }
+
+  .affinity-note { margin-top: 0.5rem; padding: 0.8rem 0 0.2rem; font-family: var(--mono); font-size: 0.7rem; color: var(--bone-faint); border-top: 1px solid var(--brass-faint); max-width: 90ch; }
+  .affinity-note a { color: var(--bone-dim); border-bottom: 1px solid var(--brass-faint); text-decoration: none; }
+  .affinity-note a:hover { color: var(--vermilion); border-color: var(--vermilion); }
+
+  /* Tooltip for affinity details */
+  .affinity-tooltip { position: fixed; background: oklch(14% 0.011 75 / 0.95); border: 1px solid var(--brass-line); border-radius: 2px; padding: 0.7rem 0.9rem; font-family: var(--mono); font-size: 0.7rem; color: var(--bone); z-index: 50; max-width: 220px; box-shadow: 0 4px 12px oklch(0% 0 0 / 0.5); pointer-events: none; }
+
+  /* ====================== primer (reading room) ====================== */
+  #view-primer.hidden { display: none; }
+  .primer {
+    border: 1px solid var(--brass-line);
+    border-radius: 3px;
+    background: var(--wall-panel);
+    overflow: hidden;
+  }
+  .primer-head {
+    padding: clamp(1.6rem, 3.5vw, 2.4rem) clamp(1.4rem, 3vw, 2.2rem);
+    border-bottom: 1px solid var(--brass-line);
+    background: oklch(0% 0 0 / 0.12);
+  }
+  .primer-head h3 {
+    font-family: var(--display); font-weight: 400;
+    font-size: clamp(1.4rem, 3vw, 2.1rem);
+    letter-spacing: 0.05em; text-transform: uppercase;
+    margin: 0.5rem 0 0.9rem;
+  }
+  .primer-lede { max-width: 76ch; color: var(--bone-read); font-size: 1rem; line-height: 1.7; }
+  .primer-lede b { color: var(--bone); font-weight: 500; }
+  .primer-body { padding: clamp(1.4rem, 3.5vw, 2.4rem); }
+
+  .concepts { display: flex; flex-direction: column; }
+  .concept-row {
+    display: grid;
+    grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+    gap: clamp(0.8rem, 3vw, 2.4rem);
+    padding: 1.5rem 0;
+    border-bottom: 1px solid var(--brass-faint);
+  }
+  .concept-row:first-child { padding-top: 0.4rem; }
+  @media (max-width: 720px) { .concept-row { grid-template-columns: 1fr; gap: 0.5rem; } }
+  .concept-term {
+    font-family: var(--display);
+    font-size: 1.2rem;
+    letter-spacing: 0.02em;
+    color: var(--bone);
+    line-height: 1.3;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 0.55rem;
+  }
+  .concept-chip {
+    font-family: var(--mono);
+    font-size: 0.5625rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--bone-faint);
+    border: 1px solid var(--brass-line);
+    border-radius: 2px;
+    padding: 0.16rem 0.45rem;
+  }
+  .concept-chip.ag { color: var(--st-normal); border-color: oklch(78% 0.085 158 / 0.4); }
+  .concept-chip.an { color: var(--st-over);   border-color: oklch(66% 0.185 38 / 0.4); }
+  .concept-chip.pa { color: var(--brass);     border-color: var(--brass-line); }
+  .concept-def { color: var(--bone-read); }
+  .concept-def p { font-size: 0.9375rem; line-height: 1.7; max-width: 74ch; margin-bottom: 0.6rem; }
+  .concept-def p:last-child { margin-bottom: 0; }
+  .concept-def b { color: var(--bone); font-weight: 500; }
+  .concept-eg {
+    font-family: var(--mono);
+    font-size: 0.78rem !important;
+    color: var(--bone-faint);
+    border-left: 2px solid var(--brass-line);
+    padding-left: 0.8rem;
+    line-height: 1.6 !important;
+  }
+
+  .refs {
+    margin-top: 2.4rem;
+    padding-top: 1.4rem;
+    border-top: 1px solid var(--brass-line);
+  }
+  .refs h4 {
+    font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--bone-faint); margin-bottom: 0.4rem;
+  }
+  .refs-note { font-size: 0.82rem; color: var(--bone-faint); margin-bottom: 1.1rem; max-width: 74ch; }
+  .ref-list { list-style: none; counter-reset: ref; display: flex; flex-direction: column; gap: 0.85rem; }
+  .ref-list li {
+    counter-increment: ref;
+    display: grid; grid-template-columns: 2.2rem 1fr; gap: 0.6rem;
+    font-size: 0.875rem; color: var(--bone-dim); line-height: 1.6; max-width: 92ch;
+  }
+  .ref-list li::before {
+    content: counter(ref, decimal-leading-zero);
+    font-family: var(--mono); font-size: 0.7rem; color: var(--vermilion);
+    letter-spacing: 0.04em; padding-top: 0.15rem;
+  }
+  .ref-list .ref-cls { font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--brass); }
+  .ref-list a { color: var(--bone); text-decoration: none; border-bottom: 1px solid var(--brass-line); transition: color 0.3s var(--ease), border-color 0.3s var(--ease); white-space: nowrap; }
+  .ref-list a:hover { color: var(--vermilion); border-color: var(--vermilion); }
+
+  /* ====================== dialog ====================== */
+  .dialog-veil {
+    position: fixed; inset: 0; z-index: 60;
+    background: oklch(10% 0.008 75 / 0.84);
+    display: grid; place-content: center;
+    padding: 1.5rem;
+  }
+  .dialog-veil.hidden { display: none; }
+  .dialog {
+    width: min(34rem, 92vw);
+    background: var(--wall-panel);
+    border: 1px solid var(--brass-line);
+    border-radius: 3px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px oklch(0% 0 0 / 0.5);
+    animation: dialog-in 0.5s var(--ease);
+  }
+  @keyframes dialog-in { from { opacity: 0; translate: 0 14px; } to { opacity: 1; translate: 0 0; } }
+  .dialog-head {
+    padding: 1.3rem 1.5rem;
+    border-bottom: 1px solid var(--brass-line);
+    background: oklch(0% 0 0 / 0.16);
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  }
+  .dialog-head .dno { font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.16em; color: var(--vermilion); text-transform: uppercase; display: block; margin-bottom: 0.4rem; }
+  .dialog-head h4 { font-family: var(--display); font-weight: 400; font-size: 1.25rem; letter-spacing: 0.03em; text-transform: uppercase; line-height: 1.15; }
+  .dialog-close {
+    appearance: none; flex: none;
+    width: 30px; height: 30px;
+    border: 1px solid var(--brass-line); border-radius: 2px;
+    background: transparent; color: var(--bone-dim);
+    cursor: pointer; font-family: var(--mono);
+    transition: color 0.3s var(--ease), border-color 0.3s var(--ease);
+  }
+  .dialog-close:hover { color: var(--vermilion); border-color: var(--vermilion); }
+  .dialog-body { padding: 1.5rem; }
+  .dialog-body > p { font-size: 0.9375rem; color: var(--bone-dim); line-height: 1.65; }
+  .dialog-ledger {
+    margin-top: 1.3rem;
+    border: 1px solid var(--brass-faint);
+    border-radius: 2px;
+    padding: 1.1rem 1.3rem;
+    background: oklch(0% 0 0 / 0.16);
+  }
+  .dialog-ledger h5 { font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--bone-faint); margin-bottom: 0.7rem; }
+  .dialog-ledger ul { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; }
+  .dialog-ledger li { display: grid; grid-template-columns: auto 1fr; gap: 0.7rem; font-size: 0.875rem; color: var(--bone-dim); line-height: 1.5; }
+  .dialog-ledger li::before { content: "◆"; color: var(--vermilion); font-size: 0.5em; line-height: 2; }
+  .dialog-foot { padding: 1.1rem 1.5rem; border-top: 1px solid var(--brass-line); display: flex; justify-content: flex-end; background: oklch(0% 0 0 / 0.12); }
+  .btn-ack {
+    appearance: none; cursor: pointer;
+    background: transparent;
+    border: 1px solid var(--brass-line); border-radius: 2px;
+    color: var(--bone);
+    font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 0.6rem 1.1rem;
+    transition: color 0.3s var(--ease), border-color 0.3s var(--ease);
+  }
+  .btn-ack:hover { color: var(--vermilion); border-color: var(--vermilion); }
+
+  /* ====================== reduced motion ====================== */
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.001s !important;
+      animation-delay: 0s !important;
+      transition-duration: 0.001s !important;
+      animation-iteration-count: 1 !important;
+    }
+    .e-line, .e-dim { transition-delay: 0ms !important; }
+    .rv, .specimen-row { opacity: 1; translate: 0 0; }
+    .masthead { translate: 0; opacity: 1; }
+    .bm-path { stroke-dashoffset: 0 !important; }
+    .bm-inner { animation: none !important; stroke-dashoffset: 0 !important; }
+    .tag-wrap .tag { opacity: 1 !important; translate: 0 !important; }
+    .sim button:active { scale: 1; }
+  }
+
+  /* ================================================================
+     ANIMATION LAYER, impeccable:animate
+  ================================================================ */
+
+  /* ── 1. masthead entrance, instrument panel powering on ── */
+  .masthead { animation: masthead-in 0.6s var(--ease) both; }
+  @keyframes masthead-in { from { translate: 0 -100%; opacity: 0; } }
+
+  /* ── masthead scroll depth ── */
+  .masthead { transition: box-shadow 0.5s var(--ease); }
+  .masthead.is-scrolled {
+    box-shadow: 0 1px 0 var(--brass-faint), 0 8px 28px oklch(0% 0 0 / 0.35);
+  }
+
+  /* ── 2. brand-mark draw-on, receptor instrument calibrating ── */
+  .bm-path { stroke-dasharray: 1; stroke-dashoffset: 1; }
+  .bm-outer { animation: bm-draw 0.9s var(--ease) 0.4s forwards; }
+  .bm-cross { animation: bm-draw 0.75s var(--ease) 0.62s forwards; }
+  .bm-inner { animation: bm-draw 0.65s var(--ease) 0.74s forwards; }
+  @keyframes bm-draw { to { stroke-dashoffset: 0; } }
+
+  /* ── 3. agent tag stagger ── */
+  .tag-wrap .tag {
+    animation: tag-in 0.42s var(--ease) both;
+    animation-delay: calc(var(--ti, 0) * 54ms + 0.24s);
+  }
+  @keyframes tag-in {
+    from { opacity: 0; translate: -9px 0; }
+    to   { opacity: 1; translate: 0 0; }
+  }
+
+  /* ── 5. view section entrance ── */
+  .view-anim { animation: view-in 0.4s var(--ease); }
+  @keyframes view-in { from { opacity: 0; translate: 0 10px; } }
+
+  /* ── 6. catalogue row stagger ── */
+  .catalogue-entering tbody tr {
+    opacity: 0;
+    animation: row-in 0.52s var(--ease) forwards;
+    animation-delay: calc(var(--ri, 0) * 62ms + 0.06s);
+  }
+
+  /* ── 8. sim button micro-feedback ── */
+  .sim button { position: relative; transition: color 0.3s var(--ease), background-color 0.3s var(--ease), scale 0.11s; }
+  .sim button:active { scale: 0.94; }
+
+  /* ── body wall repaint on simulation state ── */
+  body { transition: background-color 1.4s var(--ease); }
+  body[data-room="over"]   { background-color: oklch(20% 0.042 28); }
+  body[data-room="under"]  { background-color: oklch(17% 0.032 255); }
+
+  /* ── plate-body crossfade ── */
+  .plate-body { transition: opacity 0.18s ease; }
+  .plate-body.is-out { opacity: 0; }
+
+  /* ── engraving materialize ── */
+  @keyframes engrave-in { from { transform: scale(0.93); opacity: 0.6; } }
+  html.embedded .masthead .brand { display: none; }
+  html.embedded .masthead .masthead-in { justify-content: flex-end; }
+</style>
+<script>
+  (function () {
+    try { var framed = false; try { framed = window.self !== window.top; } catch (e2) { framed = true; } if (framed || new URLSearchParams(location.search).has('embed')) document.documentElement.classList.add('embedded'); } catch (e) {}
+    function applyHash() {
+      var h = (location.hash || '').replace('#', '').toLowerCase();
+      var map = { cabinet: 'explorer', explorer: 'explorer', catalogue: 'matrix', matrix: 'matrix', primer: 'primer' };
+      if (map[h] && typeof setViewMode === 'function') setViewMode(map[h]);
+    }
+    window.addEventListener('load', applyHash);
+    window.addEventListener('hashchange', applyHash);
+  })();
+</script>
+</head>
+<body data-room="atrium">
+
+  <!-- ====================== masthead ====================== -->
+  <header class="masthead">
+    <div class="masthead-in">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 26 26" fill="none">
+            <circle class="bm-path bm-outer" pathLength="1" cx="13" cy="13" r="9" stroke="var(--brass)" stroke-width="1"/>
+            <circle class="bm-path bm-inner" pathLength="1" cx="13" cy="13" r="3.2" stroke="var(--vermilion)" stroke-width="1"/>
+            <path class="bm-path bm-cross" pathLength="1" d="M13 1.5v6M13 18.5v6M1.5 13h6M18.5 13h6" stroke="var(--brass)" stroke-width="1"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-est">The Receptor Cabinet · Est. MMXXVI</div>
+          <h1>Neuroreceptor Pharmacology <span class="brand-cat">Clinical Ref · II</span></h1>
+        </div>
+      </div>
+
+      <div class="tools">
+        <label class="search">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+          <input type="text" id="global-search" oninput="handleSearch(this.value)"
+                 placeholder="Search receptors, agents, presentations…" aria-label="Search the cabinet">
+        </label>
+
+        <div class="segmented" role="tablist" aria-label="View">
+          <button type="button" role="tab" onclick="setViewMode('explorer')" id="btn-view-explorer"
+                  class="is-active" aria-selected="true" aria-controls="view-explorer">
+            <span class="seg-dot"></span> Cabinet
+          </button>
+          <button type="button" role="tab" onclick="setViewMode('matrix')" id="btn-view-matrix"
+                  aria-selected="false" aria-controls="view-matrix">
+            <span class="seg-dot"></span> Catalogue
+          </button>
+          <button type="button" role="tab" onclick="setViewMode('primer')" id="btn-view-primer"
+                  aria-selected="false" aria-controls="view-primer">
+            <span class="seg-dot"></span> Primer
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- ====================== cabinet (explorer) ====================== -->
+    <section id="view-explorer" class="explorer" role="tabpanel" aria-labelledby="btn-view-explorer" tabindex="0">
+
+      <!-- left: index -->
+      <div class="index-col">
+        <div class="index-head">
+          <span class="section-label">Receptors &amp; Transporters</span>
+          <span id="receptor-count-badge" class="count-badge">13 Specimens</span>
+        </div>
+        <div class="index-list" id="explorer-list-container"></div>
+        <div class="index-foot">
+          <span>Catalogue · Ref II</span>
+          <span>Est. MMXXV</span>
+        </div>
+      </div>
+
+      <!-- right: exhibit plate -->
+      <div>
+        <article class="plate" id="main-display-card" data-state="normal">
+
+          <div class="plate-head">
+            <div>
+              <div class="plate-kicker">
+                <span class="k-class" id="display-class">Ligand-Gated Ion Channel</span>
+                <span class="k-sub" id="display-mechanism-badge"></span>
+              </div>
+              <h2 class="plate-title" id="display-title">GABA-A Receptor</h2>
+            </div>
+
+            <div class="sim-wrap">
+              <div class="sim-axis-label">Pharmacologic action ◂ blockade · tone · activation ▸</div>
+              <div class="sim" role="group" aria-label="Select pharmacologic action at this target">
+                <button type="button" onclick="setSimulationState('understimulated')" id="sim-under" class="s-under" aria-pressed="false">Antagonism</button>
+                <button type="button" onclick="setSimulationState('normal')" id="sim-normal" class="s-normal is-active" aria-pressed="true">Physiologic Tone</button>
+                <button type="button" onclick="setSimulationState('overstimulated')" id="sim-over" class="s-over" aria-pressed="false">Agonism</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="plate-body">
+            <div class="stage">
+
+              <!-- specimen monitor -->
+              <div class="monitor">
+                <div class="engraving" id="avatar-engraving"></div>
+                <div class="monitor-label">Pharmacologic Mode</div>
+                <p class="monitor-status" id="state-status-label">Normal Physiological Baseline</p>
+                <span class="monitor-sub" id="avatar-sub-indicator">Tonic Regulation</span>
+              </div>
+
+              <!-- breakdown -->
+              <div class="breakdown">
+                <div class="rv rv-1">
+                  <div class="field-head">Mechanism of Action</div>
+                  <div class="mechanism" id="display-mechanism-text"></div>
+                </div>
+
+                <div class="rv rv-2" id="pharm-action-block">
+                  <div class="field-head" id="pharm-action-head">Pharmacologic Action</div>
+                  <div class="pharm-action">
+                    <p class="pharm-detail" id="display-pharm-detail"></p>
+                    <div class="tag-wrap concept-tags" id="display-concept-tags"></div>
+                  </div>
+                </div>
+
+                <div class="plaque hidden rv rv-3" id="warning-notice-block">
+                  <div class="plaque-mark" id="warning-icon">◆</div>
+                  <div class="plaque-title" id="warning-title">Clinical Emergency</div>
+                  <p class="plaque-text" id="warning-text" style="grid-column:2"></p>
+                </div>
+
+                <div class="rv rv-4">
+                  <div class="field-head">Clinical Presentation</div>
+                  <ul class="present-list" id="display-presentation-list"></ul>
+                </div>
+              </div>
+            </div>
+
+            <hr class="rule">
+
+            <div class="agents-grid rv rv-4">
+              <div>
+                <div class="field-head" id="agents-head-agonists">Agonists &amp; Positive Modulators</div>
+                <div class="tag-wrap" id="display-agonists-tags"></div>
+              </div>
+              <div>
+                <div class="field-head" id="agents-head-antagonists">Antagonists, Blockers &amp; Inverse Agonists</div>
+                <div class="tag-wrap" id="display-antagonists-tags"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="provenance">
+            <div class="prov-cite"><b>Provenance</b><i id="display-citation-title">Ghit et al. (2021)</i></div>
+            <div class="prov-links">
+              <span id="display-citation-pmid">PMID: 34417930</span>
+              <a id="display-citation-doi" target="_blank" rel="noopener" href="#">DOI ↗</a>
+              <a id="display-citation-link" target="_blank" rel="noopener" href="#">PubMed ↗</a>
+            </div>
+          </div>
+
+        </article>
+      </div>
+    </section>
+
+    <!-- ====================== catalogue (matrix) ====================== -->
+    <section id="view-matrix" class="hidden" role="tabpanel" aria-labelledby="btn-view-matrix" tabindex="0">
+      <div class="catalogue">
+        <div class="catalogue-head">
+          <div>
+            <h3>Binding Affinity Plate</h3>
+            <p>Affinity fingerprints across the cabinet's thirteen targets</p>
+          </div>
+          <div class="legend">
+            <div class="legend-row">
+              <span><i class="lk ag"></i> Activates</span>
+              <span><i class="lk pa"></i> Positive modulator</span>
+              <span><i class="lk an"></i> Inhibits</span>
+              <span><i class="lk ri"></i> Reuptake inhibitor</span>
+            </div>
+            <div class="legend-row">
+              <span>Dot size and spoke length indicate binding affinity (pKi)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="cat-body">
+          <div class="radar-col">
+            <div class="radar-sticky">
+              <div class="radar" id="radar"></div>
+              <div class="radar-caption">
+                <h4>Affinity fingerprint</h4>
+                <p>Thirteen spokes, one per target. A single spike is a selective drug; a spread is polypharmacology. Hover an agent to trace it; click to pin and compare.</p>
+                <div class="radar-legend" id="radar-legend"></div>
+              </div>
+            </div>
+          </div>
+          <div class="matrix-col">
+            <div class="matrix-head">Agent × target affinity</div>
+            <div class="matrix"><div class="grid" id="grid"></div>
+              <div class="affinity-note">
+                Affinities shown as relative pKi from published Ki values (PubChem/IUPHAR/PDSP/BindingDB). Values are representative and assay-dependent; see each dot's tooltip for the source. Some affinities are qualitative estimates where no measured Ki is available.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================== primer ====================== -->
+    <section id="view-primer" class="hidden" role="tabpanel" aria-labelledby="btn-view-primer" tabindex="0">
+      <div class="primer">
+        <div class="primer-head">
+          <div>
+            <div class="section-label">Reading Room</div>
+            <h3>Pharmacology Primer · Agonism &amp; Antagonism</h3>
+            <p class="primer-lede">A drug’s effect at a target is set by two separable properties: <b>affinity</b> (how tightly it binds) and <b>efficacy</b> (what it does once bound). The agonist–antagonist spectrum organises every agent in this cabinet. Definitions below follow contemporary receptor theory (Berg &amp; Clarke, 2018).</p>
+          </div>
+        </div>
+
+        <div class="primer-body">
+          <dl class="concepts">
+
+            <div class="concept-row">
+              <dt class="concept-term">Affinity vs efficacy <span class="concept-chip">foundational</span></dt>
+              <dd class="concept-def">
+                <p><b>Affinity</b> is the strength of binding (indexed by Kᵢ / pKᵢ, see the Catalogue’s Binding Affinity Plate). <b>Efficacy</b> (intrinsic activity) is the magnitude of response the bound drug produces. The two are independent: an antagonist can bind with very high affinity yet have zero efficacy. Affinity decides <i>where</i> a drug acts; efficacy decides <i>what</i> it does there.</p>
+              </dd>
+            </div>
+
+            <div class="concept-row">
+              <dt class="concept-term">Full agonist <span class="concept-chip ag">activation</span></dt>
+              <dd class="concept-def">
+                <p>Binds and produces the maximal receptor response the system can give (high intrinsic efficacy). Increasing dose moves the tissue toward its ceiling.</p>
+                <p class="concept-eg">Examples here: morphine and fentanyl at μ-opioid; dopamine agonists; β1 agonists (dobutamine).</p>
+              </dd>
+            </div>
+
+            <div class="concept-row">
+              <dt class="concept-term">Partial agonist <span class="concept-chip ag">activation</span></dt>
+              <dd class="concept-def">
+                <p>Binds and activates, but produces a <i>sub-maximal</i> response even at full occupancy. Because it occupies the receptor while delivering less signal, it behaves as a functional <b>agonist when endogenous tone is low</b> and a functional <b>antagonist when tone is high</b>, a built-in stabiliser with a ceiling effect.</p>
+                <p class="concept-eg">Examples here: aripiprazole at D2 (Wichniak et al., 2021); buprenorphine at μ-opioid (ceiling on respiratory depression).</p>
+              </dd>
+            </div>
+
+            <div class="concept-row">
+              <dt class="concept-term">Neutral (silent) antagonist <span class="concept-chip an">blockade</span></dt>
+              <dd class="concept-def">
+                <p>Binds with affinity but <b>zero intrinsic efficacy</b>. Alone it does nothing visible; its job is to occupy the site and <b>block agonists</b>. Its clinical effect is therefore <b>tone-dependent</b>, dramatic when an agonist or high endogenous tone is present, silent otherwise.</p>
+                <p class="concept-eg">Examples here: naloxone at μ-opioid; flumazenil at the GABA-A benzodiazepine site; prazosin at α1.</p>
+              </dd>
+            </div>
+
+            <div class="concept-row">
+              <dt class="concept-term">Inverse agonist <span class="concept-chip an">blockade</span></dt>
+              <dd class="concept-def">
+                <p>Some receptors are active <i>without</i> a ligand (constitutive activity). An inverse agonist binds and <b>reduces that baseline activity</b>, producing the opposite effect of an agonist. It does more than a neutral antagonist, which only blocks.</p>
+                <p class="concept-eg">Examples here: pimavanserin at 5-HT2A; many β-blockers (e.g. propranolol) act as β1 inverse agonists.</p>
+              </dd>
+            </div>
+
+            <div class="concept-row">
+              <dt class="concept-term">Competitive vs noncompetitive antagonism <span class="concept-chip an">blockade</span></dt>
+              <dd class="concept-def">
+                <p><b>Competitive</b> antagonists vie for the same (orthosteric) site as the agonist and can be <b>surmounted</b> by raising agonist concentration (e.g. naloxone). <b>Noncompetitive</b> antagonists bind elsewhere, or, for ion channels, inside the open pore, and are <b>not overcome</b> by more agonist.</p>
+                <p class="concept-eg">Examples here: ketamine, esketamine, memantine and amantadine are noncompetitive open-channel blockers at the NMDA pore (Hansen et al., 2018).</p>
+              </dd>
+            </div>
+
+            <div class="concept-row">
+              <dt class="concept-term">Allosteric modulation (PAM / NAM) <span class="concept-chip pa">modulation</span></dt>
+              <dd class="concept-def">
+                <p>An allosteric modulator binds a site <i>distinct</i> from the agonist and tunes the response up (<b>positive</b>, PAM) or down (<b>negative</b>, NAM) <b>without activating the receptor itself</b>. Because it amplifies the endogenous signal, a PAM needs the natural ligand to be present.</p>
+                <p class="concept-eg">Examples here: benzodiazepines and Z-drugs are PAMs at the GABA-A benzodiazepine site; barbiturates modulate a separate site (Ghit et al., 2021).</p>
+              </dd>
+            </div>
+
+            <div class="concept-row">
+              <dt class="concept-term">Tone-dependence <span class="concept-chip">principle</span></dt>
+              <dd class="concept-def">
+                <p>An antagonist or inverse agonist only reveals an effect where there is endogenous agonist tone or constitutive activity. The <i>same</i> drug looks inert in one setting and powerful in another, which is why this cabinet shows agonism and antagonism <b>relative to a physiologic-tone reference</b>, not as fixed “on/off” states.</p>
+              </dd>
+            </div>
+
+          </dl>
+
+          <div class="refs">
+            <h4>References, verified, peer-reviewed (PubMed; DOI-linked)</h4>
+            <p class="refs-note">Source attribution: article metadata and DOIs were retrieved and verified via PubMed.</p>
+            <ol class="ref-list" id="ref-list"></ol>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer style="max-width:112rem;margin-inline:auto;padding:1.6rem clamp(1.2rem,5vw,3.5rem) 3rem;border-top:1px solid var(--brass-line);font-family:var(--body);font-size:0.82rem;line-height:1.6;color:var(--bone-faint);">
+    An educational reference for clinicians and trainees, not a dosing or treatment guide. Binding-affinity values are representative and relative (geometric means of reported ranges, assay-dependent), not a verified Ki database; confirm specific figures before any high-stakes clinical use.
+  </footer>
+
+  <!-- ====================== diagnostic dialog ====================== -->
+  <div id="info-drawer" class="dialog-veil hidden" onclick="if(event.target===this)closeInfoDrawer()">
+    <div class="dialog" role="dialog" aria-modal="true">
+      <div class="dialog-head">
+        <div>
+          <span class="dno" id="drawer-kicker">Clinical Reference</span>
+          <h4 id="drawer-title"></h4>
+        </div>
+        <button class="dialog-close" onclick="closeInfoDrawer()" aria-label="Close">✕</button>
+      </div>
+      <div class="dialog-body">
+        <p id="drawer-desc"></p>
+        <div class="dialog-ledger">
+          <h5>Clinical Manifestations</h5>
+          <ul id="drawer-symptoms"></ul>
+        </div>
+      </div>
+      <div class="dialog-foot">
+        <button class="btn-ack" onclick="closeInfoDrawer()">Acknowledged</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================== engine ====================== -->
+  <script>
+    // ---- Roman numeral helper for catalogue index numbers ----
+    const ROMAN = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+
+    // ---- archival engraving illustrations per receptor class ----
+    const ILLUSTRATIONS = (() => {
+      const li = (d, dl) => `<path class="e-line" pathLength="1" style="--dl:${dl}" d="${d}"/>`;
+      const di = (d, dl) => `<path class="e-dim"  pathLength="1" style="--dl:${dl}" d="${d}"/>`;
+      const fi = (d)     => `<path class="e-fill" d="${d}"/>`;
+      const ci = (cx, cy, r, cls, dl) =>
+        `<path class="${cls}" pathLength="1" style="--dl:${dl}" d="M${cx-r},${cy} a${r},${r},0,1,0,${2*r},0 a${r},${r},0,1,0,${-2*r},0"/>`;
+      const rr = (cx, cy, hw, hh, rad) => {
+        const l = cx-hw, rx = cx+hw, t = cy-hh, b = cy+hh;
+        return `M${l+rad},${t} H${rx-rad} A${rad},${rad},0,0,1,${rx},${t+rad} V${b-rad} A${rad},${rad},0,0,1,${rx-rad},${b} H${l+rad} A${rad},${rad},0,0,1,${l},${b-rad} V${t+rad} A${rad},${rad},0,0,1,${l+rad},${t} Z`;
+      };
+      const tm = (cx) => rr(cx, 107.5, 7, 43.5, 3);
+
+      const gpcr = (id, state) => {
+        const xs = [27,50,73,96,119,142,165];
+        const lbl = {mu_opioid:'μ-OPR',dopamine_d2:'D2R',serotonin_5ht2a:'5-HT2A',beta_1:'β1-ADR',alpha_1:'α1-ADR',alpha_2:'α2-ADR',histamine_h1:'H1-R',muscarinic_m1:'M1-R',muscarinic_m3:'M3-R'};
+        const glyph = {
+          mu_opioid:       di('M81,56 Q96,46 111,56', 17) + di('M88,56 Q96,50 104,56', 18),
+          dopamine_d2:     di('M84,50 L96,44 L108,50', 17),
+          serotonin_5ht2a: di('M88,48 a8,8,0,0,1,16,0', 17),
+          beta_1:          di('M84,52 H108 M90,48 H102', 17),
+          histamine_h1:    di('M84,54 V46 H96 M96,46 H108 V54', 17),
+          muscarinic_m1:   di('M84,54 L90,46 L96,54 L102,46 L108,54', 17),
+          muscarinic_m3:   di('M84,50 H108 M84,55 H108 M90,46 V59 M102,46 V59', 17)
+        };
+        const pr = state==='overstimulated' ? 5.5 : state==='understimulated' ? 2 : 3.5;
+        const pCls = state==='overstimulated' ? 'e-line' : 'e-dim';
+        return `<svg viewBox="0 0 192 200" fill="none">
+          <text class="e-text" x="96" y="14" text-anchor="middle">${lbl[id]||'7-TM GPCR'}</text>
+          ${fi(rr(96, 107.5, 82, 55, 3))}
+          ${xs.map((x,i) => li(tm(x), i+8)).join('')}
+          ${di('M27,64 L27,24 L165,24 L165,64', 1)}
+          ${di('M34,151 Q38.5,164 43,151', 2)}
+          ${di('M57,64 Q61.5,52 66,64', 3)}
+          ${di('M80,151 Q84.5,164 89,151', 4)}
+          ${di('M103,64 Q107.5,52 112,64', 5)}
+          ${di('M126,151 Q130.5,164 135,151', 6)}
+          ${di('M149,64 Q153.5,52 158,64', 7)}
+          ${di('M27,151 L27,176 L165,176 L165,151', 8)}
+          ${ci(96, 72, pr, pCls, 16)}
+          ${glyph[id]||''}
+        </svg>`;
+      };
+
+      const transporter = (id, state) => {
+        const lbl = {sert:'SERT · 5-HT',net:'NET · NE'};
+        const sub = state==='overstimulated' ? 0.8 : state==='understimulated' ? 0.2 : 0.5;
+        const dots = state==='overstimulated'
+          ? [ci(96, 45, 3.5, 'e-fill', 1),ci(110, 50, 2.5, 'e-fill', 2),ci(82, 48, 2.8, 'e-fill', 3),ci(100, 40, 2, 'e-fill', 4)].join('')
+          : state==='understimulated'
+          ? ci(96, 45, 1.5, 'e-fill', 1)
+          : [ci(96, 48, 2.5, 'e-fill', 1),ci(108, 52, 1.8, 'e-fill', 2)].join('');
+        const tms = [30,55,80,105,130,155].map((x,i) => li(rr(x, 80, 8, 28, 2), i+1)).join('');
+        return `<svg viewBox="0 0 192 200" fill="none">
+          <text class="e-text" x="96" y="14" text-anchor="middle">${lbl[id]||'12-TM'}</text>
+          ${fi('M18,85 L174,85 L174,105 L18,105 Z')}
+          ${di('M18,85 L174,85 L174,105 L18,105 Z', 0)}
+          ${di('M18,30 L18,60', 1)}${di('M174,30 L174,60', 1)}
+          ${tms}
+          ${li(`M50,95 Q96,${95-sub*40} 142,95`, 7)}
+          ${dots}
+          <text class="e-text" x="96" y="${120+sub*20}" text-anchor="middle">${state==='overstimulated' ? 'blocked' : state==='understimulated' ? 'depleted' : 'active'}</text>
+        </svg>`;
+      };
+
+      const penta = (id, state) => {
+        const cr = 52, sr = 16, cx = 96, cy = 108;
+        const subs = [0,1,2,3,4].map(i => {
+          const a = (i*2*Math.PI/5) - Math.PI/2;
+          return li(rr(cx + cr*Math.cos(a), cy + cr*Math.sin(a), 10, 18, 3), i+2);
+        });
+        const pr = state==='overstimulated' ? 14 : state==='understimulated' ? 4 : 9;
+        const pCls = state==='overstimulated' ? 'e-line' : 'e-dim';
+        return `<svg viewBox="0 0 192 200" fill="none">
+          <text class="e-text" x="96" y="20" text-anchor="middle">GABA-A · Cl⁻</text>
+          ${fi(`M${cx-cr-sr},${cy} a${cr+sr},${cr+sr},0,1,0,${2*(cr+sr)},0 a${cr+sr},${cr+sr},0,1,0,${-2*(cr+sr)},0`)}
+          ${subs.join('')}
+          ${li(`M${cx-sr},${cy} a${sr},${sr},0,1,0,${2*sr},0 a${sr},${sr},0,1,0,${-2*sr},0`, 1)}
+          ${ci(cx, cy, pr, pCls, 9)}
+          <text class="e-text" x="${cx}" y="${cy+3}" text-anchor="middle">${state==='understimulated' ? 'closed' : 'Cl⁻'}</text>
+        </svg>`;
+      };
+
+      const tetra = (id, state) => {
+        const cr = 50, sr = 15, cx = 96, cy = 104;
+        const subs = [0,1,2,3].map(i => {
+          const a = (i * Math.PI/2) + Math.PI/4;
+          return li(rr(cx + cr*Math.cos(a), cy + cr*Math.sin(a), 11, 19, 3), i+2);
+        });
+        const pr = state==='overstimulated' ? 14 : state==='understimulated' ? 5 : 9;
+        const pCls = state==='overstimulated' ? 'e-line' : 'e-dim';
+        const inner = state==='understimulated'
+          ? ci(cx, cy, 5, 'e-line', 9) + `<text class="e-text" x="${cx}" y="${cy+3}" text-anchor="middle">Mg²⁺</text>`
+          : `<text class="e-text" x="${cx}" y="${cy+3}" text-anchor="middle">Ca²⁺</text>`;
+        return `<svg viewBox="0 0 192 200" fill="none">
+          <text class="e-text" x="96" y="18" text-anchor="middle">NMDAR · Ca²⁺</text>
+          ${fi(`M${cx-cr-sr},${cy} a${cr+sr},${cr+sr},0,1,0,${2*(cr+sr)},0 a${cr+sr},${cr+sr},0,1,0,${-2*(cr+sr)},0`)}
+          ${subs.join('')}
+          ${li(`M${cx-sr},${cy} a${sr},${sr},0,1,0,${2*sr},0 a${sr},${sr},0,1,0,${-2*sr},0`, 1)}
+          ${ci(cx, cy, pr, pCls, 8)}
+          ${inner}
+        </svg>`;
+      };
+
+      return {
+        mu_opioid:       (id, s) => gpcr(id, s),
+        dopamine_d2:     (id, s) => gpcr(id, s),
+        serotonin_5ht2a: (id, s) => gpcr(id, s),
+        beta_1:          (id, s) => gpcr(id, s),
+        alpha_1:         (id, s) => gpcr(id, s),
+        alpha_2:         (id, s) => gpcr(id, s),
+        gaba_a:          (id, s) => penta(id, s),
+        nmda_glutamate:  (id, s) => tetra(id, s),
+        sert:            (id, s) => transporter(id, s),
+        net:             (id, s) => transporter(id, s),
+        histamine_h1:    (id, s) => gpcr(id, s),
+        muscarinic_m1:   (id, s) => gpcr(id, s),
+        muscarinic_m3:   (id, s) => gpcr(id, s)
+      };
+    })();
+
+    // Master Verified Dataset (unchanged)
+    const neuroceptors = [
+      {
+        id: 'gaba_a',
+        name: 'GABA-A Receptor',
+        class: 'Ligand-Gated Ion Channel (Ionotropic)',
+        subtypes: 'Heteropentameric (19 subunits: α1–6, β1–3, γ1–3, δ, ε, π, θ, ρ1–3; typical stoichiometry 2α:2β:1γ)',
+        mechanism_short: 'Cl⁻ anion influx hyperpolarizes cell membrane',
+        mechanism_long: 'Binding opens pentameric Cl⁻ channel, triggering strong anion influx down the electrochemical gradient. Post-synaptic hyperpolarization elevates threshold limits for action potentials, stabilizing neuroexcitation.',
+        normal_state: {
+          title: 'Normal Physiological Baseline',
+          status: 'Tonic Regulation',
+          presentation: [
+            'Global CNS electrical stabilization & firing gate control',
+            'Anxiolytic pathways activated via prefrontal cortex gating',
+            'Muscle skeletal tone relaxation via spinal interneurons',
+            'Circadian rhythm stabilization and slow-wave sleep architecture gating'
+          ]
+        },
+        overstimulated: {
+          title: 'GABA-A Hyper-Agonism State',
+          status: 'Toxic Sedation',
+          warning: {
+            type: 'danger',
+            title: 'Profound CNS Depression',
+            text: 'Combination of positive allosteric modulators (like benzodiazepines or barbiturates) with central sedatives (like ethanol) exponentially amplifies chloride influx, inducing respiratory failure, hypoventilation, hypercapnic arrest, and stupor.'
+          },
+          presentation: [
+            'Progressive psychomotor deceleration & slurred dysarthric speech',
+            'Cerebellar ataxia, structural loss of coordination & motor instability',
+            'Depression of central medullary rhythm centers causing shallow hypoventilation',
+            'Loss of protective airway reflexes, progressing to deep coma'
+          ]
+        },
+        understimulated: {
+          title: 'GABA-A Antagonism / Hypofunction',
+          status: 'Seizure Crisis Zone',
+          warning: {
+            type: 'critical',
+            title: 'Status Epilepticus & Delirium',
+            text: 'Sudden withdrawal of chronic GABA modulators triggers rapid electrical hyperexcitation across cortical tracts. Lack of tonic GABA inhibition causes uncontrolled, persistent, life-threatening seizures (Status Epilepticus).'
+          },
+          presentation: [
+            'Severe visual/motor tremors, continuous muscle fasciculations, hyperreflexia',
+            'Acute psychological delirium, extreme autonomic hyperarousal, tachycardia',
+            'Rebound insomnia, severe hyperthermia, profiling of Delirium Tremens',
+            'Tonic-clonic status epilepticus, structural brain damage via metabolic exhaustion'
+          ]
+        },
+        agents: {
+          agonists_pam: ['Diazepam (Valium - benzodiazepine site)', 'Alprazolam (Xanax - benzodiazepine site)', 'Phenobarbital (Luminal - barbiturate site)', 'Zolpidem (Ambien - benzodiazepine site)'],
+          antagonists_block: ['Flumazenil (Romazicon - acute benzo reversal)', 'Bicuculline (Experimental convulsant)', 'Picrotoxin (Channel pore blocker)']
+        },
+        citation: {
+          title: 'Ghit et al. (2021). GABA-A receptors: structure, function, pharmacology, and related disorders.',
+          journal: 'J Genet Eng Biotechnol',
+          pmid: 'PMID: 34417930',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/34417930/',
+          doi: '10.1186/s43141-021-00224-0'
+        }
+      },
+      {
+        id: 'mu_opioid',
+        name: 'μ-Opioid Receptor (MOR)',
+        class: 'G-Protein Coupled Receptor (Gi/Go-coupled)',
+        subtypes: 'OPRM1 Gene / MOP Receptor Family (IUPHAR)',
+        mechanism_short: 'Inhibits Adenylyl Cyclase → Decreases cAMP',
+        mechanism_long: 'Gαi/o coupling inhibits adenylyl cyclase, reducing intracellular cyclic AMP (cAMP). Downstream, βγ subunits open inward rectifying K⁺ channels (GIRK) causing hyperpolarization and close voltage-gated Ca²⁺ channels to block nociceptive neurotransmitter release.',
+        normal_state: {
+          title: 'Normal Nociceptive Gating',
+          status: 'Physiological Analgesia',
+          presentation: [
+            'Modulation of ascending pain pathway transmission at spinal dorsal horn',
+            'Activation of descending inhibitory pathway (gating central PAG)',
+            'Minor sedation, psychological satiety, emotional stabilization',
+            'Tonic baseline reduction of intestinal smooth muscle contractility'
+          ]
+        },
+        overstimulated: {
+          title: 'Mu-Opioid Hyperstimulation',
+          status: 'Overdose Triad',
+          warning: {
+            type: 'danger',
+            title: 'The Opioid Overdose Triad',
+            text: 'Excessive activation of MOR in the pre-Bötzinger complex in the brainstem completely blunts hypercapnic drive. This presents clinically as respiratory arrest, pinpoint pupils, and a comatose state.'
+          },
+          presentation: [
+            'Miosis (extreme pinpoint pupils from disinhibition of parasympathetic pupillary constriction, not direct Edinger-Westphal stimulation)',
+            'Profound hypoventilation leading to respiratory arrest & hypoxemia',
+            'Obtunded mental state, progressing quickly to deep comatose sleep',
+            'Severe peripheral bradycardia, uncompensated hypotension, gastrointestinal ileus'
+          ]
+        },
+        understimulated: {
+          title: 'Mu-Opioid Antagonism / Withdrawal',
+          status: 'Autonomic Flight Mode',
+          warning: {
+            type: 'critical',
+            title: 'Acute Opioid Withdrawal',
+            text: 'Sudden absence of opioid ligands on chronic dependent receptors leads to an immediate rebound surge of adenylyl cyclase activity and massive cyclic AMP accumulation. This creates a severe sympathetic autonomic crisis.'
+          },
+          presentation: [
+            'Mydriasis (severely dilated pupils), continuous yawning, sneezing',
+            'Gastrointestinal hypermotility, painful abdominal cramping, severe vomiting/diarrhea',
+            'Somatic hyperalgesia, diffuse deep-tissue pain, hyperesthesia',
+            'Profuse diaphoresis, piloerection ("cold turkey"), extreme psychomotor distress'
+          ]
+        },
+        agents: {
+          agonists_pam: ['Morphine (MS Contin)', 'Fentanyl (Sublimaze)', 'Methadone (Dolophine)', 'Buprenorphine (Suboxone - Partial)'],
+          antagonists_block: ['Naloxone (Narcan - acute overdose rescue)', 'Naltrexone (Vivitrol - alcohol & opioid dependence maintenance)']
+        },
+        citation: {
+          title: 'Pasternak GW (2018). Mu Opioid Pharmacology: 40 Years to the Promised Land.',
+          journal: 'Adv Pharmacol',
+          pmid: 'PMID: 29413524',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/29413524/',
+          doi: '10.1016/bs.apha.2017.09.006'
+        }
+      },
+      {
+        id: 'dopamine_d2',
+        name: 'Dopamine D2 Receptor',
+        class: 'G-Protein Coupled Receptor (Gi/Go-coupled)',
+        subtypes: 'D2S (Autoreceptor), D2L (Post-synaptic)',
+        mechanism_short: 'Inhibits Adenylyl Cyclase & opens GIRK channels',
+        mechanism_long: 'Gαi/o coupling inhibits adenylyl cyclase to deplete cAMP, and suppresses intracellular voltage-gated Ca²⁺ channels. Simultaneously, the Gβγ complex opens G-protein inward rectifying potassium (GIRK) channels to damp post-synaptic potential.',
+        normal_state: {
+          title: 'Normal Dopaminergic Balancing',
+          status: 'Motor & Reward Equilibrium',
+          presentation: [
+            'Smooth motor pathway modulation (gating basal ganglia striatum loops)',
+            'Normal mesolimbic rewards salience, tracking of goals and motivation',
+            'Tuberoinfundibular tonic inhibition of prolactin secretion',
+            'Modulation of complex cognitive execution in post-synaptic frontal networks'
+          ]
+        },
+        overstimulated: {
+          title: 'D2 Receptor Hyperactivation',
+          status: 'Hyperkinetic / Psychosis',
+          warning: {
+            type: 'danger',
+            title: 'Psychosis & Motor Hyperkinesia',
+            text: 'Excessive mesolimbic dopamine signaling triggers severe cognitive disintegration. This underlies the positive symptoms of schizophrenia (hallucinations, paranoia) and severe choreiform motor tics.'
+          },
+          presentation: [
+            'Severe positive psychotic features: paranoid delusions, auditory hallucinations',
+            'Disorganization of verbal sequencing, tangential associations, mania',
+            'Pathological reward tracking: compulsive seeking behavior, gambling',
+            'Motor hyperkinesia, involuntary choreiform movements, continuous facial tics'
+          ]
+        },
+        understimulated: {
+          title: 'D2 Receptor Blockade',
+          status: 'Parkinsonian / Neuroleptic State',
+          warning: {
+            type: 'critical',
+            title: 'Neuroleptic Malignant Syndrome',
+            text: 'Severe blockade of central striatal and hypothalamic D2 receptors can precipitate Neuroleptic Malignant Syndrome (NMS). This presents as extreme "lead-pipe" skeletal rigidity, hyperthermia, and autonomic collapse.'
+          },
+          presentation: [
+            'Extrapyramidal Symptoms (EPS): drug-induced parkinsonian tremors, bradykinesia',
+            'Severe Akathisia (uncontrollable inner motor restlessness and pacing)',
+            'Hyperprolactinemia: blockade removes inhibition, leading to galactorrhea & gynecomastia',
+            'Lead-pipe muscular rigidity, dangerous hyperthermia, cardiac autonomic instability (NMS)'
+          ]
+        },
+        agents: {
+          agonists_pam: ['Pramipexole (Mirapex)', 'Ropinirole (Requip)', 'Bromocriptine (Parlodel)', 'Aripiprazole (Abilify - Partial Agonist)'],
+          antagonists_block: ['Haloperidol (Haldol - First-gen)', 'Chlorpromazine (Thorazine)', 'Risperidone (Risperdal - Second-gen)', 'Olanzapine (Zyprexa)']
+        },
+        citation: {
+          title: 'Ford CP (2014). The role of D2-autoreceptors in regulating dopamine neuron activity and transmission.',
+          journal: 'Neuroscience',
+          pmid: 'PMID: 24463000',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/24463000/',
+          doi: '10.1016/j.neuroscience.2014.01.025'
+        }
+      },
+      {
+        id: 'serotonin_5ht2a',
+        name: 'Serotonin 5-HT2A',
+        class: 'G-Protein Coupled Receptor (Gq/11-coupled)',
+        subtypes: '5-Hydroxytryptamine Receptor 2A',
+        mechanism_short: 'Activates Phospholipase C → IP3/DAG → Ca²⁺',
+        mechanism_long: 'Gαq coupling activates phospholipase C (PLC), which cleaves PIP2 into diacylglycerol (DAG) and inositol trisphosphate (IP3). IP3 triggers calcium release from the endoplasmic reticulum, while DAG stimulates protein kinase C (PKC).',
+        normal_state: {
+          title: 'Normal Serotonergic Cognitive Modulation',
+          status: 'Cognitive Plasticity',
+          presentation: [
+            'Modulation of glutamate release patterns in the prefrontal cortex',
+            'Facilitation of normal cognitive flexibility, learning and abstract associations',
+            'Modulation of peripheral vascular smooth-muscle tone (a minor cranial role; 5-HT1B predominates there)',
+            'Stimulation of vascular platelets for standard aggregation dynamics'
+          ]
+        },
+        overstimulated: {
+          title: '5-HT2A Overstimulation',
+          status: 'Serotonin Excess / Psychedelia',
+          warning: {
+            type: 'danger',
+            title: 'Serotonin Syndrome Threat',
+            text: 'Overactivation of central 5-HT2A receptors (often via multiple serotonergic drugs) causes Serotonin Syndrome. Features include skeletal neuromuscular hyperreactivity (clonus, hyperreflexia), hyperthermia, and autonomic chaos.'
+          },
+          presentation: [
+            'Skeletal neuromuscular hyperactivity: spontaneous clonus, hyperreflexia, rigidity',
+            'Severe autonomic dysfunction: profound sweating (diaphoresis), hyperthermia, pupil dilation',
+            'Profound perceptual alterations: vivid visual/auditory hallucinations, ego dissolution',
+            'Cerebral motor agitation, continuous muscular tremors, panic states'
+          ]
+        },
+        understimulated: {
+          title: '5-HT2A Hypofunction / Blockade',
+          status: 'Atypical Antipsychotic Profile',
+          warning: {
+            type: 'critical',
+            title: 'Clinical Significance of Blockade',
+            text: 'Understimulation is rarely an emergency; rather, therapeutic blockade is highly protective. Antagonizing cortical 5-HT2A receptors is a defining mechanism of atypical antipsychotics, reducing positive psychotic features.'
+          },
+          presentation: [
+            'Flattening of affect, mild cognitive inflexibility',
+            'Reductions in cortical hallucinatory visual signaling networks',
+            'Therapeutic normalization of dopamine release in striatal projections (reducing EPS risk)',
+            'Enhancement of slow-wave sleep patterns and structural sleep continuity'
+          ]
+        },
+        agents: {
+          agonists_pam: ['Psilocybin (Active hallucinogen)', 'LSD (Lysergic Acid Diethylamide)', 'Mescaline (Peyote extract)'],
+          antagonists_block: ['Pimavanserin (Nuplazid - selective)', 'Clozapine (Clozaril)', 'Olanzapine (Zyprexa)', 'Risperidone (Risperdal)']
+        },
+        citation: {
+          title: 'Nichols DE (2016). Psychedelics.',
+          journal: 'Pharmacol Rev',
+          pmid: 'PMID: 26841800',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/26841800/',
+          doi: '10.1124/pr.115.011478'
+        }
+      },
+      {
+        id: 'beta_1',
+        name: 'Beta-1 (β1) Adrenergic',
+        class: 'G-Protein Coupled Receptor (Gs-coupled)',
+        subtypes: 'ADRB1 Adrenoceptor Family',
+        mechanism_short: 'Activates Adenylyl Cyclase → cAMP → PKA',
+        mechanism_long: 'Gαs coupling directly activates adenylyl cyclase, converting ATP to cyclic AMP (cAMP). Rising cAMP binds the regulatory subunits of Protein Kinase A (PKA), releasing active catalytic subunits that phosphorylate L-type Ca²⁺ channels.',
+        normal_state: {
+          title: 'Normal Sympathetic Drive',
+          status: 'Cardiorespiratory Homeostasis',
+          presentation: [
+            'Positive chronotropy (increases heart rate at the SA node)',
+            'Positive inotropy (increases cardiac ventricular contractility)',
+            'Positive dromotropy (increases AV node conduction velocity)',
+            'Triggers renal juxtaglomerular cells to secrete renin, activating RAAS'
+          ]
+        },
+        overstimulated: {
+          title: 'Beta-1 Hyper-Adrenergic Drive',
+          status: 'Cardiovascular Storm',
+          warning: {
+            type: 'danger',
+            title: 'Malignant Tachyarrhythmias',
+            text: 'Excessive sympathetic catecholamine drive can trigger severe cardiotoxicity. The overstimulated PKA pathway causes intracellular Ca²⁺ overload in myocytes, precipitating Atrial Fibrillation, Ventricular Tachycardia, or sudden ischemia.'
+          },
+          presentation: [
+            'Sinus tachycardia, distressing palpitations, development of ventricular ectopy',
+            'Dangerous systemic hypertension, increased myocardial oxygen demand, acute angina',
+            'Somatic manifestations: severe anxiety, hyperarousal, visible fine hand tremors',
+            'Myocardial wall strain, triggering pulmonary congestion if uncompensated'
+          ]
+        },
+        understimulated: {
+          title: 'Beta-1 Blockade / Antagonism',
+          status: 'Cardiac Deceleration',
+          warning: {
+            type: 'critical',
+            title: 'Cardiogenic Shock Risk',
+            text: 'Severe blockade of β1 receptors slows cardiac dynamics excessively. In patients with compromised ejection fractions, this can trigger profound cardiogenic shock, severe bradycardia, and high-degree AV blocks.'
+          },
+          presentation: [
+            'Sinus bradycardia (heart rate dropped well below 50 bpm)',
+            'Atrioventricular nodal conduction blockages (First, Second, or Third-degree)',
+            'Systemic arterial hypotension, uncompensated orthostasis, exercise intolerance',
+            'Extreme fatigue, lethargy, cold extremities due to peripheral perfusion dampening'
+          ]
+        },
+        agents: {
+          agonists_pam: ['Dobutamine (selective cardiac rescue)', 'Epinephrine (Adrenaline - mixed β/α agonist)', 'Norepinephrine (Levophed)'],
+          antagonists_block: ['Metoprolol (Lopressor - selective blocker)', 'Atenolol (Tenormin)', 'Propranolol (Inderal - non-selective cross-BBB for performance anxiety)']
+        },
+        citation: {
+          title: 'Ahles A & Engelhardt S (2014). Polymorphic variants of adrenoceptors: pharmacology, physiology, and role in disease.',
+          journal: 'Pharmacol Rev',
+          pmid: 'PMID: 24928328',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/24928328/',
+          doi: '10.1124/pr.113.008219'
+        }
+      },
+      {
+        id: 'nmda_glutamate',
+        name: 'NMDA Glutamate Receptor',
+        class: 'Ionotropic Ion Channel (Ligand & Voltage-Gated)',
+        subtypes: 'Heterotetrameric complex; canonical: 2× GluN1 + 2× GluN2 (A–D); GluN3 (A–B) in select circuits',
+        mechanism_short: 'Voltage-gated Mg²⁺ block removed → Ca²⁺ & Na⁺ influx',
+        mechanism_long: 'Requires concurrent glycine and glutamate binding, alongside membrane depolarization to repel the tonic pore-blocking magnesium ion (Mg²⁺). Once unblocked, it permits massive calcium (Ca²⁺) and sodium (Na⁺) influx.',
+        normal_state: {
+          title: 'Normal Excitatory Plasticity',
+          status: 'Memory Preservation',
+          presentation: [
+            'Induction of Long-Term Potentiation (LTP) in hippocampal pathways',
+            'Synaptic remodeling, dendritic branching, learning plasticity regulation',
+            'Normal developmental neural network refinement and spatial mapping',
+            'Coordination of fast baseline excitatory neurotransmission in cerebral tracts'
+          ]
+        },
+        overstimulated: {
+          title: 'Glutamate Excitotoxic Influx',
+          status: 'Excitotoxicity',
+          warning: {
+            type: 'danger',
+            title: 'Calcium-Mediated Necrosis',
+            text: 'Uncontrolled glutamate release (as seen in acute ischemic stroke, traumatic brain injury, or status epilepticus) causes massive, continuous calcium entry. This hyper-activates proteases, disrupts mitochondrial potential, and drives excitotoxic cell death.'
+          },
+          presentation: [
+            'Intracellular calcium overload, causing structural enzymatic autodigestion',
+            'Massive mitochondrial membrane potential collapse, producing high ROS',
+            'Neuronal cell death (apoptosis & necrosis) across vulnerable cerebral fields',
+            'Hyper-excitation, propagation of acute traumatic brain swelling'
+          ]
+        },
+        understimulated: {
+          title: 'NMDA Receptor Blockade',
+          status: 'Dissociation / Psychotomimetic',
+          warning: {
+            type: 'critical',
+            title: 'Dissociative States & Psychosis',
+            text: 'Blockade of NMDAR channels induces dissociative anesthesia. At sub-anesthetic levels, this mimics both positive and negative clinical symptoms of schizophrenia and causes transient memory consolidation blocks.'
+          },
+          presentation: [
+            'Dissociative anesthesia: depersonalization, derealization, sensory gating blockade',
+            'Profound analgesia (via spinothalamic transmission block), catatonic-like states',
+            'Psychotomimetic presentation: paranoid delusions, cognitive block, severe confusion',
+            'Amnesia: blockage of LTP prevents consolidation of short-term inputs'
+          ]
+        },
+        agents: {
+          agonists_pam: ['Glycine (required co-agonist)', 'D-Serine (physiological co-agonist)', 'NMDA (synthetic tool)'],
+          antagonists_block: ['Ketamine (Ketalar - rapid antidepressant / anesthetic)', 'Esketamine (Spravato)', 'Memantine (Namenda - Alzheimer\'s protection)', 'Amantadine (Symmetrel)']
+        },
+        citation: {
+          title: 'Hansen KB et al. (2018). Structure, function, and allosteric modulation of NMDA receptors.',
+          journal: 'J Gen Physiol',
+          pmid: 'PMID: 30037851',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/30037851/',
+          doi: '10.1085/jgp.201812032'
+        }
+      },
+      {
+        id: 'sert',
+        name: 'SERT (Serotonin Transporter)',
+        class: 'Monoamine Transporter (SLC6A4)',
+        subtypes: 'Single 12-TM transporter protein; presynaptic',
+        mechanism_short: 'Na+/Cl−-dependent reuptake of serotonin from the synaptic cleft',
+        mechanism_long: 'SERT is a Na/Cl-dependent presynaptic transporter that clears synaptic serotonin, terminating signaling. Reuptake inhibitors (SSRIs/SNRIs) block SERT, raising synaptic 5-HT. This is a transporter protein, not a receptor; overstimulated/understimulated states denote synaptic serotonin perturbation (excess via blockade, deficit from low tone), not receptor agonism.',
+        normal_state: {
+          title: 'Balanced Serotonergic Tone',
+          status: 'Tonic 5-HT Clearance',
+          presentation: [
+            'Stable mood with regular emotional resonance; intact pleasure anticipation',
+            'Regular sleep architecture with consolidated slow-wave and REM cycling',
+            'Intact appetite and sexual function; normal satiety regulation',
+            'Cognition without excessive rumination or obsessive perseveration'
+          ]
+        },
+        overstimulated: {
+          title: 'SERT Blockade / Elevated Synaptic Serotonin',
+          status: 'Serotonin Excess',
+          warning: {
+            type: 'danger',
+            title: 'Serotonin Syndrome',
+            text: 'SERT blockade (via SSRIs, SNRIs, tramadol, linezolid) combined with other serotonergic agents (MAOIs, other SSRIs, meperidine) causes serotonin syndrome. Severe cases present as hyperthermia, muscle rigidity, hyperreflexia/clonus, and autonomic instability.'
+          },
+          presentation: [
+            'Agitation, tremor, hyperreflexia, muscle twitches',
+            'Generalized rigidity progressing to myoclonus and sustained clonus',
+            'Diaphoresis, tachycardia, hyperthermia (>38.5°C); GI upset with diarrhea',
+            'Altered mental status, confusion, delirium in severe cases'
+          ]
+        },
+        understimulated: {
+          title: 'Low Serotonergic Tone',
+          status: 'Serotonergic Deficit',
+          warning: {
+            type: 'critical',
+            title: 'Mood & Anxiety Vulnerability',
+            text: 'Low SERT function or reduced synaptic 5-HT tone (genetic variants, chronic stress) correlates with depression, anxiety, and OCD. The 5-HTTLPR short-allele is a genetic risk factor.'
+          },
+          presentation: [
+            'Depressed mood, anhedonia, loss of interest in previously enjoyed activities',
+            'Early morning awakening, appetite changes, psychomotor retardation',
+            'Obsessive thoughts, intrusive ruminations, anxiety and worry',
+            'Social withdrawal, difficulty engaging with interpersonal interaction'
+          ]
+        },
+        agents: {
+          agonists_pam: ['Fluoxetine (Prozac)', 'Sertraline (Zoloft)', 'Paroxetine (Paxil)', 'Escitalopram (Lexapro)', 'Venlafaxine (Effexor)', 'Duloxetine (Cymbalta)', 'Cocaine (non-selective reuptake blocker)'],
+          antagonists_block: ['Tianeptine (atypical reuptake enhancer)']
+        },
+        citation: {
+          title: 'Murthy MK (2025). Molecular pathways linking the serotonin transporters (SERT) to depressive disorder: from mechanisms to treatments.',
+          journal: 'Neuroscience',
+          pmid: 'PMID: 40789515',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/40789515/',
+          doi: '10.1016/j.neuroscience.2025.08.009'
+        }
+      },
+      {
+        id: 'alpha_1',
+        name: 'Alpha-1 Adrenergic Receptor',
+        class: 'G-Protein Coupled Receptor (Gq/11-coupled)',
+        subtypes: 'α1A, α1B, α1D',
+        mechanism_short: 'Gq → PLC → IP3/DAG → ↑Ca2+ → smooth-muscle contraction',
+        mechanism_long: 'Gq/11 coupling activates phospholipase C (PLC), raising IP3 and DAG, which trigger intracellular Ca2+ release and protein kinase C activation, resulting in smooth-muscle contraction, increased peripheral vascular resistance, and elevated blood pressure.',
+        normal_state: {
+          title: 'Appropriate Vascular Tone',
+          status: 'Sympathetic Balance',
+          presentation: [
+            'Normal blood pressure and appropriate postural response (vasoconstriction on standing)',
+            'Normal micturition and urinary flow; continent sphincter tone',
+            'Mydriasis in dim light; normal pupillary responses',
+            'Stable vascular tone maintaining adequate tissue perfusion'
+          ]
+        },
+        overstimulated: {
+          title: 'α1 Hyper-Agonism',
+          status: 'Vasoconstrictive Surge',
+          warning: {
+            type: 'danger',
+            title: 'Hypertensive Crisis',
+            text: 'Severe α1 agonism (phenylephrine, cocaine, pheochromocytoma catecholamine surge, amphetamines) causes BP >180/120 mmHg with end-organ damage risk including myocardial ischemia, stroke, and acute kidney injury.'
+          },
+          presentation: [
+            'Severe hypertension, intense headache, chest pain/dyspnea',
+            'Pulmonary edema with respiratory compromise; orthopnea',
+            'Acute kidney injury with oliguria and rising creatinine',
+            'Myocardial ischemia, ECG changes, risk of infarction or arrhythmia'
+          ]
+        },
+        understimulated: {
+          title: 'α1 Blockade / Vasodilation',
+          status: 'Orthostatic Risk',
+          warning: {
+            type: 'critical',
+            title: 'First-Dose Orthostatic Hypotension & Syncope',
+            text: 'α1 antagonists (prazosin, doxazosin, phentolamine) cause acute vasodilation and reflex tachycardia. First-dose syncope is a classic risk, particularly with rapid onset.'
+          },
+          presentation: [
+            'Postural dizziness, light-headedness, syncope on standing',
+            'Hypotension (systolic <90 mmHg), reduced cerebral perfusion',
+            'Nasal congestion, miosis, accommodation difficulty',
+            'Fatigue, reduced exercise tolerance, cold extremities'
+          ]
+        },
+        agents: {
+          agonists_pam: ['Phenylephrine (Neo-Synephrine)', 'Norepinephrine (Levophed)', 'Epinephrine', 'Oxymetazoline (nasal decongestant)'],
+          antagonists_block: ['Prazosin (Minipress)', 'Doxazosin (Cardura)', 'Terazosin (Hytrin)', 'Tamsulosin (Flomax)', 'Chlorpromazine', 'Clozapine (off-target α1 blockade)']
+        },
+        citation: {
+          title: 'Kulkarni S & Wilkinson IB (2024). Adrenoceptors and Hypertension.',
+          journal: 'Handbook of Experimental Pharmacology',
+          pmid: 'PMID: 38890192',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/38890192/',
+          doi: '10.1007/164_2024_719'
+        }
+      },
+      {
+        id: 'alpha_2',
+        name: 'Alpha-2 Adrenergic Receptor',
+        class: 'G-Protein Coupled Receptor (Gi/o-coupled)',
+        subtypes: 'α2A, α2B, α2C',
+        mechanism_short: 'Gi/o → ↓cAMP; presynaptic autoinhibition of NE release',
+        mechanism_long: 'Gi/o inhibits adenylyl cyclase, depleting cAMP and hyperpolarizing neurons. Presynaptic α2A autoreceptors provide negative feedback on NE release; central α2 activation lowers sympathetic outflow, reducing both noradrenergic signaling and blood pressure.',
+        normal_state: {
+          title: 'Physiologic Noradrenergic Tone',
+          status: 'Autoreceptor Feedback',
+          presentation: [
+            'Calm alert wakefulness with appropriate arousal; regular sleep/wake cycle',
+            'Stable blood pressure and heart rate without excessive reactivity',
+            'Intact sustained attention and working memory capacity',
+            'Normal fear extinction and appropriate stress response regulation'
+          ]
+        },
+        overstimulated: {
+          title: 'α2 Agonism / Sympatholysis',
+          status: 'Reduced Sympathetic Drive',
+          warning: {
+            type: 'danger',
+            title: 'Rebound Hypertension on Abrupt Withdrawal',
+            text: 'Chronic clonidine or α2 agonist withdrawal (within 12-48 hours) causes massive catecholamine surge and severe hypertension. Risk of myocardial infarction, stroke, or hypertensive encephalopathy.'
+          },
+          presentation: [
+            'Sedation, bradycardia, hypotension during therapy; dry mouth',
+            'Within hours of abrupt cessation: severe hypertension, tremor, anxiety',
+            'Tachycardia, sweating, insomnia, agitation',
+            'Risk of acute coronary syndrome or stroke from BP surge'
+          ]
+        },
+        understimulated: {
+          title: 'α2 Blockade / Disinhibition',
+          status: 'Noradrenergic Release',
+          warning: {
+            type: 'critical',
+            title: 'Noradrenergic Hyperactivity',
+            text: 'α2 antagonists (yohimbine, mirtazapine) block presynaptic inhibition, disinhibiting NE and 5-HT release. Causes anxiety, restlessness, insomnia, and hypertension.'
+          },
+          presentation: [
+            'Anxiety, tremor, restlessness, inner motor tension',
+            'Insomnia, reduced sleep continuity, early awakening',
+            'Tachycardia, hypertension; facial flushing; diaphoresis',
+            'Impaired working memory, difficulty concentrating, hypervigilance'
+          ]
+        },
+        agents: {
+          agonists_pam: ['Clonidine (Catapres)', 'Dexmedetomidine (Precedex)', 'Guanfacine (Tenex)', 'Methyldopa', 'Lofexidine'],
+          antagonists_block: ['Yohimbine', 'Mirtazapine (Remeron)', 'Idazoxan']
+        },
+        citation: {
+          title: 'Szabo B (2024). Presynaptic Adrenoceptors.',
+          journal: 'Handbook of Experimental Pharmacology',
+          pmid: 'PMID: 38755350',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/38755350/',
+          doi: '10.1007/164_2024_714'
+        }
+      },
+      {
+        id: 'net',
+        name: 'NET (Norepinephrine Transporter)',
+        class: 'Monoamine Transporter (SLC6A2)',
+        subtypes: 'Single 12-TM transporter protein; presynaptic',
+        mechanism_short: 'Na+/Cl−-dependent reuptake of norepinephrine from the synaptic cleft',
+        mechanism_long: 'NET is the noradrenergic analogue of SERT, clearing synaptic NE via Na/Cl-dependent presynaptic reuptake. Inhibitors (atomoxetine, reboxetine, SNRIs, TCAs) block NET and raise synaptic NE, increasing attention, arousal, and sympathetic tone. This is a transporter, not a receptor; overstimulated/understimulated denote synaptic norepinephrine perturbation (excess via blockade, deficit from low tone), not receptor agonism.',
+        normal_state: {
+          title: 'Balanced Noradrenergic Tone',
+          status: 'Tonic NE Clearance',
+          presentation: [
+            'Focused sustained attention and intact working memory',
+            'Normal heart rate and blood pressure regulation without lability',
+            'Controlled anxiety and appropriate fear extinction',
+            'Normal pain modulation; intact nociceptive and anti-nociceptive balance'
+          ]
+        },
+        overstimulated: {
+          title: 'NET Blockade / Elevated Synaptic Norepinephrine',
+          status: 'Noradrenergic Excess',
+          warning: {
+            type: 'danger',
+            title: 'Noradrenergic Hyperactivity & Hypertension',
+            text: 'NET inhibitors (atomoxetine, stimulants) or surges of norepinephrine (cocaine, amphetamines) elevate synaptic NE, raising blood pressure, heart rate, and sympathetic tone. Marked systolic HTN, tachycardia, tremor, and risk of ACS/stroke in vulnerable patients.'
+          },
+          presentation: [
+            'Hypertension, tachycardia, fine tremor; marked sympathetic activation',
+            'Agitation, anxiety, insomnia, hypervigilance',
+            'Diaphoresis, mydriasis, piloerection',
+            'Acute coronary syndrome risk, myocardial ischemia, stroke risk'
+          ]
+        },
+        understimulated: {
+          title: 'Low Noradrenergic Tone',
+          status: 'Noradrenergic Deficit',
+          warning: {
+            type: 'critical',
+            title: 'Inattention & Hypoarousal',
+            text: 'Low NET function or reduced synaptic NE tone (ADHD, genetic variants) causes inattention, low arousal, depression with psychomotor retardation, and poor fear extinction. Core pathophysiology of ADHD.'
+          },
+          presentation: [
+            'Inattention, distractibility, impulsivity, difficulty sustaining focus',
+            'Fatigue, low motivation, reduced goal-directed activity',
+            'Psychomotor retardation, sluggish mental processing',
+            'Impaired fear extinction, orthostatic intolerance, reduced pain sensitivity'
+          ]
+        },
+        agents: {
+          agonists_pam: ['Atomoxetine (Strattera)', 'Reboxetine (Edronax)', 'Desipramine (Norpramin)', 'Nortriptyline (Pamelor)', 'Venlafaxine (Effexor)', 'Duloxetine (Cymbalta)', 'Cocaine (non-selective reuptake blocker)'],
+          antagonists_block: ['Amphetamine (releaser / reverse transport)']
+        },
+        citation: {
+          title: 'Mwesigwa N & Shibao CA (2024). Norepinephrine Reuptake Inhibition, an Emergent Treatment for Neurogenic Orthostatic Hypotension.',
+          journal: 'Hypertension',
+          pmid: 'PMID: 38766862',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/38766862/',
+          doi: '10.1161/HYPERTENSIONAHA.124.22069'
+        }
+      },
+      {
+        id: 'histamine_h1',
+        name: 'Histamine H1 Receptor',
+        class: 'G-Protein Coupled Receptor (Gq/11-coupled)',
+        subtypes: 'HRH1 Gene / Constitutively active (most blockers are inverse agonists)',
+        mechanism_short: 'Gq/11 → PLC → ↑IP₃/DAG → Ca²⁺; drives arousal',
+        mechanism_long: 'Gαq/11 coupling activates phospholipase C, generating IP₃ and DAG and raising intracellular Ca²⁺. Tuberomammillary histaminergic projections use this cascade to sustain cortical wakefulness; in the periphery the same signal drives vasodilation, capillary permeability, bronchoconstriction, and pruritus.',
+        normal_state: {
+          title: 'Normal Histaminergic Tone',
+          status: 'Wakefulness & Arousal',
+          presentation: [
+            'Tuberomammillary histamine sustains cortical arousal and the wake side of the sleep-wake cycle',
+            'Hypothalamic H1 signalling supports satiety and restrains appetite',
+            'Maintains vascular tone, capillary integrity, and mucosal defence',
+            'Vestibular and area-postrema signalling feeding nausea pathways'
+          ]
+        },
+        overstimulated: {
+          title: 'Histamine H1 Overstimulation',
+          status: 'Allergic / Anaphylactic Surge',
+          warning: {
+            type: 'danger',
+            title: 'Anaphylaxis',
+            text: 'Massive mast-cell histamine release saturates H1 receptors on vascular endothelium and bronchial smooth muscle, producing vasodilatory shock, angioedema, and bronchoconstriction. This is an airway-and-circulation emergency answered with intramuscular adrenaline; an antihistamine alone is never sufficient.'
+          },
+          presentation: [
+            'Cutaneous wheal-and-flare, urticaria, intense pruritus',
+            'Bronchoconstriction, mucosal oedema, profuse rhinorrhoea',
+            'Vasodilation with hypotension; angioedema of lips, tongue, and airway',
+            'Heightened wakefulness and agitation from central H1 drive'
+          ]
+        },
+        understimulated: {
+          title: 'Histamine H1 Blockade',
+          status: 'Sedation & Metabolic Drift',
+          warning: {
+            type: 'critical',
+            title: 'Central Antihistaminergic Burden',
+            text: 'First-generation antihistamines and H1-potent psychotropics (doxepin, mirtazapine, quetiapine, olanzapine) cross the blood-brain barrier and blunt central arousal: sedation, next-day psychomotor impairment, and with chronic blockade increased appetite and weight gain. In older adults the additive anticholinergic load compounds delirium and fall risk.'
+          },
+          presentation: [
+            'Sedation, somnolence, psychomotor slowing, next-day "hangover" effect',
+            'Increased appetite and weight gain under sustained blockade (multifactorial: appetite disinhibition, sedation-driven inactivity, metabolic effects)',
+            'Antiemetic and anti-vertigo effect via vestibular H1 blockade',
+            'Dry mouth and constipation where the agent is also antimuscarinic'
+          ]
+        },
+        agents: {
+          agonists_pam: ['Histamine (endogenous)', 'Betahistine (weak H1 agonist; Ménière disease)', '2-Pyridylethylamine (experimental H1-selective)'],
+          antagonists_block: ['Diphenhydramine (Benadryl)', 'Doxepin (most potent H1 inverse agonist)', 'Hydroxyzine (Atarax)', 'Cyproheptadine (also 5-HT2A; serotonin syndrome)', 'Cetirizine / Loratadine (2nd-gen, non-sedating)']
+        },
+        citation: {
+          title: 'Panula P et al. (2015). International Union of Basic and Clinical Pharmacology. Histamine Receptors.',
+          journal: 'Pharmacol Rev',
+          pmid: 'PMID: 26084539',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/26084539/',
+          doi: '10.1124/pr.114.010249'
+        }
+      },
+      {
+        id: 'muscarinic_m1',
+        name: 'Muscarinic M1 Receptor',
+        class: 'G-Protein Coupled Receptor (Gq/11-coupled)',
+        subtypes: 'CHRM1 Gene / Neuronal (cortex, hippocampus, striatum)',
+        mechanism_short: 'Gq/11 → PLC → ↑IP₃/DAG → Ca²⁺; closes M-current K⁺',
+        mechanism_long: 'Gαq/11 coupling activates phospholipase C and suppresses the M-type K⁺ current, raising neuronal excitability. M1 is the principal excitatory muscarinic receptor of the forebrain, gating cortical and hippocampal circuits that underwrite attention, learning, and memory.',
+        normal_state: {
+          title: 'Normal Cholinergic Cognition',
+          status: 'Attention & Memory',
+          presentation: [
+            'Cortical and hippocampal M1 signalling supports encoding, learning, and working memory',
+            'Modulates cortical excitability and attentional gain',
+            'Contributes to striatal cholinergic tone balancing dopaminergic output',
+            'Supports REM regulation and arousal-linked cognitive processing'
+          ]
+        },
+        overstimulated: {
+          title: 'Muscarinic M1 Overstimulation',
+          status: 'Central Cholinergic Excess',
+          warning: {
+            type: 'danger',
+            title: 'Cholinergic Crisis (Central)',
+            text: 'Excess central muscarinic drive, as in anticholinesterase or organophosphate poisoning, produces confusion, agitation, fasciculations, and seizures. The central picture rides on top of the peripheral SLUDGE/DUMBELS syndrome and is reversed with atropine plus, for organophosphates, pralidoxime.'
+          },
+          presentation: [
+            'Confusion, agitation, restlessness progressing to seizures',
+            'Tremor, fasciculations, and exaggerated startle',
+            'Part of the broader cholinergic toxidrome with peripheral M3 signs',
+            'Excess salivation and lacrimation from co-activated peripheral receptors'
+          ]
+        },
+        understimulated: {
+          title: 'Muscarinic M1 Blockade',
+          status: 'Anticholinergic / Cognitive Syndrome',
+          warning: {
+            type: 'critical',
+            title: 'Central Anticholinergic Delirium',
+            text: '"Mad as a hatter": central M1 blockade by antimuscarinics, tertiary-amine TCAs, low-potency antipsychotics, and antiparkinson agents impairs memory and precipitates delirium, especially in the elderly. The anticholinergic cognitive burden is cumulative across agents and a modifiable dementia risk.'
+          },
+          presentation: [
+            'Memory impairment, disorientation, frank delirium (elderly most vulnerable)',
+            'Impaired new learning and attentional lapses',
+            'Cumulative anticholinergic burden across stacked psychotropics',
+            'Sedation and confusion compounding any concurrent H1 blockade'
+          ]
+        },
+        agents: {
+          agonists_pam: ['Acetylcholine (endogenous)', 'Xanomeline (M1/M4 agonist; KarXT for schizophrenia)', 'Cevimeline (xerostomia)', 'Pilocarpine (non-selective partial agonist)'],
+          antagonists_block: ['Atropine (non-selective)', 'Scopolamine (CNS-penetrant)', 'Benztropine / Trihexyphenidyl (antiparkinson)', 'Pirenzepine (M1-selective)', 'Amitriptyline / low-potency antipsychotics (off-target)']
+        },
+        citation: {
+          title: 'Kruse AC et al. (2014). Muscarinic acetylcholine receptors: novel opportunities for drug development.',
+          journal: 'Nat Rev Drug Discov',
+          pmid: 'PMID: 24445063',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/24445063/',
+          doi: '10.1038/nrd4295'
+        }
+      },
+      {
+        id: 'muscarinic_m3',
+        name: 'Muscarinic M3 Receptor',
+        class: 'G-Protein Coupled Receptor (Gq/11-coupled)',
+        subtypes: 'CHRM3 Gene / Smooth muscle, exocrine glands, endothelium',
+        mechanism_short: 'Gq/11 → PLC → ↑IP₃/DAG → Ca²⁺; smooth-muscle & secretion',
+        mechanism_long: 'Gαq/11 coupling raises intracellular Ca²⁺ to drive smooth-muscle contraction and exocrine secretion. M3 governs salivary, lacrimal, and sweat output, bronchial and detrusor tone, gut motility, pupillary constriction, and endothelial nitric-oxide-mediated vasodilation.',
+        normal_state: {
+          title: 'Normal Parasympathetic Tone',
+          status: 'Secretion & Smooth-Muscle Control',
+          presentation: [
+            'Salivary, lacrimal, and sweat-gland secretion (rest-and-digest)',
+            'Detrusor contraction for bladder emptying and gut peristalsis',
+            'Bronchial smooth-muscle tone and airway mucus regulation',
+            'Pupillary sphincter constriction (miosis) and lens accommodation'
+          ]
+        },
+        overstimulated: {
+          title: 'Muscarinic M3 Overstimulation',
+          status: 'Peripheral Cholinergic Crisis',
+          warning: {
+            type: 'danger',
+            title: 'SLUDGE / DUMBELS Toxidrome',
+            text: 'Organophosphate or carbamate poisoning floods peripheral M3 receptors: Salivation, Lacrimation, Urination, Defecation, GI distress, Emesis, plus bronchorrhoea and bronchospasm. Death is by respiratory failure; treatment is high-dose atropine titrated to drying of secretions, with pralidoxime for organophosphates.'
+          },
+          presentation: [
+            'Salivation, lacrimation, sweating, profuse bronchial secretions',
+            'Bronchospasm and bronchorrhoea threatening the airway',
+            'Urinary and faecal incontinence, vomiting, abdominal cramping',
+            'Miosis with blurred near vision from sphincter overactivity'
+          ]
+        },
+        understimulated: {
+          title: 'Muscarinic M3 Blockade',
+          status: 'Peripheral Antimuscarinic Syndrome',
+          warning: {
+            type: 'critical',
+            title: 'Antimuscarinic Toxidrome',
+            text: '"Dry as a bone, red as a beet, hot as a hare, blind as a bat": M3 blockade by atropine, antimuscarinic bladder agents, and the antimuscarinic load of psychotropics dries secretions and relaxes smooth muscle. Anhidrotic hyperthermia and urinary retention are the dangerous endpoints.'
+          },
+          presentation: [
+            'Dry mouth, dry eyes, anhidrosis with risk of hyperthermia',
+            'Urinary retention and constipation (ileus at the extreme)',
+            'Blurred near vision and mydriasis from ciliary/sphincter blockade',
+            'Bronchodilation, therapeutically exploited in COPD and asthma'
+          ]
+        },
+        agents: {
+          agonists_pam: ['Acetylcholine (endogenous)', 'Bethanechol (bladder & GI atony)', 'Pilocarpine (xerostomia, glaucoma)', 'Cevimeline (Sjögren xerostomia)'],
+          antagonists_block: ['Atropine / Glycopyrrolate (antisecretory)', 'Ipratropium / Tiotropium (inhaled, airway-selective)', 'Oxybutynin / Solifenacin / Darifenacin (overactive bladder)', 'Scopolamine (motion sickness)', 'Antimuscarinic load of TCAs & antipsychotics']
+        },
+        citation: {
+          title: 'Kruse AC et al. (2014). Muscarinic acetylcholine receptors: novel opportunities for drug development.',
+          journal: 'Nat Rev Drug Discov',
+          pmid: 'PMID: 24445063',
+          url: 'https://pubmed.ncbi.nlm.nih.gov/24445063/',
+          doi: '10.1038/nrd4295'
+        }
+      }
+    ];
+
+    // ===== PHARMACOLOGIC ACTION LAYER =====
+    // Reframes each target's three modes around what a DRUG does at it:
+    // antagonism (blockade) · physiologic tone (reference) · agonism (activation).
+    // For transporters, the axis is synaptic (clearance vs reuptake inhibition),
+    // because transporters are inhibited, not agonised/antagonised. Concept tags
+    // link to the Pharmacology Primer. Evidence: Berg & Clarke 2018
+    // (doi:10.1093/ijnp/pyy071); receptor-specific sources cited per card.
+    const PHARM_ACTIONS = {
+      gaba_a: {
+        over:  { detail: 'Activation is usually <b>positive allosteric modulation (PAM)</b>, not direct agonism: benzodiazepines (diazepam, alprazolam) and Z-drugs (zolpidem) bind the benzodiazepine site and amplify GABA’s own effect, while barbiturates (phenobarbital) act at a separate site. PAMs need endogenous GABA to work, they turn the response up rather than opening the channel themselves.', tags: ['Positive allosteric modulator','Orthosteric agonist','Tone-dependent'] },
+        normal:{ detail: 'Endogenous GABA provides <b>tonic and phasic inhibition</b>, the brain’s principal inhibitory brake. No exogenous drug acting; this is the physiologic reference against which agonism and antagonism are read.', tags: ['Endogenous tone'] },
+        under: { detail: '<b>Competitive antagonism</b> at the benzodiazepine site (flumazenil) reverses PAM effects but does little alone when no modulator is present, a clean example of tone-dependence. Bicuculline is a competitive GABA-site antagonist; picrotoxin is a <b>noncompetitive channel-pore blocker</b>.', tags: ['Competitive antagonist','Channel blocker','Tone-dependent'] }
+      },
+      mu_opioid: {
+        over:  { detail: '<b>Full agonists</b> (morphine, fentanyl, methadone) drive maximal Gi/o signalling; the <b>partial agonist</b> buprenorphine binds with high affinity but has a ceiling on respiratory depression. Efficacy, not affinity alone, sets the clinical effect.', tags: ['Full agonist','Partial agonist (buprenorphine)'] },
+        normal:{ detail: 'Endogenous opioid peptides (endorphins, enkephalins) set baseline nociceptive gating and gut tone.', tags: ['Endogenous tone'] },
+        under: { detail: '<b>Competitive antagonists</b> naloxone and naltrexone bind with high affinity but zero intrinsic efficacy: little effect in an opioid-naïve receptor, but they rapidly displace agonists and precipitate withdrawal in dependence.', tags: ['Competitive antagonist','Tone-dependent'] }
+      },
+      dopamine_d2: {
+        over:  { detail: 'Direct <b>agonists</b> (pramipexole, ropinirole, bromocriptine) fully activate D2; the <b>partial agonist</b> aripiprazole stabilises signalling, functionally an agonist where dopamine tone is low and an antagonist where it is high.', tags: ['Agonist','Partial agonist (aripiprazole)'] },
+        normal:{ detail: 'Tonic dopaminergic tone balances striatal motor control, mesolimbic salience, and tuberoinfundibular prolactin suppression.', tags: ['Endogenous tone'] },
+        under: { detail: '<b>Antagonists</b> (haloperidol, risperidone, olanzapine) competitively block D2; receptor occupancy and dissociation kinetics drive EPS and prolactin risk, clozapine’s fast dissociation largely spares both.', tags: ['Antagonist','Fast-dissociation (clozapine)'] }
+      },
+      serotonin_5ht2a: {
+        over:  { detail: '<b>Agonists / partial agonists</b> (psilocin, LSD, mescaline) at 5-HT2A produce the psychedelic state; Nichols (2016) frames psychedelics precisely as 5-HT2A agonists or partial agonists.', tags: ['Agonist','Partial agonist'] },
+        normal:{ detail: 'Cortical 5-HT2A tone modulates glutamate release and cognitive flexibility.', tags: ['Endogenous tone'] },
+        under: { detail: 'Two distinct mechanisms reduce signalling: <b>inverse agonism</b> (pimavanserin lowers constitutive 5-HT2A activity) and <b>neutral antagonism</b> (atypical antipsychotics clozapine, risperidone, olanzapine). Only the inverse agonist also suppresses ligand-independent tone.', tags: ['Inverse agonist (pimavanserin)','Antagonist'] }
+      },
+      beta_1: {
+        over:  { detail: '<b>Agonists</b> (dobutamine, epinephrine, norepinephrine) drive Gs→cAMP→PKA, raising rate and contractility.', tags: ['Agonist'] },
+        normal:{ detail: 'Sympathetic catecholamine tone sets resting chronotropy, inotropy, and renin release.', tags: ['Endogenous tone'] },
+        under: { detail: 'β-blockers (metoprolol, atenolol, propranolol) are <b>competitive antagonists</b>; several also act as <b>inverse agonists</b>, lowering constitutive β1 activity, relevant to heart-failure remodelling.', tags: ['Competitive antagonist','Inverse agonist'] }
+      },
+      nmda_glutamate: {
+        over:  { detail: 'Activation needs <b>co-agonism</b>: glutamate plus an obligatory glycine-site co-agonist (glycine, D-serine) with depolarisation to relieve the Mg²⁺ block. Excess activation drives excitotoxic Ca²⁺ influx.', tags: ['Co-agonist (glycine site)','Tone-dependent'] },
+        normal:{ detail: 'Coincidence-detecting excitatory tone supports long-term potentiation, learning, and synaptic refinement.', tags: ['Endogenous tone'] },
+        under: { detail: '<b>Noncompetitive open-channel blockers</b> (ketamine, esketamine, memantine, amantadine) bind the PCP site inside the pore, not surmounted by raising glutamate. Differences in trapping/affinity explain ketamine’s psychotomimetic vs memantine’s tolerated profile.', tags: ['Noncompetitive channel blocker','Use-dependent'] }
+      },
+      sert: {
+        over:  { detail: 'Transporters are <b>inhibited, not agonised</b>. Reuptake inhibitors (SSRIs, SNRIs, TCAs) block SERT and raise synaptic serotonin; stacking serotonergic agents risks serotonin syndrome.', tags: ['Reuptake inhibitor','Not a receptor agonist'] },
+        normal:{ detail: 'Na⁺/Cl⁻-dependent reuptake tonically clears synaptic serotonin, terminating signalling.', tags: ['Tonic clearance'] },
+        under: { detail: 'Reduced synaptic serotonin, from low tone, depletion, or genetic variants (5-HTTLPR short allele), rather than receptor antagonism. Functionally the opposite of reuptake inhibition.', tags: ['Low synaptic tone','Genetic (5-HTTLPR)'] }
+      },
+      alpha_1: {
+        over:  { detail: '<b>Agonists</b> (phenylephrine, norepinephrine) drive Gq→PLC→Ca²⁺ smooth-muscle contraction and vasoconstriction.', tags: ['Agonist'] },
+        normal:{ detail: 'Sympathetic α1 tone maintains vascular resistance and sphincter tone.', tags: ['Endogenous tone'] },
+        under: { detail: '<b>Competitive antagonists</b> (prazosin, doxazosin, tamsulosin) relax vascular and prostatic smooth muscle; first-dose hypotension reflects abrupt loss of standing tone.', tags: ['Competitive antagonist','Tone-dependent'] }
+      },
+      alpha_2: {
+        over:  { detail: '<b>Agonists</b> (clonidine, dexmedetomidine, guanfacine) activate presynaptic autoreceptors, cutting NE release (sympatholysis) with sedation and lowered BP.', tags: ['Agonist','Autoreceptor'] },
+        normal:{ detail: 'α2A autoreceptors provide negative feedback that restrains noradrenergic release.', tags: ['Endogenous tone'] },
+        under: { detail: '<b>Antagonists</b> (yohimbine, mirtazapine) block presynaptic autoinhibition, disinhibiting NE and 5-HT release.', tags: ['Antagonist','Disinhibition'] }
+      },
+      net: {
+        over:  { detail: '<b>Inhibited, not agonised</b>. Reuptake inhibitors (atomoxetine, reboxetine, SNRIs, TCAs) block NET and raise synaptic norepinephrine, improving attention but raising BP and heart rate.', tags: ['Reuptake inhibitor','Not a receptor agonist'] },
+        normal:{ detail: 'NET reuptake clears >90% of released norepinephrine, setting noradrenergic tone.', tags: ['Tonic clearance'] },
+        under: { detail: 'Reduced synaptic norepinephrine (low tone, ADHD physiology), a deficit state, not receptor antagonism.', tags: ['Low synaptic tone'] }
+      },
+      histamine_h1: {
+        over:  { detail: 'Direct <b>agonism</b> at H1 is mostly endogenous (mast-cell histamine) with few therapeutic agonists; betahistine is a weak partial agonist used in Ménière disease. Clinically the activated state is the allergic/anaphylactic surge, not a drug effect.', tags: ['Agonist','Endogenous (mast cell)'] },
+        normal:{ detail: 'Tuberomammillary histaminergic tone sustains wakefulness and arousal; peripheral H1 tone maintains vascular and mucosal homeostasis.', tags: ['Endogenous tone'] },
+        under: { detail: 'Because H1 is <b>constitutively active</b>, most "antihistamines" are <b>inverse agonists</b> rather than neutral antagonists, lowering baseline activity. Centrally acting H1 inverse agonists (diphenhydramine, doxepin) plus the H1 blockade carried by mirtazapine and several antipsychotics drive sedation and weight gain.', tags: ['Inverse agonist','Antagonist','CNS-penetrant'] }
+      },
+      muscarinic_m1: {
+        over:  { detail: '<b>Agonists</b> activate M1 directly: xanomeline (M1/M4-preferring, the active component of KarXT for schizophrenia) and non-selective agonists (pilocarpine, cevimeline). Selective M1 agonism is pursued for pro-cognitive effect without peripheral cholinergic excess.', tags: ['Agonist','M1/M4-preferring (xanomeline)'] },
+        normal:{ detail: 'Forebrain cholinergic tone at M1 supports attention, learning, and memory through M-current suppression and raised cortical excitability.', tags: ['Endogenous tone'] },
+        under: { detail: '<b>Antimuscarinic antagonism</b> at central M1 (atropine, scopolamine, benztropine) and the off-target M1 blockade of tertiary-amine TCAs and low-potency antipsychotics impairs memory and precipitates delirium. The anticholinergic cognitive burden is cumulative.', tags: ['Antagonist','Anticholinergic burden'] }
+      },
+      muscarinic_m3: {
+        over:  { detail: '<b>Agonists</b> (bethanechol, pilocarpine, cevimeline) drive Gq→PLC→Ca²⁺ secretion and smooth-muscle contraction therapeutically; pathological over-activation is the cholinergic crisis of anticholinesterase poisoning.', tags: ['Agonist','Secretagogue'] },
+        normal:{ detail: 'Parasympathetic M3 tone sets glandular secretion, detrusor and gut motility, bronchial tone, and pupillary constriction.', tags: ['Endogenous tone'] },
+        under: { detail: '<b>Competitive antagonism</b> (atropine, glycopyrrolate, inhaled tiotropium, bladder-selective oxybutynin/solifenacin) dries secretions and relaxes smooth muscle. The peripheral antimuscarinic toxidrome is the dose-limiting cost of these agents and of antimuscarinic psychotropics.', tags: ['Competitive antagonist','Organ-selective'] }
+      }
+    };
+
+    // Adaptive simulator labels: receptors read agonism/antagonism; transporters read synaptic.
+    function simLabels(rec) {
+      const isTransporter = rec.id === 'sert' || rec.id === 'net';
+      return isTransporter
+        ? { under: '↓ Synaptic Tone', normal: 'Tonic Clearance', over: 'Reuptake Inhibition',
+            axis: 'Synaptic effect ◂ clearance · tone · inhibition ▸' }
+        : { under: 'Antagonism', normal: 'Physiologic Tone', over: 'Agonism',
+            axis: 'Pharmacologic action ◂ blockade · tone · activation ▸' };
+    }
+
+    // ===== VERIFIED REFERENCES (PubMed; DOI-linked) =====
+    const REFERENCES = [
+      { tag:'Primer', cite:'Berg KA, Clarke WP (2018). Making Sense of Pharmacology: Inverse Agonism and Functional Selectivity. Int J Neuropsychopharmacol 21(10):962–977.', doi:'10.1093/ijnp/pyy071' },
+      { tag:'Primer', cite:'Wichniak A, et al. (2021). Position statement of the Polish Psychiatric Association on the use of D2/D3 dopamine receptor partial agonists. Psychiatr Pol 55(5):941–966.', doi:'10.12740/PP/138177' },
+      { tag:'GABA-A', cite:'Ghit A, et al. (2021). GABA-A receptors: structure, function, pharmacology, and related disorders. J Genet Eng Biotechnol 19(1):123.', doi:'10.1186/s43141-021-00224-0' },
+      { tag:'μ-opioid', cite:'Pasternak GW (2018). Mu Opioid Pharmacology: 40 Years to the Promised Land. Adv Pharmacol 82:261–291.', doi:'10.1016/bs.apha.2017.09.006' },
+      { tag:'D2', cite:'Ford CP (2014). The role of D2-autoreceptors in regulating dopamine neuron activity and transmission. Neuroscience 282:13–22.', doi:'10.1016/j.neuroscience.2014.01.025' },
+      { tag:'5-HT2A', cite:'Nichols DE (2016). Psychedelics. Pharmacol Rev 68(2):264–355.', doi:'10.1124/pr.115.011478' },
+      { tag:'β1', cite:'Ahles A, Engelhardt S (2014). Polymorphic variants of adrenoceptors: pharmacology, physiology, and role in disease. Pharmacol Rev 66(3):598–637.', doi:'10.1124/pr.113.008219' },
+      { tag:'NMDA', cite:'Hansen KB, et al. (2018). Structure, function, and allosteric modulation of NMDA receptors. J Gen Physiol 150(8):1081–1105.', doi:'10.1085/jgp.201812032' },
+      { tag:'SERT', cite:'Murthy MK (2025). Molecular pathways linking the serotonin transporters (SERT) to depressive disorder: from mechanisms to treatments. Neuroscience 584:2–31.', doi:'10.1016/j.neuroscience.2025.08.009' },
+      { tag:'α1', cite:'Kulkarni S, Wilkinson IB (2024). Adrenoceptors and Hypertension. Handb Exp Pharmacol 285:297–332.', doi:'10.1007/164_2024_719' },
+      { tag:'α2', cite:'Szabo B (2024). Presynaptic Adrenoceptors. Handb Exp Pharmacol 285:185–245.', doi:'10.1007/164_2024_714' },
+      { tag:'NET', cite:'Mwesigwa N, Shibao CA (2024). Norepinephrine Reuptake Inhibition, an Emergent Treatment for Neurogenic Orthostatic Hypotension. Hypertension 81(7):1460–1466.', doi:'10.1161/HYPERTENSIONAHA.124.22069' },
+      { tag:'H1', cite:'Panula P, et al. (2015). International Union of Basic and Clinical Pharmacology. XCVIII. Histamine Receptors. Pharmacol Rev 67(3):601–655.', doi:'10.1124/pr.114.010249' },
+      { tag:'M1/M3', cite:'Kruse AC, et al. (2014). Muscarinic acetylcholine receptors: novel opportunities for drug development. Nat Rev Drug Discov 13(7):549–560.', doi:'10.1038/nrd4295' }
+    ];
+    function renderReferences() {
+      const ol = document.getElementById('ref-list');
+      if (!ol) return;
+      ol.innerHTML = REFERENCES.map(r =>
+        `<li><span><span class="ref-cls">${r.tag}</span> &nbsp;${r.cite} `
+        + `<a href="https://doi.org/${r.doi}" target="_blank" rel="noopener">doi:${r.doi} ↗</a></span></li>`
+      ).join('');
+    }
+
+    // State Tracking
+    let selectedReceptorId = 'gaba_a';
+    let simulationState = 'normal';
+    let currentViewMode = 'explorer';
+    let searchQuery = '';
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderExplorerList();
+      renderSelectedReceptor();
+      renderBindingAffinityPlate();
+      renderReferences();
+
+      // masthead depth cue on scroll + dynamic sticky offset (masthead wraps at narrow widths)
+      const masthead = document.querySelector('.masthead');
+      const setMastH = () => document.documentElement.style.setProperty('--mast-h', masthead.offsetHeight + 'px');
+      setMastH();
+      window.addEventListener('resize', setMastH, { passive: true });
+      window.addEventListener('scroll', () => {
+        masthead.classList.toggle('is-scrolled', window.scrollY > 8);
+      }, { passive: true });
+    });
+
+    function isIonotropic(rec) {
+      return rec.id === 'gaba_a' || rec.id === 'nmda_glutamate';
+    }
+
+    function receptorKind(rec) {
+      if (rec.id === 'gaba_a' || rec.id === 'nmda_glutamate') return 'Ionotropic';
+      if (rec.id === 'sert' || rec.id === 'net') return 'Transporter';
+      return 'GPCR';
+    }
+
+    // View Mode Switcher
+    function setViewMode(mode) {
+      currentViewMode = mode;
+      const exView = document.getElementById('view-explorer');
+      const mxView = document.getElementById('view-matrix');
+      const prView = document.getElementById('view-primer');
+      exView.classList.toggle('hidden', mode !== 'explorer');
+      mxView.classList.toggle('hidden', mode !== 'matrix');
+      if (prView) prView.classList.toggle('hidden', mode !== 'primer');
+      const entering = mode === 'explorer' ? exView : mode === 'matrix' ? mxView : prView;
+      if (entering) {
+        entering.classList.remove('view-anim');
+        void entering.offsetWidth;
+        entering.classList.add('view-anim');
+        entering.addEventListener('animationend', () => entering.classList.remove('view-anim'), { once: true });
+      }
+      if (mode === 'matrix') {
+        const cat = mxView.querySelector('.catalogue');
+        if (cat) {
+          cat.classList.remove('catalogue-entering');
+          void cat.offsetWidth;
+          cat.classList.add('catalogue-entering');
+          setTimeout(() => cat.classList.remove('catalogue-entering'), 100 + neuroceptors.length * 62 + 550);
+        }
+        // Radar is laid out only once the catalogue is visible; size its labels now.
+        requestAnimationFrame(() => { if (window.fitRadarText) window.fitRadarText(); });
+      }
+      const exBtn = document.getElementById('btn-view-explorer');
+      const mxBtn = document.getElementById('btn-view-matrix');
+      const prBtn = document.getElementById('btn-view-primer');
+      exBtn.classList.toggle('is-active', mode === 'explorer');
+      mxBtn.classList.toggle('is-active', mode === 'matrix');
+      if (prBtn) prBtn.classList.toggle('is-active', mode === 'primer');
+      exBtn.setAttribute('aria-selected', mode === 'explorer' ? 'true' : 'false');
+      mxBtn.setAttribute('aria-selected', mode === 'matrix' ? 'true' : 'false');
+      if (prBtn) prBtn.setAttribute('aria-selected', mode === 'primer' ? 'true' : 'false');
+    }
+
+    // Render Catalogue Index (left)
+    function renderExplorerList() {
+      const container = document.getElementById('explorer-list-container');
+      container.innerHTML = '';
+      const q = searchQuery.toLowerCase();
+
+      const filtered = neuroceptors.filter(rec =>
+        rec.name.toLowerCase().includes(q) ||
+        rec.class.toLowerCase().includes(q) ||
+        rec.agents.agonists_pam.some(d => d.toLowerCase().includes(q)) ||
+        rec.agents.antagonists_block.some(d => d.toLowerCase().includes(q)) ||
+        rec.normal_state.presentation.some(s => s.toLowerCase().includes(q)) ||
+        rec.overstimulated.presentation.some(s => s.toLowerCase().includes(q)) ||
+        rec.understimulated.presentation.some(s => s.toLowerCase().includes(q))
+      );
+
+      document.getElementById('receptor-count-badge').textContent =
+        (searchQuery ? filtered.length + ' Matched' : filtered.length + ' Specimens');
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="index-empty">No match for "${searchQuery}". Try a receptor name, drug, or clinical sign.</div>`;
+        return;
+      }
+
+      filtered.forEach((rec, i) => {
+        const idx = neuroceptors.indexOf(rec);
+        const selected = rec.id === selectedReceptorId;
+        const btn = document.createElement('button');
+        btn.className = 'specimen-row' + (selected ? ' is-selected' : '');
+        btn.style.setProperty('--i', i);
+        btn.setAttribute('onclick', `selectReceptor('${rec.id}')`);
+        btn.innerHTML = `
+          <div class="specimen-inner">
+            <span class="specimen-no">№ ${ROMAN[idx]}</span>
+            <span class="specimen-name">${rec.name}</span>
+            <span class="specimen-kind">${receptorKind(rec)}</span>
+            <span class="specimen-class">${rec.class}</span>
+            <div class="specimen-tags">
+              <span>${rec.agents.agonists_pam.length} Agonists</span>
+              <span>${rec.agents.antagonists_block.length} Blockers</span>
+            </div>
+          </div>`;
+        container.appendChild(btn);
+      });
+    }
+
+    function selectReceptor(id) {
+      selectedReceptorId = id;
+      renderExplorerList();
+      renderSelectedReceptor();
+    }
+
+    // State Simulator
+    function setSimulationState(state) {
+      simulationState = state;
+      ['under', 'normal', 'over'].forEach(s => {
+        const map = { under: 'understimulated', normal: 'normal', over: 'overstimulated' };
+        const active = map[s] === state;
+        const btn = document.getElementById('sim-' + s);
+        btn.classList.toggle('is-active', active);
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+      document.body.dataset.room = { normal: 'atrium', overstimulated: 'over', understimulated: 'under' }[state] || 'atrium';
+      renderSelectedReceptor();
+    }
+
+    function drawEngraving(receptorId, state) {
+      const el = document.getElementById('avatar-engraving');
+      if (!el) return;
+      const fn = ILLUSTRATIONS[receptorId];
+      if (!fn) return;
+      el.classList.remove('drawn');
+      el.innerHTML = fn(receptorId, state);
+      el.style.animation = 'none';
+      void el.offsetWidth;
+      el.style.animation = 'engrave-in 0.55s var(--ease)';
+      requestAnimationFrame(() => el.classList.add('drawn'));
+    }
+
+    // Re-trigger the staggered block reveal
+    function replayReveal(scope) {
+      scope.querySelectorAll('.rv').forEach(el => {
+        el.style.animation = 'none';
+        void el.offsetWidth;
+        el.style.animation = '';
+      });
+    }
+
+    // Render Selected Exhibit
+    let _renderTimer = null;
+    function renderSelectedReceptor() {
+      const receptor = neuroceptors.find(r => r.id === selectedReceptorId);
+      if (!receptor) return;
+
+      const card = document.getElementById('main-display-card');
+      const plateBody = card.querySelector('.plate-body');
+      const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // Plate background repaints immediately; plate body fades out
+      card.setAttribute('data-state', simulationState);
+      if (_renderTimer) clearTimeout(_renderTimer);
+      plateBody.classList.add('is-out');
+
+      _renderTimer = setTimeout(() => {
+        const stateConfig = simulationState === 'normal' ? receptor.normal_state
+          : simulationState === 'overstimulated' ? receptor.overstimulated
+          : receptor.understimulated;
+
+        document.getElementById('display-title').textContent = receptor.name;
+        document.getElementById('display-class').textContent = receptor.class;
+        document.getElementById('display-mechanism-badge').textContent = receptor.subtypes;
+        document.getElementById('display-mechanism-text').textContent = receptor.mechanism_long;
+
+        // adaptive simulator labels + axis caption (receptor vs transporter)
+        const lbl = simLabels(receptor);
+        document.getElementById('sim-under').textContent = lbl.under;
+        document.getElementById('sim-normal').textContent = lbl.normal;
+        document.getElementById('sim-over').textContent = lbl.over;
+        const axisEl = document.querySelector('.sim-axis-label');
+        if (axisEl) axisEl.textContent = lbl.axis;
+
+        // pharmacologic action descriptor + concept tags
+        const stateKey = simulationState === 'normal' ? 'normal'
+          : simulationState === 'overstimulated' ? 'over' : 'under';
+        const pharm = (PHARM_ACTIONS[receptor.id] || {})[stateKey];
+        const isXporter = receptor.id === 'sert' || receptor.id === 'net';
+        const pharmHead = document.getElementById('pharm-action-head');
+        if (pharmHead) pharmHead.textContent = isXporter ? 'Transporter Pharmacology' : 'Pharmacologic Action';
+        const pharmDetail = document.getElementById('display-pharm-detail');
+        const conceptWrap = document.getElementById('display-concept-tags');
+        if (pharm) {
+          pharmDetail.innerHTML = pharm.detail;
+          conceptWrap.innerHTML = '';
+          pharm.tags.forEach((t, i) => {
+            const s = document.createElement('span');
+            s.className = 'tag';
+            s.style.setProperty('--ti', i);
+            s.textContent = t;
+            s.setAttribute('role', 'button');
+            s.setAttribute('tabindex', '0');
+            s.setAttribute('title', 'Open the Pharmacology Primer');
+            s.setAttribute('onclick', "setViewMode('primer')");
+            s.setAttribute('onkeydown', "if(event.key==='Enter'||event.key===' '){event.preventDefault();setViewMode('primer');}");
+            conceptWrap.appendChild(s);
+          });
+        } else {
+          pharmDetail.textContent = '';
+          conceptWrap.innerHTML = '';
+        }
+
+        drawEngraving(receptor.id, simulationState);
+
+        document.getElementById('state-status-label').textContent = stateConfig.title;
+        document.getElementById('avatar-sub-indicator').textContent = stateConfig.status;
+
+        // clinical plaque
+        const plaque = document.getElementById('warning-notice-block');
+        if (stateConfig.warning) {
+          plaque.classList.remove('hidden');
+          document.getElementById('warning-icon').textContent = stateConfig.warning.type === 'danger' ? '⚠' : '◆';
+          document.getElementById('warning-title').textContent = stateConfig.warning.title;
+          document.getElementById('warning-text').textContent = stateConfig.warning.text;
+        } else {
+          plaque.classList.add('hidden');
+        }
+
+        // presentation, wrap the first diagnostic phrase found in each bullet so
+        // every diagnostic drawer is reachable from the relevant clinical state
+        const list = document.getElementById('display-presentation-list');
+        list.innerHTML = '';
+        stateConfig.presentation.forEach(bullet => {
+          const li = document.createElement('li');
+          li.innerHTML = `<span>${linkDiagnosticTerms(bullet)}</span>`;
+          list.appendChild(li);
+        });
+
+        // agents
+        const ag = document.getElementById('display-agonists-tags');
+        ag.innerHTML = '';
+        receptor.agents.agonists_pam.forEach((d, i) => {
+          const s = document.createElement('span');
+          s.className = 'tag agonist';
+          s.style.setProperty('--ti', i);
+          s.textContent = d;
+          ag.appendChild(s);
+        });
+        const an = document.getElementById('display-antagonists-tags');
+        an.innerHTML = '';
+        receptor.agents.antagonists_block.forEach((d, i) => {
+          const s = document.createElement('span');
+          s.className = 'tag antagonist';
+          s.style.setProperty('--ti', i);
+          s.textContent = d;
+          an.appendChild(s);
+        });
+
+        // agent field head labels, transporters use different terminology
+        const isTransporter = receptor.id === 'sert' || receptor.id === 'net';
+        const agHead = document.getElementById('agents-head-agonists');
+        const anHead = document.getElementById('agents-head-antagonists');
+        if (agHead) agHead.textContent = isTransporter ? 'Reuptake Inhibitors' : 'Agonists & Positive Modulators';
+        if (anHead) anHead.textContent = isTransporter ? 'Reuptake Enhancers & Others' : 'Antagonists, Blockers & Inverse Agonists';
+
+        // provenance
+        document.getElementById('display-citation-title').textContent = receptor.citation.title;
+        document.getElementById('display-citation-pmid').textContent = receptor.citation.pmid;
+        document.getElementById('display-citation-link').setAttribute('href', receptor.citation.url);
+        const doiEl = document.getElementById('display-citation-doi');
+        if (receptor.citation.doi) {
+          doiEl.style.display = '';
+          doiEl.textContent = 'doi:' + receptor.citation.doi;
+          doiEl.setAttribute('href', 'https://doi.org/' + receptor.citation.doi);
+        } else {
+          doiEl.style.display = 'none';
+        }
+
+        plateBody.classList.remove('is-out');
+        replayReveal(card);
+      }, reducedMotion ? 0 : 160);
+    }
+
+    // ===== BINDING AFFINITY PLATE DATA =====
+    // Embedded from _affinity_data.js
+    const AFF_TARGETS = [
+      { id:'gaba_a',          label:'GABA-A', def:'GABA-A benzodiazepine allosteric site (ionotropic Cl- channel)' },
+      { id:'mu_opioid',       label:'μ-OR' },
+      { id:'dopamine_d2',     label:'D2' },
+      { id:'serotonin_5ht2a', label:'5-HT2A' },
+      { id:'beta_1',          label:'β1' },
+      { id:'nmda_glutamate',  label:'NMDA', def:'NMDA channel / PCP & glycine sites' },
+      { id:'sert',            label:'SERT', def:'Serotonin transporter (SLC6A4)' },
+      { id:'alpha_1',         label:'α1', def:'Alpha-1 adrenergic receptor' },
+      { id:'alpha_2',         label:'α2', def:'Alpha-2 adrenergic receptor' },
+      { id:'net',             label:'NET', def:'Norepinephrine transporter (SLC6A2)' },
+      { id:'histamine_h1',    label:'H1', def:'Histamine H1 receptor (HRH1)' },
+      { id:'muscarinic_m1',   label:'M1', def:'Muscarinic M1 receptor (CHRM1, neuronal)' },
+      { id:'muscarinic_m3',   label:'M3', def:'Muscarinic M3 receptor (CHRM3, smooth muscle & glands)' }
+    ];
+
+    const AFF_GROUPS = [
+      { id:'benzo',     label:'GABAergic sedatives' },
+      { id:'opioid',    label:'Opioids' },
+      { id:'antipsych', label:'Antipsychotics' },
+      { id:'da',        label:'Dopamine agonists' },
+      { id:'psy',       label:'Psychedelics' },
+      { id:'beta',      label:'β-adrenergic agents' },
+      { id:'nmda',      label:'NMDA-active agents' },
+      { id:'antidep',   label:'Antidepressants & reuptake inhibitors' },
+      { id:'alpha1',    label:'α1-adrenergic agents' },
+      { id:'alpha2',    label:'α2-adrenergic agents' },
+      { id:'antihist',  label:'Antihistamines (H1)' },
+      { id:'cholin',    label:'Cholinergic & antimuscarinic agents' }
+    ];
+
+    const AFF_AGENTS = [
+      { name:'Diazepam', g:'benzo', cid:3016, b:{ gaba_a:{ki:0.69, kiText:'0.4-1.2 nM', act:'pa', actFull:'positive allosteric modulator (benzodiazepine site)', src:'IUPHAR/BPS'} } },
+      { name:'Alprazolam', g:'benzo', cid:2118, b:{ gaba_a:{ki:0.55, kiText:'0.3-1.0 nM', act:'pa', actFull:'positive allosteric modulator (benzodiazepine site)', src:'IUPHAR/BPS'} } },
+      { name:'Zolpidem', g:'benzo', cid:5732, b:{ gaba_a:{ki:0.12, kiText:'0.06-0.24 nM', act:'pa', actFull:'PAM, α1-selective (benzodiazepine site)', src:'IUPHAR/BPS'} } },
+      { name:'Phenobarbital', g:'benzo', cid:4763, b:{ gaba_a:{ki:110, kiText:'80-150 nM', act:'pa', actFull:'positive allosteric modulator (barbiturate site)', src:'IUPHAR/BPS'} } },
+      { name:'Flumazenil', g:'benzo', cid:3373, b:{ gaba_a:{ki:1.45, kiText:'0.7-3.0 nM', act:'an', actFull:'antagonist (benzodiazepine site)', src:'IUPHAR/BPS'} } },
+      { name:'Morphine', g:'opioid', cid:5288826, b:{ mu_opioid:{ki:1.55, kiText:'1.2-2.0 nM', act:'ag', actFull:'full agonist', src:'PDSP Ki DB'} } },
+      { name:'Fentanyl', g:'opioid', cid:3345, b:{ mu_opioid:{ki:0.2, kiText:'0.1-0.4 nM', act:'ag', actFull:'full agonist', src:'PDSP Ki DB'} } },
+      { name:'Methadone', g:'opioid', cid:4095, b:{ mu_opioid:{ki:5.66, kiText:'4-8 nM', act:'ag', actFull:'full agonist', src:'PDSP Ki DB'}, nmda_glutamate:{ki:1549, kiText:'1200-2000 nM', act:'an', actFull:'channel blocker (low affinity)', src:'literature (tier)', note:'weak; clinical relevance at therapeutic doses uncertain'} } },
+      { name:'Buprenorphine', g:'opioid', cid:644073, b:{ mu_opioid:{ki:0.33, kiText:'0.22-0.5 nM', act:'pa', actFull:'partial agonist', src:'PDSP Ki DB'} } },
+      { name:'Naloxone', g:'opioid', cid:5284596, b:{ mu_opioid:{ki:1.58, kiText:'1.0-2.5 nM', act:'an', actFull:'antagonist', src:'PDSP Ki DB'} } },
+      { name:'Haloperidol', g:'antipsych', cid:3559, b:{ dopamine_d2:{ki:0.88, kiText:'0.65-1.2 nM', act:'an', actFull:'antagonist', src:'IUPHAR/BPS'}, serotonin_5ht2a:{ki:9.8, kiText:'8-12 nM', act:'an', actFull:'antagonist', src:'IUPHAR/BPS'}, alpha_1:{ki:14.8, kiText:'11-20 nM', act:'an', actFull:'antagonist', src:'literature (tier)'}, alpha_2:{ki:140, kiText:'140 nM', act:'an', actFull:'antagonist (low affinity)', src:'Proudman 2020'} } },
+      { name:'Chlorpromazine', g:'antipsych', cid:2726, b:{ dopamine_d2:{ki:11, kiText:'8-15 nM', act:'an', actFull:'antagonist', src:'IUPHAR/BPS'}, serotonin_5ht2a:{ki:15.5, kiText:'12-20 nM', act:'an', actFull:'antagonist', src:'IUPHAR/BPS'}, alpha_1:{ki:2.83, kiText:'2-4 nM', act:'an', actFull:'antagonist', src:'IUPHAR/BPS'}, alpha_2:{ki:130, kiText:'130 nM', act:'an', actFull:'antagonist', src:'Proudman 2020'}, histamine_h1:{ki:3, kiText:'2-5 nM', act:'an', actFull:'antagonist (sedation)', src:'PDSP Ki DB'}, muscarinic_m1:{ki:47, kiText:'30-67 nM', act:'an', actFull:'antimuscarinic', src:'PDSP Ki DB'}, muscarinic_m3:{ki:50, kiText:'~50 nM', act:'an', actFull:'antimuscarinic', src:'literature (tier)'} } },
+      { name:'Risperidone', g:'antipsych', cid:5073, b:{ dopamine_d2:{ki:3.46, kiText:'1.9-6.3 nM', act:'an', actFull:'antagonist', src:'IUPHAR/BPS'}, serotonin_5ht2a:{ki:0.23, kiText:'0.13-0.4 nM', act:'an', actFull:'antagonist (5-HT2A>>D2)', src:'IUPHAR/BPS'}, alpha_1:{ki:11, kiText:'6-20 nM', act:'an', actFull:'antagonist', src:'Proudman 2020'}, alpha_2:{ki:100, kiText:'100 nM', act:'an', actFull:'antagonist', src:'Proudman 2020'}, histamine_h1:{ki:20, kiText:'15-30 nM', act:'an', actFull:'antagonist (modest sedation)', src:'PDSP Ki DB'} } },
+      { name:'Olanzapine', g:'antipsych', cid:135398745, b:{ dopamine_d2:{ki:18.5, kiText:'11-31 nM', act:'an', actFull:'antagonist', src:'IUPHAR/BPS'}, serotonin_5ht2a:{ki:3.87, kiText:'3-5 nM', act:'an', actFull:'antagonist', src:'IUPHAR/BPS'}, alpha_1:{ki:19.1, kiText:'14-26 nM', act:'an', actFull:'antagonist', src:'Proudman 2020'}, alpha_2:{ki:54.7, kiText:'44-68 nM', act:'an', actFull:'antagonist', src:'Proudman 2020'}, histamine_h1:{ki:2.8, kiText:'0.65-7 nM', act:'an', actFull:'antagonist (weight gain, sedation)', src:'PDSP Ki DB'}, muscarinic_m1:{ki:26, kiText:'1.9-26 nM', act:'an', actFull:'antimuscarinic', src:'PDSP Ki DB'}, muscarinic_m3:{ki:48, kiText:'~48 nM', act:'an', actFull:'antimuscarinic', src:'literature (tier)'} } },
+      { name:'Clozapine', g:'antipsych', cid:135398737, b:{ dopamine_d2:{ki:78.7, kiText:'40-155 nM', act:'an', actFull:'antagonist (fast dissociation)', src:'IUPHAR/BPS'}, serotonin_5ht2a:{ki:8.66, kiText:'5-15 nM', act:'an', actFull:'antagonist', src:'IUPHAR/BPS'}, alpha_1:{ki:1.28, kiText:'1.1-1.5 nM', act:'an', actFull:'antagonist', src:'Proudman 2020'}, alpha_2:{ki:6.32, kiText:'4-10 nM', act:'an', actFull:'antagonist', src:'Proudman 2020'}, histamine_h1:{ki:1.1, kiText:'1-3.5 nM', act:'an', actFull:'antagonist (sedation, weight gain)', src:'PDSP Ki DB'}, muscarinic_m1:{ki:14, kiText:'1.8-14 nM', act:'an', actFull:'antagonist (M4 partial agonist; hypersalivation)', src:'PDSP Ki DB'}, muscarinic_m3:{ki:20, kiText:'~20 nM', act:'an', actFull:'antimuscarinic', src:'literature (tier)'} } },
+      { name:'Aripiprazole', g:'antipsych', cid:60795, b:{ dopamine_d2:{ki:0.34, kiText:'0.34 nM', act:'pa', actFull:'partial agonist', src:'Neuropsychopharmacology 2009'}, serotonin_5ht2a:{ki:3.4, kiText:'3.4 nM', act:'pa', actFull:'partial agonist', src:'Neuropsychopharmacology 2009'}, alpha_1:{ki:57, kiText:'57 nM', act:'pa', actFull:'partial agonist', src:'Proudman 2020'}, alpha_2:{ki:190, kiText:'190 nM', act:'pa', actFull:'partial agonist', src:'Proudman 2020'}, histamine_h1:{ki:61, kiText:'~61 nM', act:'an', actFull:'antagonist (low; little sedation)', src:'Proudman 2020'} } },
+      { name:'Pimavanserin', g:'antipsych', cid:16058810, b:{ serotonin_5ht2a:{ki:0.087, kiText:'0.087 nM', act:'an', actFull:'inverse agonist (no D2 affinity)', src:'Eur Neuropsychopharmacol 2020'} } },
+      { name:'Pramipexole', g:'da', cid:119570, b:{ dopamine_d2:{ki:199, kiText:'79.5-500 nM', act:'ag', actFull:'agonist (D3 > D2)', src:'J Neural Transm 2003'} } },
+      { name:'Ropinirole', g:'da', cid:5095, b:{ dopamine_d2:{ki:53.5, kiText:'29-98.7 nM', act:'ag', actFull:'agonist (D3 > D2)', src:'J Neural Transm 2003'} } },
+      { name:'Bromocriptine', g:'da', cid:31101, b:{ dopamine_d2:{ki:8, kiText:'8 nM', act:'ag', actFull:'agonist', src:'StatPearls'}, serotonin_5ht2a:{ki:null, tier:1, kiText:'low (no clean Ki)', act:'ag', actFull:'weak agonist (non-hallucinogenic)', src:'qualitative'} } },
+      { name:'LSD', g:'psy', cid:5761, b:{ serotonin_5ht2a:{ki:0.62, kiText:'0.3-1.3 nM', act:'ag', actFull:'agonist', src:'PMC5756147'}, dopamine_d2:{ki:173, kiText:'150-200 nM', act:'ag', actFull:'agonist (broad profile)', src:'PMC5756147'} } },
+      { name:'Psilocin', g:'psy', cid:4980, b:{ serotonin_5ht2a:{ki:1.73, kiText:'1-3 nM', act:'ag', actFull:'agonist (active psilocybin metabolite)', src:'PMC10851641'} } },
+      { name:'Mescaline', g:'psy', cid:4076, b:{ serotonin_5ht2a:{ki:12.6, kiText:'8-20 nM', act:'ag', actFull:'agonist', src:'PMC5756147'}, dopamine_d2:{ki:3873, kiText:'3000-5000 nM', act:'ag', actFull:'weak agonist', src:'PMC5756147'}, alpha_2:{ki:245, kiText:'200-300 nM', act:'ag', actFull:'agonist (α2A)', src:'PMC5756147'} } },
+      { name:'Dobutamine', g:'beta', cid:36811, b:{ beta_1:{ki:390, kiText:'~390 nM', act:'ag', actFull:'agonist (inotrope)', src:'literature (tier)'} } },
+      { name:'Epinephrine', g:'beta', cid:5816, b:{ beta_1:{ki:25.5, kiText:'18-36 nM', act:'ag', actFull:'agonist', src:'PDSP Ki DB'}, alpha_1:{ki:7.07, kiText:'5-10 nM', act:'ag', actFull:'agonist', src:'PDSP Ki DB'}, alpha_2:{ki:21.2, kiText:'15-30 nM', act:'ag', actFull:'agonist', src:'PDSP Ki DB'} } },
+      { name:'Norepinephrine', g:'beta', cid:439260, b:{ beta_1:{ki:53.4, kiText:'38-75 nM', act:'ag', actFull:'agonist', src:'PDSP Ki DB'}, alpha_1:{ki:9.49, kiText:'6-15 nM', act:'ag', actFull:'agonist', src:'PDSP Ki DB'}, alpha_2:{ki:42.4, kiText:'30-60 nM', act:'ag', actFull:'agonist', src:'PDSP Ki DB'} } },
+      { name:'Metoprolol', g:'beta', cid:4171, b:{ beta_1:{ki:1.73, kiText:'1-3 nM', act:'an', actFull:'antagonist (β1-selective)', src:'PDSP Ki DB'} } },
+      { name:'Atenolol', g:'beta', cid:2249, b:{ beta_1:{ki:3.46, kiText:'2-6 nM', act:'an', actFull:'antagonist (β1-selective)', src:'PDSP Ki DB'} } },
+      { name:'Propranolol', g:'beta', cid:4946, b:{ beta_1:{ki:6.63, kiText:'4-11 nM', act:'an', actFull:'antagonist (non-selective)', src:'PDSP Ki DB'} } },
+      { name:'Ketamine', g:'nmda', cid:3821, b:{ nmda_glutamate:{ki:735, kiText:'600-900 nM', act:'an', actFull:'channel blocker (PCP site, noncompetitive)', src:'IUPHAR/BPS'} } },
+      { name:'Esketamine', g:'nmda', cid:182137, b:{ nmda_glutamate:{ki:283, kiText:'200-400 nM', act:'an', actFull:'channel blocker (PCP site, S-enantiomer)', src:'IUPHAR/BPS'} } },
+      { name:'Memantine', g:'nmda', cid:4054, b:{ nmda_glutamate:{ki:7600, kiText:'~7600 nM', act:'an', actFull:'channel blocker (low affinity)', src:'IUPHAR/BPS'} } },
+      { name:'Amantadine', g:'nmda', cid:2130, b:{ nmda_glutamate:{ki:1100, kiText:'~1100 nM', act:'an', actFull:'channel blocker', src:'IUPHAR/BPS'} } },
+      { name:'Glycine', g:'nmda', cid:750, b:{ nmda_glutamate:{ki:283, kiText:'200-400 nM', act:'ag', actFull:'obligatory co-agonist (glycine site)', src:'IUPHAR/BPS'} } },
+      { name:'D-Serine', g:'nmda', cid:71077, b:{ nmda_glutamate:{ki:251, kiText:'180-350 nM', act:'ag', actFull:'co-agonist (glycine site)', src:'IUPHAR/BPS'} } },
+      { name:'Fluoxetine', g:'antidep', cid:3386, b:{ sert:{ki:1.4, kiText:'1.4 nM', act:'ri', actFull:'reuptake inhibitor (SSRI)', src:'Biol Psychiatry 2001'} } },
+      { name:'Sertraline', g:'antidep', cid:68617, b:{ sert:{ki:0.32, kiText:'0.1-1.0 nM', act:'ri', actFull:'reuptake inhibitor (SSRI)', src:'PDSP / literature'}, net:{ki:980, kiText:'800-1200 nM', act:'ri', actFull:'weak reuptake inhibitor', src:'literature (tier)'} } },
+      { name:'Paroxetine', g:'antidep', cid:43815, b:{ sert:{ki:0.071, kiText:'0.05-0.1 nM', act:'ri', actFull:'reuptake inhibitor (highest-affinity SSRI)', src:'eLife 2020'}, net:{ki:8.94, kiText:'4-20 nM', act:'ri', actFull:'reuptake inhibitor (notable NET for an SSRI)', src:'PMC5437659'} } },
+      { name:'Escitalopram', g:'antidep', cid:146570, b:{ sert:{ki:1.1, kiText:'1.1 nM', act:'ri', actFull:'reuptake inhibitor (SSRI)', src:'Biol Psychiatry 2001'} } },
+      { name:'Venlafaxine', g:'antidep', cid:5656, b:{ sert:{ki:82, kiText:'82 nM', act:'ri', actFull:'reuptake inhibitor (SNRI)', src:'literature'}, net:{ki:2480, kiText:'2480 nM', act:'ri', actFull:'reuptake inhibitor (SERT 30x > NET)', src:'literature'} } },
+      { name:'Duloxetine', g:'antidep', cid:60835, b:{ sert:{ki:40.2, kiText:'40.2 nM', act:'ri', actFull:'reuptake inhibitor (SNRI)', src:'literature'}, net:{ki:558, kiText:'558 nM', act:'ri', actFull:'reuptake inhibitor (SNRI)', src:'literature'} } },
+      { name:'Desipramine', g:'antidep', cid:2995, b:{ sert:{ki:4.9, kiText:'3-8 nM', act:'ri', actFull:'reuptake inhibitor (TCA)', src:'PDSP Ki DB'}, net:{ki:4.47, kiText:'2-10 nM', act:'ri', actFull:'reuptake inhibitor (TCA, ~equal SERT/NET)', src:'PDSP Ki DB'}, histamine_h1:{ki:110, kiText:'~110 nM', act:'an', actFull:'antihistamine (modest, secondary amine)', src:'PDSP Ki DB'}, muscarinic_m1:{ki:198, kiText:'~198 nM', act:'an', actFull:'antimuscarinic (modest)', src:'PDSP Ki DB'} } },
+      { name:'Nortriptyline', g:'antidep', cid:4543, b:{ sert:{ki:6.32, kiText:'4-10 nM', act:'ri', actFull:'reuptake inhibitor (TCA)', src:'PDSP Ki DB'}, net:{ki:8.66, kiText:'5-15 nM', act:'ri', actFull:'reuptake inhibitor (TCA, NET-leaning)', src:'PDSP Ki DB'}, histamine_h1:{ki:10, kiText:'6-15 nM', act:'an', actFull:'antihistamine (sedation)', src:'PDSP Ki DB'}, muscarinic_m1:{ki:150, kiText:'~150 nM', act:'an', actFull:'antimuscarinic', src:'PDSP Ki DB'} } },
+      { name:'Cocaine', g:'antidep', cid:446220, b:{ sert:{ki:245, kiText:'200-300 nM', act:'ri', actFull:'reuptake inhibitor', src:'PMC4662164'}, net:{ki:316, kiText:'250-400 nM', act:'ri', actFull:'reuptake inhibitor (non-selective)', src:'PMC4662164'} } },
+      { name:'Phenylephrine', g:'alpha1', cid:6041, b:{ alpha_1:{ki:212, kiText:'150-300 nM', act:'ag', actFull:'agonist (selective)', src:'PDSP Ki DB'} } },
+      { name:'Prazosin', g:'alpha1', cid:4893, b:{ alpha_1:{ki:0.32, kiText:'0.2-0.51 nM', act:'an', actFull:'antagonist', src:'Proudman 2020'} } },
+      { name:'Doxazosin', g:'alpha1', cid:3157, b:{ alpha_1:{ki:0.49, kiText:'0.3-0.8 nM', act:'an', actFull:'antagonist', src:'IUPHAR/BPS'} } },
+      { name:'Terazosin', g:'alpha1', cid:5401, b:{ alpha_1:{ki:0.63, kiText:'0.4-1.0 nM', act:'an', actFull:'antagonist', src:'IUPHAR/BPS'} } },
+      { name:'Tamsulosin', g:'alpha1', cid:129211, b:{ alpha_1:{ki:1.04, kiText:'0.6-1.8 nM', act:'an', actFull:'antagonist (α1A/1D uroselective)', src:'IUPHAR/BPS'} } },
+      { name:'Clonidine', g:'alpha2', cid:2803, b:{ alpha_2:{ki:2.24, kiText:'1-5 nM', act:'ag', actFull:'agonist (220:1 α2:α1)', src:'IUPHAR/BPS'} } },
+      { name:'Dexmedetomidine', g:'alpha2', cid:5311068, b:{ alpha_2:{ki:0.55, kiText:'0.3-1.0 nM', act:'ag', actFull:'agonist (1620:1 α2:α1)', src:'IUPHAR/BPS'} } },
+      { name:'Guanfacine', g:'alpha2', cid:3519, b:{ alpha_2:{ki:4.9, kiText:'3-8 nM', act:'ag', actFull:'agonist (α2A-preferential)', src:'IUPHAR/BPS'} } },
+      { name:'Yohimbine', g:'alpha2', cid:8969, b:{ alpha_2:{ki:2.5, kiText:'0.88-7.1 nM', act:'an', actFull:'antagonist', src:'IUPHAR/BPS'} } },
+      { name:'Mirtazapine', g:'alpha2', cid:4205, b:{ alpha_2:{ki:49, kiText:'30-80 nM', act:'an', actFull:'antagonist (also H1, 5-HT2A)', src:'IUPHAR/BPS'}, histamine_h1:{ki:0.5, kiText:'0.14-1.5 nM', act:'an', actFull:'antagonist (potent; sedation, appetite)', src:'IUPHAR/BPS'}, serotonin_5ht2a:{ki:6.3, kiText:'3-12 nM', act:'an', actFull:'antagonist', src:'IUPHAR/BPS'} } },
+      { name:'Atomoxetine', g:'antidep', cid:54841, b:{ net:{ki:5, kiText:'5 nM', act:'ri', actFull:'reuptake inhibitor (selective NET)', src:'PDSP Ki DB'} } },
+      { name:'Reboxetine', g:'antidep', cid:65856, b:{ net:{ki:9.49, kiText:'6-15 nM', act:'ri', actFull:'reuptake inhibitor (selective NET)', src:'literature'} } },
+      { name:'Histamine', g:'antihist', cid:774, b:{ histamine_h1:{ki:6000, kiText:'~6 µM (low-affinity endogenous)', act:'ag', actFull:'endogenous agonist', src:'literature'} } },
+      { name:'Diphenhydramine', g:'antihist', cid:3100, b:{ histamine_h1:{ki:13, kiText:'4-16 nM', act:'an', actFull:'antagonist / inverse agonist', src:'PDSP Ki DB'}, muscarinic_m1:{ki:90, kiText:'80-100 nM', act:'an', actFull:'antimuscarinic (sedation, delirium)', src:'PDSP Ki DB'} } },
+      { name:'Doxepin', g:'antihist', cid:667477, b:{ histamine_h1:{ki:0.24, kiText:'0.017-0.24 nM', act:'an', actFull:'inverse agonist (most potent H1 known)', src:'literature'}, muscarinic_m1:{ki:80, kiText:'~80 nM', act:'an', actFull:'antimuscarinic (TCA)', src:'PDSP Ki DB'}, sert:{ki:68, kiText:'~68 nM', act:'ri', actFull:'reuptake inhibitor (TCA, high-dose)', src:'PDSP Ki DB'} } },
+      { name:'Hydroxyzine', g:'antihist', cid:3658, b:{ histamine_h1:{ki:2, kiText:'1-4 nM', act:'an', actFull:'antagonist (anxiolytic, antipruritic)', src:'literature'} } },
+      { name:'Promethazine', g:'antihist', cid:4927, b:{ histamine_h1:{ki:2.2, kiText:'1-5 nM', act:'an', actFull:'antagonist (sedating phenothiazine)', src:'PDSP Ki DB'}, muscarinic_m1:{ki:120, kiText:'~120 nM', act:'an', actFull:'antimuscarinic', src:'literature (tier)'} } },
+      { name:'Cyproheptadine', g:'antihist', cid:2913, b:{ histamine_h1:{ki:0.3, kiText:'0.1-0.6 nM', act:'an', actFull:'antagonist', src:'PDSP Ki DB'}, serotonin_5ht2a:{ki:1.1, kiText:'0.8-2 nM', act:'an', actFull:'antagonist (serotonin syndrome antidote)', src:'PDSP Ki DB'} } },
+      { name:'Acetylcholine', g:'cholin', cid:187, b:{ muscarinic_m1:{ki:1000, kiText:'~1 µM (endogenous)', act:'ag', actFull:'endogenous agonist', src:'literature'}, muscarinic_m3:{ki:1000, kiText:'~1 µM (endogenous)', act:'ag', actFull:'endogenous agonist', src:'literature'} } },
+      { name:'Xanomeline', g:'cholin', cid:4787456, b:{ muscarinic_m1:{ki:5, kiText:'3-15 nM', act:'ag', actFull:'agonist (M1/M4-preferring; KarXT)', src:'literature'}, muscarinic_m3:{ki:30, kiText:'~30 nM', act:'ag', actFull:'agonist (lower than M1/M4)', src:'literature (tier)'} } },
+      { name:'Pilocarpine', g:'cholin', cid:5910, b:{ muscarinic_m1:{ki:null, tier:2, kiText:'partial agonist', act:'pa', actFull:'non-selective partial agonist', src:'qualitative'}, muscarinic_m3:{ki:null, tier:2, kiText:'partial agonist', act:'pa', actFull:'partial agonist (secretagogue)', src:'qualitative'} } },
+      { name:'Bethanechol', g:'cholin', cid:2370, b:{ muscarinic_m3:{ki:null, tier:2, kiText:'agonist', act:'ag', actFull:'agonist (bladder & GI atony)', src:'qualitative'}, muscarinic_m1:{ki:null, tier:1, kiText:'weak', act:'ag', actFull:'agonist (non-selective)', src:'qualitative'} } },
+      { name:'Atropine', g:'cholin', cid:174174, b:{ muscarinic_m1:{ki:1.2, kiText:'0.4-2 nM', act:'an', actFull:'antagonist (non-selective)', src:'IUPHAR/BPS'}, muscarinic_m3:{ki:0.8, kiText:'0.4-1.5 nM', act:'an', actFull:'antagonist (non-selective)', src:'IUPHAR/BPS'} } },
+      { name:'Scopolamine', g:'cholin', cid:5184, b:{ muscarinic_m1:{ki:0.55, kiText:'0.3-1.0 nM', act:'an', actFull:'antagonist (CNS-penetrant)', src:'PDSP Ki DB'}, muscarinic_m3:{ki:0.6, kiText:'0.4-1.0 nM', act:'an', actFull:'antagonist', src:'PDSP Ki DB'} } },
+      { name:'Benztropine', g:'cholin', cid:1201549, b:{ muscarinic_m1:{ki:1.5, kiText:'1-3 nM', act:'an', actFull:'antimuscarinic (antiparkinson)', src:'literature'}, muscarinic_m3:{ki:3, kiText:'~3 nM', act:'an', actFull:'antimuscarinic', src:'literature (tier)'} } },
+      { name:'Oxybutynin', g:'cholin', cid:4634, b:{ muscarinic_m3:{ki:8, kiText:'5-12 nM', act:'an', actFull:'antagonist (M3-preferring, bladder)', src:'literature'}, muscarinic_m1:{ki:6, kiText:'4-10 nM', act:'an', actFull:'antagonist', src:'literature'} } },
+      { name:'Glycopyrrolate', g:'cholin', cid:11693, b:{ muscarinic_m3:{ki:1.5, kiText:'~1.5 nM', act:'an', actFull:'antagonist (peripheral, no CNS entry)', src:'literature (tier)'}, muscarinic_m1:{ki:2.5, kiText:'~2.5 nM', act:'an', actFull:'antagonist (peripheral)', src:'literature (tier)'} } }
+    ];
+
+    // Compute pKi from Ki (nM); tier for missing Ki
+    function getPKi(binding) {
+      if (binding.ki) return -Math.log10(binding.ki * 1e-9);
+      return null;
+    }
+    function getTier(binding) {
+      return binding.tier || null;
+    }
+
+    // Map a binding to a 0-3 radar value across the real data range (pKi ~5 to ~10.5).
+    function bindingV(binding) {
+      const pKi = getPKi(binding);
+      if (pKi !== null) return Math.min(3, Math.max(0, (pKi - 5) / 5.5 * 3));
+      return getTier(binding) || 0;
+    }
+
+    // Map pKi/tier to dot radius (px)
+    const DOT_PX = { 1:6, 2:10, 3:15 };
+    function dotSize(binding) {
+      const pKi = getPKi(binding);
+      if (pKi !== null) {
+        if (pKi >= 8.5) return 15;
+        if (pKi >= 7) return 10;
+        return 6;
+      }
+      const tier = getTier(binding);
+      return DOT_PX[tier] || 6;
+    }
+
+    // Rendering the Binding Affinity Plate
+    function renderBindingAffinityPlate() {
+      renderAffinityRadar();
+      renderAffinityMatrix();
+    }
+
+    // Radar SVG, 10 axes
+    function renderAffinityRadar() {
+      const V = 300, ccx = 150, ccy = 150, Rmax = 104, N = AFF_TARGETS.length;
+      function ang(i) { return -Math.PI/2 + i*2*Math.PI/N; }
+      function coords(i, v) {
+        const a = ang(i), r = v/3*Rmax;
+        return { x: ccx + r*Math.cos(a), y: ccy + r*Math.sin(a) };
+      }
+      function ringPath(v) {
+        return AFF_TARGETS.map((t, i) => {
+          const p = coords(i, v);
+          return (i ? 'L' : 'M') + p.x.toFixed(1) + ',' + p.y.toFixed(1);
+        }).join(' ') + ' Z';
+      }
+
+      let base = `<svg viewBox="0 0 ${V} ${V}" role="img" aria-label="Affinity radar across thirteen targets">`;
+      [1,2,3].forEach(v => base += `<path class="ring${v === 3 ? ' outer' : ''}" d="${ringPath(v)}"/>`);
+      AFF_TARGETS.forEach((t, i) => {
+        const p = coords(i, 3);
+        base += `<line class="axis" x1="${ccx}" y1="${ccy}" x2="${p.x.toFixed(1)}" y2="${p.y.toFixed(1)}"/>`;
+      });
+      base += `<g id="poly-layer"></g>`;
+      AFF_TARGETS.forEach((t, i) => {
+        const a = ang(i), lr = Rmax + 20;
+        const lx = ccx + lr*Math.cos(a), ly = ccy + lr*Math.sin(a);
+        const anchor = Math.abs(Math.cos(a)) < 0.3 ? 'middle' : (Math.cos(a) > 0 ? 'start' : 'end');
+        base += `<text class="axis-label" data-target="${t.id}" x="${lx.toFixed(1)}" y="${(ly+3).toFixed(1)}" text-anchor="${anchor}">${t.label}</text>`;
+      });
+      base += `<text class="ring-tick" x="${ccx+3}" y="${(ccy - Rmax/3).toFixed(1)}">weak</text>`;
+      base += `<text class="ring-tick" x="${ccx+3}" y="${(ccy - Rmax).toFixed(1)}">strong</text>`;
+      base += `</svg>`;
+      document.getElementById('radar').innerHTML = base;
+
+      // Keep radar axis/tick labels at a legible on-screen size regardless of how
+      // the SVG is scaled. font-size in the SVG is in user units (viewBox is V wide),
+      // so a fixed user-unit size renders tiny on a small radar; counter-scale it.
+      const fitRadarText = () => {
+        const host = document.getElementById('radar');
+        const svg = host && host.querySelector('svg');
+        if (!svg) return;
+        const w = host.clientWidth;            // svg is width:100% of host
+        if (!w) return;                        // matrix view still hidden -> width 0
+        const scale = w / V;                   // user units -> screen px
+        svg.style.setProperty('--axis-fs', (12 / scale).toFixed(2) + 'px');
+        svg.style.setProperty('--tick-fs', (10 / scale).toFixed(2) + 'px');
+      };
+      window.fitRadarText = fitRadarText;     // so the view switcher can re-fit on show
+      fitRadarText();
+      if (window.ResizeObserver && !window.__radarRO) {
+        window.__radarRO = new ResizeObserver(() => fitRadarText());
+        window.__radarRO.observe(document.getElementById('radar'));
+      }
+      if (!window.__radarResize) {
+        window.__radarResize = true;
+        window.addEventListener('resize', () => requestAnimationFrame(fitRadarText));
+      }
+
+      function polyPath(a) {
+        return AFF_TARGETS.map((t, i) => {
+          const v = a.b[t.id] ? bindingV(a.b[t.id]) : 0;
+          const p = coords(i, v);
+          return (i ? 'L' : 'M') + p.x.toFixed(1) + ',' + p.y.toFixed(1);
+        }).join(' ') + ' Z';
+      }
+
+      // Action colors match the matrix dots exactly (one color = one meaning).
+      const ACT_COLOR = { ag: 'var(--st-normal)', pa: 'var(--brass)', an: 'var(--st-over)', ri: 'var(--st-under)' };
+      // Pinned agents share action colors, so identity is carried by line style, not hue.
+      const DASHES = ['', '6 4', '2 3', '9 3 2 3'];
+
+      // An agent's dominant action = the action of its highest-affinity binding.
+      function primaryAct(a) {
+        let best = null, bestV = -Infinity;
+        Object.values(a.b).forEach(b => {
+          const v = bindingV(b);
+          if (v > bestV) { bestV = v; best = b.act; }
+        });
+        return best || 'an';
+      }
+
+      // Dots colored per-binding action (pinned) or bone (transient hover trace).
+      function polyDots(a, perAction) {
+        return AFF_TARGETS.map((t, i) => {
+          const b = a.b[t.id];
+          if (!b) return '';
+          const p = coords(i, bindingV(b));
+          const fill = perAction ? (ACT_COLOR[b.act] || 'var(--brass)') : 'var(--bone)';
+          return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.8" fill="${fill}"/>`;
+        }).join('');
+      }
+
+      let pins = ['Risperidone', 'Haloperidol'];
+
+      function drawPolys(hoverName) {
+        let s = '';
+        pins.forEach((nm, idx) => {
+          const a = AFF_AGENTS.find(x => x.name === nm);
+          if (!a) return;
+          const col = ACT_COLOR[primaryAct(a)] || 'var(--brass)';
+          const dash = DASHES[idx % DASHES.length];
+          s += `<path class="poly-stroke" d="${polyPath(a)}" fill="${col}" fill-opacity="0.07" stroke="${col}" stroke-width="1.8" stroke-dasharray="${dash}"/>` + polyDots(a, true);
+        });
+        if (hoverName && !pins.includes(hoverName)) {
+          const a = AFF_AGENTS.find(x => x.name === hoverName);
+          if (a) {
+            s += `<path class="poly-stroke" d="${polyPath(a)}" fill="var(--bone)" fill-opacity="0.05" stroke="var(--bone)" stroke-width="1.3" stroke-dasharray="3 3"/>` + polyDots(a, false);
+          }
+        }
+        document.getElementById('poly-layer').innerHTML = s;
+
+        const leg = document.getElementById('radar-legend');
+        if (pins.length) {
+          leg.innerHTML = pins.map((nm, idx) => {
+            const a = AFF_AGENTS.find(x => x.name === nm);
+            if (!a) return '';
+            const col = ACT_COLOR[primaryAct(a)] || 'var(--brass)';
+            const dash = DASHES[idx % DASHES.length];
+            const parts = Object.keys(a.b).map(tid => {
+              const t = AFF_TARGETS.find(x => x.id === tid);
+              const pKi = getPKi(a.b[tid]);
+              let level = 'weak';
+              if (pKi !== null) {
+                if (pKi >= 8.5) level = 'strong';
+                else if (pKi >= 7) level = 'moderate';
+              } else {
+                const tier = getTier(a.b[tid]);
+                if (tier === 3) level = 'strong';
+                else if (tier === 2) level = 'moderate';
+              }
+              return t ? `${t.label} ${level}` : '';
+            }).filter(x => x).join(' · ');
+            return `<span style="display:inline-flex;align-items:center;gap:0.5rem;color:var(--bone-dim)">`
+              + `<svg width="20" height="8" style="flex:none;overflow:visible"><line x1="0" y1="4" x2="20" y2="4" stroke="${col}" stroke-width="2" stroke-dasharray="${dash}"/></svg>`
+              + `<span><span style="color:var(--bone)">${nm}</span>: ${parts}</span></span>`;
+          }).join('');
+        } else {
+          leg.innerHTML = '<span class="hint">Hover an agent to trace its profile · click to pin and compare</span>';
+        }
+      }
+      drawPolys(null);
+
+      // Matrix row event listeners, attach later
+      window.affinityDrawPolys = drawPolys;
+      window.affinityPins = pins;
+    }
+
+    // Matrix grid
+    function renderAffinityMatrix() {
+      const grid = document.getElementById('grid');
+      let html = `<div class="col-head corner"></div>`;
+      AFF_TARGETS.forEach(t => html += `<div class="col-head" data-col="${t.id}">${t.label}</div>`);
+      AFF_GROUPS.forEach(gp => {
+        html += `<div class="group-label">${gp.label}</div>`;
+        AFF_AGENTS.filter(a => a.g === gp.id).forEach(a => {
+          html += `<div class="row" data-agent="${a.name}"><div class="agent-name" role="button" tabindex="0" aria-pressed="false" title="${a.name}">${a.name}</div>`;
+          AFF_TARGETS.forEach(t => {
+            const v = a.b[t.id];
+            if (v) {
+              const px = dotSize(v);
+              html += `<div class="cell"><span class="dot ${v.act}" style="width:${px}px;height:${px}px" data-agent="${a.name}" data-target="${t.id}" data-kitext="${v.kiText}" data-act="${v.actFull}" data-src="${v.src}"></span></div>`;
+            } else {
+              html += `<div class="cell"></div>`;
+            }
+          });
+          html += `</div>`;
+        });
+      });
+      grid.innerHTML = html;
+
+      // Sync each row's pinned class + the agent-name's aria-pressed to the pin set.
+      function syncPinned() {
+        document.querySelectorAll('.row').forEach(x => {
+          const on = window.affinityPins.includes(x.dataset.agent);
+          x.classList.toggle('pinned', on);
+          const nm = x.querySelector('.agent-name');
+          if (nm) nm.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+      }
+      function togglePin(nm) {
+        const idx = window.affinityPins.indexOf(nm);
+        if (idx !== -1) {
+          window.affinityPins.splice(idx, 1);
+        } else {
+          if (window.affinityPins.length >= 4) window.affinityPins.shift();
+          window.affinityPins.push(nm);
+        }
+        syncPinned();
+        window.affinityDrawPolys(null);
+      }
+
+      // Row interactions (pointer + keyboard)
+      document.querySelectorAll('.row').forEach(r => {
+        const nameEl = r.querySelector('.agent-name');
+        const trace = () => { r.classList.add('lit'); window.affinityDrawPolys(r.dataset.agent); };
+        const untrace = () => { r.classList.remove('lit'); window.affinityDrawPolys(null); };
+        r.addEventListener('mouseenter', trace);
+        r.addEventListener('mouseleave', untrace);
+        r.addEventListener('click', () => togglePin(r.dataset.agent));
+        if (nameEl) {
+          nameEl.addEventListener('focus', trace);
+          nameEl.addEventListener('blur', untrace);
+          nameEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); togglePin(r.dataset.agent); }
+          });
+        }
+      });
+      syncPinned();
+
+      // Column header target interactions
+      document.querySelectorAll('.col-head[data-col]').forEach(c => {
+        c.addEventListener('mouseenter', () => {
+          const tid = c.dataset.col;
+          c.classList.add('lit');
+          document.querySelector(`.axis-label[data-target="${tid}"]`).classList.add('lit');
+          document.querySelectorAll('.row').forEach(r => {
+            const a = AFF_AGENTS.find(x => x.name === r.dataset.agent);
+            r.classList.toggle('dim', !(a && a.b[tid]));
+          });
+        });
+        c.addEventListener('mouseleave', () => {
+          c.classList.remove('lit');
+          document.querySelectorAll('.axis-label').forEach(l => l.classList.remove('lit'));
+          document.querySelectorAll('.row').forEach(r => r.classList.remove('dim'));
+        });
+      });
+
+      // Dot hover tooltips
+      document.querySelectorAll('.dot').forEach(dot => {
+        dot.addEventListener('mouseenter', (e) => {
+          const agent = dot.dataset.agent;
+          const target = AFF_TARGETS.find(x => x.id === dot.dataset.target);
+          const kiText = dot.dataset.kitext;
+          const act = dot.dataset.act;
+          const src = dot.dataset.src;
+
+          const tooltip = document.createElement('div');
+          tooltip.className = 'affinity-tooltip';
+          tooltip.innerHTML = `
+            <strong>${agent}</strong><br/>
+            <strong>${target ? target.label : 'Target'}</strong><br/>
+            Ki: ${kiText}<br/>
+            ${act}<br/>
+            <em style="font-size: 0.65rem; color: var(--bone-faint);">${src}</em>
+          `;
+          // Set initial position at mouse cursor
+          tooltip.style.left = (e.clientX + 12) + 'px';
+          tooltip.style.top = (e.clientY + 12) + 'px';
+          document.body.appendChild(tooltip);
+
+          const follow = (ev) => {
+            tooltip.style.left = (ev.clientX + 12) + 'px';
+            tooltip.style.top = (ev.clientY + 12) + 'px';
+          };
+          document.addEventListener('mousemove', follow);
+          dot.addEventListener('mouseleave', () => {
+            tooltip.remove();
+            document.removeEventListener('mousemove', follow);
+          }, { once: true });
+        });
+      });
+    }
+
+    function handleSearch(val) {
+      searchQuery = val;
+      renderExplorerList();
+    }
+
+    // Diagnostic dialog content
+    const diagnosticDB = {
+      opioid_triad: {
+        title: 'The Opioid Overdose Triad',
+        desc: 'The classic clinical pathognomonic presentation indicating toxic opioid ingestion. Direct binding of potent mu agonists down-regulates respiratory cycle pacemakers in the brainstem, which can quickly lead to fatal asphyxia if not reversed.',
+        symptoms: [
+          'Pinpoint Pupils (Miosis) - mediated via disinhibition of parasympathetic oculomotor pathways.',
+          'Respiratory Depression - severe drop in respiratory rate (often below 8 breaths per minute).',
+          'Altered Mental Status - lethargy, stupor, progressing to complete comatose state.'
+        ]
+      },
+      excitotoxicity: {
+        title: 'Glutamate-Mediated Excitotoxicity',
+        desc: 'A pathologic mechanism in which excessive exposure to glutamate or hyperstimulation of NMDA receptors causes neuronal injury or cell death. Under continuous synaptic glutamate loading, the receptor stays active, allowing unregulated ionic currents to enter.',
+        symptoms: [
+          'Intracellular Calcium Overload - hyper-activation of calpains, caspases, and endonucleases.',
+          'Mitochondrial Failure - loss of proton gradient, leading to cyt C release and immediate cell necrosis.',
+          'Free Radical Outburst - high production of Reactive Oxygen Species (ROS) destroying structural lipids.'
+        ]
+      },
+      delirium_tremens: {
+        title: 'Delirium Tremens (GABA Withdrawal)',
+        desc: 'A severe, life-threatening manifestation of alcohol or benzodiazepine withdrawal, caused by sudden removal of chronic positive allosteric enhancement from down-regulated GABA-A receptors.',
+        symptoms: [
+          'Extreme Autonomic Hyperactivity - severe sinus tachycardia, diaphoresis, hyperthermia.',
+          'Cerebral Hallucinations - terrifying microzoopsic (small crawling animals) visual hallucinations.',
+          'Uncontrolled Psychomotor Agitation - continuous visual tremors, pacing, extreme panic.'
+        ]
+      },
+      serotonin_syndrome: {
+        title: 'Serotonin Syndrome Profile',
+        desc: 'A life-threatening drug-induced clinical triad of neuromuscular excitation, autonomic dysfunction, and altered mental status. It is driven by hyperstimulation of 5-HT1A and particularly 5-HT2A receptors.',
+        symptoms: [
+          'Neuromuscular Hyperreactivity - spontaneous clonus, hyperreflexia, lower-extremity rigidity.',
+          'Autonomic Instability - extreme hyperthermia, tachycardia, profuse diaphoresis, dilated pupils.',
+          'Mental Status Alteration - agitation, delirium, severe confusion, flight response.'
+        ]
+      },
+      nms: {
+        title: 'Neuroleptic Malignant Syndrome (NMS)',
+        desc: 'A rare, life-threatening idiosyncratic reaction to dopamine D2 receptor antagonists (typically first-generation antipsychotics). Severe central D2 blockade in the striatum and hypothalamus disrupts motor control and thermoregulation.',
+        symptoms: [
+          'Lead-Pipe Rigidity - severe generalized skeletal muscle stiffness and resistance.',
+          'Severe Hyperthermia - core temperatures exceeding 40°C (104°F).',
+          'Autonomic Instability - fluctuating blood pressure, tachycardia, dysrhythmias, diaphoresis.'
+        ]
+      }
+    };
+
+    // ordered phrase -> drawer map; first phrase present in a bullet becomes the link
+    const TERM_LINKS = [
+      ['opioid_triad', ['Opioid Overdose Triad', 'pinpoint pupils']],
+      ['excitotoxicity', ['excitotoxic', 'calcium overload', 'Neuronal cell death']],
+      ['delirium_tremens', ['Delirium Tremens']],
+      ['serotonin_syndrome', ['Serotonin Syndrome', 'spontaneous clonus']],
+      ['nms', ['Neuroleptic Malignant Syndrome', 'Lead-pipe muscular rigidity', '(NMS)']]
+    ];
+    function linkDiagnosticTerms(bullet) {
+      for (const [key, phrases] of TERM_LINKS) {
+        for (const phrase of phrases) {
+          if (bullet.includes(phrase)) {
+            return bullet.replace(phrase,
+              `<span onclick="openDiagnosticDrawer('${key}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDiagnosticDrawer('${key}');}" class="term-link" role="button" tabindex="0" aria-haspopup="dialog">${phrase}</span>`);
+          }
+        }
+      }
+      return bullet;
+    }
+
+    let drawerReturnFocus = null;
+    const DRAWER_KICKERS = {
+      opioid_triad:      'Toxicology Syndrome',
+      excitotoxicity:    'Pathophysiology',
+      delirium_tremens:  'Withdrawal Syndrome',
+      serotonin_syndrome:'Toxidrome',
+      nms:               'Idiosyncratic Reaction'
+    };
+
+    function openDiagnosticDrawer(key) {
+      const data = diagnosticDB[key];
+      if (!data) return;
+      drawerReturnFocus = document.activeElement;
+      const kicker = document.getElementById('drawer-kicker');
+      if (kicker) kicker.textContent = DRAWER_KICKERS[key] || 'Clinical Reference';
+      document.getElementById('drawer-title').textContent = data.title;
+      document.getElementById('drawer-desc').textContent = data.desc;
+      const symp = document.getElementById('drawer-symptoms');
+      symp.innerHTML = '';
+      data.symptoms.forEach(s => {
+        const li = document.createElement('li');
+        li.textContent = s;
+        symp.appendChild(li);
+      });
+      document.getElementById('info-drawer').classList.remove('hidden');
+      document.querySelector('#info-drawer .dialog-close').focus();
+    }
+
+    function closeInfoDrawer() {
+      document.getElementById('info-drawer').classList.add('hidden');
+      if (drawerReturnFocus && typeof drawerReturnFocus.focus === 'function') {
+        drawerReturnFocus.focus();
+      }
+      drawerReturnFocus = null;
+    }
+
+    // keep keyboard focus inside the open dialog; Escape closes it
+    document.addEventListener('keydown', e => {
+      const drawer = document.getElementById('info-drawer');
+      if (drawer.classList.contains('hidden')) return;
+      if (e.key === 'Escape') { closeInfoDrawer(); return; }
+      if (e.key === 'Tab') {
+        const f = drawer.querySelectorAll('button');
+        if (!f.length) return;
+        const first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    });
+  </script>
+
+  <script>
+  /* ════════════════════════════════════════════════════════════════
+     ATLAS BRIDGE, Volume II speaks to the shell
+     Reports the focused receptor upward and accepts cross-volume nav,
+     so a specimen can be traced in from the Archive or the Ledger.
+     ════════════════════════════════════════════════════════════════ */
+  (function () {
+    var CANON2LOCAL = { '5ht2a':'serotonin_5ht2a', 'sert':'sert', 'd2':'dopamine_d2',
+      'alpha1':'alpha_1', 'alpha2':'alpha_2', 'beta1':'beta_1', 'net':'net',
+      'nmda':'nmda_glutamate', 'gaba_a':'gaba_a', 'm1':'muscarinic_m1',
+      'h1':'histamine_h1', 'mu':'mu_opioid', 'm3':'muscarinic_m3' };
+    var LOCAL2CANON = {}; for (var k in CANON2LOCAL) LOCAL2CANON[CANON2LOCAL[k]] = k;
+    var STATION2VIEW = { cabinet:'explorer', explorer:'explorer', catalogue:'matrix',
+      matrix:'matrix', primer:'primer' };
+    var VOL = 'cabinet';
+
+    function framed(){ try { return window.self !== window.top; } catch (e) { return true; } }
+    if (!framed() && location.search.indexOf('embed') === -1) return;
+
+    function up(msg){ try { parent.postMessage(msg, '*'); } catch (e) {} }
+    function currentLocal(){ try { return (typeof selectedReceptorId !== 'undefined') ? selectedReceptorId : null; } catch (e) { return null; } }
+    function emit(localId){
+      var local = localId || currentLocal();
+      var canon = local && LOCAL2CANON[local] ? LOCAL2CANON[local] : null;
+      up({ type:'atlas:subject', volume:VOL, subject:canon, label:'' });
+    }
+    function wrap(name, after){
+      var orig = window[name];
+      if (typeof orig !== 'function') return;
+      window[name] = function(){ var r = orig.apply(this, arguments); try { after.apply(this, arguments); } catch (e) {} return r; };
+    }
+    function applyNav(subject, station){
+      if (station && STATION2VIEW[station] && typeof setViewMode === 'function') setViewMode(STATION2VIEW[station]);
+      if (subject && CANON2LOCAL[subject] && typeof selectReceptor === 'function') {
+        if (!station && typeof setViewMode === 'function') setViewMode('explorer');
+        selectReceptor(CANON2LOCAL[subject]);
+        requestAnimationFrame(function(){
+          var sel = document.querySelector('#explorer-list-container .is-selected, #explorer-list-container [aria-selected="true"]');
+          if (sel) { try { sel.scrollIntoView({ block:'nearest' }); } catch (e) {} }
+        });
+      }
+    }
+    function start(){
+      wrap('selectReceptor', function(id){ emit(id); });
+      var p; try { p = new URLSearchParams(location.search); } catch (e) { p = null; }
+      if (p) applyNav(p.get('subject'), p.get('station'));
+      up({ type:'atlas:ready', volume:VOL });
+      emit(null);
+    }
+    window.addEventListener('message', function(e){
+      var d = e.data; if (!d || d.type !== 'atlas:nav') return;
+      applyNav(d.subject, d.station); emit(null);
+    });
+    if (document.readyState === 'loading') window.addEventListener('DOMContentLoaded', function(){ setTimeout(start, 90); });
+    else setTimeout(start, 90);
+  })();
+  </script>
+</body>
+</html>

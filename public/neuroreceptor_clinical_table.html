@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Clinical Ledger · Neuroreceptor Activity & Presentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Schibsted+Grotesk:wght@400;500;700&family=Fragment+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --wall-atrium:    oklch(17% 0.012 75);
+    --wall-panel:     oklch(20% 0.013 75);
+    --wall-recess:    oklch(14% 0.011 75);
+
+    --st-normal:      oklch(78% 0.085 158);
+    --st-over:        oklch(66% 0.185 38);
+    --st-under:       oklch(72% 0.10 245);
+    --wall-over:      oklch(23% 0.060 28);
+    --wall-under:     oklch(18% 0.045 255);
+    --wall-normal:    oklch(18% 0.030 158);
+
+    --bone:       oklch(93% 0.012 85);
+    --bone-dim:   oklch(72% 0.015 85);
+    --bone-read:  oklch(86% 0.013 85);
+    --bone-faint: oklch(63% 0.013 85);
+    --vermilion:  oklch(62% 0.19 35);
+    --brass:      oklch(70% 0.055 80);
+    --brass-line: oklch(70% 0.055 80 / 0.28);
+    --brass-faint:oklch(70% 0.055 80 / 0.14);
+
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --row-stagger: 42ms;
+
+    --display: "Marcellus", serif;
+    --body: "Schibsted Grotesk", sans-serif;
+    --mono: "Fragment Mono", monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; font-size: clamp(15px, 13px + 0.2vw, 18px); }
+  body {
+    background-color: var(--wall-atrium);
+    color: var(--bone);
+    font-family: var(--body);
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--vermilion); color: var(--wall-recess); }
+  ::-webkit-scrollbar { width: 7px; height: 7px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--brass-faint); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--brass); }
+  :focus-visible { outline: 1px solid var(--brass); outline-offset: 3px; }
+  .mono { font-family: var(--mono); text-transform: uppercase; }
+
+  /* ============ masthead ============ */
+  .masthead {
+    position: sticky; top: 0; z-index: 40;
+    background: var(--wall-recess);
+    border-bottom: 1px solid var(--brass-line);
+    animation: masthead-in 0.6s var(--ease) both;
+  }
+  @keyframes masthead-in { from { translate: 0 -100%; opacity: 0; } }
+  .masthead-in {
+    max-width: 112rem; margin-inline: auto;
+    padding: 1.05rem clamp(1.2rem, 5vw, 3.5rem);
+    display: flex; flex-wrap: wrap; align-items: center;
+    justify-content: space-between; gap: 1.2rem;
+  }
+  .brand { display: flex; align-items: center; gap: 1rem; }
+  .brand-mark {
+    width: 44px; height: 44px; flex: none;
+    border: 1px solid var(--brass-line); border-radius: 2px;
+    display: grid; place-content: center; background: var(--wall-recess);
+  }
+  .brand-mark svg { width: 26px; height: 26px; overflow: visible; }
+  .bm-path { stroke-dasharray: 1; stroke-dashoffset: 1; }
+  .bm-outer { animation: bm-draw 0.9s var(--ease) 0.4s forwards; }
+  .bm-cross { animation: bm-draw 0.75s var(--ease) 0.62s forwards; }
+  .bm-inner { animation: bm-draw 0.65s var(--ease) 0.74s forwards; }
+  @keyframes bm-draw { to { stroke-dashoffset: 0; } }
+  .brand-est {
+    font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.15em;
+    color: var(--bone-faint); text-transform: uppercase;
+  }
+  .brand h1 {
+    font-family: var(--display); font-weight: 400;
+    font-size: clamp(1.1rem, 2.4vw, 1.65rem); letter-spacing: 0.06em;
+    text-transform: uppercase; line-height: 1.1; margin-top: 0.15rem;
+  }
+  .brand-cat {
+    font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.14em;
+    color: var(--vermilion); text-transform: uppercase; margin-left: 0.5rem;
+    border: 1px solid var(--brass-line); padding: 0.15rem 0.45rem;
+    border-radius: 2px; vertical-align: 0.18em; white-space: nowrap;
+  }
+  .search { position: relative; width: clamp(13rem, 24vw, 19rem); }
+  .search svg {
+    position: absolute; left: 0.85rem; top: 50%; translate: 0 -50%;
+    width: 14px; height: 14px; color: var(--bone-faint); pointer-events: none;
+  }
+  .search input {
+    width: 100%; background: var(--wall-recess);
+    border: 1px solid var(--brass-line); border-radius: 2px;
+    color: var(--bone); font-family: var(--body); font-size: 0.85rem;
+    padding: 0.6rem 0.9rem 0.6rem 2.3rem;
+    transition: border-color 0.4s var(--ease);
+  }
+  .search input::placeholder { color: var(--bone-faint); }
+  .search input:focus { outline: none; border-color: var(--brass); }
+
+  /* ============ layout ============ */
+  main {
+    max-width: 112rem; margin-inline: auto;
+    padding: clamp(1.6rem, 4vw, 3rem) clamp(1.2rem, 5vw, 3.5rem) 4rem;
+  }
+
+  .intro { max-width: 64ch; margin-bottom: 2rem; }
+  .intro .section-label {
+    font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--bone-faint);
+    display: block; margin-bottom: 0.8rem;
+  }
+  .intro h2 {
+    font-family: var(--display); font-weight: 400;
+    font-size: clamp(1.6rem, 4vw, 2.6rem); letter-spacing: 0.03em;
+    line-height: 1.1; margin-bottom: 0.9rem;
+  }
+  .intro p { color: var(--bone-dim); font-size: 0.95rem; }
+  .intro .lede-accent { color: var(--bone); }
+
+  /* control rail */
+  .controls {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.9rem 1.4rem;
+    padding: 1rem 0; margin-bottom: 0.4rem;
+    border-block: 1px solid var(--brass-line);
+  }
+  .ctrl-group { display: flex; flex-direction: column; gap: 0.5rem; }
+  .ctrl-label {
+    font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--bone-faint);
+  }
+  .segmented {
+    display: inline-flex; border: 1px solid var(--brass-line);
+    border-radius: 2px; overflow: hidden; background: var(--wall-recess);
+    flex-wrap: wrap;
+  }
+  .segmented button {
+    appearance: none; background: transparent; border: 0;
+    border-left: 1px solid var(--brass-faint); cursor: pointer;
+    color: var(--bone-faint); font-family: var(--mono); font-size: 0.6875rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 0.5rem 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;
+    transition: color 0.3s var(--ease), background-color 0.3s var(--ease);
+  }
+  .segmented button:first-child { border-left: 0; }
+  .segmented button:hover { color: var(--bone); }
+  .segmented button.is-active { color: var(--bone); background: oklch(93% 0.012 85 / 0.06); }
+  .seg-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.55; }
+  .segmented button.is-active .seg-dot { opacity: 1; }
+  .seg-dot.over { background: var(--st-over); }
+  .seg-dot.under { background: var(--st-under); }
+  .seg-dot.both { background: var(--brass); }
+
+  .spacer { flex: 1 1 auto; }
+  .count-badge {
+    font-family: var(--mono); font-size: 0.6875rem; font-variant-numeric: tabular-nums;
+    letter-spacing: 0.12em; color: var(--bone-dim);
+    border: 1px solid var(--brass-line); padding: 0.3rem 0.6rem; border-radius: 2px;
+    align-self: flex-end;
+  }
+  .print-btn { display: inline-flex; align-items: center; gap: 0.45rem; align-self: flex-end;
+    font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--bone-dim); background: var(--wall-recess); border: 1px solid var(--brass-line);
+    border-radius: 2px; padding: 0.4rem 0.7rem; cursor: pointer;
+    transition: color 0.25s var(--ease), border-color 0.25s var(--ease); }
+  .print-btn svg { width: 14px; height: 14px; flex: none; }
+  .print-btn:hover { color: var(--vermilion); border-color: var(--vermilion); }
+
+  /* ============ the ledger table ============ */
+  .ledger-wrap {
+    margin-top: 1.4rem; border: 1px solid var(--brass-line); border-radius: 3px;
+    background: var(--wall-panel); overflow: hidden;
+  }
+  .ledger-scroll { overflow-x: auto; }
+  table.ledger { width: 100%; border-collapse: collapse; min-width: 940px; }
+  .ledger thead th {
+    position: sticky; top: var(--mast-h, 4.6rem); z-index: 5;
+    background: var(--wall-recess);
+    font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--bone-dim);
+    text-align: left; font-weight: 400; padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--brass-line); white-space: nowrap;
+  }
+  .ledger thead th .th-sub { display: block; color: var(--bone-faint); font-size: 0.6rem; margin-top: 0.2rem; }
+  .th-over { color: var(--st-over) !important; }
+  .th-under { color: var(--st-under) !important; }
+  .col-no { width: 2.6rem; }
+  .col-recep { width: 14rem; }
+
+  .grp-row td {
+    font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--brass);
+    padding: 1.1rem 1rem 0.5rem; background: oklch(0% 0 0 / 0.14);
+    border-bottom: 1px solid var(--brass-faint);
+  }
+  .grp-row td::before { content: "◆ "; color: var(--vermilion); font-size: 0.7em; vertical-align: 0.15em; }
+
+  tbody tr.rec-row {
+    border-bottom: 1px solid var(--brass-faint);
+    cursor: pointer;
+    opacity: 0; translate: 0 10px;
+    animation: row-in 0.55s var(--ease) forwards;
+    animation-delay: calc(var(--i, 0) * var(--row-stagger));
+    transition: background-color 0.4s var(--ease);
+  }
+  @keyframes row-in { to { opacity: 1; translate: 0 0; } }
+  tbody tr.rec-row:hover { background: oklch(93% 0.012 85 / 0.035); }
+  tbody tr.rec-row.is-open { background: oklch(62% 0.19 35 / 0.07); }
+  tbody tr.rec-row td { padding: 0.95rem 1rem; vertical-align: top; font-size: 0.875rem; }
+
+  .cell-no { font-family: var(--mono); font-size: 0.72rem; color: var(--bone-faint); font-variant-numeric: tabular-nums; }
+  tr.rec-row:hover .cell-no, tr.rec-row.is-open .cell-no { color: var(--vermilion); }
+  .rec-name { font-family: var(--display); font-size: 1.05rem; letter-spacing: 0.02em; color: var(--bone); line-height: 1.2; }
+  .rec-class { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--bone-faint); margin-top: 0.35rem; display: flex; align-items: center; gap: 0.4rem; }
+  .rec-class .chip { border: 1px solid var(--brass-faint); border-radius: 2px; padding: 0.05rem 0.35rem; }
+  .rec-baseline { color: var(--bone-read); font-size: 0.82rem; line-height: 1.5; }
+
+  .sx-cell { color: var(--bone-read); line-height: 1.55; }
+  .sx-cell .sx-lead { display: block; font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.35rem; }
+  .sx-over .sx-lead { color: var(--st-over); }
+  .sx-under .sx-lead { color: var(--st-under); }
+  .sx-cell ul { list-style: none; display: flex; flex-direction: column; gap: 0.28rem; }
+  .sx-cell li { display: grid; grid-template-columns: auto 1fr; gap: 0.45rem; font-size: 0.82rem; }
+  .sx-over li::before { content: "▲"; color: var(--st-over); font-size: 0.5em; line-height: 2.1; }
+  .sx-under li::before { content: "▼"; color: var(--st-under); font-size: 0.5em; line-height: 2.1; }
+
+  .expander { color: var(--bone-faint); font-family: var(--mono); font-size: 1.1rem; line-height: 1; transition: transform 0.4s var(--ease), color 0.3s; display: inline-block; }
+  tr.rec-row.is-open .expander { transform: rotate(45deg); color: var(--vermilion); }
+
+  /* state focus dimming */
+  table.ledger[data-focus="over"] .sx-under,
+  table.ledger[data-focus="under"] .sx-over { opacity: 0.26; transition: opacity 0.4s var(--ease); }
+
+  /* detail drawer */
+  tr.detail-row > td { padding: 0 !important; border-bottom: 1px solid var(--brass-faint); background: var(--wall-recess); }
+  .detail-inner {
+    display: grid; grid-template-rows: 0fr;
+    transition: grid-template-rows 0.5s var(--ease);
+  }
+  tr.detail-row.open .detail-inner { grid-template-rows: 1fr; }
+  .detail-clip { overflow: hidden; }
+  .detail-pad {
+    padding: 1.4rem clamp(1rem, 3vw, 2rem) 1.8rem 3.6rem;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1.6rem 2.4rem;
+    border-top: 2px solid var(--st-accent, var(--brass));
+  }
+  .det-block h4 {
+    font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--bone-faint); margin-bottom: 0.6rem;
+    display: flex; align-items: center; gap: 0.4rem;
+  }
+  .det-block h4::before { content: "◆"; color: var(--brass); font-size: 0.55em; }
+  .det-block p { color: var(--bone-read); font-size: 0.85rem; line-height: 1.6; }
+  .mech-text { font-family: var(--mono); font-size: 0.78rem; line-height: 1.7; color: var(--bone-read); }
+  .stahl-note {
+    border: 1px solid var(--brass-faint); border-left: 2px solid var(--vermilion);
+    border-radius: 2px; padding: 0.8rem 1rem; background: oklch(0% 0 0 / 0.18);
+  }
+  .stahl-note .ref { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--vermilion); display: block; margin-bottom: 0.45rem; }
+  .stahl-note p { font-size: 0.82rem; color: var(--bone-read); }
+  .tag-wrap { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .tag { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.03em; padding: 0.28rem 0.5rem; border-radius: 2px; border: 1px solid var(--brass-faint); color: var(--bone-dim); background: oklch(0% 0 0 / 0.12); }
+  .tag.ag { border-color: oklch(78% 0.085 158 / 0.45); color: var(--st-normal); }
+  .tag.an { border-color: oklch(66% 0.185 38 / 0.45); color: var(--st-over); }
+  .cite { font-family: var(--mono); font-size: 0.68rem; color: var(--bone-faint); line-height: 1.5; }
+  .cite a { color: var(--bone-dim); text-decoration: none; border-bottom: 1px solid var(--brass-faint); }
+  .cite a:hover { color: var(--vermilion); border-color: var(--vermilion); }
+
+  .empty { padding: 3rem 1rem; text-align: center; color: var(--bone-faint); font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; }
+
+  /* footer */
+  .colophon {
+    margin-top: 2.4rem; padding-top: 1.2rem; border-top: 1px solid var(--brass-line);
+    display: flex; flex-wrap: wrap; gap: 0.6rem 2rem; justify-content: space-between;
+    font-family: var(--mono); font-size: 0.68rem; color: var(--bone-faint); letter-spacing: 0.04em;
+  }
+  .colophon b { color: var(--bone-dim); font-weight: 400; }
+  .disclaimer { max-width: 70ch; line-height: 1.6; }
+
+  @media (max-width: 760px) {
+    .ledger thead th { top: 0; }
+    .detail-pad { padding-left: 1.4rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.001s !important; animation-delay: 0s !important; transition-duration: 0.001s !important; }
+    tr.rec-row { opacity: 1; translate: 0 0; }
+    .bm-path { stroke-dashoffset: 0 !important; }
+  }
+  /* inside the Atlas the shell lintel already carries identity, so the
+     volume's own masthead is dropped; its filter-search lives in the controls.
+     With the masthead gone, --mast-h resolves to 0 and the table header sticks
+     directly under the lintel (no empty second bar, no offset clipping rows). */
+  html.embedded .masthead { display: none; }
+  /* inside the Atlas, the rotunda and breadcrumb already orient the reader,
+     so the ledger opens on its controls and table, not a full intro block */
+  html.embedded .intro { display: none; }
+  html.embedded main > .controls { padding-top: clamp(1rem, 3vh, 1.6rem); }
+
+  /* on a phone the drawer caps its height and scrolls internally, keeping the row in view */
+  @media (max-width: 760px) { .detail-pad { max-height: 62vh; overflow-y: auto; } }
+
+  /* one-page printable cheat sheet: ink-economical light theme, chrome stripped */
+  @media print {
+    .masthead, .controls, .intro, .colophon, .print-btn, .expander, .seg-dot, .detail-row { display: none !important; }
+    body { background: #fff !important; color: #141414 !important; }
+    main { padding: 0 !important; max-width: none !important; }
+    .ledger-wrap { border: 0 !important; background: #fff !important; }
+    table.ledger { min-width: 0 !important; width: 100% !important; font-size: 8.5pt; }
+    table.ledger .sx-cell { opacity: 1 !important; }
+    thead th { color: #000 !important; background: #eee !important; border-bottom: 1px solid #999 !important; position: static !important; }
+    tbody tr.rec-row td { color: #1a1a1a !important; padding: 4pt 6pt !important; border-bottom: 1px solid #ccc !important; vertical-align: top; }
+    .rec-name { color: #000 !important; }
+    .rec-class, .rec-baseline, .sx-cell, .sx-cell li { color: #1a1a1a !important; }
+    .chip { border-color: #aaa !important; color: #333 !important; }
+    .sx-over li::before { content: "▲ "; color: #000 !important; }
+    .sx-under li::before { content: "▼ "; color: #000 !important; }
+    .grp-row td { background: #f1f1f1 !important; color: #000 !important; border: 0 !important; }
+    tr, td, th { break-inside: avoid; }
+    a { color: #000 !important; text-decoration: none; }
+  }
+</style>
+<script>
+  (function () {
+    try { var framed = false; try { framed = window.self !== window.top; } catch (e2) { framed = true; } if (framed || new URLSearchParams(location.search).has('embed')) document.documentElement.classList.add('embedded'); } catch (e) {}
+    function applyHash() {
+      var h = (location.hash || '').replace('#', '').toLowerCase();
+      if (typeof setFocus === 'function' && (h === 'over' || h === 'under' || h === 'both')) setFocus(h);
+    }
+    window.addEventListener('load', applyHash);
+    window.addEventListener('hashchange', applyHash);
+  })();
+</script>
+</head>
+<body>
+  <header class="masthead">
+    <div class="masthead-in">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 26 26" fill="none">
+            <circle class="bm-path bm-outer" pathLength="1" cx="13" cy="13" r="9" stroke="var(--brass)" stroke-width="1"/>
+            <circle class="bm-path bm-inner" pathLength="1" cx="13" cy="13" r="3.2" stroke="var(--vermilion)" stroke-width="1"/>
+            <path class="bm-path bm-cross" pathLength="1" d="M13 1.5v6M13 18.5v6M1.5 13h6M18.5 13h6" stroke="var(--brass)" stroke-width="1"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-est">The Clinical Ledger · Companion to the Receptor Cabinet</div>
+          <h1>Neuroreceptor Activity &amp; Presentation <span class="brand-cat">Ref · III</span></h1>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="intro">
+      <span class="section-label">Symptom &amp; Clinical Presentation Matrix</span>
+      <h2>What each receptor does, and what its loss or excess looks like at the bedside.</h2>
+      <p><span class="lede-accent">Sixteen receptors and transporters, organized by neurotransmitter system.</span> Each row reads left to right from baseline physiology into the two failure modes: <span style="color:var(--st-over)">overstimulation</span> and <span style="color:var(--st-under)">understimulation / blockade</span>. Open any row for mechanism, the matched cross-reference from Stahl's <i>Essential Psychopharmacology</i>, and the drugs that move it.</p>
+    </div>
+
+    <div class="controls">
+      <div class="ctrl-group">
+        <span class="ctrl-label">System</span>
+        <div class="segmented" id="system-filter" role="group" aria-label="Filter by neurotransmitter system"></div>
+      </div>
+      <div class="ctrl-group">
+        <span class="ctrl-label">State Focus</span>
+        <div class="segmented" role="group" aria-label="Emphasize a receptor state">
+          <button type="button" class="is-active" data-focus="both" onclick="setFocus('both')"><span class="seg-dot both"></span>Both</button>
+          <button type="button" data-focus="over" onclick="setFocus('over')"><span class="seg-dot over"></span>Overstim.</button>
+          <button type="button" data-focus="under" onclick="setFocus('under')"><span class="seg-dot under"></span>Understim.</button>
+        </div>
+      </div>
+      <div class="ctrl-group">
+        <span class="ctrl-label">Filter</span>
+        <label class="search">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M11 11l3.5 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+          <input type="text" id="search" oninput="applyFilters()" placeholder="Receptor, symptom, drug…" aria-label="Filter the ledger">
+        </label>
+      </div>
+      <div class="spacer"></div>
+      <button type="button" class="print-btn" id="printBtn" aria-label="Print or save a one-page cheat sheet of all receptors">
+        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.5 6V2.5h7V6M4.5 11.5H3V6.6a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v4.9h-1.5M4.5 9.5h7V14h-7z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+        Cheat sheet
+      </button>
+      <span class="count-badge" id="count">16 Specimens</span>
+    </div>
+
+    <div class="ledger-wrap">
+      <div class="ledger-scroll">
+        <table class="ledger" id="ledger" data-focus="both">
+          <thead>
+            <tr>
+              <th class="col-no">№</th>
+              <th class="col-recep">Receptor / Transporter</th>
+              <th>Baseline Role</th>
+              <th class="th-over">Overstimulated ▲<span class="th-sub">excess agonism · presentation</span></th>
+              <th class="th-under">Understimulated ▼<span class="th-sub">blockade / deficit · presentation</span></th>
+              <th style="width:1.6rem"></th>
+            </tr>
+          </thead>
+          <tbody id="ledger-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="colophon">
+      <span class="disclaimer"><b>Sources.</b> Receptor states, agents &amp; primary citations carried from the Receptor Cabinet dashboard; clinical/therapeutic cross-references verified against Stahl SM, <i>Essential Psychopharmacology</i> (Tables 2-4 &amp; 2-5; Ch. 4–5). Educational reference for clinicians and trainees, not a dosing or treatment guide.</span>
+      <span><b>The Clinical Ledger</b> · Est. MMXXVI</span>
+    </div>
+  </main>
+
+<script>
+  // ============================================================
+  //  THE LEDGER DATASET
+  //  States & agents carried from the Receptor Cabinet dashboard;
+  //  Stahl cross-references verified against Essential Psychopharmacology.
+  // ============================================================
+  const SYSTEMS = [
+    { id: 'gaba',   label: 'GABA / Inhibitory' },
+    { id: 'glu',    label: 'Glutamate / Excitatory' },
+    { id: 'da',     label: 'Dopamine' },
+    { id: '5ht',    label: 'Serotonin' },
+    { id: 'ne',     label: 'Norepinephrine' },
+    { id: 'ach',    label: 'Acetylcholine' },
+    { id: 'ha',     label: 'Histamine' },
+    { id: 'opioid', label: 'Opioid' }
+  ];
+
+  const DATA = [
+    // ---------------- GABA ----------------
+    {
+      sys: 'gaba', no: 1, name: 'GABA-A Receptor', cls: 'Ionotropic Cl⁻ channel',
+      baseline: 'Tonic inhibitory tone, gates CNS firing, anxiolysis, muscle relaxation, slow-wave sleep.',
+      mech: 'Ligand binding opens a pentameric Cl⁻ channel; anion influx hyperpolarizes the membrane and raises the action-potential threshold, damping excitation.',
+      over: ['Slurred dysarthric speech, psychomotor slowing', 'Cerebellar ataxia, loss of coordination', 'Hypoventilation, suppressed airway reflexes → coma', 'Profound CNS depression (benzo/barbiturate + alcohol)'],
+      under: ['Tremor, fasciculations, hyperreflexia', 'Delirium, autonomic hyperarousal, tachycardia', 'Rebound insomnia, hyperthermia (delirium tremens)', 'Tonic-clonic status epilepticus'],
+      stahl: 'Stahl frames GABA-A positive allosteric modulation (benzodiazepines, “Z-drugs,” barbiturates) as the core of anxiolytic/hypnotic therapy; abrupt withdrawal removes tonic inhibition and precipitates seizures.',
+      agonists: ['Diazepam (PAM)', 'Alprazolam (PAM)', 'Zolpidem (PAM)', 'Phenobarbital (barbiturate-site PAM)'],
+      antagonists: ['Flumazenil', 'Bicuculline', 'Picrotoxin'],
+      cite: { t: 'Ghit et al. (2021). GABA-A receptors: structure, function, pharmacology.', j: 'J Genet Eng Biotechnol', p: 'PMID 34417930', u: 'https://pubmed.ncbi.nlm.nih.gov/34417930/' }
+    },
+    // ---------------- GLUTAMATE ----------------
+    {
+      sys: 'glu', no: 2, name: 'NMDA Glutamate Receptor', cls: 'Ligand + voltage-gated channel',
+      baseline: 'Excitatory plasticity, long-term potentiation, learning, memory consolidation.',
+      mech: 'Needs glutamate + glycine co-binding and depolarization to expel the Mg²⁺ pore block, then admits Ca²⁺ and Na⁺ to drive synaptic strengthening.',
+      over: ['Intracellular Ca²⁺ overload, enzymatic autodigestion', 'Mitochondrial collapse, oxidative stress', 'Excitotoxic neuronal death (stroke, TBI, status epilepticus)', 'Acute cerebral swelling'],
+      under: ['Dissociation: depersonalization, derealization', 'Analgesia, catatonia-like states', 'Psychotomimetic: paranoia, confusion (schizophrenia model)', 'Amnesia, blocked memory consolidation'],
+      stahl: 'Stahl describes NMDA hypofunction as a leading model of schizophrenia’s negative/cognitive symptoms; therapeutic blockade is harnessed by ketamine/esketamine (rapid antidepressant) and memantine (neuroprotection).',
+      agonists: ['Glycine', 'D-Serine', 'NMDA'],
+      antagonists: ['Ketamine', 'Esketamine', 'Memantine', 'Amantadine'],
+      cite: { t: 'Hansen KB et al. (2018). Structure, function, allosteric modulation of NMDA receptors.', j: 'J Gen Physiol', p: 'PMID 30037851', u: 'https://pubmed.ncbi.nlm.nih.gov/30037851/' }
+    },
+    // ---------------- DOPAMINE ----------------
+    {
+      sys: 'da', no: 3, name: 'Dopamine D2 Receptor', cls: 'GPCR (Gi/o)',
+      baseline: 'Motor & reward equilibrium, striatal gating, mesolimbic salience, prolactin suppression.',
+      mech: 'Gi/o inhibits adenylyl cyclase (↓cAMP) and opens GIRK K⁺ channels, damping postsynaptic excitability across striatal and limbic circuits.',
+      over: ['Paranoid delusions, auditory hallucinations', 'Disorganized speech, mania', 'Compulsive reward-seeking (gambling)', 'Choreiform movements, facial tics'],
+      under: ['Extrapyramidal symptoms: parkinsonism, bradykinesia', 'Akathisia (inner restlessness)', 'Hyperprolactinemia → galactorrhea, gynecomastia', 'Lead-pipe rigidity, hyperthermia (NMS)'],
+      stahl: 'Stahl: mesolimbic D2 hyperactivity drives positive psychotic symptoms; D2 antagonism/partial agonism is the shared antipsychotic & antimanic mechanism, with nigrostriatal blockade producing EPS and tardive dyskinesia.',
+      agonists: ['Pramipexole', 'Ropinirole', 'Bromocriptine', 'Aripiprazole (partial)'],
+      antagonists: ['Haloperidol', 'Chlorpromazine', 'Risperidone', 'Olanzapine'],
+      cite: { t: 'Ford CP (2014). Role of D2-autoreceptors in regulating dopamine neuron activity.', j: 'Neuroscience', p: 'PMID 24463000', u: 'https://pubmed.ncbi.nlm.nih.gov/24463000/' }
+    },
+    {
+      sys: 'da', no: 4, name: 'Dopamine D1 Receptor', cls: 'GPCR (Gs)', added: true,
+      baseline: 'Prefrontal cognition & working memory; excitatory “direct pathway” for movement initiation.',
+      mech: 'Gs activates adenylyl cyclase (↑cAMP → PKA). Stahl notes D1 is the dominant cortical dopamine receptor, tuning the signal-to-noise of prefrontal pyramidal networks.',
+      over: ['Inverted-U overload: degraded working memory', 'Hyperarousal, stereotyped behavior', 'Putative contribution to stimulant-induced psychosis', 'Dyskinesia in the direct motor pathway'],
+      under: ['Poor working memory, executive dysfunction', 'Cognitive “noise,” impaired focus', 'Hypodopaminergic prefrontal state (schizophrenia negative sx)', 'Reduced movement initiation'],
+      stahl: 'Stahl emphasizes the prefrontal D1 “inverted-U”: too little OR too much D1 tone degrades cognition. Optimizing D1 signaling underlies the pro-cognitive aim of stimulant and noradrenergic ADHD therapy.',
+      agonists: ['Dopamine', 'Fenoldopam', '(experimental D1 agonists)'],
+      antagonists: ['SCH-23390 (research)', 'Some antipsychotics (mixed)'],
+      cite: { t: 'Stahl SM. Essential Psychopharmacology, prefrontal D1 signaling.', j: 'Stahl, Ch. 4', p: 'Cambridge Univ. Press', u: '' }
+    },
+    {
+      sys: 'da', no: 5, name: 'DAT, Dopamine Transporter', cls: 'Transporter (SLC6A3)', added: true,
+      baseline: 'Clears synaptic dopamine, terminates signaling, recycles transmitter, sets reward & motor tone.',
+      mech: 'Na⁺/Cl⁻-dependent presynaptic reuptake. A transporter, not a receptor: blockade raises synaptic dopamine; “overstimulated/understimulated” denotes synaptic dopamine excess vs. deficit.',
+      over: ['(Blockade/reversal → ↑dopamine) euphoria, psychomotor agitation', 'Stereotypy, insomnia, appetite suppression', 'Paranoia/psychosis at high stimulant load', 'Tachycardia, hypertension'],
+      under: ['(Low tone) inattention, distractibility, impulsivity', 'Low motivation, anhedonia, fatigue', 'Psychomotor retardation', 'Hypodopaminergic reward deficit'],
+      stahl: 'Stahl (Table 2-5): methylphenidate and amphetamine act indirectly by inhibiting/reversing DAT, raising dopamine to improve ADHD, depression, and wakefulness, the therapeutic mirror of cocaine’s abuse liability.',
+      agonists: ['Methylphenidate', 'Modafinil', 'Bupropion', 'Cocaine (reuptake blocker)'],
+      antagonists: ['Amphetamine (releaser / reverse transport)'],
+      cite: { t: 'Stahl SM. Essential Psychopharmacology, DAT & stimulant action.', j: 'Stahl, Table 2-5', p: 'Cambridge Univ. Press', u: '' }
+    },
+    // ---------------- SEROTONIN ----------------
+    {
+      sys: '5ht', no: 6, name: 'Serotonin 5-HT2A', cls: 'GPCR (Gq/11)',
+      baseline: 'Cortical cognitive modulation, gates glutamate release, cognitive flexibility, cranial vascular tone.',
+      mech: 'Gq activates phospholipase C → IP3/DAG → intracellular Ca²⁺ release and PKC activation in cortical pyramidal networks.',
+      over: ['Clonus, hyperreflexia, rigidity (serotonin syndrome)', 'Diaphoresis, hyperthermia, mydriasis', 'Vivid hallucinations, ego dissolution (psychedelics)', 'Agitation, tremor, panic'],
+      under: ['Flattened affect, mild cognitive inflexibility', 'Reduced hallucinatory signaling', 'Normalized striatal dopamine → lower EPS risk', 'Improved slow-wave sleep'],
+      stahl: 'Stahl: 5-HT2A antagonism defines the “atypical” antipsychotic advantage, it disinhibits nigrostriatal dopamine (reducing EPS) and tempers cortical glutamate, easing positive symptoms.',
+      agonists: ['Psilocybin', 'LSD', 'Mescaline'],
+      antagonists: ['Pimavanserin', 'Clozapine', 'Olanzapine', 'Risperidone'],
+      cite: { t: 'Nichols DE (2016). Psychedelics.', j: 'Pharmacol Rev', p: 'PMID 26841800', u: 'https://pubmed.ncbi.nlm.nih.gov/26841800/' }
+    },
+    {
+      sys: '5ht', no: 7, name: 'Serotonin 5-HT1A', cls: 'GPCR (Gi/o)', added: true,
+      baseline: 'Somatodendritic autoreceptor + postsynaptic limbic receptor, sets serotonergic tone, anxiolysis, mood.',
+      mech: 'Gi/o lowers cAMP and opens GIRK K⁺ channels. Presynaptic raphe autoreceptors slow 5-HT firing; their desensitization underlies the delayed onset of SSRI benefit (Stahl).',
+      over: ['Partial-agonist anxiolysis (buspirone-like)', 'Reduced drug-induced parkinsonism', 'At excess: sedation, contribution to serotonin syndrome', 'Hypotension, hypothermia (preclinical)'],
+      under: ['Heightened anxiety, low mood', 'Loss of SSRI “booster” augmentation', 'Reduced stress-buffering / fear extinction', 'Greater vulnerability to depression'],
+      stahl: 'Stahl (Table 2-4): 5-HT1A partial agonism is anxiolytic, reduces parkinsonism, and boosts SSRI/SNRI antidepressant action, the mechanism shared by buspirone and the “pines/pips” with 5-HT1A pharmacology.',
+      agonists: ['Buspirone (partial)', 'Vilazodone', 'Vortioxetine', 'Aripiprazole (partial)'],
+      antagonists: ['Pindolol (augmentation tool)', 'WAY-100635 (research)'],
+      cite: { t: 'Stahl SM. Essential Psychopharmacology, 5-HT1A autoreceptors.', j: 'Stahl, Ch. 4 & 7', p: 'Cambridge Univ. Press', u: '' }
+    },
+    {
+      sys: '5ht', no: 8, name: 'Serotonin 5-HT2C', cls: 'GPCR (Gq/11)', added: true,
+      baseline: 'Inhibits downstream dopamine/norepinephrine release; regulates appetite, mood, and prolactin.',
+      mech: 'Gq → PLC → Ca²⁺/PKC. Net inhibitory on mesocortical DA/NE. Stahl notes 5-HT2C antagonism disinhibits DA/NE in cortex, contributing to antidepressant effect.',
+      over: ['Appetite suppression, reduced food intake', 'Anxiety, dysphoria', 'Dampened cortical dopamine/norepinephrine', 'Possible sexual dysfunction'],
+      under: ['(Antagonism) antidepressant disinhibition of DA/NE', 'Increased appetite → weight gain', 'Improved sleep continuity', 'Procognitive cortical activation'],
+      stahl: 'Stahl (Table 2-4): 5-HT2C antagonism is antidepressant (disinhibits prefrontal DA/NE), but the same blockade drives the weight gain seen with agents like mirtazapine and olanzapine.',
+      agonists: ['Lorcaserin (appetite)', 'mCPP (metabolite)'],
+      antagonists: ['Mirtazapine', 'Agomelatine', 'Olanzapine', 'Fluoxetine (partial)'],
+      cite: { t: 'Stahl SM. Essential Psychopharmacology, 5-HT2C & appetite/mood.', j: 'Stahl, Table 2-4', p: 'Cambridge Univ. Press', u: '' }
+    },
+    {
+      sys: '5ht', no: 9, name: 'SERT, Serotonin Transporter', cls: 'Transporter (SLC6A4)',
+      baseline: 'Clears synaptic serotonin, stable mood, sleep architecture, appetite, low rumination.',
+      mech: 'Na⁺/Cl⁻-dependent presynaptic reuptake. A transporter, not a receptor: SSRIs/SNRIs block it to raise synaptic 5-HT. States denote synaptic serotonin excess vs. deficit.',
+      over: ['Agitation, tremor, hyperreflexia, myoclonus', 'Rigidity → sustained clonus', 'Diaphoresis, tachycardia, hyperthermia >38.5°C', 'Confusion, delirium (serotonin syndrome)'],
+      under: ['Depressed mood, anhedonia', 'Early-morning awakening, psychomotor retardation', 'Obsessive rumination, anxiety', 'Social withdrawal'],
+      stahl: 'Stahl (Table 2-5): SERT inhibition by SSRIs/SNRIs is the foundational antidepressant/anxiolytic mechanism; the 5-HTTLPR short allele confers stress-linked mood vulnerability.',
+      agonists: ['Fluoxetine', 'Sertraline', 'Escitalopram', 'Venlafaxine', 'Duloxetine', 'Cocaine (reuptake blocker)'],
+      antagonists: ['Tianeptine (atypical reuptake enhancer)'],
+      cite: { t: 'Murthy MK (2025). Molecular pathways linking SERT to depressive disorder.', j: 'Neuroscience', p: 'PMID 40789515', u: 'https://pubmed.ncbi.nlm.nih.gov/40789515/' }
+    },
+    // ---------------- NOREPINEPHRINE ----------------
+    {
+      sys: 'ne', no: 10, name: 'Beta-1 (β1) Adrenergic', cls: 'GPCR (Gs)',
+      baseline: 'Cardiorespiratory drive, heart rate, contractility, AV conduction, renin release.',
+      mech: 'Gs → adenylyl cyclase → cAMP → PKA phosphorylates L-type Ca²⁺ channels, increasing cardiac rate and force.',
+      over: ['Sinus tachycardia, palpitations, ectopy', 'Hypertension, angina, ↑myocardial O₂ demand', 'Anxiety, hyperarousal, fine hand tremor', 'Atrial fibrillation / ventricular tachycardia'],
+      under: ['Sinus bradycardia (<50 bpm)', 'AV nodal block', 'Hypotension, orthostasis, exercise intolerance', 'Fatigue, cold extremities (cardiogenic shock risk)'],
+      stahl: 'Stahl notes peripheral β1 effects are mostly off-target in psychiatry; centrally, lipophilic propranolol blunts the somatic (tremor, palpitations) symptoms of performance anxiety and adrenergic hyperarousal.',
+      agonists: ['Dobutamine', 'Epinephrine', 'Norepinephrine'],
+      antagonists: ['Metoprolol', 'Atenolol', 'Propranolol (CNS-penetrant)'],
+      cite: { t: 'Ahles A & Engelhardt S (2014). Polymorphic adrenoceptors.', j: 'Pharmacol Rev', p: 'PMID 24928328', u: 'https://pubmed.ncbi.nlm.nih.gov/24928328/' }
+    },
+    {
+      sys: 'ne', no: 11, name: 'Alpha-1 Adrenergic', cls: 'GPCR (Gq/11)',
+      baseline: 'Vascular tone & smooth-muscle contraction, blood pressure, postural response, sphincter/pupil tone.',
+      mech: 'Gq → PLC → IP3/DAG → ↑Ca²⁺ → smooth-muscle contraction, raising peripheral resistance and blood pressure.',
+      over: ['Severe hypertension, headache, chest pain', 'Pulmonary edema, orthopnea', 'Acute kidney injury, oliguria', 'Myocardial ischemia, arrhythmia'],
+      under: ['Postural dizziness, syncope on standing', 'Hypotension, reduced cerebral perfusion', 'Nasal congestion, miosis', 'Fatigue, cold extremities'],
+      stahl: 'Stahl (Table 2-4): α1 antagonism improves PTSD nightmares (prazosin) and Alzheimer agitation, but the same blockade by many antipsychotics causes orthostatic hypotension and sedation.',
+      agonists: ['Phenylephrine', 'Norepinephrine', 'Oxymetazoline'],
+      antagonists: ['Prazosin', 'Doxazosin', 'Tamsulosin', 'Chlorpromazine (off-target)'],
+      cite: { t: 'Kulkarni S & Wilkinson IB (2024). Adrenoceptors and Hypertension.', j: 'Handb Exp Pharmacol', p: 'PMID 38890192', u: 'https://pubmed.ncbi.nlm.nih.gov/38890192/' }
+    },
+    {
+      sys: 'ne', no: 12, name: 'Alpha-2 Adrenergic', cls: 'GPCR (Gi/o)',
+      baseline: 'Presynaptic autoinhibition of NE release, calm arousal, stable BP, attention, fear extinction.',
+      mech: 'Gi/o inhibits adenylyl cyclase. Presynaptic α2A autoreceptors give negative feedback on NE; central activation lowers sympathetic outflow and blood pressure.',
+      over: ['Sedation, bradycardia, hypotension, dry mouth', 'On abrupt withdrawal: rebound hypertension, tremor', 'Tachycardia, sweating, insomnia, agitation', 'Risk of ACS/stroke from BP surge'],
+      under: ['Anxiety, tremor, inner restlessness', 'Insomnia, early awakening', 'Tachycardia, hypertension, flushing', 'Impaired working memory, hypervigilance'],
+      stahl: 'Stahl (Table 2-4): postsynaptic α2A agonism (guanfacine, clonidine) strengthens prefrontal connectivity, improving ADHD attention and behavioral control; α2 antagonism (mirtazapine) disinhibits NE & 5-HT for antidepressant effect.',
+      agonists: ['Clonidine', 'Guanfacine', 'Dexmedetomidine', 'Methyldopa'],
+      antagonists: ['Mirtazapine', 'Yohimbine', 'Idazoxan'],
+      cite: { t: 'Szabo B (2024). Presynaptic Adrenoceptors.', j: 'Handb Exp Pharmacol', p: 'PMID 38755350', u: 'https://pubmed.ncbi.nlm.nih.gov/38755350/' }
+    },
+    {
+      sys: 'ne', no: 13, name: 'NET, Norepinephrine Transporter', cls: 'Transporter (SLC6A2)',
+      baseline: 'Clears synaptic NE, focused attention, working memory, controlled anxiety, pain modulation.',
+      mech: 'Na⁺/Cl⁻-dependent reuptake (noradrenergic analogue of SERT). Inhibitors raise synaptic NE. States denote synaptic NE excess vs. deficit.',
+      over: ['Hypertension, tachycardia, fine tremor', 'Agitation, anxiety, insomnia, hypervigilance', 'Diaphoresis, mydriasis, piloerection', 'ACS / stroke risk in vulnerable patients'],
+      under: ['Inattention, distractibility, impulsivity', 'Fatigue, low motivation', 'Psychomotor retardation', 'Impaired fear extinction, orthostatic intolerance'],
+      stahl: 'Stahl (Table 2-5): NET inhibition (atomoxetine, reboxetine, SNRIs, TCAs) raises NE to treat ADHD, depression, and neuropathic pain; in prefrontal cortex NET also clears dopamine, reinforcing the pro-attention effect.',
+      agonists: ['Atomoxetine', 'Reboxetine', 'Venlafaxine', 'Duloxetine', 'Desipramine', 'Cocaine (reuptake blocker)'],
+      antagonists: ['Amphetamine (releaser / reverse transport)'],
+      cite: { t: 'Mwesigwa N & Shibao CA (2024). NE Reuptake Inhibition for Orthostatic Hypotension.', j: 'Hypertension', p: 'PMID 38766862', u: 'https://pubmed.ncbi.nlm.nih.gov/38766862/' }
+    },
+    // ---------------- ACETYLCHOLINE ----------------
+    {
+      sys: 'ach', no: 14, name: 'M1 Muscarinic', cls: 'GPCR (Gq/11)', added: true,
+      baseline: 'Postsynaptic cognition & striatal balance, memory, learning, reciprocal control with dopamine.',
+      mech: 'Gq → PLC → IP3/DAG excitation. Stahl: M1 sits in reciprocal balance with striatal D2, D2 blockade disinhibits ACh, and M1 antagonism then restores motor balance.',
+      over: ['(Agonism, e.g. xanomeline) procognitive & antipsychotic', 'Cholinergic excess: nausea, GI cramping', 'Salivation, lacrimation, sweating', 'Bradycardia at systemic excess'],
+      under: ['Sedation, drowsiness', 'Memory & concentration impairment, slowed cognition', 'Dry mouth, blurred vision, constipation, urinary retention', 'Confusion / anticholinergic delirium; paralytic ileus'],
+      stahl: 'Stahl (Table 2-4 & Ch. 5): M1 agonism is procognitive/antipsychotic (the basis of xanomeline-trospium); M1 antagonism reduces drug-induced parkinsonism but at the cost of the classic anticholinergic burden, sedation, memory loss, and peripheral dryness.',
+      agonists: ['Xanomeline', 'Acetylcholine', 'Cholinesterase inhibitors (indirect)'],
+      antagonists: ['Benztropine', 'Trihexyphenidyl', 'Many TCAs / low-potency antipsychotics'],
+      cite: { t: 'Stahl SM. Essential Psychopharmacology, muscarinic receptors & anticholinergics.', j: 'Stahl, Ch. 5', p: 'Cambridge Univ. Press', u: '' }
+    },
+    // ---------------- HISTAMINE ----------------
+    {
+      sys: 'ha', no: 15, name: 'Histamine H1', cls: 'GPCR (Gq/11)', added: true,
+      baseline: 'Wakefulness & arousal, promotes alert waking state, appetite regulation, cortical activation.',
+      mech: 'Gq → PLC excitation in cortex and tuberomammillary arousal pathways. CNS H1 blockade lowers histaminergic wake drive (Stahl).',
+      over: ['Heightened arousal, wakefulness', 'Appetite suppression', 'Allergic-type peripheral effects', 'Cortical activation'],
+      under: ['Sedation, drowsiness (therapeutic for insomnia/anxiety)', 'Weight gain and increased appetite (also sedation-driven inactivity, metabolic effects)', 'Daytime grogginess, cognitive dulling', 'Possible metabolic dysregulation'],
+      stahl: 'Stahl (Table 2-4): H1 antagonism is therapeutic for anxiety and insomnia, but the same central blockade produces the sedation and weight gain that limit many antidepressants and antipsychotics (e.g., mirtazapine, olanzapine, quetiapine).',
+      agonists: ['Histamine', 'Betahistine (partial/indirect)'],
+      antagonists: ['Diphenhydramine', 'Hydroxyzine', 'Doxepin (low-dose)', 'Mirtazapine', 'Olanzapine / Quetiapine (off-target)'],
+      cite: { t: 'Stahl SM. Essential Psychopharmacology, H1 sedation & weight gain.', j: 'Stahl, Table 2-4', p: 'Cambridge Univ. Press', u: '' }
+    },
+    // ---------------- OPIOID ----------------
+    {
+      sys: 'opioid', no: 16, name: 'μ-Opioid Receptor (MOR)', cls: 'GPCR (Gi/o)',
+      baseline: 'Nociceptive gating, modulates pain transmission, descending inhibition, satiety, gut motility.',
+      mech: 'Gi/o inhibits adenylyl cyclase (↓cAMP); βγ opens GIRK K⁺ channels and closes Ca²⁺ channels to block nociceptive transmitter release.',
+      over: ['Miosis (pinpoint pupils)', 'Hypoventilation → respiratory arrest, hypoxemia', 'Obtundation → coma', 'Bradycardia, hypotension, ileus (overdose triad)'],
+      under: ['Mydriasis, yawning, sneezing', 'GI hypermotility, cramping, vomiting, diarrhea', 'Diffuse hyperalgesia, deep-tissue pain', 'Diaphoresis, piloerection, agitation (withdrawal)'],
+      stahl: 'Stahl frames MOR within reward and dependence circuitry; partial agonism (buprenorphine) and antagonism (naltrexone) anchor addiction maintenance, while naloxone reverses acute overdose at the brainstem.',
+      agonists: ['Morphine', 'Fentanyl', 'Methadone', 'Buprenorphine (partial)'],
+      antagonists: ['Naloxone', 'Naltrexone'],
+      cite: { t: 'Pasternak GW (2018). Mu Opioid Pharmacology: 40 Years to the Promised Land.', j: 'Adv Pharmacol', p: 'PMID 29413524', u: 'https://pubmed.ncbi.nlm.nih.gov/29413524/' }
+    }
+  ];
+
+  // ============================================================
+  //  RENDER
+  // ============================================================
+  let activeSystem = 'all';
+  let focus = 'both';
+  const body = document.getElementById('ledger-body');
+  const table = document.getElementById('ledger');
+
+  // build system filter
+  const sf = document.getElementById('system-filter');
+  const allBtn = mk('button', { type: 'button', class: 'is-active', onclick: () => setSystem('all') }, '<span class="seg-dot"></span>All');
+  sf.appendChild(allBtn);
+  SYSTEMS.forEach(s => {
+    if (!DATA.some(d => d.sys === s.id)) return;
+    sf.appendChild(mk('button', { type: 'button', 'data-sys': s.id, onclick: () => setSystem(s.id) }, '<span class="seg-dot"></span>' + s.label));
+  });
+
+  function mk(tag, attrs, html) {
+    const el = document.createElement(tag);
+    for (const k in attrs) { if (k === 'onclick') el.onclick = attrs[k]; else el.setAttribute(k, attrs[k]); }
+    if (html != null) el.innerHTML = html;
+    return el;
+  }
+  function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function li(arr){ return '<ul>' + arr.map(x => '<li><span>'+esc(x)+'</span></li>').join('') + '</ul>'; }
+  function tags(arr, c){ return '<div class="tag-wrap">' + arr.map(t => '<span class="tag '+c+'">'+esc(t)+'</span>').join('') + '</div>'; }
+
+  function render() {
+    body.innerHTML = '';
+    const q = document.getElementById('search').value.trim().toLowerCase();
+    let shown = 0, i = 0, lastSys = null;
+
+    DATA.forEach(d => {
+      if (activeSystem !== 'all' && d.sys !== activeSystem) return;
+      if (q) {
+        const hay = (d.name + ' ' + d.cls + ' ' + d.baseline + ' ' + d.over.join(' ') + ' ' + d.under.join(' ') + ' ' + d.stahl + ' ' + d.agonists.join(' ') + ' ' + d.antagonists.join(' ')).toLowerCase();
+        if (!hay.includes(q)) return;
+      }
+      shown++;
+      // system group header
+      if (d.sys !== lastSys) {
+        lastSys = d.sys;
+        const sysLabel = SYSTEMS.find(s => s.id === d.sys).label;
+        const gr = mk('tr', { class: 'grp-row' });
+        gr.innerHTML = '<td colspan="6">' + esc(sysLabel) + '</td>';
+        body.appendChild(gr);
+      }
+      const accent = 'var(--brass)';
+      const xport = /Transporter/.test(d.cls);
+      const row = mk('tr', { class: 'rec-row', 'data-id': d.no, style: '--i:' + (i++) });
+      row.innerHTML =
+        '<td class="cell-no">' + String(d.no).padStart(2,'0') + '</td>' +
+        '<td><div class="rec-name">' + esc(d.name) + '</div>' +
+          '<div class="rec-class"><span class="chip">' + esc(d.cls) + '</span>' + (d.added ? '<span class="chip" style="color:var(--vermilion);border-color:var(--vermilion)">+ Stahl</span>' : '') + '</div></td>' +
+        '<td class="rec-baseline">' + esc(d.baseline) + '</td>' +
+        '<td class="sx-cell sx-over"><span class="sx-lead">Overstimulated</span>' + li(d.over) + '</td>' +
+        '<td class="sx-cell sx-under"><span class="sx-lead">Understim. / Blockade</span>' + li(d.under) + '</td>' +
+        '<td><span class="expander">+</span></td>';
+
+      const drawer = mk('tr', { class: 'detail-row', 'data-detail': d.no });
+      drawer.innerHTML = '<td colspan="6"><div class="detail-inner"><div class="detail-clip"><div class="detail-pad" style="--st-accent:' + accent + '">' +
+        '<div class="det-block"><h4>Mechanism</h4><p class="mech-text">' + esc(d.mech) + '</p></div>' +
+        '<div class="det-block"><h4>Stahl Cross-Reference</h4><div class="stahl-note"><span class="ref">Essential Psychopharmacology</span><p>' + esc(d.stahl) + '</p></div></div>' +
+        '<div class="det-block"><h4>' + (xport ? 'Reuptake Inhibitors' : 'Agonists / Enhancers') + '</h4>' + tags(d.agonists,'ag') + '</div>' +
+        '<div class="det-block"><h4>' + (xport ? 'Reuptake Enhancers &amp; Others' : 'Antagonists / Blockers') + '</h4>' + tags(d.antagonists,'an') + '</div>' +
+        '<div class="det-block" style="grid-column:1/-1"><h4>Primary Citation</h4><p class="cite">' + (d.cite.u ? '<a href="'+d.cite.u+'" target="_blank" rel="noopener">'+esc(d.cite.t)+'</a>' : esc(d.cite.t)) + ' · <i>' + esc(d.cite.j) + '</i> · ' + esc(d.cite.p) + '</p></div>' +
+        '</div></div></div></td>';
+
+      const toggleRow = () => {
+        const open = drawer.classList.toggle('open');
+        row.classList.toggle('is-open', open);
+        row.setAttribute('aria-expanded', open ? 'true' : 'false');
+      };
+      row.onclick = toggleRow;
+      row.tabIndex = 0;
+      row.setAttribute('role', 'button');
+      row.setAttribute('aria-expanded', 'false');
+      row.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); toggleRow(); }
+        else if (ev.key === 'Escape' && drawer.classList.contains('open')) { ev.preventDefault(); toggleRow(); }
+      });
+      body.appendChild(row);
+      body.appendChild(drawer);
+    });
+
+    if (shown === 0) {
+      body.innerHTML = '<tr><td colspan="6"><div class="empty">No specimens match this filter</div></td></tr>';
+    }
+    document.getElementById('count').textContent = shown + (shown === 1 ? ' Specimen' : ' Specimens');
+  }
+
+  function setSystem(id) {
+    activeSystem = id;
+    document.querySelectorAll('#system-filter button').forEach(b => {
+      const match = (id === 'all' && !b.dataset.sys) || b.dataset.sys === id;
+      b.classList.toggle('is-active', match);
+    });
+    render();
+    saveView();
+  }
+  function setFocus(f) {
+    focus = f;
+    table.dataset.focus = f;
+    document.querySelectorAll('[data-focus]').forEach(b => {
+      if (b.tagName === 'BUTTON') b.classList.toggle('is-active', b.dataset.focus === f);
+    });
+    saveView();
+  }
+  function applyFilters() { render(); saveView(); }
+  window.applyFilters = applyFilters;
+  window.setFocus = setFocus;
+
+  // ---- persist the view (standalone only) + one-page cheat-sheet print ----
+  var LEDGER_EMBED = document.documentElement.classList.contains('embedded');
+  var LEDGER_VIEW_KEY = 'ledger.view.v1';
+  function saveView() {
+    if (LEDGER_EMBED) return;
+    try {
+      localStorage.setItem(LEDGER_VIEW_KEY, JSON.stringify({
+        sys: activeSystem, focus: focus, q: document.getElementById('search').value
+      }));
+    } catch (e) {}
+  }
+  function restoreView() {
+    if (LEDGER_EMBED) return;
+    var sv; try { sv = JSON.parse(localStorage.getItem(LEDGER_VIEW_KEY) || 'null'); } catch (e) { sv = null; }
+    if (!sv) return;
+    if (sv.q) document.getElementById('search').value = sv.q;
+    if (sv.focus) setFocus(sv.focus);
+    if (sv.sys && sv.sys !== 'all') {
+      activeSystem = sv.sys;
+      document.querySelectorAll('#system-filter button').forEach(function (b) {
+        b.classList.toggle('is-active', b.dataset.sys === sv.sys);
+      });
+    }
+  }
+  (function () {
+    var pb = document.getElementById('printBtn');
+    if (!pb) return;
+    pb.addEventListener('click', function () {
+      var prev = { sys: activeSystem, focus: focus, q: document.getElementById('search').value };
+      // print the whole reference: clear filters first, restore after
+      document.getElementById('search').value = '';
+      setFocus('both');
+      activeSystem = 'all';
+      document.querySelectorAll('#system-filter button').forEach(function (b) { b.classList.toggle('is-active', !b.dataset.sys); });
+      render();
+      var restore = function () {
+        document.getElementById('search').value = prev.q;
+        setFocus(prev.focus);
+        activeSystem = prev.sys;
+        document.querySelectorAll('#system-filter button').forEach(function (b) {
+          b.classList.toggle('is-active', (prev.sys === 'all' && !b.dataset.sys) || b.dataset.sys === prev.sys);
+        });
+        render();
+        window.removeEventListener('afterprint', restore);
+      };
+      window.addEventListener('afterprint', restore);
+      setTimeout(function () { window.print(); }, 80);
+    });
+  })();
+
+  // sticky-header offset = masthead height
+  const masthead = document.querySelector('.masthead');
+  const setMastH = () => document.documentElement.style.setProperty('--mast-h', masthead.offsetHeight + 'px');
+  window.addEventListener('resize', setMastH);
+  setMastH();
+  restoreView();
+  render();
+</script>
+
+  <script>
+  /* ════════════════════════════════════════════════════════════════
+     ATLAS BRIDGE, Volume III speaks to the shell
+     Reports the opened row upward and accepts cross-volume nav, so a
+     specimen traced in from the Archive or Cabinet lands on its row.
+     ════════════════════════════════════════════════════════════════ */
+  (function () {
+    var CANON2NO = { 'gaba_a':1, 'nmda':2, 'd2':3, 'd1':4, 'dat':5, '5ht2a':6, '5ht1a':7,
+      '5ht2c':8, 'sert':9, 'beta1':10, 'alpha1':11, 'alpha2':12, 'net':13, 'm1':14, 'h1':15, 'mu':16 };
+    var NO2CANON = {}; for (var k in CANON2NO) NO2CANON[CANON2NO[k]] = k;
+    var VOL = 'ledger';
+
+    function framed(){ try { return window.self !== window.top; } catch (e) { return true; } }
+    if (!framed() && location.search.indexOf('embed') === -1) return;
+    function up(msg){ try { parent.postMessage(msg, '*'); } catch (e) {} }
+    function emit(canon){ up({ type:'atlas:subject', volume:VOL, subject: canon || null, label:'' }); }
+
+    function rowByNo(no){ return document.querySelector('tr.rec-row[data-id="' + no + '"]'); }
+    function clearFilters(){
+      var s = document.getElementById('search'); if (s) s.value = '';
+      var all = document.querySelector('#system-filter button');
+      if (all) all.click();                                   // setSystem('all') + render
+      else if (typeof window.applyFilters === 'function') window.applyFilters();
+    }
+    function openRow(no){
+      var row = rowByNo(no);
+      if (!row) { clearFilters(); row = rowByNo(no); }
+      if (!row) return;
+      if (!row.classList.contains('is-open')) row.click();    // toggle the drawer open
+      try { row.scrollIntoView({ block:'center' }); } catch (e) {}
+    }
+    function applyNav(subject, station){
+      if (station && (station === 'over' || station === 'under' || station === 'both') &&
+          typeof window.setFocus === 'function') window.setFocus(station);
+      if (subject && CANON2NO[subject]) { openRow(CANON2NO[subject]); emit(subject); }
+    }
+
+    document.addEventListener('click', function(e){
+      var row = e.target.closest ? e.target.closest('tr.rec-row') : null;
+      if (!row) return;
+      setTimeout(function(){
+        var canon = row.classList.contains('is-open') ? NO2CANON[parseInt(row.dataset.id, 10)] : null;
+        emit(canon || null);
+      }, 0);
+    });
+    window.addEventListener('message', function(e){
+      var d = e.data; if (!d || d.type !== 'atlas:nav') return;
+      applyNav(d.subject, d.station);
+    });
+    function start(){
+      var p; try { p = new URLSearchParams(location.search); } catch (e) { p = null; }
+      if (p) applyNav(p.get('subject'), p.get('station'));
+      up({ type:'atlas:ready', volume:VOL });
+    }
+    if (document.readyState === 'loading') window.addEventListener('DOMContentLoaded', function(){ setTimeout(start, 130); });
+    else setTimeout(start, 130);
+  })();
+  </script>
+</body>
+</html>
