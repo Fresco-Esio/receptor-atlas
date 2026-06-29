@@ -1,0 +1,4 @@
+node_modules/
+db/atlas.db
+db/atlas.db-*
+*.log
