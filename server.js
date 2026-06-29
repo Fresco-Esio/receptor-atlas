@@ -29,7 +29,20 @@ export function createServer(dbPath, { seed = false } = {}) {
     const url = new URL(req.url, 'http://x');
     for (const r of routes) {
       const m = url.pathname.match(r.pattern);
-      if (m && r.method === req.method) return r.handler(req, res, m, url);
+      if (m && r.method === req.method) {
+        // A handler that throws (e.g. a DB error) must become a 500, not a
+        // silent hang — Node won't auto-respond to a rejected request promise.
+        try {
+          return await r.handler(req, res, m, url);
+        } catch (e) {
+          console.error('handler error:', e);
+          if (!res.headersSent) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'internal' }));
+          }
+          return;
+        }
+      }
     }
 
     // Static files from public/. '/' maps to the atlas shell BEFORE normalize,

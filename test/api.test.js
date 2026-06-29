@@ -22,6 +22,11 @@ test('GET /api/receptors returns the full registry', async () => {
   const m1 = body.find(r => r.id === 'm1');
   assert.ok(m1, 'm1 not in registry');
   assert.equal(m1.status, 'conflicting');
+  // the COALESCE default lives in this query too: a receptor with no source
+  // must surface as 'needs-source' in the list, not null
+  const d3 = body.find(r => r.id === 'd3');
+  assert.ok(d3, 'd3 not in registry');
+  assert.equal(d3.status, 'needs-source');
 });
 
 test('GET /api/receptors/:id returns a fully joined detail', async () => {
@@ -57,14 +62,11 @@ test('GET /api/atlas/:volume returns the receptors in that volume', async () => 
   assert.equal(Array.isArray(body), true);
   assert.ok(body.length > 0 && body.length < 24, `unexpected length ${body.length}`);
 
-  // Cross-check: every returned receptor must actually be in the archive volume.
-  const detail = await Promise.all(
-    body.map(async r => {
-      const reg = await fetch(`${base}/api/atlas/archive`);
-      return reg.ok;
-    })
-  );
-  assert.ok(detail.every(Boolean));
+  // Real membership check: d1 is an Archive receptor and must appear; m3 is
+  // Cabinet-only and must NOT — proves the volume filter actually filters.
+  const ids = body.map(r => r.id);
+  assert.ok(ids.includes('d1'), 'archive should include d1');
+  assert.ok(!ids.includes('m3'), 'archive must exclude cabinet-only m3');
 
   for (const el of body) {
     for (const key of ['id', 'label', 'status']) {
