@@ -10,8 +10,8 @@
     {"id": 6, "subject": "Task 6: GET /api/atlas/:volume", "status": "completed", "blockedBy": [3]},
     {"id": 7, "subject": "Task 7: Move HTML to public/ and wire desk to API", "status": "completed", "blockedBy": [4]},
     {"id": 8, "subject": "Task 8: start.bat launcher + README + e2e check", "status": "completed", "blockedBy": [7]},
-    {"id": 9, "subject": "Task 9: Sources library API (GET/POST/PATCH /api/sources)", "status": "pending", "blockedBy": [8]},
-    {"id": 10, "subject": "Task 10: PUT /api/receptors/:id/citation", "status": "pending", "blockedBy": [9]},
+    {"id": 9, "subject": "Task 9: Sources library API (GET/POST/PATCH /api/sources)", "status": "completed", "blockedBy": [8]},
+    {"id": 10, "subject": "Task 10: PUT /api/receptors/:id/citation", "status": "completed", "blockedBy": [9]},
     {"id": 11, "subject": "Task 11: Desk Sources Library UI + review persistence", "status": "pending", "blockedBy": [10]},
     {"id": 12, "subject": "Task 12: Discovery - map atlas volume data structures", "status": "pending", "blockedBy": [8]},
     {"id": 13, "subject": "Task 13: Atlas volumes read citations from API", "status": "pending", "blockedBy": [11, 12]},
@@ -22,5 +22,5 @@
     {"id": 18, "subject": "Task 18: Desk sync UI - dates, drift filter, deep links", "status": "pending", "blockedBy": [16, 17]},
     {"id": 19, "subject": "Task 19: Atlas volumes render structured data from DB", "status": "pending", "blockedBy": [14, 18]}
   ],
-  "lastUpdated": "2026-06-29T04:55:00Z"
+  "lastUpdated": "2026-06-29T05:15:00Z"
 }
