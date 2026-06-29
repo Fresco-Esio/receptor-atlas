@@ -1,7 +1,7 @@
 {
   "planPath": "atlas-app/docs/2026-06-28-conservators-desk-app-plan.md",
   "tasks": [
-    {"id": 0, "subject": "Task 0: Scaffold the portable app folder", "status": "pending"},
+    {"id": 0, "subject": "Task 0: Scaffold the portable app folder", "status": "completed"},
     {"id": 1, "subject": "Task 1: Database schema + connection module", "status": "pending", "blockedBy": [0]},
     {"id": 2, "subject": "Task 2: Migrate desk RX data into atlas.db", "status": "pending", "blockedBy": [1]},
     {"id": 3, "subject": "Task 3: HTTP server with static file serving", "status": "pending", "blockedBy": [2]},
@@ -22,5 +22,5 @@
     {"id": 18, "subject": "Task 18: Desk sync UI - dates, drift filter, deep links", "status": "pending", "blockedBy": [16, 17]},
     {"id": 19, "subject": "Task 19: Atlas volumes render structured data from DB", "status": "pending", "blockedBy": [14, 18]}
   ],
-  "lastUpdated": "2026-06-28T00:00:00Z"
+  "lastUpdated": "2026-06-29T03:20:00Z"
 }

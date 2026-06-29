@@ -42,10 +42,17 @@
     "test": "node --test"
   },
   "dependencies": {
-    "better-sqlite3": "^11.0.0"
+    "better-sqlite3": "^12.0.0"
   }
 }
 ```
+
+> **Note (Task 0 execution, 2026-06-28):** `^11` has no Node 24 prebuilt binary and
+> fails to compile without a C++ toolchain — use `^12` (ships Node 24 prebuilds).
+> Also, the app was moved out of OneDrive to `C:\dev\atlas-app` because the OneDrive
+> path's space/parentheses break `prebuild-install` and OneDrive file-locks the
+> install. All paths below are relative to the app root, so the move changes nothing
+> else.
 
 **Step 2: Create `.gitignore`**
 
