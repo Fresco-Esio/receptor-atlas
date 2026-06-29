@@ -1,14 +1,24 @@
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { dirname, join, normalize, extname } from 'node:path';
+import { dirname, join, normalize, extname, sep } from 'node:path';
 import { openDb } from './db/index.js';
 import { migrate } from './scripts/migrate.js';
 import { apiRoutes } from './lib/router.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PUBLIC = join(HERE, 'public');
-const MIME = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', '.json':'application/json' };
+const MIME = {
+  '.html': 'text/html; charset=utf-8',
+  '.js':   'text/javascript; charset=utf-8',
+  '.css':  'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+};
+
+function notFound(res) {
+  res.writeHead(404, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ error: 'not found' }));
+}
 
 export function createServer(dbPath, { seed = false } = {}) {
   const db = openDb(dbPath);
@@ -21,16 +31,26 @@ export function createServer(dbPath, { seed = false } = {}) {
       const m = url.pathname.match(r.pattern);
       if (m && r.method === req.method) return r.handler(req, res, m, url);
     }
+
+    // Static files from public/. '/' maps to the atlas shell BEFORE normalize,
+    // because on Windows normalize('/') is '\'.
     const pathname = url.pathname === '/' ? '/the-receptor-atlas.html' : url.pathname;
     const safe = normalize(pathname).replace(/^(\.\.[/\\])+/, '');
     const file = join(PUBLIC, safe);
+    // The real traversal guarantee: the resolved path must stay inside PUBLIC.
+    // (URL normalization + the regex above help, but this containment check is
+    // what actually holds if those are ever refactored.)
+    if (file !== PUBLIC && !file.startsWith(PUBLIC + sep)) return notFound(res);
+
     try {
       const body = await readFile(file);
       res.writeHead(200, { 'Content-Type': MIME[extname(file)] || 'application/octet-stream' });
       res.end(body);
-    } catch {
-      res.writeHead(404, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'not found' }));
+    } catch (e) {
+      // A missing file (ENOENT) or a directory path (EISDIR) is a normal 404.
+      // Anything else is a real I/O fault worth surfacing to whoever runs this.
+      if (e.code !== 'ENOENT' && e.code !== 'EISDIR') console.error('static serve error:', e);
+      notFound(res);
     }
   });
 }
