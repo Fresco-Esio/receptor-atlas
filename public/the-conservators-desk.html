@@ -337,141 +337,27 @@ function doiU(d){return "https://doi.org/"+d;}
 function pmSearch(q){return "https://pubmed.ncbi.nlm.nih.gov/?term="+encodeURIComponent(q);}
 
 /* ============ RECEPTOR DATA ============ */
-const RX=[
-/* ---- DOPAMINE ---- */
-{id:"d1",nm:"Dopamine D1",hall:"dopamine",vols:["Ledger","Archive"],
- stahl:[[5],[4],[2]],note:"Table 2-4 receptor action; prefrontal D1 in Ch 4–5.",
- claim:"Prefrontal D1 is the dominant cortical DA receptor; tone follows an inverted-U — too little or too much degrades working memory.",
- ref:{a:"Jones-Tabah et al.",y:2022,t:"The Signaling and Pharmacology of the Dopamine D1 Receptor",pmid:"35110997",doi:"10.3389/fncel.2021.806618"},cs:"verified",
- quiz:"Which DA receptor dominates prefrontal signalling, and what does Stahl’s ‘inverted-U’ say about its tone?"},
-{id:"d2",nm:"Dopamine D2",hall:"dopamine",vols:["Cabinet","Ledger","Archive"],
- stahl:[[5],[4],[2]],note:"Table 2-4; psychosis pathways Ch 4; antipsychotic action Ch 5.",
- claim:"Antipsychotic efficacy = mesolimbic D2 blockade; EPS = nigrostriatal and hyperprolactinemia = tuberoinfundibular D2 blockade.",
- ref:{a:"Ford CP",y:2014,t:"The role of D2-autoreceptors in regulating dopamine neuron activity and transmission",pmid:"24463000",doi:"10.1016/j.neuroscience.2014.01.025"},cs:"provided",
- quiz:"Antipsychotic efficacy tracks D2 blockade in which pathway? EPS and hyperprolactinemia in which two?"},
-{id:"d3",nm:"Dopamine D3",hall:"dopamine",vols:["Archive"],
- stahl:[[5],[2]],note:"Table 2-4; D3-preferring partial agonism Ch 5.",
- claim:"D3 partial agonism (cariprazine) is implicated in negative symptoms, motivation and anhedonia.",
- ref:null,search:'"dopamine D3 receptor"[Title] AND (review[pt] OR antipsychotic)',cs:"needs-source",
- quiz:"Which newer antipsychotic is a D3-preferring partial agonist, and what symptom domain is D3 tied to?"},
-{id:"dat",nm:"DAT — Dopamine Transporter",hall:"dopamine",vols:["Ledger","Archive"],
- stahl:[[11],[13],[2]],note:"Table 2-5 transporters; stimulants Ch 11; addiction Ch 13.",
- claim:"Methylphenidate blocks DAT; amphetamine reverses it — both raise synaptic DA.",
- ref:null,search:'"dopamine transporter"[Title] AND (review[pt]) AND (psychostimulant OR cocaine OR ADHD)',cs:"needs-source",
- quiz:"How do methylphenidate and amphetamine differ in their action at DAT?"},
-/* ---- SEROTONIN ---- */
-{id:"ht1a",nm:"Serotonin 5-HT1A",hall:"serotonin",vols:["Ledger","Archive"],
- stahl:[[7],[5],[2]],note:"Table 2-4; antidepressant/anxiety roles Ch 7; partial agonist antipsychotics Ch 5.",
- claim:"5-HT1A partial agonism is anxiolytic, reduces parkinsonism and augments SSRI/antipsychotic effect; autoreceptor desensitization underlies antidepressant delay.",
- ref:{a:"Albert & Vahid-Ansari",y:2018,t:"The 5-HT1A receptor: Signaling to behavior",pmid:"31079617",doi:"10.1016/j.biochi.2018.10.015"},cs:"verified",
- quiz:"Contrast 5-HT1A as somatodendritic autoreceptor vs postsynaptic heteroreceptor in antidepressant onset."},
-{id:"ht2a",nm:"Serotonin 5-HT2A",hall:"serotonin",vols:["Cabinet","Ledger","Archive"],
- stahl:[[5],[4],[2]],note:"Table 2-4; ‘atypicality’ and psychosis Ch 4–5.",
- claim:"5-HT2A antagonism disinhibits nigrostriatal DA, reducing EPS — the basis of ‘atypicality’; agonism underlies psychedelics.",
- ref:{a:"Nichols DE",y:2016,t:"Psychedelics",pmid:"26841800",doi:"10.1124/pr.115.011478"},cs:"verified",
- quiz:"What does 5-HT2A antagonism do to nigrostriatal dopamine, and how does that reduce EPS?"},
-{id:"ht2c",nm:"Serotonin 5-HT2C",hall:"serotonin",vols:["Ledger","Archive"],
- stahl:[[5],[7],[2]],note:"Table 2-4; weight gain Ch 5; DA/NE disinhibition Ch 7.",
- claim:"5-HT2C antagonism disinhibits prefrontal DA/NE (antidepressant) but drives weight gain.",
- ref:{a:"Reynolds et al.",y:2006,t:"The 5-HT2C receptor and antipsychotic-induced weight gain — mechanisms and genetics",pmid:"16785265",doi:"10.1177/1359786806066040"},cs:"verified",
- quiz:"Why does 5-HT2C antagonism cause weight gain yet also contribute to antidepressant effects?"},
-{id:"ht3",nm:"Serotonin 5-HT3",hall:"serotonin",vols:["Archive"],
- stahl:[[7],[3],[2]],note:"Ligand-gated channel (Ch 3); antiemetic / antidepressant context Ch 7.",
- claim:"5-HT3 antagonism (mirtazapine, vortioxetine) reduces nausea and may aid cognition.",
- ref:null,search:'"5-HT3 receptor"[Title] AND review[pt]',cs:"needs-source",
- quiz:"Which antidepressants’ 5-HT3 antagonism contributes to an antiemetic / pro-cognitive profile?"},
-{id:"sert",nm:"SERT — Serotonin Transporter",hall:"serotonin",vols:["Cabinet","Ledger","Archive"],
- stahl:[[7],[2]],note:"Table 2-5 transporters; SSRIs/SNRIs Ch 7.",
- claim:"SERT inhibition by SSRIs/SNRIs is the foundational antidepressant/anxiolytic mechanism; ~80% occupancy needed, with delayed onset.",
- ref:{a:"Murthy MK",y:2025,t:"Molecular pathways linking the serotonin transporter (SERT) to depression",pmid:"40789515",doi:"10.1016/j.neuroscience.2025.08.009"},cs:"provided",
- quiz:"Roughly what SERT occupancy is needed for SSRI efficacy, and what explains the therapeutic delay?"},
-/* ---- NORADRENERGIC ---- */
-{id:"a1",nm:"Alpha-1 Adrenergic",hall:"noradrenergic",vols:["Cabinet","Ledger","Archive"],
- stahl:[[5],[8],[2]],note:"Table 2-4; antipsychotic α1 antagonism Ch 5; PTSD nightmares (prazosin) Ch 8.",
- claim:"α1 antagonism improves PTSD nightmares (prazosin) and agitation, but causes orthostasis and sedation.",
- ref:{a:"Kulkarni & Wilkinson",y:2024,t:"Adrenoceptors and Hypertension",pmid:"38890192",doi:"10.1007/164_2024_719"},cs:"provided",
- quiz:"Name two clinical uses of α1 antagonism and its main adverse effect."},
-{id:"a2",nm:"Alpha-2 Adrenergic",hall:"noradrenergic",vols:["Cabinet","Ledger","Archive"],
- stahl:[[7],[11],[2]],note:"Table 2-4; mirtazapine α2 antagonism Ch 7; guanfacine/clonidine ADHD Ch 11.",
- claim:"Postsynaptic α2A agonism (guanfacine, clonidine) strengthens prefrontal connectivity; presynaptic α2 antagonism (mirtazapine) boosts NE/5-HT.",
- ref:{a:"Szabo B",y:2024,t:"Presynaptic Adrenoceptors",pmid:"38755350",doi:"10.1007/164_2024_714"},cs:"provided",
- quiz:"Distinguish presynaptic α2 autoreceptor function from postsynaptic α2A action in prefrontal cortex."},
-{id:"b1",nm:"Beta-1 (β1) Adrenergic",hall:"noradrenergic",vols:["Cabinet","Ledger","Archive"],
- stahl:[[8],[2]],note:"Table 2-4; limited central role; propranolol in anxiety Ch 8.",
- claim:"Central β role in psychiatry is limited; propranolol is used for performance/somatic anxiety and akathisia.",
- ref:{a:"Ahles & Engelhardt",y:2014,t:"Polymorphic variants of adrenoceptors: pharmacology, physiology",pmid:"24928328",doi:"10.1124/pr.113.008219"},cs:"provided",
- quiz:"Why is β-blockade of limited central psychiatric use, and what is its classic anxiety indication?"},
-{id:"net",nm:"NET — Norepinephrine Transporter",hall:"noradrenergic",vols:["Cabinet","Ledger","Archive"],
- stahl:[[7],[11],[2]],note:"Table 2-5 transporters; NRIs/SNRIs Ch 7; atomoxetine Ch 11.",
- claim:"NET inhibition (atomoxetine, SNRIs, TCAs) raises NE — and DA in prefrontal cortex (sparse DAT) — treating ADHD/depression.",
- ref:{a:"Mwesigwa & Shibao",y:2024,t:"Norepinephrine Reuptake Inhibition, an Emergent Treatment…",pmid:"38766862",doi:"10.1161/HYPERTENSIONAHA.124.22069"},cs:"provided",
- quiz:"Why does NET inhibition raise dopamine in prefrontal cortex but not striatum?"},
-/* ---- GLUTAMATE & GABA ---- */
-{id:"nmda",nm:"NMDA Glutamate Receptor",hall:"glutamate_gaba",vols:["Cabinet","Ledger","Archive"],
- stahl:[[3],[4],[7]],note:"Ion channel Ch 3; glutamate hypofunction Ch 4; ketamine Ch 7; memantine Ch 12.",
- claim:"NMDA hypofunction is a leading model of schizophrenia’s negative/cognitive symptoms; ketamine (high-affinity) vs memantine (low-affinity) open-channel block differ clinically.",
- ref:{a:"Hansen et al.",y:2018,t:"Structure, function, and allosteric modulation of NMDA receptors",pmid:"30037851",doi:"10.1085/jgp.201812032"},cs:"verified",
- quiz:"State the NMDA-hypofunction hypothesis, and how ketamine vs memantine differ in their block."},
-{id:"ampa",nm:"AMPA Receptor",hall:"glutamate_gaba",vols:["Archive"],
- stahl:[[3],[4],[7]],note:"Ion channel Ch 3; glutamate Ch 4; ketamine downstream Ch 7.",
- claim:"Increased AMPA throughput downstream of NMDA blockade is proposed for ketamine’s rapid antidepressant effect.",
- ref:{a:"Diering & Huganir",y:2018,t:"The AMPA Receptor Code of Synaptic Plasticity",pmid:"30359599",doi:"10.1016/j.neuron.2018.10.018"},cs:"verified",
- quiz:"How does the ‘ketamine → AMPA throughput’ hypothesis explain rapid antidepressant action?"},
-{id:"gabaa",nm:"GABA-A Receptor",hall:"glutamate_gaba",vols:["Cabinet","Archive"],
- stahl:[[3],[8],[10]],note:"Ion channel Ch 3; benzodiazepines/anxiety Ch 8; Z-drugs/sleep Ch 10.",
- claim:"GABA-A positive allosteric modulation (benzodiazepines, Z-drugs, barbiturates) is anxiolytic/hypnotic; the benzodiazepine ceiling vs barbiturate direct gating explains overdose safety.",
- ref:{a:"Ghit et al.",y:2021,t:"GABA-A receptors: structure, function, pharmacology, and related disorders",pmid:"34417930",doi:"10.1186/s43141-021-00224-0"},cs:"verified",
- quiz:"Where do benzodiazepines vs barbiturates act on GABA-A, and how does that affect overdose safety?"},
-{id:"gabab",nm:"GABA-B Receptor",hall:"glutamate_gaba",vols:["Archive"],
- stahl:[[3],[6]],note:"Metabotropic; ion-channel context Ch 3; GABA networks Ch 6.",
- claim:"GABA-B is metabotropic (slow K⁺/Ca²⁺ modulation); baclofen is the clinical agonist.",
- ref:{a:"Bowery NG",y:1993,t:"GABA-B receptor pharmacology",pmid:"8388192",doi:"10.1146/annurev.pa.33.040193.000545"},cs:"verified",
- quiz:"Which GABA-B agonist is used clinically, and why is its response slower than GABA-A?"},
-/* ---- NEUROMODULATORS ---- */
-{id:"h1",nm:"Histamine H1",hall:"neuromod",vols:["Cabinet","Ledger","Archive"],
- stahl:[[10],[5],[2]],note:"Table 2-4; sedation/weight Ch 5; histamine & wakefulness Ch 10.",
- claim:"Central H1 antagonism causes sedation and weight gain (olanzapine, quetiapine); peripheral effects underlie antihistamine use.",
- ref:{a:"Panula et al.",y:2015,t:"International Union of Basic and Clinical Pharmacology: Histamine receptors",pmid:"26084539",doi:"10.1124/pr.114.010249"},cs:"provided",
- quiz:"Name two adverse effects of central H1 antagonism and the antipsychotic most associated."},
-{id:"m1",nm:"Muscarinic M1",hall:"neuromod",vols:["Cabinet","Ledger","Archive"],
- stahl:[[12],[5],[2]],note:"Table 2-4; anticholinergic effects/xanomeline Ch 5; ACh & dementia Ch 12.",
- claim:"M1 agonism (xanomeline) is procognitive/antipsychotic; M1 blockade causes anticholinergic effects but can reduce EPS.",
- ref:{a:"Kruse et al.",y:2014,t:"Muscarinic acetylcholine receptors: novel opportunities for drug discovery",pmid:"24903776",doi:"10.1038/nrd4295"},cs:"conflicting",
- note2:"Atlas PMID 24445063 is wrong → corrected to 24903776. Update the source file.",
- quiz:"What underlies M1-agonist (xanomeline) antipsychotic action, and what follows M1 blockade?"},
-{id:"m3",nm:"Muscarinic M3",hall:"neuromod",vols:["Cabinet"],
- stahl:[[5],[2]],note:"Table 2-4; metabolic (insulin) and anticholinergic effects Ch 5.",
- claim:"M3 blockade by some antipsychotics impairs insulin release, contributing to metabolic risk.",
- ref:{a:"Kruse et al.",y:2014,t:"Muscarinic acetylcholine receptors: novel opportunities for drug discovery",pmid:"24903776",doi:"10.1038/nrd4295"},cs:"conflicting",
- note2:"Atlas PMID 24445063 is wrong → corrected to 24903776. Update the source file.",
- quiz:"What metabolic adverse effect is linked to M3 blockade by some antipsychotics?"},
-{id:"nachr",nm:"Nicotinic ACh Receptor (nAChR)",hall:"neuromod",vols:["Archive"],
- stahl:[[12],[13],[2]],note:"ACh & dementia Ch 12; nicotine addiction Ch 13.",
- claim:"α7 nAChR signaling supports cognition; α4β2 mediates nicotine reinforcement (varenicline).",
- ref:{a:"Buckingham et al.",y:2009,t:"Nicotinic acetylcholine receptor signalling: roles in Alzheimer’s disease and amyloid neuroprotection",pmid:"19293145",doi:"10.1124/pr.108.000562"},cs:"verified",
- quiz:"What are the roles of α7 and α4β2 nAChR in cognition and nicotine addiction respectively?"},
-{id:"mor",nm:"μ-Opioid Receptor (MOR)",hall:"neuromod",vols:["Cabinet","Ledger","Archive"],
- stahl:[[13],[9],[2]],note:"Table 2-4; chronic pain Ch 9; addiction / buprenorphine Ch 13.",
- claim:"MOR full agonism (morphine), partial agonism (buprenorphine), and antagonism (naloxone) span analgesia, OUD treatment, and reversal.",
- ref:{a:"Pasternak GW",y:2018,t:"Mu Opioid Pharmacology: 40 Years to the Promised Land",pmid:"29413524",doi:"10.1016/bs.apha.2017.09.006"},cs:"provided",
- quiz:"Contrast full agonism, partial agonism, and antagonism at MOR in terms of clinical use."},
-{id:"mt",nm:"Melatonin MT1 / MT2",hall:"neuromod",vols:["Archive"],
- stahl:[[10],[2]],note:"Sleep / circadian Ch 10; receptor table Ch 2.",
- claim:"MT1 promotes sleep onset; MT2 mediates circadian phase-shifting; ramelteon / melatonin / agomelatine target them.",
- ref:{a:"Liu et al.",y:2015,t:"MT1 and MT2 Melatonin Receptors: A Therapeutic Perspective",pmid:"26514204",doi:"10.1146/annurev-pharmtox-010814-124742"},cs:"verified",
- quiz:"Which receptor — MT1 or MT2 — is primarily tied to sleep onset vs circadian phase-shifting?"},
-{id:"ox",nm:"Orexin OX1 / OX2",hall:"neuromod",vols:["Archive"],
- stahl:[[10]],note:"Orexin & wakefulness; DORAs for insomnia, Ch 10.",
- claim:"Dual orexin receptor antagonists (suvorexant, lemborexant, daridorexant) treat insomnia by reducing wake drive rather than GABAergic sedation.",
- ref:{a:"Muehlan et al.",y:2023,t:"The orexin story and orexin receptor antagonists for the treatment of insomnia",pmid:"37086045",doi:"10.1111/jsr.13902"},cs:"verified",
- quiz:"How do DORAs treat insomnia differently from benzodiazepines mechanistically?"}
-];
+let RX=[];
+async function loadRX(){
+  const list = await (await fetch('/api/receptors')).json();
+  const details = await Promise.all(list.map(r => fetch('/api/receptors/'+r.id).then(x=>x.json())));
+  const VOL = {archive:'Archive', cabinet:'Cabinet', ledger:'Ledger'};
+  RX = details.map(d => ({
+    id:d.id, nm:d.label, hall:d.hall,
+    vols:(d.volumes||[]).map(v=>VOL[v]||v),
+    stahl:(d.stahl||[]).map(c=>[c]),
+    note:d.note, claim:d.claim,
+    ref:d.source ? {a:d.source.authors,y:d.source.year,t:d.source.title,pmid:d.source.pmid,doi:d.source.doi} : null,
+    cs:d.status, note2:d.note2, search:d.search, quiz:d.quiz,
+  }));
+}
 const CHECK_KEYS=["mechanism","affinity","clinical","citation"];
 const CHECK_LABEL={mechanism:"Mechanism",affinity:"Affinity / pKi",clinical:"Clinical claim",citation:"Citation"};
 
 /* ============ STATE ============ */
 const LS_KEY="conservators-desk-v1";
-let STATE=load();
+let STATE={};
+// TODO (Task 11): persist review via PATCH /api/receptors/:id/review
 function blank(){const o={};RX.forEach(r=>{o[r.id]={mechanism:false,affinity:false,clinical:false,citation:false,conf:0,note:"",cs:r.cs};});return o;}
 function load(){try{const s=JSON.parse(localStorage.getItem(LS_KEY));if(!s)return blank();const b=blank();for(const id in b){if(s[id])Object.assign(b[id],s[id]);}return b;}catch(e){return blank();}}
 function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(STATE));}catch(e){}}
@@ -631,13 +517,23 @@ const mast=document.getElementById("mast");
 addEventListener("scroll",()=>mast.classList.toggle("is-scrolled",scrollY>8));
 
 /* ============ PAGE-LOAD REVEAL ============ */
-build();
-document.getElementById("rcount").textContent=RX.length;
-if(window.matchMedia && !matchMedia("(prefers-reduced-motion: reduce)").matches){
-  const rows=[...document.querySelectorAll(".spec")];
-  rows.forEach((s,i)=>{s.style.opacity="0";s.style.transform="translateY(8px)";
-    setTimeout(()=>{s.style.opacity="";s.style.transform="";},80+i*22);});
+async function init(){
+  try{
+    await loadRX();
+  }catch(e){
+    hallsEl.innerHTML='<div class="hall"><div class="hall-head"><h2>Couldn’t reach the Atlas API</h2></div><p style="padding:0 18px 18px;line-height:1.5;">This page now reads its receptor data from the running server. Start the app with <b>start.bat</b> and open <a href="http://localhost:3000/the-conservators-desk.html">http://localhost:3000/the-conservators-desk.html</a>.</p></div>';
+    return;
+  }
+  STATE=load();           // load() depends on RX (via blank()), so call it after RX is populated
+  build();
+  document.getElementById("rcount").textContent=RX.length;
+  if(window.matchMedia && !matchMedia("(prefers-reduced-motion: reduce)").matches){
+    const rows=[...document.querySelectorAll(".spec")];
+    rows.forEach((s,i)=>{s.style.opacity="0";s.style.transform="translateY(8px)";
+      setTimeout(()=>{s.style.opacity="";s.style.transform="";},80+i*22);});
+  }
 }
+init();
 </script>
 </body>
 </html>
