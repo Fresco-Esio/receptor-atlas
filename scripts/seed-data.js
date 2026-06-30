@@ -156,4 +156,11 @@ export const ALIASES = [
   ['ledger','5ht1a','ht1a'], ['ledger','5ht2c','ht2c'], ['ledger','sert','sert'],
   ['ledger','beta1','b1'], ['ledger','alpha1','a1'], ['ledger','alpha2','a2'],
   ['ledger','net','net'], ['ledger','m1','m1'], ['ledger','h1','h1'], ['ledger','mu','mor'],
+  // ---- Archive (alias = ENTRIES entry number, from receptor-function.html) ----
+  ['archive','1','ht1a'], ['archive','2','ht2a'], ['archive','3','ht2c'], ['archive','4','ht3'],
+  ['archive','5','sert'], ['archive','6','d1'], ['archive','7','d2'], ['archive','8','d3'],
+  ['archive','9','dat'], ['archive','10','a1'], ['archive','11','a2'], ['archive','12','b1'],
+  ['archive','13','net'], ['archive','14','nmda'], ['archive','15','ampa'], ['archive','16','gabaa'],
+  ['archive','17','gabab'], ['archive','18','m1'], ['archive','19','nachr'], ['archive','20','h1'],
+  ['archive','21','mor'], ['archive','22','mt'], ['archive','23','ox'],
 ];
