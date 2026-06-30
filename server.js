@@ -70,5 +70,8 @@ export function createServer(dbPath, { seed = false } = {}) {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const PORT = process.env.PORT || 3000;
-  createServer().listen(PORT, () => console.log(`Atlas app: http://localhost:${PORT}`));
+  // Bind to loopback by default so a personal, no-auth tool isn't exposed to the
+  // local network. Set HOST=0.0.0.0 explicitly to opt into LAN access.
+  const HOST = process.env.HOST || '127.0.0.1';
+  createServer().listen(PORT, HOST, () => console.log(`Atlas app: http://localhost:${PORT}`));
 }

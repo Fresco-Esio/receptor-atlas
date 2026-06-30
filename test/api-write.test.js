@@ -271,3 +271,43 @@ test('POST /api/sources with malformed body returns 400', async () => {
   });
   assert.equal(res.status, 400);
 });
+
+test('POST with a body past the 1MB cap returns 413 and the server stays responsive', async () => {
+  const huge = JSON.stringify({ notes: 'x'.repeat(1_100_000) });
+  const res = await fetch(`${base}/api/sources`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: huge,
+  });
+  assert.equal(res.status, 413);
+  // The oversized request must not wedge the server — a normal read still works.
+  const still = await fetch(`${base}/api/receptors`);
+  assert.equal(still.status, 200);
+});
+
+test('PATCH is_primary:false on the sole primary auto-promotes another source', async () => {
+  const rid = 'gabab';
+  const a = await (await postJson(`/api/receptors/${rid}/sources`, {
+    source: { kind: 'article', title: 'Primary A', year: 2020 }, status: 'provided', is_primary: true,
+  })).json();
+  await postJson(`/api/receptors/${rid}/sources`, {
+    source: { kind: 'article', title: 'Other B', year: 2019 }, status: 'provided',
+  });
+
+  let r = await (await fetch(`${base}/api/receptors/${rid}`)).json();
+  assert.equal(r.sources.filter(s => s.is_primary).length, 1);
+  assert.equal(r.source.id, a.id, 'A should be the primary we just set');
+
+  const res = await fetch(`${base}/api/receptors/${rid}/sources/${a.id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ is_primary: false }),
+  });
+  assert.equal(res.status, 200);
+
+  r = await (await fetch(`${base}/api/receptors/${rid}`)).json();
+  const primaries = r.sources.filter(s => s.is_primary);
+  assert.equal(primaries.length, 1, 'exactly one primary must remain while sources exist');
+  assert.notEqual(primaries[0].id, a.id, 'a different source should have been promoted');
+  assert.ok(r.source, 'the atlas-facing primary must not be null');
+});
