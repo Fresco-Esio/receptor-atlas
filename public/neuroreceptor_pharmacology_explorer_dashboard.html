@@ -2347,8 +2347,18 @@
       } catch (e) { /* offline / file://: keep the embedded citations */ }
     }
 
+    // Task 19: replace the embedded binding matrix (AFF_AGENTS) with the DB's, so a
+    // Ki edited in the Conservator's Desk shows here on reload. Best-effort fallback.
+    async function hydrateBindingFromApi() {
+      try {
+        const agents = await (await fetch('/api/atlas/cabinet/binding')).json();
+        if (Array.isArray(agents) && agents.length) { AFF_AGENTS.length = 0; agents.forEach(a => AFF_AGENTS.push(a)); }
+      } catch (e) { /* offline / file://: keep the embedded AFF_AGENTS */ }
+    }
+
     window.addEventListener('DOMContentLoaded', async () => {
       await hydrateCitationsFromApi();
+      await hydrateBindingFromApi();
       renderExplorerList();
       renderSelectedReceptor();
       renderBindingAffinityPlate();

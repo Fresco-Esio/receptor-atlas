@@ -817,13 +817,27 @@
     } catch (e) { /* offline / file://: keep the embedded cites */ }
   }
 
+  // Task 19: replace each row's clinical fields with the DB's, so a clinical edit in
+  // the Conservator's Desk shows here on reload. Best-effort fallback to embedded.
+  async function hydrateClinicalFromApi() {
+    try {
+      const rows = await (await fetch('/api/atlas/ledger/clinical')).json();
+      const byNo = {}; rows.forEach(r => { byNo[r.no] = r; });
+      DATA.forEach(d => {
+        const a = byNo[d.no]; if (!a) return;
+        ['sys','name','cls','baseline','mech','stahl','over','under','agonists','antagonists']
+          .forEach(k => { if (a[k] !== undefined) d[k] = a[k]; });
+      });
+    } catch (e) { /* offline / file://: keep the embedded DATA */ }
+  }
+
   // sticky-header offset = masthead height
   const masthead = document.querySelector('.masthead');
   const setMastH = () => document.documentElement.style.setProperty('--mast-h', masthead.offsetHeight + 'px');
   window.addEventListener('resize', setMastH);
   setMastH();
   restoreView();
-  hydrateCitationsFromApi().then(render);
+  Promise.all([hydrateClinicalFromApi(), hydrateCitationsFromApi()]).then(render);
 </script>
 
   <script>
