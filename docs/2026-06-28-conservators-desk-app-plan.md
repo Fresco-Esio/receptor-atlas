@@ -630,6 +630,74 @@ node server.js
 
 ---
 
-## Appendix A — Volume data map (filled in by Task 12)
+## Appendix A — Volume data map (filled in by Task 12, 2026-06-29)
 
-_(empty until discovery)_
+All three volume files are in `public/`. Each embeds its data as JS literals in a
+`<script>` near the end of the file; none fetch anything yet. **Critical finding:**
+every volume uses a *different* receptor-id scheme, and none matches the DB ids, so
+Tasks 13/14/19 need an explicit id-alias map (given at the end). Coverage is partial
+— no volume contains all 24 DB receptors.
+
+### Volume → file → DB volume name
+- **The Receptor Cabinet** → `neuroreceptor_pharmacology_explorer_dashboard.html` → `cabinet` (binding/affinity + mechanism + citations)
+- **The Clinical Ledger** → `neuroreceptor_clinical_table.html` → `ledger` (clinical rows + citations)
+- **The Receptor Archive / function gallery** → `receptor-function.html` → `archive` (narrative claims; **no citations, no numeric data**)
+
+### 1. `neuroreceptor_pharmacology_explorer_dashboard.html` (Cabinet)
+- **`neuroceptors`** — array of 13, **line 1438**. Shape per entry:
+  `{ id, name, class, subtypes, mechanism_short, mechanism_long, normal_state{}, overstimulated{}, understimulated{}, agents:{agonists_pam[], antagonists_block[]}, citation:{title, journal, pmid, url, doi} }`.
+  - **Citations** live in `.citation` (e.g. GABA-A lines 1490–1496). ⚠ Muscarinic **M1 (line ~2142) and M3 (line ~2201) still carry the stale `pmid: 24445063`** — the bug the desk corrects to 24903776. Task 13 replaces these from `/api/atlas/cabinet`.
+  - **Claims**: `mechanism_short`/`mechanism_long` + the three state objects.
+- **`AFF_TARGETS`** — 13 receptor targets, **line 2612**: `{ id, label, def? }`.
+- **`AFF_GROUPS`** — 12 drug groups, **line 2628**: `{ id, label }`.
+- **`AFF_AGENTS`** — **71** agents, **line 2643** (commented "Embedded from _affinity_data.js"). This is the **binding/affinity matrix** (Task 14 source). Shape:
+  `{ name, g:<groupId>, cid:<PubChem CID>, b:{ <targetId>:{ ki:<number nM>, kiText:<range string>, act:<'ag'|'an'|'pa'|'ri'|…>, actFull:<string>, src:<string>, note?:<string> } } }`.
+  - Target ids in `b` match `AFF_TARGETS.id` and `neuroceptors.id`.
+- `PHARM_ACTIONS` map (**line 2215**): `{ <receptorId>:{ over:{detail,tags[]}, under:{detail,tags[]} } }` — supplementary claim text, not citations.
+- `REFERENCES` array (**line 2294**): primer refs `{ tag, cite, doi }` (the pharmacology primer, not per-receptor).
+- Render: matrix grid `#grid` (markup line 1186); radar/matrix built from `AFF_*` starting **line 2754**.
+
+### 2. `neuroreceptor_clinical_table.html` (Ledger)
+- **`SYSTEMS`** — 8 groups, **line 434**: `{ id, label }`.
+- **`DATA`** — clinical rows, **line 445**. Shape per row:
+  `{ sys, no, name, cls, baseline, mech, over:[…], under:[…], stahl, agonists:[…], antagonists:[…], cite:{ t:<title>, j:<journal>, p:<'PMID nnnnn' string>, u:<url> } }`.
+  - **Citations**: `.cite` (note PMID is the **string** `p`, e.g. `'PMID 34417930'`, and `u` is the full pubmed URL; some entries are Stahl refs with `u:''`).
+  - **Clinical rows**: `baseline`, `over[]`, `under[]`, `stahl`, `mech`. **Claims**: `mech`/`stahl`/`baseline`.
+- **`CANON2NO`** map (**line 810**): `{ <canonId>:<row no> }`, e.g. `gaba_a:1, nmda:2, d2:3, d1:4, dat:5, 5ht2a:6, 5ht1a:7, …`. This is the row↔id key for joining.
+- Render: detail "Primary Citation" block built from `d.cite` at **line 697**.
+
+### 3. `receptor-function.html` (Archive / function gallery)
+- **`HALLS`** array (**line 1233**): `{ … description }` system halls.
+- **`DOMAINS`** array (**line 1275**): clinical domain tags.
+- **`ENTRIES`** — narrative receptor entries, **line 1381**. Shape:
+  `{ number, title, hall, hung?, exhibit:{ abstract, tags[], receptorClass, ligand, effect, presentation, domains[], body:[…], figureCaption, figureLabel, figureSvg } }`.
+  - **Claims**: `exhibit.abstract` / `body[]` / `presentation` / `effect`.
+  - **No `citation`, no `pmid`, no numeric binding values.** Entries are keyed by `title` + `number` only — **no machine id**. Linking to DB receptors must be by name match (or a hand-authored alias).
+- `ENTRY_BODY_PLACEHOLDERS` (line 1753); SVG label/figure generators `SVG_LABELS` (line 1372).
+
+### Cross-volume id reconciliation (DB id → Cabinet id → Ledger CANON2NO id → Archive)
+The DB's 24 ids (from `scripts/seed-data.js`): `d1, d2, d3, dat, ht1a, ht2a, ht2c, ht3, sert, a1, a2, b1, net, nmda, ampa, gabaa, gabab, h1, m1, m3, nachr, mor, mt, ox`.
+
+| DB id | Cabinet (`neuroceptors`/`AFF_TARGETS`) | Ledger (`CANON2NO`) | Archive (`ENTRIES` by title) |
+|-------|----------------------------------------|---------------------|------------------------------|
+| d2    | `dopamine_d2`        | `d2`     | Dopamine D2 |
+| d1    | —                    | `d1`     | Dopamine D1 |
+| dat   | —                    | `dat`    | (transporter) |
+| ht2a  | `serotonin_5ht2a`    | `5ht2a`  | 5-HT2A Receptor |
+| ht1a  | —                    | `5ht1a`  | 5-HT1A Receptor |
+| ht2c  | —                    | (chk)    | 5-HT2C Receptor |
+| sert  | `sert`               | (chk)    | (transporter) |
+| a1    | `alpha_1`            | —        | — |
+| a2    | `alpha_2`            | —        | — |
+| b1    | `beta_1`             | —        | — |
+| net   | `net`                | —        | — |
+| nmda  | `nmda_glutamate`     | `nmda`   | NMDA |
+| ampa  | —                    | —        | AMPA Receptor |
+| gabaa | `gaba_a`             | `gaba_a` | — |
+| h1    | `histamine_h1`       | (chk)    | — |
+| m1    | `muscarinic_m1`      | (chk)    | — |
+| m3    | `muscarinic_m3`      | (chk)    | — |
+| mor   | `mu_opioid`          | (chk)    | — |
+| d3, ht3, gabab, nachr, mt, ox | — | — | (some narrative only) |
+
+**Implication for Tasks 13–14, 19:** add an alias map (DB id ⇄ volume id) — simplest as a column on `receptors` or a small lookup in the migration — and make every join LEFT/optional, since the Cabinet covers 13, the Ledger ~12, and the Archive is name-keyed narrative with no citations. The Archive cannot supply citations or binding values; it contributes **claims only**.
