@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>The Receptor Atlas · Interactive Walkthrough</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fragment+Mono&family=Marcellus&family=Schibsted+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --wall:oklch(14% 0.01 75);--recess:oklch(11% 0.011 75);--panel:oklch(20% 0.013 75);
+  --bone:oklch(93% 0.012 85);--dim:oklch(74% 0.015 85);--faint:oklch(60% 0.013 85);
+  --verm:oklch(64% 0.19 35);--brass:oklch(72% 0.055 80);--brass-line:oklch(72% 0.055 80/.30);--brass-faint:oklch(72% 0.055 80/.14);
+  --green:oklch(78% 0.085 158);--red:oklch(68% 0.185 38);--blue:oklch(74% 0.10 245);
+  --ease:cubic-bezier(0.16,1,0.3,1);
+  --disp:"Marcellus","Cormorant Garamond",serif;--body:"Schibsted Grotesk",system-ui,sans-serif;--mono:"Fragment Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:oklch(10% 0.008 75);color:var(--bone);font-family:var(--body);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:30px 16px;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+.page-head{font-family:var(--mono);font-size:.66rem;letter-spacing:.24em;text-transform:uppercase;color:var(--faint);text-align:center}
+.page-foot{font-family:var(--mono);font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:oklch(46% 0.01 75);text-align:center}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.rc-ic{width:1em;height:1em;display:inline-block;vertical-align:-.14em;flex:none}
+.rc-demo{max-width:720px;width:100%}
+.rc-frame{background:var(--recess);border:1px solid var(--brass-line);border-radius:6px;overflow:hidden}
+.rc-screen{position:relative;background:var(--wall);transition:background-color .85s var(--ease)}
+.rc-screen[data-step="1"]{--wall:oklch(13.5% 0.01 75)}
+.rc-screen[data-step="2"]{--wall:oklch(18.5% 0.027 155)}
+.rc-screen[data-step="3"]{--wall:oklch(16.5% 0.012 75)}
+.rc-screen[data-step="4"]{--wall:oklch(16.5% 0.012 75)}
+.rc-screen[data-step="5"]{--wall:oklch(16.5% 0.012 75)}
+.rc-screen[data-step="6"]{--wall:oklch(19% 0.03 250)}
+.rc-lintel{display:flex;align-items:center;justify-content:space-between;height:46px;padding:0 16px;background:oklch(12% 0.011 75);border-bottom:1px solid var(--brass-line)}
+.rc-brand{display:inline-flex;align-items:center;gap:9px}
+.rc-aperture{width:16px;height:16px;border:1px solid var(--brass);border-radius:50%;position:relative;flex:none}
+.rc-aperture::after{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--verm)}
+.rc-wordmark{font-family:var(--disp);font-size:.82rem;letter-spacing:.16em;text-transform:uppercase;color:var(--bone)}
+.rc-crumb{font-family:var(--mono);font-size:.625rem;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55%}
+.rc-stage{position:relative;height:352px;overflow:hidden}
+.rc-panel{position:absolute;inset:0;padding:20px 24px;opacity:0;visibility:hidden;transform:translateY(12px);transition:opacity .55s var(--ease),transform .55s var(--ease),visibility .55s}
+.rc-panel.is-active{opacity:1;visibility:visible;transform:none}
+.rc-eyebrow{font-family:var(--mono);font-size:.6875rem;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:12px}
+.rc-gallery{list-style:none}
+.rc-spec{display:grid;grid-template-columns:14px 42px 1fr auto;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--brass-faint)}
+.rc-pin{width:7px;height:7px;rotate:45deg;background:transparent;justify-self:center}
+.rc-no{font-family:var(--mono);font-size:.7rem;color:var(--faint);letter-spacing:.06em}
+.rc-nm{font-family:var(--disp);font-size:1.05rem;letter-spacing:.02em;color:var(--dim)}
+.rc-sys{font-size:.8rem;color:var(--faint)}
+.rc-dot{width:8px;height:8px;border-radius:50%;justify-self:end}
+.dot-green{background:var(--green)}.dot-red{background:var(--red)}.dot-blue{background:var(--blue)}
+.rc-spec.is-sel .rc-pin{background:var(--verm)}
+.rc-spec.is-sel .rc-nm{color:var(--bone)}
+.rc-spec.is-sel .rc-no{color:var(--verm)}
+.rc-two{display:grid;grid-template-columns:168px 1fr;gap:22px;height:100%}
+.rc-engrave{display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid var(--brass-faint);padding-right:8px}
+.rc-fig{width:150px;height:150px}
+.rc-fig .hx{fill:none;stroke:var(--dim);stroke-width:5;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:0}
+.rc-fig .mem{fill:none;stroke:var(--brass);stroke-width:1.4;opacity:.55;stroke-dasharray:1;stroke-dashoffset:0}
+.rc-fig .conn{fill:none;stroke:var(--faint);stroke-width:1.2;stroke-dasharray:2 2}
+.rc-fig .lig{fill:var(--verm)}
+.rc-fig-cap{font-family:var(--mono);font-size:.625rem;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-top:10px}
+.rc-detail{min-width:0;display:flex;flex-direction:column}
+.rc-spec-title{font-family:var(--disp);font-size:2.1rem;line-height:1;letter-spacing:.02em;color:var(--bone)}
+.rc-spec-sub{font-size:.85rem;color:var(--dim);margin:4px 0 14px}
+.rc-prose{font-size:.86rem;line-height:1.5;color:var(--bone);margin:0 0 14px;max-width:60ch}
+.rc-prose sub{font-size:.7em}
+.rc-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px}
+.rc-chip{font-family:var(--mono);font-size:.625rem;letter-spacing:.08em;text-transform:uppercase;padding:5px 9px;border-radius:2px;background:var(--recess);border:1px solid var(--brass-faint)}
+.chip-ag{color:var(--green);border-color:oklch(78% 0.085 158/.4)}
+.chip-an{color:var(--red);border-color:oklch(68% 0.185 38/.4)}
+.rc-cite-row{display:flex;align-items:center;gap:10px;font-size:.82rem;color:var(--dim);flex-wrap:wrap}
+.rc-cite-row b{color:var(--bone);font-weight:500}
+.rc-stat{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;padding:3px 7px;border-radius:2px}
+.rc-stat .rc-ic{width:12px;height:12px}
+.stat-verified{color:var(--green);border:1px solid oklch(78% 0.085 158/.4)}
+.rc-desk{display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%}
+.rc-col{min-width:0;display:flex;flex-direction:column;gap:12px;transition:opacity .5s var(--ease)}
+.rc-col.rc-dimmed{opacity:.32}
+.rc-field{background:var(--recess);border:1px solid var(--brass-faint);border-radius:3px;padding:11px 13px}
+.rc-field label{display:block;font-family:var(--mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
+.rc-val{font-size:.86rem;line-height:1.5;color:var(--bone)}
+.rc-field.is-editing{border-color:var(--brass)}
+.rc-add{background:oklch(64% 0.19 35/.16);border-radius:2px;padding:0 2px}
+.rc-caret{display:inline-block;width:2px;height:1em;background:var(--verm);vertical-align:-2px;margin-left:1px}
+.rc-saved{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--green)}
+.rc-saved .rc-ic{width:13px;height:13px}
+.rc-src{display:flex;align-items:center;gap:9px;background:var(--recess);border:1px solid var(--brass-faint);border-radius:3px;padding:10px 12px;font-size:.82rem;color:var(--bone)}
+.rc-src b{font-weight:500}
+.rc-src.dim{color:var(--dim);opacity:.7}
+.rc-src .rc-stat{margin-left:auto}
+.rc-kind{margin-left:auto;font-family:var(--mono);font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.rc-star{color:var(--verm);display:inline-flex}
+.rc-star .rc-ic{width:15px;height:15px}
+.rc-track{display:flex;align-items:center;gap:8px;padding:4px 0}
+.rc-node{font-family:var(--mono);font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;padding:5px 8px;border-radius:2px;border:1px solid}
+.rc-node.n1{color:var(--faint);border-color:var(--brass-faint)}
+.rc-node.n2{color:var(--brass);border-color:var(--brass-line)}
+.rc-node.n3{color:var(--green);border-color:oklch(78% 0.085 158/.5);background:oklch(78% 0.085 158/.08)}
+.rc-arrow{width:15px;height:15px;color:var(--faint)}
+.rc-checks{list-style:none;margin:0 0 16px;display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.ck{display:flex;align-items:center;gap:9px;font-size:.9rem;color:var(--bone);background:var(--recess);border:1px solid var(--brass-faint);border-radius:3px;padding:10px 12px}
+.ck .rc-ic{color:var(--green);width:15px;height:15px}
+.rc-mastery{margin-bottom:16px}
+.rc-mastery-head{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:7px}
+.rc-bar{height:5px;background:var(--recess);border-radius:3px;overflow:hidden}
+.rc-bar-fill{height:100%;width:100%;background:var(--green);border-radius:3px;transform:scaleX(1);transform-origin:left}
+.rc-drift{display:flex;align-items:center;gap:10px;font-size:.82rem;color:var(--dim)}
+.rc-drift-old{text-decoration:line-through;color:var(--faint)}
+.rc-drift-new{display:inline-flex;align-items:center;gap:5px;color:var(--green)}
+.rc-drift-new .rc-ic{width:13px;height:13px}
+.rc-console{padding:14px 18px 16px;border-top:1px solid var(--brass-line);background:oklch(12% 0.011 75)}
+.rc-console-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+.rc-meta{display:flex;align-items:baseline;gap:12px;min-width:0}
+.rc-counter{font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;color:var(--verm)}
+.rc-title{font-family:var(--disp);font-size:1.02rem;letter-spacing:.03em;color:var(--bone);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rc-controls{display:flex;gap:8px;flex:none}
+.rc-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;background:var(--recess);border:1px solid var(--brass-line);border-radius:2px;color:var(--bone);cursor:pointer;font-size:17px;transition:border-color .25s var(--ease),color .25s var(--ease),transform .1s}
+.rc-btn:hover{border-color:var(--brass);color:var(--verm)}
+.rc-btn:active{transform:scale(.94)}
+.rc-btn:focus-visible{outline:1px solid var(--brass);outline-offset:2px}
+.rc-play{color:var(--verm)}
+.rc-progress{display:flex;gap:5px;margin-bottom:11px}
+.rc-tick{flex:1;height:3px;padding:0;border:0;background:var(--brass-faint);border-radius:2px;overflow:hidden;cursor:pointer}
+.rc-tick.is-done{background:oklch(64% 0.19 35/.45)}
+.rc-tick:focus-visible{outline:1px solid var(--brass);outline-offset:3px}
+.rc-tick-fill{display:block;height:100%;width:0;background:var(--verm);border-radius:2px}
+.rc-caption{font-size:.84rem;line-height:1.45;color:var(--dim);min-height:2.5em;max-width:70ch}
+::selection{background:var(--verm);color:oklch(14% 0.01 75)}
+@keyframes rc-rise{from{opacity:0;transform:translateY(11px)}}
+@keyframes rc-pop{from{opacity:0;transform:scale(.82)}}
+@keyframes rc-draw{from{stroke-dashoffset:1}}
+@keyframes rc-bar{from{transform:scaleX(0)}}
+@keyframes rc-node{from{opacity:.25;transform:scale(.86)}}
+@keyframes rc-star{from{opacity:0;transform:scale(.5);color:var(--faint)}}
+@keyframes rc-hl{0%{background:oklch(64% 0.19 35/0)}40%{background:oklch(64% 0.19 35/.32)}}
+@keyframes rc-blink{50%{opacity:0}}
+.rc-panel.is-live .rc-spec{animation:rc-rise .5s var(--ease) both;animation-delay:calc(var(--d,0)*70ms)}
+.rc-panel.is-live .hx{animation:rc-draw .55s var(--ease) both;animation-delay:calc(.12s + var(--d,0)*80ms)}
+.rc-panel.is-live .mem{animation:rc-draw .6s var(--ease) both}
+.rc-panel.is-live .lig{animation:rc-pop .5s var(--ease) both;animation-delay:.72s}
+.rc-panel.is-live .rc-spec-title{animation:rc-rise .55s var(--ease) both}
+.rc-panel.is-live .rc-spec-sub{animation:rc-rise .55s var(--ease) both;animation-delay:.07s}
+.rc-panel.is-live .rc-prose{animation:rc-rise .55s var(--ease) both;animation-delay:.16s}
+.rc-panel.is-live .rc-chip{animation:rc-rise .45s var(--ease) both;animation-delay:calc(.26s + var(--d,0)*90ms)}
+.rc-panel.is-live .rc-cite-row{animation:rc-rise .5s var(--ease) both;animation-delay:.62s}
+.rc-panel.is-live .rc-col{animation:rc-rise .5s var(--ease) both;animation-delay:calc(var(--d,0)*120ms)}
+.rc-panel.is-live .rc-add{animation:rc-hl 1.1s var(--ease) both;animation-delay:.35s}
+.rc-panel.is-live .rc-caret{animation:rc-blink .9s steps(1) infinite;animation-delay:.35s}
+.rc-panel.is-live .rc-saved{animation:rc-rise .5s var(--ease) both;animation-delay:1.35s}
+.rc-panel.is-live .rc-attaching{animation:rc-rise .5s var(--ease) both}
+.rc-panel.is-live .rc-node{animation:rc-node .5s var(--ease) both;animation-delay:calc(.25s + var(--d,0)*.55s)}
+.rc-panel.is-live .rc-star{animation:rc-star .55s var(--ease) both;animation-delay:1.55s}
+.rc-panel.is-live .ck{animation:rc-pop .45s var(--ease) both;animation-delay:calc(var(--d,0)*.3s)}
+.rc-panel.is-live .rc-bar-fill{animation:rc-bar 1.1s var(--ease) both;animation-delay:.55s}
+.rc-panel.is-live .rc-drift-new{animation:rc-rise .5s var(--ease) both;animation-delay:1.35s}
+@media (max-width:560px){.rc-two{grid-template-columns:1fr;gap:12px}.rc-engrave{border-right:0;border-bottom:1px solid var(--brass-faint);padding:0 0 10px}.rc-fig{width:108px;height:108px}.rc-stage{height:400px}}
+@media (prefers-reduced-motion:reduce){.rc-demo *{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="page-head">The Receptor Atlas · interactive walkthrough</div>
+
+<section class="rc-demo" id="rcDemo">
+<h2 class="sr-only">Interactive walkthrough of the Receptor Atlas: browsing the specimen gallery, opening a receptor, editing content at the Conservator's Desk, managing citations, and reviewing for drift, with play, next, and previous controls.</h2>
+<div class="rc-frame">
+<div class="rc-screen" data-step="1">
+<div class="rc-lintel">
+<span class="rc-brand"><span class="rc-aperture"></span><span class="rc-wordmark">The Receptor Atlas</span></span>
+<span class="rc-crumb">Atlas / the collection</span>
+</div>
+<div class="rc-stage">
+
+<article class="rc-panel" data-panel="1">
+<div class="rc-eyebrow">The collection · 32 specimens</div>
+<ul class="rc-gallery">
+<li class="rc-spec" style="--d:0"><span class="rc-pin"></span><span class="rc-no">001</span><span class="rc-nm">D2</span><span class="rc-sys">Dopamine · mesolimbic</span><span class="rc-dot dot-blue"></span></li>
+<li class="rc-spec" style="--d:1"><span class="rc-pin"></span><span class="rc-no">002</span><span class="rc-nm">5-HT2A</span><span class="rc-sys">Serotonin · cortical</span><span class="rc-dot dot-red"></span></li>
+<li class="rc-spec is-sel" style="--d:2"><span class="rc-pin"></span><span class="rc-no">003</span><span class="rc-nm">M1</span><span class="rc-sys">Muscarinic · cholinergic</span><span class="rc-dot dot-green"></span></li>
+<li class="rc-spec" style="--d:3"><span class="rc-pin"></span><span class="rc-no">004</span><span class="rc-nm">α2A</span><span class="rc-sys">Adrenergic · noradrenergic</span><span class="rc-dot dot-blue"></span></li>
+<li class="rc-spec" style="--d:4"><span class="rc-pin"></span><span class="rc-no">005</span><span class="rc-nm">GABA-A</span><span class="rc-sys">GABA · inhibitory</span><span class="rc-dot dot-green"></span></li>
+<li class="rc-spec" style="--d:5"><span class="rc-pin"></span><span class="rc-no">006</span><span class="rc-nm">H1</span><span class="rc-sys">Histamine · sedation</span><span class="rc-dot dot-red"></span></li>
+</ul>
+</article>
+
+<article class="rc-panel" data-panel="2">
+<div class="rc-two">
+<div class="rc-engrave">
+<svg class="rc-fig" viewBox="0 0 150 150" aria-hidden="true">
+<path class="mem" pathLength="1" d="M30 52 L120 52"/>
+<path class="mem" pathLength="1" d="M30 102 L120 102"/>
+<path class="hx" style="--d:0" pathLength="1" d="M40 58 L40 96"/>
+<path class="hx" style="--d:1" pathLength="1" d="M53 58 L53 96"/>
+<path class="hx" style="--d:2" pathLength="1" d="M66 58 L66 96"/>
+<path class="hx" style="--d:3" pathLength="1" d="M79 58 L79 96"/>
+<path class="hx" style="--d:4" pathLength="1" d="M92 58 L92 96"/>
+<path class="hx" style="--d:5" pathLength="1" d="M105 58 L105 96"/>
+<path class="hx" style="--d:6" pathLength="1" d="M118 58 L118 96"/>
+<path class="conn" d="M79 46 L79 58"/>
+<circle class="lig" cx="79" cy="40" r="6"/>
+</svg>
+<div class="rc-fig-cap">M1 · 7TM · Gq-coupled</div>
+</div>
+<div class="rc-detail">
+<div class="rc-spec-title">M1</div>
+<div class="rc-spec-sub">Muscarinic acetylcholine receptor</div>
+<div class="rc-eyebrow">Mechanism</div>
+<p class="rc-prose">Gq-coupled; activation raises IP<sub>3</sub> and DAG and closes M-currents, slowing accommodation and sharpening cortical signal.</p>
+<div class="rc-eyebrow">Affinity fingerprint</div>
+<div class="rc-chips">
+<span class="rc-chip chip-an" style="--d:0">Atropine · antag</span>
+<span class="rc-chip chip-ag" style="--d:1">Pilocarpine · agon</span>
+<span class="rc-chip chip-an" style="--d:2">Scopolamine · antag</span>
+</div>
+<div class="rc-cite-row"><b>Kruse AC et al.</b> 2014 · Nature<span class="rc-stat stat-verified"><svg class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10 -11"/></svg>verified</span></div>
+</div>
+</div>
+</article>
+
+<article class="rc-panel" data-panel="3">
+<div class="rc-desk">
+<section class="rc-col" style="--d:0">
+<div class="rc-eyebrow">Content · M1</div>
+<div class="rc-field"><label>Baseline tone</label><div class="rc-val">Low tonic ACh; phasic bursts on attention.</div></div>
+<div class="rc-field"><label>Mechanism</label><div class="rc-val">Gq · IP<sub>3</sub>/DAG · M-current closure</div></div>
+</section>
+<section class="rc-col" style="--d:1">
+<div class="rc-eyebrow">Sources</div>
+<div class="rc-src"><span class="rc-star"><svg class="rc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2l2.6 5.5 6 .7 -4.4 4.1 1.2 5.9 -5.4 -3 -5.4 3 1.2 -5.9 -4.4 -4.1 6 -.7z"/></svg></span><b>Kruse 2014</b><span class="rc-stat stat-verified">verified</span></div>
+<div class="rc-src dim"><b>Stahl 5e · Ch 5</b><span class="rc-kind">book</span></div>
+</section>
+</div>
+</article>
+
+<article class="rc-panel" data-panel="4">
+<div class="rc-desk">
+<section class="rc-col rc-focus" style="--d:0">
+<div class="rc-eyebrow">Content · M1 · editing</div>
+<div class="rc-field is-editing"><label>Baseline tone</label><div class="rc-val">Low tonic ACh; phasic bursts on attention<span class="rc-add">, closing M-currents</span><span class="rc-caret"></span></div></div>
+<div class="rc-saved"><svg class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10 -11"/></svg> Saved · clinical stamped 14:32</div>
+</section>
+<section class="rc-col rc-dimmed" style="--d:1">
+<div class="rc-eyebrow">Sources</div>
+<div class="rc-src"><b>Kruse 2014</b><span class="rc-stat stat-verified">verified</span></div>
+</section>
+</div>
+</article>
+
+<article class="rc-panel" data-panel="5">
+<div class="rc-desk">
+<section class="rc-col rc-dimmed" style="--d:0">
+<div class="rc-eyebrow">Content · M1</div>
+<div class="rc-field"><label>Baseline tone</label><div class="rc-val">Low tonic ACh; phasic bursts on attention.</div></div>
+</section>
+<section class="rc-col rc-focus" style="--d:1">
+<div class="rc-eyebrow">Sources · attach &amp; verify</div>
+<div class="rc-src rc-attaching"><span class="rc-star"><svg class="rc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2l2.6 5.5 6 .7 -4.4 4.1 1.2 5.9 -5.4 -3 -5.4 3 1.2 -5.9 -4.4 -4.1 6 -.7z"/></svg></span><b>Kruse AC et al. 2014</b></div>
+<div class="rc-track">
+<span class="rc-node n1" style="--d:0">needs source</span>
+<svg class="rc-ic rc-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6 -6 6"/></svg>
+<span class="rc-node n2" style="--d:1">provided</span>
+<svg class="rc-ic rc-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6 -6 6"/></svg>
+<span class="rc-node n3" style="--d:2">verified</span>
+</div>
+<div class="rc-src dim"><b>Stahl 5e · Ch 5</b><span class="rc-kind">book · non-primary</span></div>
+</section>
+</div>
+</article>
+
+<article class="rc-panel" data-panel="6">
+<div class="rc-eyebrow">Review · M1</div>
+<ul class="rc-checks">
+<li class="ck" style="--d:0"><svg class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10 -11"/></svg> Mechanism</li>
+<li class="ck" style="--d:1"><svg class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10 -11"/></svg> Affinity</li>
+<li class="ck" style="--d:2"><svg class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10 -11"/></svg> Clinical</li>
+<li class="ck" style="--d:3"><svg class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10 -11"/></svg> Citation</li>
+</ul>
+<div class="rc-mastery">
+<div class="rc-mastery-head"><span>Mastery</span><span>4 / 4 checks</span></div>
+<div class="rc-bar"><div class="rc-bar-fill"></div></div>
+</div>
+<div class="rc-drift"><span class="rc-drift-old">1 section drifted</span><svg class="rc-ic rc-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6 -6 6"/></svg><span class="rc-drift-new"><svg class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10 -11"/></svg> review current</span></div>
+</article>
+
+</div>
+</div>
+<div class="rc-console">
+<div class="rc-console-top">
+<div class="rc-meta"><span class="rc-counter">01 / 06</span><span class="rc-title">The Atlas</span></div>
+<div class="rc-controls">
+<button class="rc-btn rc-prev" aria-label="Previous step"><svg class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+<button class="rc-btn rc-play" aria-label="Pause"><svg class="rc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h3v14h-3zM14 5h3v14h-3z"/></svg></button>
+<button class="rc-btn rc-next" aria-label="Next step"><svg class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6 -6 6"/></svg></button>
+</div>
+</div>
+<div class="rc-progress">
+<button class="rc-tick" aria-label="Go to step 1"><span class="rc-tick-fill"></span></button>
+<button class="rc-tick" aria-label="Go to step 2"><span class="rc-tick-fill"></span></button>
+<button class="rc-tick" aria-label="Go to step 3"><span class="rc-tick-fill"></span></button>
+<button class="rc-tick" aria-label="Go to step 4"><span class="rc-tick-fill"></span></button>
+<button class="rc-tick" aria-label="Go to step 5"><span class="rc-tick-fill"></span></button>
+<button class="rc-tick" aria-label="Go to step 6"><span class="rc-tick-fill"></span></button>
+</div>
+<p class="rc-caption">The browse is the exhibit. Every receptor is catalogued like a specimen, never a card in a grid.</p>
+</div>
+</div>
+</section>
+
+<div class="page-foot">A simulated tour · no live data · use the rail or press play to explore</div>
+
+<script>
+(function(){
+var demo=document.getElementById('rcDemo');if(!demo)return;
+var screenEl=demo.querySelector('.rc-screen');
+var panels=[].slice.call(demo.querySelectorAll('.rc-panel'));
+var ticks=[].slice.call(demo.querySelectorAll('.rc-tick'));
+var counter=demo.querySelector('.rc-counter');
+var titleEl=demo.querySelector('.rc-title');
+var caption=demo.querySelector('.rc-caption');
+var crumb=demo.querySelector('.rc-crumb');
+var playBtn=demo.querySelector('.rc-play');
+var N=panels.length;
+var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
+var DUR=5400;
+var PLAY='<svg class="rc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13 -8z"/></svg>';
+var PAUSE='<svg class="rc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h3v14h-3zM14 5h3v14h-3z"/></svg>';
+var STEPS=[
+{t:"The Atlas",crumb:"Atlas / the collection",c:"The browse is the exhibit. Every receptor is catalogued like a specimen, never a card in a grid."},
+{t:"The Specimen",crumb:"Atlas / M1",c:"One specimen, fully sourced: mechanism, binding fingerprint, clinical role, and citation in a single view."},
+{t:"The Conservator’s Desk",crumb:"Desk / M1",c:"Step behind the glass. The Conservator’s Desk is where the collection is curated."},
+{t:"Editing Content",crumb:"Desk / M1 / content",c:"Edit any field and it saves at once, timestamping the section so nothing drifts unnoticed."},
+{t:"Citations & Verification",crumb:"Desk / M1 / sources",c:"Attach a source, verify it, set it primary. Every claim carries a tracked citation status."},
+{t:"Review & Drift",crumb:"Desk / M1 / review",c:"Mark a receptor reviewed: drift flags clear and mastery rises, so the collection stays trustworthy."}
+];
+var cur=-1,playing=!reduce,rafId=null,segStart=0,segElapsed=0,activeFill=null;
+function nowMs(){return (window.performance&&performance.now)?performance.now():Date.now();}
+function setIcon(){playBtn.innerHTML=playing?PAUSE:PLAY;playBtn.setAttribute('aria-label',playing?'Pause':'Play');}
+function frame(t){var prog=Math.min(1,(segElapsed+(t-segStart))/DUR);if(activeFill)activeFill.style.width=(prog*100).toFixed(2)+'%';if(prog>=1){go(cur+1);return;}rafId=requestAnimationFrame(frame);}
+function startTimer(){cancelAnimationFrame(rafId);segElapsed=0;if(playing){segStart=nowMs();rafId=requestAnimationFrame(frame);}}
+function pause(){if(!playing)return;playing=false;cancelAnimationFrame(rafId);segElapsed+=nowMs()-segStart;setIcon();}
+function resume(){if(playing)return;playing=true;segStart=nowMs();rafId=requestAnimationFrame(frame);setIcon();}
+function go(i){
+cur=((i%N)+N)%N;
+for(var k=0;k<N;k++)panels[k].classList.toggle('is-active',k===cur);
+for(var t=0;t<ticks.length;t++){var f=ticks[t].querySelector('.rc-tick-fill');ticks[t].classList.toggle('is-done',t<cur);if(t<cur){f.style.width='100%';}else if(t>cur){f.style.width='0%';}else{f.style.width='0%';activeFill=f;}}
+screenEl.setAttribute('data-step',String(cur+1));
+var s=STEPS[cur];
+counter.textContent=('0'+(cur+1)).slice(-2)+' / 0'+N;
+titleEl.textContent=s.t;caption.textContent=s.c;crumb.textContent=s.crumb;
+var p=panels[cur];p.classList.remove('is-live');void p.offsetWidth;p.classList.add('is-live');
+startTimer();
+}
+demo.querySelector('.rc-next').addEventListener('click',function(){go(cur+1);});
+demo.querySelector('.rc-prev').addEventListener('click',function(){go(cur-1);});
+playBtn.addEventListener('click',function(){playing?pause():resume();});
+ticks.forEach(function(tk,idx){tk.addEventListener('click',function(){go(idx);});});
+setIcon();go(0);
+})();
+</script>
+</body>
+</html>
