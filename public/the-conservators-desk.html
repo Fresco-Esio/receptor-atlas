@@ -268,6 +268,25 @@ input[type=file]{display:none;}
 .meta-strip .dl-row{justify-content:flex-start; gap:.45rem;}
 .meta-strip .drift-flag{margin-top:0;}
 .meta-strip .deeplinks{margin-left:auto;}
+
+/* ---------- How-to guide + status legend ---------- */
+.howto{display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap:1.4rem 2.2rem; align-items:start;}
+@media(max-width:760px){.howto{grid-template-columns:1fr;}}
+.steps{margin:0; padding-left:1.4rem; display:flex; flex-direction:column; gap:.65rem;}
+.steps li{color:var(--bone-dim); font-size:.9rem; line-height:1.55;}
+.steps li::marker{color:var(--vermilion); font-family:"Fragment Mono",monospace; font-size:.8em;}
+.steps b{color:var(--bone); font-weight:500;}
+.legend{background:var(--wall-panel); border:1px solid var(--brass-faint); border-radius:3px; padding:1rem 1.1rem;}
+.legend-grid{display:flex; flex-direction:column; gap:.55rem; margin-top:.7rem;}
+.legend-grid > div{font-size:.8rem; color:var(--bone-faint); line-height:1.45;}
+.legend-grid .schip{margin-right:.5rem; vertical-align:middle;}
+/* Evidence annotations + citation-status caption */
+.forcheck{font-family:"Fragment Mono",monospace; font-size:.5rem; letter-spacing:.08em; text-transform:uppercase; color:var(--vermilion); border:1px solid var(--brass-faint); border-radius:2px; padding:.1rem .3rem; margin-left:.45rem; white-space:nowrap;}
+.cite-caption{font-size:.74rem; color:var(--bone-faint); line-height:1.45; margin:.7rem 0 .4rem;}
+/* Expand/collapse affordance: a caret after each specimen name */
+.spec-id .nm::after{content:"▾"; display:inline-block; margin-left:.5rem; font-size:.6em; color:currentColor; opacity:.45; transition:transform .25s var(--ease), opacity .2s var(--ease);}
+.spec:hover .nm::after{opacity:.85;}
+.spec.open .nm::after{transform:rotate(180deg);}
 </style>
 </head>
 <body>
@@ -293,7 +312,7 @@ input[type=file]{display:none;}
     <span class="eyebrow">A working protocol for verifying The Receptor Atlas</span>
     <h1>Authenticate every specimen<br/>before it goes on the wall</h1>
     <p>This desk holds the accuracy review for the three volumes of the Atlas &mdash; <i>The Receptor Cabinet</i>, <i>The Clinical Ledger</i>, and <i>The Receptor Archive</i>. Each of the <b id="rcount">24</b> receptor specimens is examined against four checks, cross-referenced to a specific locus in <i>Stahl&rsquo;s Essential Psychopharmacology</i> (5th ed., 2021) and a peer-reviewed source, and rated for your own command of the material.</p>
-    <p style="color:var(--bone-faint); font-size:.86rem;">Work the halls in order &mdash; dopamine first, then serotonin, noradrenaline, glutamate &amp; GABA, and the neuromodulators. The sequence builds the conceptual scaffolding the way the systems build on one another. Progress is saved in this browser automatically; export a copy regularly.</p>
+    <p style="color:var(--bone-faint); font-size:.86rem;">Work the halls in order &mdash; dopamine first, then serotonin, noradrenaline, glutamate &amp; GABA, and the neuromodulators. The sequence builds the conceptual scaffolding the way the systems build on one another. Every change you make is saved to the shared atlas database instantly &mdash; the atlas volumes read from the same record.</p>
   </section>
 
   <!-- DASHBOARD -->
@@ -332,6 +351,28 @@ input[type=file]{display:none;}
       <div class="cell"><div class="n">CHECK 02</div><h3>Affinity / pKi data</h3><p>Do the binding values and the agonist / antagonist / partial labels in the affinity plate match a real source? Confirm relative potencies and that the radar / matrix encodes them correctly.</p></div>
       <div class="cell"><div class="n">CHECK 03</div><h3>Clinical claim</h3><p>Does receptor &rarr; action &rarr; presentation hold? Cross-check the mapping against Stahl Table 2-4 (receptors) / 2-5 (transporters) and the clinical chapters.</p></div>
       <div class="cell"><div class="n">CHECK 04</div><h3>Citation</h3><p>Does the cited paper actually support the claim, and does the PMID resolve to that paper? Set the citation status &mdash; verified, provided, conflicting, or needs-source.</p></div>
+    </div>
+  </section>
+
+  <!-- HOW TO USE -->
+  <section>
+    <span class="eyebrow">How to work a specimen</span>
+    <div class="howto" style="margin-top:.9rem;">
+      <ol class="steps">
+        <li><b>Open a specimen.</b> Click any row in the halls below; it expands to reveal the review controls.</li>
+        <li><b>Work the four checks.</b> Tick <i>Mechanism</i>, <i>Affinity</i>, <i>Clinical claim</i>, and <i>Citation</i> as you confirm each. Two kinds of evidence sit in the open row to help: <b>Stahl 5e</b> (where to read &mdash; for the Clinical-claim check) and the <b>peer-reviewed source</b> (the paper to verify &mdash; for the Citation check).</li>
+        <li><b>Settle the source.</b> Confirm the cited paper or pick a replacement from the library, then set its <b>citation status</b> (key below).</li>
+        <li><b>Rate &amp; note.</b> Set your mastery (1&ndash;5) and record any discrepancy. Use the filters above the halls to jump to what&rsquo;s <i>flagged</i> or <i>changed</i>.</li>
+      </ol>
+      <div class="legend">
+        <span class="eyebrow">Citation status &mdash; what each means</span>
+        <div class="legend-grid">
+          <div><span class="schip"><span class="dot good"></span>verified</span> You confirmed the paper supports the claim and the PMID resolves.</div>
+          <div><span class="schip"><span class="dot brass"></span>provided</span> Carried from the atlas, not yet independently re-checked.</div>
+          <div><span class="schip"><span class="dot warn"></span>conflicting</span> The citation is wrong or disputed &mdash; fix it.</div>
+          <div><span class="schip"><span class="dot info"></span>needs-source</span> No peer-reviewed source assigned yet.</div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -451,6 +492,12 @@ async function loadRX(){
 }
 const CHECK_KEYS=["mechanism","affinity","clinical","citation"];
 const CHECK_LABEL={mechanism:"Mechanism",affinity:"Affinity / pKi",clinical:"Clinical claim",citation:"Citation"};
+const CS_HELP={
+  "verified":"You confirmed the paper supports the claim and the PMID resolves.",
+  "provided":"Carried from the atlas, not yet independently re-checked.",
+  "conflicting":"The citation is wrong or disputed — fix it.",
+  "needs-source":"No peer-reviewed source assigned yet."
+};
 
 /* ============ STATE PERSISTENCE (DB-backed) ============ */
 let STATE={};
@@ -629,11 +676,12 @@ function specRow(r){
        <div class="side">
          <div class="panel">
             <div class="pk">Evidence</div>
-            <div class="sub"><div class="pk-sub">Stahl 5e &mdash; where to read</div>${stahlBlock(r)}</div>
-            <div class="sub"><div class="pk-sub">Peer-reviewed source</div>
+            <div class="sub"><div class="pk-sub">Cross-reference &middot; Stahl 5e <span class="forcheck">Clinical-claim check</span></div>${stahlBlock(r)}</div>
+            <div class="sub"><div class="pk-sub">Peer-reviewed source <span class="forcheck">Citation check</span></div>
                <div class="src-display">${refBlock(r)}</div>
-               <div class="src-pick"><span class="picklabel">Cite from library</span><select class="srcselect">${sourceOptions(r.sourceId)}</select></div>
-               <div class="citestat">${["verified","provided","conflicting","needs-source"].map(v=>`<button class="cs" data-v="${v}">${v}</button>`).join("")}</div>
+               <div class="src-pick"><span class="picklabel">Replace from library</span><select class="srcselect">${sourceOptions(r.sourceId)}</select></div>
+               <div class="cite-caption">Citation status &mdash; how far you&rsquo;ve trusted this paper (hover each for its meaning):</div>
+               <div class="citestat">${["verified","provided","conflicting","needs-source"].map(v=>`<button class="cs" data-v="${v}" title="${CS_HELP[v]}">${v}</button>`).join("")}</div>
             </div>
          </div>
          <div class="panel">
