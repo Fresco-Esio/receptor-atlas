@@ -47,10 +47,11 @@ header.mast{
   gap:.6rem 1.2rem; padding:.85rem clamp(1rem,3.5vw,2.4rem); transition:box-shadow .4s var(--ease);
 }
 header.mast.is-scrolled{box-shadow:0 1px 0 var(--brass-faint),0 8px 28px oklch(0% 0 0 / 0.35);}
-.brand{display:flex; align-items:baseline; gap:.7rem; min-width:0;}
+.brand{display:flex; align-items:baseline; gap:.7rem; min-width:0; color:inherit; text-decoration:none; border-bottom:0;}
 .brand .tick{width:9px;height:9px;background:var(--vermilion);transform:rotate(45deg);flex:none;}
-.brand .wm{font-family:"Marcellus",serif; font-size:1.18rem; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap;}
+.brand .wm{font-family:"Marcellus",serif; font-size:1.18rem; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap; transition:color .25s var(--ease);}
 .brand .sub{font-family:"Fragment Mono",monospace; font-size:.62rem; letter-spacing:.16em; text-transform:uppercase; color:var(--bone-faint); white-space:nowrap;}
+.brand:hover .wm{color:var(--vermilion);}
 .mast-tools{display:flex; align-items:center; gap:.45rem; flex-wrap:wrap;}
 button.ctrl{
   font-family:"Fragment Mono",monospace; font-size:.64rem; letter-spacing:.12em; text-transform:uppercase;
@@ -173,16 +174,13 @@ section{margin-bottom:clamp(2.2rem,5vw,3.6rem);}
 .panel .pk{font-family:"Fragment Mono",monospace; font-size:.58rem; letter-spacing:.14em; text-transform:uppercase; color:var(--bone-faint); margin-bottom:.5rem;}
 .srcline{font-size:.82rem; color:var(--bone-dim); margin:.3rem 0; line-height:1.5;}
 .srclink{display:inline-flex; gap:.35rem; align-items:center; font-family:"Fragment Mono",monospace; font-size:.62rem; letter-spacing:.06em; margin-right:.7rem;}
-.stahl-item{margin:.35rem 0; font-size:.8rem; color:var(--bone-dim); line-height:1.45;}
-.stahl-item a{font-family:inherit;}
 
-/* citation status segmented */
+/* citation status segmented (per source row) */
 .citestat{display:flex; gap:.3rem; flex-wrap:wrap; margin-top:.5rem;}
 .cs{font-family:"Fragment Mono",monospace; font-size:.55rem; letter-spacing:.06em; text-transform:uppercase; padding:.3rem .45rem; border-radius:2px; border:1px solid var(--brass-faint); color:var(--bone-faint); cursor:pointer; background:transparent; transition:all .2s var(--ease);}
 .cs[data-v="verified"].on{background:var(--good);color:var(--wall-recess);border-color:var(--good);}
 .cs[data-v="provided"].on{background:var(--brass);color:var(--wall-recess);border-color:var(--brass);}
 .cs[data-v="conflicting"].on{background:var(--warn);color:var(--wall-recess);border-color:var(--warn);}
-.cs[data-v="needs-source"].on{background:var(--info);color:var(--wall-recess);border-color:var(--info);}
 
 /* confidence picker */
 .confrow{display:flex; align-items:center; gap:.6rem; margin-top:.3rem;}
@@ -222,9 +220,8 @@ input[type=file]{display:none;}
 .srcfield input{background:var(--wall-atrium); border:1px solid var(--brass-line); border-radius:2px; color:var(--bone); font-family:"Schibsted Grotesk",sans-serif; font-size:.84rem; padding:.45rem .55rem;}
 .srcfield input:focus{outline:1px solid var(--brass); outline-offset:1px; border-color:var(--brass);}
 .srcform-actions{grid-column:1 / -1; display:flex; gap:.5rem;}
-.src-pick{display:flex; align-items:center; gap:.5rem; margin-top:.6rem;}
-.srcselect{flex:1; min-width:0; background:var(--wall-recess); border:1px solid var(--brass-line); border-radius:2px; color:var(--bone); font-family:"Fragment Mono",monospace; font-size:.62rem; letter-spacing:.04em; padding:.42rem .5rem;}
-.srcselect:focus{outline:1px solid var(--brass); border-color:var(--brass);}
+.srcform select{background:var(--wall-atrium); border:1px solid var(--brass-line); border-radius:2px; color:var(--bone); font-family:"Schibsted Grotesk",sans-serif; font-size:.84rem; padding:.45rem .55rem;}
+.srcform select:focus{outline:1px solid var(--brass); outline-offset:1px; border-color:var(--brass);}
 
 /* ---------- Structured-data edit mode ---------- */
 .struct{margin-top:1.2rem; border-top:1px solid var(--brass-faint); padding-top:1rem; position:relative;}
@@ -288,23 +285,39 @@ input[type=file]{display:none;}
 .spec:hover .nm::after{opacity:.85;}
 .spec.open .nm::after{transform:rotate(180deg);}
 
-/* ---------- Source & citation = the primary action panel ---------- */
-.panel-action{border-color:var(--brass-line); box-shadow:inset 0 1px 0 var(--brass-faint);}
-.panel-action .cite-caption{margin-top:.8rem; color:var(--bone-dim);}
-.panel-action .citestat{gap:.35rem; margin-top:.45rem;}
-.panel-action .cs{flex:1 1 auto; min-width:5.4rem; text-align:center; padding:.5rem .4rem; font-size:.58rem;}
-/* Stahl is reference reading, kept visibly secondary to the action above it */
-.panel-ref{background:transparent;}
+/* ---------- Sources & citations = the unified action panel ---------- */
+/* Every cited source — peer-reviewed article or Stahl chapter alike — is one row
+   in this list; none gets a separate, more-important card (Citation/verification
+   redesign: Stahl is not emphasized over any other source). */
+.panel-sources{border-color:var(--brass-line); box-shadow:inset 0 1px 0 var(--brass-faint);}
+.panel-sources .cite-caption{margin-top:.2rem; color:var(--bone-dim);}
+.src-rows{display:flex; flex-direction:column; gap:.55rem; margin-top:.7rem;}
+.srow{display:flex; flex-direction:column; gap:.5rem; padding:.7rem .8rem; background:var(--wall-recess); border:1px solid var(--brass-faint); border-radius:3px;}
+.srow-top{display:flex; align-items:center; gap:.4rem;}
+.srow-kind{font-family:"Fragment Mono",monospace; font-size:.54rem; letter-spacing:.1em; text-transform:uppercase; color:var(--bone-faint); border:1px solid var(--brass-line); border-radius:2px; padding:.12rem .35rem;}
+.srow-primary-badge{font-family:"Fragment Mono",monospace; font-size:.54rem; letter-spacing:.1em; text-transform:uppercase; color:var(--vermilion); border:1px solid var(--vermilion); border-radius:2px; padding:.12rem .35rem;}
+.srow-actions{display:flex; gap:.4rem; flex-wrap:wrap;}
+.srow-actions .ctrl{padding:.32rem .55rem; font-size:.56rem;}
+.src-add{margin-top:.8rem; padding-top:.7rem; border-top:1px solid var(--brass-faint);}
+.src-add-combo{position:relative;}
+.src-add-input{width:100%; background:var(--wall-recess); border:1px solid var(--brass-line); border-radius:2px; color:var(--bone); font-family:"Schibsted Grotesk",sans-serif; font-size:.84rem; padding:.55rem .65rem;}
+.src-add-input:focus{outline:1px solid var(--brass); border-color:var(--brass);}
+.src-add-menu{position:relative; margin-top:.35rem; display:flex; flex-direction:column; gap:.25rem; max-height:15rem; overflow-y:auto;}
+.src-add-opt{display:block; width:100%; text-align:left; background:var(--wall-recess); border:1px solid var(--brass-faint); border-radius:2px; color:var(--bone-dim); font-size:.8rem; padding:.45rem .6rem; cursor:pointer; transition:border-color .2s var(--ease), color .2s var(--ease);}
+.src-add-opt:hover{border-color:var(--brass); color:var(--bone);}
+.src-add-opt .srow-kind{margin-right:.4rem;}
+.src-add-opt.src-add-new{color:var(--vermilion); border-style:dashed; border-color:var(--brass-line);}
+.src-add-opt.src-add-new:hover{border-color:var(--vermilion);}
 </style>
 </head>
 <body>
 
 <header class="mast" id="mast">
-  <div class="brand">
+  <a class="brand" href="the-receptor-atlas.html" title="Return to the Atlas">
     <span class="tick"></span>
     <span class="wm">The Conservator&rsquo;s Desk</span>
     <span class="sub">Atlas Review &middot; Accuracy &amp; Mastery</span>
-  </div>
+  </a>
   <div class="mast-tools">
     <button class="ctrl" id="expandAll">Expand all</button>
     <button class="ctrl" id="collapseAll">Collapse all</button>
@@ -358,7 +371,7 @@ input[type=file]{display:none;}
       <div class="cell"><div class="n">CHECK 01</div><h3>Mechanism</h3><p>Is the molecular story right? Ionotropic vs metabotropic, the G-protein (Gi / Gs / Gq) or channel, location (pre- vs post-synaptic, auto- vs heteroreceptor), and direction of effect.</p></div>
       <div class="cell"><div class="n">CHECK 02</div><h3>Affinity / pKi data</h3><p>Do the binding values and the agonist / antagonist / partial labels in the affinity plate match a real source? Confirm relative potencies and that the radar / matrix encodes them correctly.</p></div>
       <div class="cell"><div class="n">CHECK 03</div><h3>Clinical claim</h3><p>Does receptor &rarr; action &rarr; presentation hold? Cross-check the mapping against Stahl Table 2-4 (receptors) / 2-5 (transporters) and the clinical chapters.</p></div>
-      <div class="cell"><div class="n">CHECK 04</div><h3>Citation</h3><p>Does the cited paper actually support the claim, and does the PMID resolve to that paper? Set the citation status &mdash; verified, provided, conflicting, or needs-source.</p></div>
+      <div class="cell"><div class="n">CHECK 04</div><h3>Citation</h3><p>Does each cited source actually support the claim? Set every source&rsquo;s status &mdash; verified, provided, or conflicting. A receptor with no sources attached yet reads as needs-source.</p></div>
     </div>
   </section>
 
@@ -368,17 +381,17 @@ input[type=file]{display:none;}
     <div class="howto" style="margin-top:.9rem;">
       <ol class="steps">
         <li><b>Open a specimen.</b> Click any row in the halls below; it expands to reveal the review controls.</li>
-        <li><b>Work the four checks.</b> Tick <i>Mechanism</i>, <i>Affinity</i>, <i>Clinical claim</i>, and <i>Citation</i> as you confirm each. Two kinds of evidence sit in the open row to help: <b>Stahl 5e</b> (where to read &mdash; for the Clinical-claim check) and the <b>peer-reviewed source</b> (the paper to verify &mdash; for the Citation check).</li>
-        <li><b>Settle the source.</b> Confirm the cited paper or pick a replacement from the library, then set its <b>citation status</b> (key below).</li>
+        <li><b>Work the four checks.</b> Tick <i>Mechanism</i>, <i>Affinity</i>, <i>Clinical claim</i>, and <i>Citation</i> as you confirm each. The <b>Sources &amp; citations</b> panel in the open row lists every source attached to this receptor &mdash; articles and Stahl chapters alike &mdash; for the Citation check.</li>
+        <li><b>Settle the sources.</b> Add a source by typing into the box &mdash; pick a match from the library or create a new one inline &mdash; then set each source&rsquo;s <b>status</b> (key below). One source can be marked <i>primary</i>; that&rsquo;s the citation the atlas volumes display.</li>
         <li><b>Rate &amp; note.</b> Set your mastery (1&ndash;5) and record any discrepancy. Use the filters above the halls to jump to what&rsquo;s <i>flagged</i> or <i>changed</i>.</li>
       </ol>
       <div class="legend">
         <span class="eyebrow">Citation status &mdash; what each means</span>
         <div class="legend-grid">
-          <div><span class="schip"><span class="dot good"></span>verified</span> You confirmed the paper supports the claim and the PMID resolves.</div>
+          <div><span class="schip"><span class="dot good"></span>verified</span> You confirmed the source supports the claim and its identifier resolves.</div>
           <div><span class="schip"><span class="dot brass"></span>provided</span> Carried from the atlas, not yet independently re-checked.</div>
-          <div><span class="schip"><span class="dot warn"></span>conflicting</span> The citation is wrong or disputed &mdash; fix it.</div>
-          <div><span class="schip"><span class="dot info"></span>needs-source</span> No peer-reviewed source assigned yet.</div>
+          <div><span class="schip"><span class="dot warn"></span>conflicting</span> A source is wrong or disputed &mdash; any one conflicting source flags the whole receptor.</div>
+          <div><span class="schip"><span class="dot info"></span>needs-source</span> The receptor has no sources attached at all yet &mdash; a receptor-level state, not a per-source one.</div>
         </div>
       </div>
     </div>
@@ -389,9 +402,9 @@ input[type=file]{display:none;}
     <div class="callout">
       <h3>Conservator&rsquo;s opening findings</h3>
       <p>Two issues were already surfaced while assembling this desk &mdash; treat them as the first entries on your fix-list:</p>
-      <div class="find"><span class="dot warn"></span><p><b>Muscarinic M1 &amp; M3 citation &mdash; wrong PMID.</b> The atlas cites PMID 24445063 for Kruse et al. (2014) <i>Muscarinic acetylcholine receptors</i>. That PMID resolves to an unrelated geriatrics paper. The correct identifier for that DOI (10.1038/nrd4295) is <b>PMID 24903776</b>. Both rows are pre-flagged <span class="mono" style="color:var(--warn)">conflicting</span>.</p></div>
-      <div class="find"><span class="dot info"></span><p><b>Three specimens have no peer-reviewed source yet.</b> D3, DAT, and 5-HT3 appear in the Archive without a dedicated citation. Each is pre-flagged <span class="mono" style="color:var(--info)">needs-source</span> with a one-click PubMed search to start from.</p></div>
-      <p style="font-size:.82rem; color:var(--bone-faint); margin-top:.7rem;">Eight Cabinet citations are marked <span class="mono" style="color:var(--brass)">provided</span> &mdash; present in the atlas but not yet independently re-verified here. Eleven were confirmed against PubMed and are marked <span class="mono" style="color:var(--good)">verified</span>.</p>
+      <div class="find"><span class="dot warn"></span><p><b>Muscarinic M1 &amp; M3 citation &mdash; wrong PMID.</b> The atlas cites PMID 24445063 for Kruse et al. (2014) <i>Muscarinic acetylcholine receptors</i>. That PMID resolves to an unrelated geriatrics paper. The correct identifier for that DOI (10.1038/nrd4295) is <b>PMID 24903776</b>. Both rows have their primary source pre-flagged <span class="mono" style="color:var(--warn)">conflicting</span>.</p></div>
+      <div class="find"><span class="dot info"></span><p><b>Three specimens have no peer-reviewed article yet.</b> D3, DAT, and 5-HT3 appear in the Archive carrying only their Stahl chapters &mdash; no dedicated journal article is attached as a primary source. Each has a one-click PubMed search in its Sources panel to start from.</p></div>
+      <p style="font-size:.82rem; color:var(--bone-faint); margin-top:.7rem;">Most Cabinet citations are marked <span class="mono" style="color:var(--brass)">provided</span> &mdash; present in the atlas but not yet independently re-verified here. Several were confirmed against PubMed and are marked <span class="mono" style="color:var(--good)">verified</span>.</p>
     </div>
   </section>
 
@@ -433,23 +446,6 @@ input[type=file]{display:none;}
 </footer>
 
 <script>
-/* ============ STAHL 5e CHAPTER MAP ============ */
-const B="https://www.cambridge.org/core/books/stahls-essential-psychopharmacology/";
-const CH={
- 1:{t:"Chemical Neurotransmission",p:"1–28",u:B+"chemical-neurotransmission/3480EFF4825666B1849F65D2E2D18755"},
- 2:{t:"Transporters, Receptors & Enzymes as Targets",p:"29–50",u:B+"transporters-receptors-and-enzymes-as-targets-of-psychopharmacological-drug-action/A87FE28EA57F0979564CECDDF7669E64"},
- 3:{t:"Ion Channels as Targets",p:"51–76",u:B+"ion-channels-as-targets-of-psychopharmacological-drug-action/66227162D984BCFAB41599BA7CCDC43F"},
- 4:{t:"Psychosis, Schizophrenia & DA/5-HT/Glu Networks",p:"77–158",u:B+"psychosis-schizophrenia-and-the-neurotransmitter-networks-dopamine-serotonin-and-glutamate/5EF5FEC4BFAC4D5C187A613DD13B19E1"},
- 5:{t:'Targeting DA & 5-HT Receptors — “Antipsychotics”',p:"159–243",u:B+"targeting-dopamine-and-serotonin-receptors-for-psychosis-mood-and-beyond-socalled-antipsychotics/AF924EA27653A7C5476F96B02D2DE9C5"},
- 6:{t:"Mood Disorders & NE/GABA Networks",p:"244–282",u:B+"mood-disorders-and-the-neurotransmitter-networks-norepinephrine-and-aminobutyric-acid-gaba/E19B1F16E6E200D0AC56A1B5A23DB977"},
- 7:{t:'Treatments for Mood Disorders — “Antidepressants”',p:"283–358",u:B+"treatments-for-mood-disorders-socalled-antidepressants-and-mood-stabilizers/34B9F39A0E1B735C4DF3B9964AB58A6A"},
- 8:{t:"Anxiety, Trauma & Treatment",p:"359–378",u:B+"anxiety-trauma-and-treatment/FA9BDE6ED394D37B6E6CF34EC79A7E6C"},
- 9:{t:"Chronic Pain & Its Treatment",p:"379–400",u:B+"chronic-pain-and-its-treatment/1DA3240B840C91E91D5C8B8E157422AC"},
- 10:{t:"Sleep & Wakefulness — Histamine & Orexin",p:"401–448",u:B+"disorders-of-sleep-and-wakefulness-and-their-treatment-neurotransmitter-networks-for-histamine-and-orexin/AD708ABF284B3B87C8F72E338D80817F"},
- 11:{t:"ADHD & Its Treatment",p:"449–485",u:B+"attention-deficit-hyperactivity-disorder-and-its-treatment/CA44BC16C611CBBF7A29A048B27F1FB2"},
- 12:{t:"Dementia & the Acetylcholine Network",p:"486–537",u:B+"dementia-causes-symptomatic-treatments-and-the-neurotransmitter-network-acetylcholine/642008AD227B9B4409362D209048A4C2"},
- 13:{t:"Impulsivity, Compulsivity & Addiction",p:"538–578",u:B+"impulsivity-compulsivity-and-addiction/FE9291DCA21A30BB63CB1DA478026B43"}
-};
 const HALLS={
  dopamine:{n:"I",t:"The Dopamine System"},
  serotonin:{n:"II",t:"The Serotonin System"},
@@ -470,11 +466,9 @@ function rxFromDetail(d){
   return {
     id:d.id, nm:d.label, hall:d.hall,
     vols:(d.volumes||[]).map(v=>VOL[v]||v),
-    stahl:(d.stahl||[]).map(c=>[c]),
-    note:d.note, claim:d.claim,
-    ref:d.source ? {a:d.source.authors,y:d.source.year,t:d.source.title,pmid:d.source.pmid,doi:d.source.doi} : null,
-    sourceId:d.source ? d.source.id : null,
-    cs:d.status, note2:d.note2, search:d.search, quiz:d.quiz,
+    claim:d.claim,
+    sources:d.sources||[], status:d.status,
+    search:d.search, quiz:d.quiz,
   };
 }
 async function loadSources(){ SOURCES = await (await fetch('/api/sources')).json(); }
@@ -494,17 +488,17 @@ async function loadRX(){
     const rv=d.review||{};
     STATE[d.id]={
       mechanism:!!rv.mechanism, affinity:!!rv.affinity, clinical:!!rv.clinical, citation:!!rv.citation,
-      conf:rv.mastery||0, note:rv.note||"", cs:d.status,
+      conf:rv.mastery||0, note:rv.note||"",
     };
   });
 }
 const CHECK_KEYS=["mechanism","affinity","clinical","citation"];
 const CHECK_LABEL={mechanism:"Mechanism",affinity:"Affinity / pKi",clinical:"Clinical claim",citation:"Citation"};
+const CITATION_STATUSES=["verified","provided","conflicting"];
 const CS_HELP={
-  "verified":"You confirmed the paper supports the claim and the PMID resolves.",
+  "verified":"You confirmed the source supports the claim and its identifier resolves.",
   "provided":"Carried from the atlas, not yet independently re-checked.",
-  "conflicting":"The citation is wrong or disputed — fix it.",
-  "needs-source":"No peer-reviewed source assigned yet."
+  "conflicting":"This source is wrong or disputed — fix it.",
 };
 
 /* ============ STATE PERSISTENCE (DB-backed) ============ */
@@ -513,19 +507,26 @@ function reviewBody(id){const s=STATE[id];return {mechanism:s.mechanism?1:0,affi
 async function persistReview(id){try{await fetch('/api/receptors/'+id+'/review',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(reviewBody(id))});}catch(e){}}
 const noteTimers={};
 function persistReviewDebounced(id){clearTimeout(noteTimers[id]);noteTimers[id]=setTimeout(()=>persistReview(id),400);}
-async function persistCitation(id,sourceId,status){
-  try{const res=await fetch('/api/receptors/'+id+'/citation',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({source_id:sourceId,status})});return res.ok;}catch(e){return false;}
+// Citation/verification redesign: attach/update/unlink one source on a receptor's
+// source list (a receptor cites a list of sources, not a single one).
+async function attachSource(id,body){
+  try{const res=await fetch('/api/receptors/'+id+'/sources',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return res.ok?await res.json():null;}catch(e){return null;}
 }
-// Re-fetch one receptor's detail and repaint its source panel (used after a
-// citation link OR a shared-source edit, so the corrected paper shows at once).
+async function updateSourceEdge(id,sid,body){
+  try{const res=await fetch(`/api/receptors/${id}/sources/${sid}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return res.ok?await res.json():null;}catch(e){return null;}
+}
+async function unlinkSource(id,sid){
+  try{const res=await fetch(`/api/receptors/${id}/sources/${sid}`,{method:'DELETE'});return res.ok;}catch(e){return false;}
+}
+// Re-fetch one receptor's detail and repaint its sources panel (used after an
+// attach/status/primary/unlink change OR a shared-source library edit, so the
+// corrected paper shows at once).
 async function refreshReceptor(r){
   const d=await (await fetch('/api/receptors/'+r.id)).json();
-  const fresh=rxFromDetail(d);
-  r.ref=fresh.ref; r.sourceId=fresh.sourceId; r.cs=fresh.cs; STATE[r.id].cs=fresh.cs;
+  r.sources=d.sources||[]; r.status=d.status; r.search=d.search;
   const el=document.getElementById('spec-'+r.id);
   if(el){
-    const disp=el.querySelector('.src-display'); if(disp) disp.innerHTML=refBlock(r);
-    const sel=el.querySelector('.srcselect'); if(sel) sel.value=r.sourceId==null?'':String(r.sourceId);
+    const panel=el.querySelector('.panel-sources'); if(panel) renderSourcesPanel(r,panel);
     paintRow(r,el);
   }
 }
@@ -537,14 +538,19 @@ async function loadDrift(){
 }
 function fmtStamp(s){ if(!s) return '—'; const d=new Date(s); if(isNaN(d)) return '—';
   return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+' · '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'}); }
+// Deep links route through the Atlas shell (not the standalone volume files
+// directly) so the visitor lands inside the shell's persistent nav — which now
+// carries a link straight back to this Desk — instead of a bare page with no
+// way back. The shell reads the volume + specimen straight off the URL hash
+// on load (#vol/<volume>/<canon>), the same scheme its own search uses.
+const ATLAS_VOL_ID={Cabinet:'cabinet',Ledger:'ledger',Archive:'archive'};
 function deepLinks(r){
   const canon=NAV_CANON[r.id];
-  const href={
-    Cabinet: canon?`neuroreceptor_pharmacology_explorer_dashboard.html?embed&subject=${canon}&station=cabinet`:null,
-    Ledger:  canon?`neuroreceptor_clinical_table.html?embed&subject=${canon}`:null,
-    Archive: `receptor-function.html?embed`,
-  };
-  return (r.vols||[]).map(v=>href[v]?`<a class="deeplink" href="${href[v]}" target="_blank" rel="noopener">Open in ${v} ↗</a>`:'').join('');
+  return (r.vols||[]).map(v=>{
+    const volId=ATLAS_VOL_ID[v]; if(!volId) return '';
+    const hash=canon?`#vol/${volId}/${canon}`:`#vol/${volId}`;
+    return `<a class="deeplink" href="the-receptor-atlas.html${hash}" target="_blank" rel="noopener">Open in ${v} ↗</a>`;
+  }).join('');
 }
 function renderDates(r,el){
   el=el||document.querySelector('#spec-'+r.id+' [data-dates]'); if(!el) return;
@@ -647,22 +653,116 @@ function build(){
   refresh();
 }
 function volChips(v){return v.map(x=>`<span class="vchip">${x}</span>`).join("");}
-function stahlBlock(r){
-  return r.stahl.map(arr=>{const c=arr[0];const ch=CH[c];return `<div class="stahl-item">&bull; <a href="${ch.u}" target="_blank" rel="noopener">Ch ${c} &mdash; ${ch.t}</a> <span class="mono" style="color:var(--bone-faint)">pp ${ch.p}</span></div>`;}).join("")
-   + (r.note?`<div class="srcline" style="color:var(--bone-faint);font-size:.74rem;margin-top:.4rem;">${r.note}</div>`:"");
-}
-function refBlock(r){
-  if(r.ref){const e=r.ref;return `<div class="srcline">${e.a} (${e.y}). <i>${e.t}.</i></div>
-    <div><a class="srclink" href="${pm(e.pmid)}" target="_blank" rel="noopener">PMID ${e.pmid} ↗</a>
-    <a class="srclink" href="${doiU(e.doi)}" target="_blank" rel="noopener">DOI ↗</a></div>`
-    + (r.note2?`<div class="srcline" style="color:var(--warn);font-size:.76rem;">⚠ ${r.note2}</div>`:"");}
-  return `<div class="srcline" style="color:var(--bone-faint)">No peer-reviewed source assigned yet.</div>
-    <div><a class="srclink" href="${pmSearch(r.search)}" target="_blank" rel="noopener">Search PubMed ↗</a></div>`;
-}
 function srcLabel(s){const t=(s.title||s.pmid||'untitled');return `${s.authors||'—'} (${s.year||'n.d.'}) — ${t.length>56?t.slice(0,56)+'…':t}`;}
-function sourceOptions(selId){
-  return `<option value="">— none (needs-source) —</option>`
-    + SOURCES.map(s=>`<option value="${s.id}"${s.id===selId?' selected':''}>${esc(srcLabel(s))}</option>`).join("");
+function kindLabel(s){return s.kind==='book'?'Book':'Article';}
+
+/* ============ SOURCES & CITATIONS PANEL (one list, not a single ref + a separate
+   Stahl block — Citation/verification redesign: Stahl is an ordinary source) ============ */
+function srowHtml(s){
+  return `<div class="srow" data-sid="${s.id}">
+    <div class="srow-top">
+      <span class="srow-kind">${kindLabel(s)}</span>
+      ${s.is_primary?'<span class="srow-primary-badge">primary</span>':''}
+    </div>
+    <div class="srow-cite">${esc(s.authors)||'—'} (${s.year||'n.d.'}). <i>${esc(s.title)||'untitled'}</i>${s.journal?' · '+esc(s.journal):''}</div>
+    <div class="srow-ids">
+      ${s.pmid?`<a class="srclink" href="${pm(s.pmid)}" target="_blank" rel="noopener">PMID ${esc(s.pmid)} ↗</a>`:''}
+      ${s.doi?`<a class="srclink" href="${doiU(s.doi)}" target="_blank" rel="noopener">DOI ↗</a>`:''}
+      ${(!s.pmid&&!s.doi&&s.url)?`<a class="srclink" href="${esc(s.url)}" target="_blank" rel="noopener">Open ↗</a>`:''}
+    </div>
+    ${s.correction_note?`<div class="srcline" style="color:var(--warn);font-size:.76rem;">⚠ ${esc(s.correction_note)}</div>`:''}
+    <div class="citestat">${CITATION_STATUSES.map(v=>`<button type="button" class="cs${s.status===v?' on':''}" data-act="status" data-sid="${s.id}" data-v="${v}" title="${CS_HELP[v]}">${v}</button>`).join("")}</div>
+    <div class="srow-actions">
+      ${s.is_primary?'':`<button type="button" class="ctrl" data-act="primary" data-sid="${s.id}">Make primary</button>`}
+      <button type="button" class="ctrl" data-act="unlink" data-sid="${s.id}">Remove</button>
+    </div>
+  </div>`;
+}
+function emptySourcesHtml(r){
+  return `<div class="srcline" style="color:var(--bone-faint)">No sources cited yet.</div>`
+    + (r.search?`<div><a class="srclink" href="${pmSearch(r.search)}" target="_blank" rel="noopener">Search PubMed ↗</a></div>`:'');
+}
+function renderSourcesPanel(r,panelEl){
+  panelEl.querySelector('.src-rows').innerHTML = r.sources.length ? r.sources.map(srowHtml).join('') : emptySourcesHtml(r);
+}
+function matchesSourceQuery(s,q){
+  return [s.authors,s.title,s.journal,s.pmid,s.doi].some(v=>v && String(v).toLowerCase().includes(q));
+}
+function newSourceFormHtml(prefillTitle){
+  return `<div class="srcform" data-newsource="1">
+    <label class="srcfield"><span>Kind</span><select data-k="kind"><option value="article">Article</option><option value="book">Book</option></select></label>
+    <label class="srcfield"><span>Authors</span><input data-k="authors" /></label>
+    <label class="srcfield"><span>Year</span><input data-k="year" /></label>
+    <label class="srcfield wide"><span>Title</span><input data-k="title" value="${esc(prefillTitle||'')}" /></label>
+    <label class="srcfield"><span>Journal</span><input data-k="journal" /></label>
+    <label class="srcfield"><span>PMID</span><input data-k="pmid" /></label>
+    <label class="srcfield"><span>DOI</span><input data-k="doi" /></label>
+    <label class="srcfield wide"><span>URL</span><input data-k="url" /></label>
+    <label class="srcfield wide"><span>Notes</span><input data-k="notes" /></label>
+    <div class="srcform-actions">
+      <button type="button" class="ctrl accent" data-act="save">Add &amp; cite</button>
+      <button type="button" class="ctrl" data-act="cancel">Cancel</button>
+    </div>
+  </div>`;
+}
+// Wired once per row (delegated listeners survive the repeated innerHTML swaps
+// that renderSourcesPanel() and the combobox/create-form toggle do).
+function wireSourcesPanel(r,panelEl){
+  panelEl.querySelector('.src-rows').addEventListener('click', async e=>{
+    const btn=e.target.closest('button[data-act]'); if(!btn) return;
+    const sid=Number(btn.dataset.sid), act=btn.dataset.act;
+    if(act==='status'){
+      if(await updateSourceEdge(r.id,sid,{status:btn.dataset.v})){await refreshReceptor(r);refresh();}
+    } else if(act==='primary'){
+      if(await updateSourceEdge(r.id,sid,{is_primary:true})){await refreshReceptor(r);refresh();}
+    } else if(act==='unlink'){
+      if(!confirm('Remove this source from the citation list? The shared source record is kept in the library.'))return;
+      if(await unlinkSource(r.id,sid)){await refreshReceptor(r);refresh();}
+    }
+  });
+
+  const combo=panelEl.querySelector('.src-add-combo'), formWrap=panelEl.querySelector('.src-add-form');
+  const input=combo.querySelector('.src-add-input'), menu=combo.querySelector('.src-add-menu');
+  function closeMenu(){menu.classList.add('hidden');menu.innerHTML='';}
+  function openMenu(query){
+    const q=query.trim().toLowerCase();
+    if(!q){closeMenu();return;}
+    const matches=SOURCES.filter(s=>!r.sources.some(rs=>rs.id===s.id)&&matchesSourceQuery(s,q)).slice(0,8);
+    menu.innerHTML = matches.map(s=>`<button type="button" class="src-add-opt" data-sid="${s.id}"><span class="srow-kind">${kindLabel(s)}</span>${esc(srcLabel(s))}</button>`).join('')
+      + `<button type="button" class="src-add-opt src-add-new" data-act="newform">+ Create a new source for &ldquo;${esc(query.trim())}&rdquo;</button>`;
+    menu.classList.remove('hidden');
+  }
+  function showCreateForm(prefill){
+    combo.classList.add('hidden'); closeMenu();
+    formWrap.innerHTML=newSourceFormHtml(prefill); formWrap.classList.remove('hidden');
+    formWrap.querySelector('[data-act="cancel"]').addEventListener('click',resetAddControl);
+    formWrap.querySelector('[data-act="save"]').addEventListener('click', async ()=>{
+      const body=readForm(formWrap.querySelector('.srcform'));
+      if(!body.authors && !body.title){alert('Give the source at least an author or a title.');return;}
+      const created=await attachSource(r.id,{source:body,status:'provided',is_primary:r.sources.length===0});
+      // A newly-created source isn't in the cached SOURCES list yet — reload it
+      // so other receptors' combobox searches can find and reuse it right away,
+      // instead of the user being forced to re-create a duplicate row.
+      if(created){await loadSources();resetAddControl();await refreshReceptor(r);refresh();}
+      else alert('Could not save the source.');
+    });
+  }
+  function resetAddControl(){
+    formWrap.classList.add('hidden'); formWrap.innerHTML='';
+    combo.classList.remove('hidden'); input.value=''; closeMenu();
+  }
+  input.addEventListener('input',()=>openMenu(input.value));
+  input.addEventListener('focus',()=>{if(input.value.trim())openMenu(input.value);});
+  input.addEventListener('blur',()=>setTimeout(closeMenu,150));
+  menu.addEventListener('mousedown', async e=>{
+    const opt=e.target.closest('.src-add-opt'); if(!opt)return;
+    e.preventDefault();
+    if(opt.dataset.act==='newform'){showCreateForm(input.value.trim());return;}
+    const sid=Number(opt.dataset.sid);
+    const created=await attachSource(r.id,{source_id:sid,status:'provided',is_primary:r.sources.length===0});
+    closeMenu(); input.value='';
+    if(created){await refreshReceptor(r);refresh();}
+  });
 }
 function specRow(r){
   const el=document.createElement("div");el.className="spec";el.dataset.id=r.id;el.id="spec-"+r.id;
@@ -682,16 +782,17 @@ function specRow(r){
          </div>
        </div>
        <div class="side">
-         <div class="panel panel-action">
-            <div class="pk">Source &amp; citation <span class="forcheck">Citation check</span></div>
-            <div class="src-display">${refBlock(r)}</div>
-            <div class="src-pick"><span class="picklabel">Replace from library</span><select class="srcselect">${sourceOptions(r.sourceId)}</select></div>
-            <div class="cite-caption">Set how far you&rsquo;ve verified this paper (hover a status for its meaning):</div>
-            <div class="citestat">${["verified","provided","conflicting","needs-source"].map(v=>`<button class="cs" data-v="${v}" title="${CS_HELP[v]}">${v}</button>`).join("")}</div>
-         </div>
-         <div class="panel panel-ref">
-            <div class="pk">Stahl 5e &mdash; where to read <span class="forcheck">Clinical-claim check</span></div>
-            ${stahlBlock(r)}
+         <div class="panel panel-sources">
+            <div class="pk">Sources &amp; citations <span class="forcheck">Citation check</span></div>
+            <div class="cite-caption">Every source cited for this specimen &mdash; articles and Stahl chapters alike. Set each one&rsquo;s status as you verify it; one is marked primary (the atlas volumes display that one).</div>
+            <div class="src-rows"></div>
+            <div class="src-add">
+              <div class="src-add-combo">
+                <input type="text" class="src-add-input" placeholder="Add a source — search by author, title, or PMID…" autocomplete="off" />
+                <div class="src-add-menu hidden"></div>
+              </div>
+              <div class="src-add-form hidden"></div>
+            </div>
          </div>
          <div class="panel">
            <div class="pk">Your mastery &amp; notes</div>
@@ -714,16 +815,11 @@ function specRow(r){
   el.querySelector(".spec-head").addEventListener("click",e=>{if(e.target.closest("a"))return;el.classList.toggle("open");});
   // subchecks → persist review
   el.querySelectorAll(".check").forEach(c=>{c.addEventListener("click",()=>{const k=c.dataset.k;STATE[r.id][k]=!STATE[r.id][k];paintRow(r);refresh();persistReview(r.id);markReviewed(r.id);});});
-  // citation status → persist on the receptor_sources link (keeps current source)
-  el.querySelectorAll(".cs").forEach(b=>{b.addEventListener("click",()=>{const v=b.dataset.v;STATE[r.id].cs=v;r.cs=v;paintRow(r);refresh();persistCitation(r.id,r.sourceId,v);});});
-  // pick a source from the library → link it, then refresh the displayed citation
-  const sel=el.querySelector(".srcselect");
-  if(sel)sel.addEventListener("change",async()=>{
-    const v=sel.value===''?null:Number(sel.value);
-    const status=v==null?'needs-source':(STATE[r.id].cs==='needs-source'?'provided':STATE[r.id].cs);
-    const ok=await persistCitation(r.id,v,status);
-    if(ok)await refreshReceptor(r),refresh();
-  });
+  // sources & citations panel — render the attached list, wire status/primary/
+  // unlink controls and the inline add-a-source combobox
+  const sourcesPanel=el.querySelector(".panel-sources");
+  renderSourcesPanel(r,sourcesPanel);
+  wireSourcesPanel(r,sourcesPanel);
   // confidence (mastery) → persist review
   el.querySelectorAll(".cdot").forEach(d=>{d.addEventListener("click",()=>{const n=+d.dataset.n;STATE[r.id].conf=(STATE[r.id].conf===n?0:n);paintRow(r);refresh();persistReview(r.id);markReviewed(r.id);});});
   // quiz
@@ -760,7 +856,6 @@ function paintRow(r,el){
   el.querySelectorAll(".conf-mini i").forEach((i,ix)=>i.classList.toggle("on",ix<s.conf));
   el.querySelectorAll(".cdot").forEach(d=>d.classList.toggle("on",+d.dataset.n<=s.conf));
   el.querySelector(".conflabel").textContent=s.conf?`mastery ${s.conf}/5`:"unrated";
-  el.querySelectorAll(".cs").forEach(b=>b.classList.toggle("on",b.dataset.v===s.cs));
   el.querySelector(".notes").value=s.note||"";
   const de=el.querySelector("[data-dates]");if(de)renderDates(r,de);
   applyFilter(el,r);
@@ -768,7 +863,7 @@ function paintRow(r,el){
 /* ============ SUMMARY ============ */
 function refresh(){
   let done=0,checks=0,confSum=0,confN=0;const csCount={verified:0,provided:0,conflicting:0,"needs-source":0};
-  RX.forEach(r=>{const s=STATE[r.id];const n=CHECK_KEYS.filter(k=>s[k]).length;checks+=n;if(n===4)done++;if(s.conf){confSum+=s.conf;confN++;}csCount[s.cs]=(csCount[s.cs]||0)+1;});
+  RX.forEach(r=>{const s=STATE[r.id];const n=CHECK_KEYS.filter(k=>s[k]).length;checks+=n;if(n===4)done++;if(s.conf){confSum+=s.conf;confN++;}csCount[r.status]=(csCount[r.status]||0)+1;});
   const totalChecks=RX.length*4;const pct=Math.round(checks/totalChecks*100);
   document.getElementById("ringPct").textContent=pct+"%";
   document.getElementById("ringArc").style.strokeDashoffset=(402*(1-checks/totalChecks)).toFixed(1);
@@ -799,7 +894,7 @@ function applyFilter(el,r){
   if(FILTER==="todo")show=st==="todo";
   else if(FILTER==="review")show=st==="review";
   else if(FILTER==="done")show=st==="done";
-  else if(FILTER==="flag")show=(s.cs==="conflicting"||s.cs==="needs-source");
+  else if(FILTER==="flag")show=(r.status==="conflicting"||r.status==="needs-source");
   else if(FILTER==="lowconf")show=(s.conf>0&&s.conf<3);
   else if(FILTER==="changed")show=DRIFT.has(r.id);
   el.classList.toggle("hidden",!show);
@@ -836,11 +931,11 @@ document.getElementById("importFile").addEventListener("change",e=>{const f=e.ta
 
 /* ============ SOURCES LIBRARY ============ */
 const SRC_FIELDS=[['authors','Authors'],['year','Year'],['title','Title','wide'],['journal','Journal'],['pmid','PMID'],['doi','DOI'],['url','URL','wide'],['notes','Notes','wide']];
-function citedCount(id){return RX.filter(r=>r.sourceId===id).length;}
+function citedCount(id){return RX.filter(r=>r.sources.some(s=>s.id===id)).length;}
 function sourceCard(s){
   return `<div class="srcrow" data-sid="${s.id}">
     <div class="srcrow-main">
-      <div class="srcrow-cite">${esc(s.authors)||'—'} (${s.year||'n.d.'}). <i>${esc(s.title)||'untitled'}</i>${s.journal?' · '+esc(s.journal):''}</div>
+      <div class="srcrow-cite"><span class="srow-kind">${kindLabel(s)}</span> ${esc(s.authors)||'—'} (${s.year||'n.d.'}). <i>${esc(s.title)||'untitled'}</i>${s.journal?' · '+esc(s.journal):''}</div>
       <div class="srcrow-ids">
         ${s.pmid?`<a class="srclink" href="${pm(s.pmid)}" target="_blank" rel="noopener">PMID ${esc(s.pmid)} ↗</a>`:''}
         ${s.doi?`<a class="srclink" href="${doiU(s.doi)}" target="_blank" rel="noopener">DOI ↗</a>`:''}
@@ -852,6 +947,10 @@ function sourceCard(s){
 }
 function sourceForm(s){
   return `<div class="srcform" data-sid="${s?s.id:''}">
+    <label class="srcfield"><span>Kind</span><select data-k="kind">
+      <option value="article"${(!s||s.kind!=='book')?' selected':''}>Article</option>
+      <option value="book"${(s&&s.kind==='book')?' selected':''}>Book</option>
+    </select></label>
     ${SRC_FIELDS.map(([k,lab,wide])=>`<label class="srcfield${wide?' wide':''}"><span>${lab}</span><input data-k="${k}" value="${s?esc(s[k]):''}" /></label>`).join('')}
     <div class="srcform-actions">
       <button class="ctrl accent" data-act="save">${s?'Save changes':'Add source'}</button>
@@ -859,20 +958,18 @@ function sourceForm(s){
     </div>
   </div>`;
 }
-function readForm(formEl){const o={};formEl.querySelectorAll('input[data-k]').forEach(i=>{const v=i.value.trim();o[i.dataset.k]=v===''?null:(i.dataset.k==='year'?(isNaN(Number(v))?v:Number(v)):v);});return o;}
+function readForm(formEl){const o={};formEl.querySelectorAll('input[data-k],select[data-k]').forEach(i=>{const v=i.value.trim();o[i.dataset.k]=v===''?null:(i.dataset.k==='year'?(isNaN(Number(v))?v:Number(v)):v);});return o;}
 function renderLibrary(){
   document.getElementById('srcList').innerHTML=SOURCES.length?SOURCES.map(sourceCard).join(''):'<p class="srcline" style="color:var(--bone-faint)">No sources yet.</p>';
   document.getElementById('srcAddForm').innerHTML=sourceForm(null);
 }
-function refreshAllSelects(){
-  document.querySelectorAll('.spec').forEach(el=>{const r=RX.find(x=>x.id===el.dataset.id);const sel=el.querySelector('.srcselect');if(r&&sel)sel.innerHTML=sourceOptions(r.sourceId);});
-}
-// After a paper is added/edited: reload the library, re-render every specimen
-// that cites the edited paper (so a one-time PMID fix shows everywhere at once).
+// After a paper is added/edited: reload the library, re-render every specimen's
+// sources panel that cites the edited paper (so a one-time PMID fix shows
+// everywhere at once — a citing receptor may hold it as primary or not).
 async function afterSourceChange(editedId){
   await loadSources();
-  if(editedId!=null)for(const r of RX.filter(x=>x.sourceId===editedId))await refreshReceptor(r);
-  renderLibrary();refreshAllSelects();refresh();
+  if(editedId!=null)for(const r of RX.filter(x=>x.sources.some(s=>s.id===editedId)))await refreshReceptor(r);
+  renderLibrary();refresh();
 }
 function setupLibrary(){
   renderLibrary();

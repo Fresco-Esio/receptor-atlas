@@ -1,5 +1,5 @@
 import { openDb } from '../db/index.js';
-import { RX, HALLS, ALIASES } from './seed-data.js';
+import { RX, HALLS, ALIASES, STAHL_CHAPTERS } from './seed-data.js';
 import { migrateStructured } from './migrate-structured.js';
 import { migrateArchive } from './migrate-archive.js';
 import { pathToFileURL } from 'node:url';
@@ -42,50 +42,66 @@ export function seedAliases(db) {
  *
  * Returns { skipped, receptors }.
  *
- * Note: some `RX` fields are intentionally NOT migrated yet — `note`/`note2`
- * (provenance/correction notes) and `search` (PubMed search recipe for
- * needs-source receptors). They stay in seed-data.js until a later task gives
- * them a home (e.g. sources.notes). This omission is deliberate, not a bug.
+ * Citation/verification redesign: a receptor's citations are now a list, not a
+ * single slot. Each `RX` entry's peer-reviewed `ref` becomes its primary
+ * article-source edge (is_primary=1); each Stahl chapter in `RX.stahl` becomes a
+ * kind='book' source attached as an ordinary, non-primary edge — Stahl is no
+ * longer modeled as a separate citation type. A receptor with no `ref` (the old
+ * "needs-source" receptors) simply gets no article edge; it may still carry
+ * Stahl-chapter edges, so "needs-source" is no longer implied by their presence
+ * — it now means literally zero attached sources (see lib/queries.js rollup).
  */
 export function migrate(db) {
   const existing = db.prepare('SELECT COUNT(*) c FROM receptors').get().c;
   if (existing > 0) { seedAliases(db); structuredBestEffort(db); archiveBestEffort(db); return { skipped: true, receptors: existing }; }
 
   const tx = db.transaction(() => {
-    const rcpt = db.prepare('INSERT INTO receptors (id,label,system,hall,sort_order,stahl_note) VALUES (?,?,?,?,?,?)');
+    const rcpt = db.prepare('INSERT INTO receptors (id,label,system,hall,sort_order,stahl_note,search_query) VALUES (?,?,?,?,?,?,?)');
     const vol  = db.prepare('INSERT OR IGNORE INTO receptor_volumes (receptor_id,volume) VALUES (?,?)');
-    const src  = db.prepare('INSERT INTO sources (authors,year,title,journal,pmid,doi) VALUES (?,?,?,?,?,?)');
-    const link = db.prepare('INSERT INTO receptor_sources (receptor_id,source_id,status,correction_note,search_query) VALUES (?,?,?,?,?)');
-    const st   = db.prepare('INSERT INTO stahl_loci (receptor_id,chapter) VALUES (?,?)');
+    const src  = db.prepare('INSERT INTO sources (kind,authors,year,title,journal,pmid,doi,url,notes) VALUES (?,?,?,?,?,?,?,?,?)');
+    const link = db.prepare('INSERT INTO receptor_sources (receptor_id,source_id,status,is_primary,correction_note) VALUES (?,?,?,?,?)');
     const clm  = db.prepare('INSERT INTO claims (receptor_id,text) VALUES (?,?)');
     const qz   = db.prepare('INSERT INTO quizzes (receptor_id,prompt) VALUES (?,?)');
     const rev  = db.prepare('INSERT INTO review_state (receptor_id) VALUES (?)');
 
-    // Dedupe shared papers: the same source cited by multiple receptors (e.g.
+    // Dedupe shared papers: the same article cited by multiple receptors (e.g.
     // Kruse 2014 by both M1 and M3) becomes ONE sources row, so "fix the source
-    // once" updates every receptor that cites it.
-    const sourceByKey = new Map();
+    // once" updates every receptor that cites it. Same idea for Stahl chapters:
+    // the same chapter cited by many receptors becomes ONE book source row.
+    const sourceByPmidKey = new Map();
+    const sourceByChapter = new Map();
 
     RX.forEach((r, i) => {
-      rcpt.run(r.id, r.nm, r.hall, r.hall, i, r.note ?? null);
+      rcpt.run(r.id, r.nm, r.hall, r.hall, i, r.note ?? null, r.search ?? null);
       (r.vols || []).forEach(v => vol.run(r.id, v.toLowerCase()));
-      (r.stahl || []).forEach(arr => st.run(r.id, arr[0]));
       if (r.claim) clm.run(r.id, r.claim);
       if (r.quiz)  qz.run(r.id, r.quiz);
       rev.run(r.id);
 
-      let sourceId = null;
       if (r.ref) {
         const e = r.ref;
         const key = e.pmid ? `pmid:${e.pmid}` : (e.doi ? `doi:${e.doi}` : null);
-        if (key && sourceByKey.has(key)) {
-          sourceId = sourceByKey.get(key);
+        let sourceId;
+        if (key && sourceByPmidKey.has(key)) {
+          sourceId = sourceByPmidKey.get(key);
         } else {
-          sourceId = src.run(e.a, e.y, e.t, e.journal ?? null, e.pmid, e.doi).lastInsertRowid;
-          if (key) sourceByKey.set(key, sourceId);
+          sourceId = src.run('article', e.a, e.y, e.t, e.journal ?? null, e.pmid ?? null, e.doi ?? null, null, null).lastInsertRowid;
+          if (key) sourceByPmidKey.set(key, sourceId);
         }
+        const status = (r.cs && r.cs !== 'needs-source') ? r.cs : 'provided';
+        link.run(r.id, sourceId, status, 1, r.note2 ?? null);
       }
-      link.run(r.id, sourceId, r.cs || 'needs-source', r.note2 ?? null, r.search ?? null);
+
+      (r.stahl || []).forEach(arr => {
+        const c = arr[0];
+        let sourceId = sourceByChapter.get(c);
+        if (sourceId == null) {
+          const ch = STAHL_CHAPTERS[c];
+          sourceId = src.run('book', 'Stahl SM', 2021, `Stahl 5e — Ch ${c}: ${ch.t}`, null, null, null, ch.u, `pp ${ch.p}`).lastInsertRowid;
+          sourceByChapter.set(c, sourceId);
+        }
+        link.run(r.id, sourceId, 'provided', 0, null);
+      });
     });
   });
   tx();

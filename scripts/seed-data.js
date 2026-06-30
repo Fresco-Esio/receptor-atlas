@@ -6,6 +6,28 @@ export const HALLS={
  neuromod:{n:"V",t:"Neuromodulators & Other Gates"}
 };
 
+// Stahl 5e chapter map (Citation/verification redesign): each RX.stahl chapter
+// number becomes a kind='book' source row at migration time, so a Stahl locus is
+// just another citation rather than a separately-modeled "Stahl panel". One row
+// per chapter — chapter number is the dedupe key (mirrors pmid/doi dedupe for
+// articles), since the same chapter is cited by many receptors.
+const STAHL_BOOK="https://www.cambridge.org/core/books/stahls-essential-psychopharmacology/";
+export const STAHL_CHAPTERS={
+ 1:{t:"Chemical Neurotransmission",p:"1–28",u:STAHL_BOOK+"chemical-neurotransmission/3480EFF4825666B1849F65D2E2D18755"},
+ 2:{t:"Transporters, Receptors & Enzymes as Targets",p:"29–50",u:STAHL_BOOK+"transporters-receptors-and-enzymes-as-targets-of-psychopharmacological-drug-action/A87FE28EA57F0979564CECDDF7669E64"},
+ 3:{t:"Ion Channels as Targets",p:"51–76",u:STAHL_BOOK+"ion-channels-as-targets-of-psychopharmacological-drug-action/66227162D984BCFAB41599BA7CCDC43F"},
+ 4:{t:"Psychosis, Schizophrenia & DA/5-HT/Glu Networks",p:"77–158",u:STAHL_BOOK+"psychosis-schizophrenia-and-the-neurotransmitter-networks-dopamine-serotonin-and-glutamate/5EF5FEC4BFAC4D5C187A613DD13B19E1"},
+ 5:{t:'Targeting DA & 5-HT Receptors — “Antipsychotics”',p:"159–243",u:STAHL_BOOK+"targeting-dopamine-and-serotonin-receptors-for-psychosis-mood-and-beyond-socalled-antipsychotics/AF924EA27653A7C5476F96B02D2DE9C5"},
+ 6:{t:"Mood Disorders & NE/GABA Networks",p:"244–282",u:STAHL_BOOK+"mood-disorders-and-the-neurotransmitter-networks-norepinephrine-and-aminobutyric-acid-gaba/E19B1F16E6E200D0AC56A1B5A23DB977"},
+ 7:{t:'Treatments for Mood Disorders — “Antidepressants”',p:"283–358",u:STAHL_BOOK+"treatments-for-mood-disorders-socalled-antidepressants-and-mood-stabilizers/34B9F39A0E1B735C4DF3B9964AB58A6A"},
+ 8:{t:"Anxiety, Trauma & Treatment",p:"359–378",u:STAHL_BOOK+"anxiety-trauma-and-treatment/FA9BDE6ED394D37B6E6CF34EC79A7E6C"},
+ 9:{t:"Chronic Pain & Its Treatment",p:"379–400",u:STAHL_BOOK+"chronic-pain-and-its-treatment/1DA3240B840C91E91D5C8B8E157422AC"},
+ 10:{t:"Sleep & Wakefulness — Histamine & Orexin",p:"401–448",u:STAHL_BOOK+"disorders-of-sleep-and-wakefulness-and-their-treatment-neurotransmitter-networks-for-histamine-and-orexin/AD708ABF284B3B87C8F72E338D80817F"},
+ 11:{t:"ADHD & Its Treatment",p:"449–485",u:STAHL_BOOK+"attention-deficit-hyperactivity-disorder-and-its-treatment/CA44BC16C611CBBF7A29A048B27F1FB2"},
+ 12:{t:"Dementia & the Acetylcholine Network",p:"486–537",u:STAHL_BOOK+"dementia-causes-symptomatic-treatments-and-the-neurotransmitter-network-acetylcholine/642008AD227B9B4409362D209048A4C2"},
+ 13:{t:"Impulsivity, Compulsivity & Addiction",p:"538–578",u:STAHL_BOOK+"impulsivity-compulsivity-and-addiction/FE9291DCA21A30BB63CB1DA478026B43"}
+};
+
 /* ============ RECEPTOR DATA ============ */
 export const RX=[
 /* ---- DOPAMINE ---- */

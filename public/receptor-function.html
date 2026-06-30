@@ -924,8 +924,11 @@
     transition: color 0.25s var(--ease), border-color 0.25s var(--ease);
   }
   .wf-fab:hover { color: var(--vermilion); border-color: var(--vermilion); }
+  /* a second small tab, stacked above Index, back out to the Atlas shell */
+  .wf-fab-atlas { top: 3.35rem; text-decoration: none; }
   @media (max-width: 720px) {
     .wf-fab { left: 1rem; right: auto; top: 1rem; }
+    .wf-fab-atlas { left: 1rem; right: auto; top: 3.35rem; }
   }
 
   /* the back button for the sidebar (mobile/narrow) */
@@ -1144,6 +1147,7 @@
   </div>
 
   <div class="wf-edge-trigger" id="wfEdgeTrigger" aria-hidden="true"></div>
+  <a class="wf-fab wf-fab-atlas" href="the-receptor-atlas.html" aria-label="Return to the Atlas">↩ Atlas</a>
   <button class="wf-fab" id="wfFab" aria-label="Open the index">Index</button>
 
   <nav id="wayfinder" aria-label="Navigation" hidden>

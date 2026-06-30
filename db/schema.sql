@@ -4,31 +4,37 @@ CREATE TABLE IF NOT EXISTS receptors (
   system TEXT,
   hall TEXT,
   sort_order INTEGER,
-  stahl_note TEXT          -- free-text note about the Stahl reading (RX.note)
+  stahl_note TEXT,         -- free-text note about the Stahl reading (RX.note)
+  search_query TEXT        -- PubMed search recipe to use while this receptor has no sources yet (RX.search)
 );
 CREATE TABLE IF NOT EXISTS receptor_volumes (
   receptor_id TEXT NOT NULL REFERENCES receptors(id),
   volume TEXT NOT NULL,
   PRIMARY KEY (receptor_id, volume)
 );
+-- `kind` distinguishes a peer-reviewed article from a textbook locus (e.g. a Stahl
+-- chapter) — both are just sources now (Citation/verification redesign): nothing
+-- about a book source is modeled specially anywhere else in the schema.
 CREATE TABLE IF NOT EXISTS sources (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind TEXT NOT NULL DEFAULT 'article',   -- 'article' | 'book'
   authors TEXT, year INTEGER, title TEXT, journal TEXT,
   pmid TEXT, doi TEXT, url TEXT, notes TEXT
 );
--- One citation slot per receptor: PRIMARY KEY (receptor_id) is intentional and
--- mirrors the original Conservator's Desk model, where each receptor has a single
--- `ref` + single citation `status`. The slot may be empty (source_id NULL,
--- status 'needs-source') or filled. The `sources` library is still shared/reusable
--- across receptors. If multiple citations per receptor are ever needed, change the
--- key to PRIMARY KEY (receptor_id, source_id).
+-- A receptor can cite any number of sources (Citation/verification redesign):
+-- composite PK lets the same source be attached to a receptor only once, but a
+-- receptor may have many attached sources, each independently verified
+-- (`status`). Exactly one attached source is expected to carry is_primary=1 —
+-- that's what /api/atlas/:volume surfaces, preserving the old single-citation
+-- behavior for the atlas volumes. A receptor with zero rows here has no sources
+-- yet ("needs-source"); there is no longer a placeholder row for that state.
 CREATE TABLE IF NOT EXISTS receptor_sources (
   receptor_id TEXT NOT NULL REFERENCES receptors(id),
-  source_id INTEGER REFERENCES sources(id),
-  status TEXT NOT NULL DEFAULT 'needs-source',
+  source_id INTEGER NOT NULL REFERENCES sources(id),
+  status TEXT NOT NULL DEFAULT 'provided',
+  is_primary INTEGER NOT NULL DEFAULT 0,
   correction_note TEXT,    -- citation-correction provenance (RX.note2), e.g. wrong-PMID fixes
-  search_query TEXT,       -- PubMed search recipe for needs-source receptors (RX.search)
-  PRIMARY KEY (receptor_id)
+  PRIMARY KEY (receptor_id, source_id)
 );
 -- Cross-volume id reconciliation (Task 12 discovery): each atlas volume names the
 -- same receptor differently and none match the DB id (e.g. DB `m1` is `muscarinic_m1`
@@ -41,11 +47,6 @@ CREATE TABLE IF NOT EXISTS receptor_aliases (
   alias TEXT NOT NULL,
   receptor_id TEXT NOT NULL REFERENCES receptors(id),
   PRIMARY KEY (volume, alias)
-);
-CREATE TABLE IF NOT EXISTS stahl_loci (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  receptor_id TEXT NOT NULL REFERENCES receptors(id),
-  chapter INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS claims (
   receptor_id TEXT PRIMARY KEY REFERENCES receptors(id),

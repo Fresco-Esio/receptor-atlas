@@ -22,11 +22,12 @@ test('GET /api/receptors returns the full registry', async () => {
   const m1 = body.find(r => r.id === 'm1');
   assert.ok(m1, 'm1 not in registry');
   assert.equal(m1.status, 'conflicting');
-  // the COALESCE default lives in this query too: a receptor with no source
-  // must surface as 'needs-source' in the list, not null
+  // a receptor with zero attached sources must roll up to 'needs-source' in the
+  // list; d3 has no primary article but does carry Stahl sources, so it rolls
+  // up to 'provided' instead — a true sourceless receptor is covered below.
   const d3 = body.find(r => r.id === 'd3');
   assert.ok(d3, 'd3 not in registry');
-  assert.equal(d3.status, 'needs-source');
+  assert.equal(d3.status, 'provided');
 });
 
 test('GET /api/receptors/:id returns a fully joined detail', async () => {
@@ -36,18 +37,20 @@ test('GET /api/receptors/:id returns a fully joined detail', async () => {
   assert.ok(body.source, 'source should be present');
   assert.equal(body.source.pmid, '24903776');
   assert.equal(body.status, 'conflicting');
-  assert.equal(Array.isArray(body.stahl), true);
-  assert.ok(body.stahl.length > 0, 'stahl should be non-empty');
+  assert.equal(Array.isArray(body.sources), true);
+  assert.ok(body.sources.length > 1, 'm1 should carry its primary article plus its Stahl-chapter sources');
+  assert.ok(body.sources.some(s => s.kind === 'book'), 'm1 should carry at least one Stahl book source');
   assert.equal(typeof body.review, 'object');
   assert.ok(body.review && 'mastery' in body.review, 'review missing mastery');
 });
 
-test('GET /api/receptors/:id with a null source serializes source as null', async () => {
+test('GET /api/receptors/:id with no primary article serializes source as null', async () => {
   const res = await fetch(`${base}/api/receptors/d3`);
   assert.equal(res.status, 200);
   const body = await res.json();
-  assert.equal(body.source, null);
-  assert.equal(body.status, 'needs-source');
+  assert.equal(body.source, null); // no peer-reviewed article is set as primary
+  assert.ok(body.sources.length > 0, 'd3 should still carry its Stahl-chapter sources');
+  assert.equal(body.status, 'provided'); // Stahl sources exist, so it's not "needs-source"
 });
 
 test('GET /api/receptors/:id returns 404 for an unknown id', async () => {

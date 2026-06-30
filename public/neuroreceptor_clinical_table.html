@@ -74,7 +74,9 @@
     width: 44px; height: 44px; flex: none;
     border: 1px solid var(--brass-line); border-radius: 2px;
     display: grid; place-content: center; background: var(--wall-recess);
+    transition: border-color 0.25s var(--ease);
   }
+  .brand-mark:hover { border-color: var(--vermilion); }
   .brand-mark svg { width: 26px; height: 26px; overflow: visible; }
   .bm-path { stroke-dasharray: 1; stroke-dashoffset: 1; }
   .bm-outer { animation: bm-draw 0.9s var(--ease) 0.4s forwards; }
@@ -348,13 +350,13 @@
   <header class="masthead">
     <div class="masthead-in">
       <div class="brand">
-        <div class="brand-mark" aria-hidden="true">
+        <a class="brand-mark" href="the-receptor-atlas.html" title="Return to the Atlas" aria-label="Return to the Atlas">
           <svg viewBox="0 0 26 26" fill="none">
             <circle class="bm-path bm-outer" pathLength="1" cx="13" cy="13" r="9" stroke="var(--brass)" stroke-width="1"/>
             <circle class="bm-path bm-inner" pathLength="1" cx="13" cy="13" r="3.2" stroke="var(--vermilion)" stroke-width="1"/>
             <path class="bm-path bm-cross" pathLength="1" d="M13 1.5v6M13 18.5v6M1.5 13h6M18.5 13h6" stroke="var(--brass)" stroke-width="1"/>
           </svg>
-        </div>
+        </a>
         <div>
           <div class="brand-est">The Clinical Ledger · Companion to the Receptor Cabinet</div>
           <h1>Neuroreceptor Activity &amp; Presentation <span class="brand-cat">Ref · III</span></h1>
