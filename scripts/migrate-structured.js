@@ -1,0 +1,130 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { dirname, join } from 'node:path';
+import { openDb } from '../db/index.js';
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const PUBLIC = join(HERE, '..', 'public');
+
+/**
+ * Pull a JS literal (array `[...]` or object `{...}`) out of an embedded <script>
+ * by name, bracket-matching from the opening to its balanced close. String contents
+ * (which may hold brackets, apostrophes, or unicode) are skipped, so this is robust
+ * to the long clinical prose in the volume data. The extracted literal is evaluated
+ * with `new Function` — safe here because the input is our own repo's source files,
+ * never user data.
+ */
+export function extractLiteral(src, declName, open = '[', close = ']') {
+  const re = new RegExp(declName + '\\s*=\\s*\\' + open);
+  const m = re.exec(src);
+  if (!m) throw new Error('declaration not found: ' + declName);
+  const start = src.indexOf(open, m.index);
+  let depth = 0, str = null, esc = false;
+  for (let i = start; i < src.length; i++) {
+    const c = src[i];
+    if (str) {
+      if (esc) esc = false;
+      else if (c === '\\') esc = true;
+      else if (c === str) str = null;
+    } else if (c === '"' || c === "'" || c === '`') {
+      str = c;
+    } else if (c === open) {
+      depth++;
+    } else if (c === close) {
+      if (--depth === 0) {
+        const lit = src.slice(start, i + 1);
+        return new Function('return ' + lit)();
+      }
+    }
+  }
+  throw new Error('unbalanced literal: ' + declName);
+}
+
+// The Ledger's row-number → canonical-id map, inverted to no → canon, so each
+// clinical row resolves to a receptor_id via the (ledger) alias table.
+function ledgerNoToCanon(clinicalSrc) {
+  const CANON2NO = extractLiteral(clinicalSrc, 'CANON2NO', '{', '}');
+  const out = {};
+  for (const canon in CANON2NO) out[CANON2NO[canon]] = canon;
+  return out;
+}
+
+/**
+ * Load binding_values (Cabinet AFF_AGENTS) and clinical_rows (Ledger DATA) from the
+ * volume files into the DB, resolving each to a canonical receptor_id via the alias
+ * table. Idempotent: clears both tables first, so a re-run rebuilds cleanly.
+ * Returns { binding, clinical }. Requires receptor_aliases to be seeded first.
+ */
+export function migrateStructured(db) {
+  const cabinetSrc = readFileSync(join(PUBLIC, 'neuroreceptor_pharmacology_explorer_dashboard.html'), 'utf8');
+  const ledgerSrc = readFileSync(join(PUBLIC, 'neuroreceptor_clinical_table.html'), 'utf8');
+
+  const AFF_AGENTS = extractLiteral(cabinetSrc, 'AFF_AGENTS');
+  const DATA = extractLiteral(ledgerSrc, 'DATA');
+  const NO2CANON = ledgerNoToCanon(ledgerSrc);
+
+  const aliasToReceptor = (volume, alias) =>
+    db.prepare('SELECT receptor_id FROM receptor_aliases WHERE volume = ? AND alias = ?').get(volume, alias)?.receptor_id ?? null;
+
+  const insBinding = db.prepare(`
+    INSERT INTO binding_values (receptor_id, target_alias, agent_name, agent_group, cid, ki, ki_text, act, act_full, src, note)
+    VALUES (@receptor_id, @target_alias, @agent_name, @agent_group, @cid, @ki, @ki_text, @act, @act_full, @src, @note)
+  `);
+  const insClinical = db.prepare(`
+    INSERT OR REPLACE INTO clinical_rows (no, receptor_id, sys, name, cls, baseline, mech, over_json, under_json, stahl, agonists_json, antagonists_json)
+    VALUES (@no, @receptor_id, @sys, @name, @cls, @baseline, @mech, @over_json, @under_json, @stahl, @agonists_json, @antagonists_json)
+  `);
+
+  let binding = 0, clinical = 0;
+  const tx = db.transaction(() => {
+    db.prepare('DELETE FROM binding_values').run();
+    db.prepare('DELETE FROM clinical_rows').run();
+
+    for (const agent of AFF_AGENTS) {
+      for (const targetAlias in agent.b) {
+        const v = agent.b[targetAlias];
+        insBinding.run({
+          receptor_id: aliasToReceptor('cabinet', targetAlias),
+          target_alias: targetAlias,
+          agent_name: agent.name,
+          agent_group: agent.g ?? null,
+          cid: agent.cid ?? null,
+          ki: typeof v.ki === 'number' ? v.ki : null,
+          ki_text: v.kiText ?? null,
+          act: v.act ?? null,
+          act_full: v.actFull ?? null,
+          src: v.src ?? null,
+          note: v.note ?? null,
+        });
+        binding++;
+      }
+    }
+
+    for (const d of DATA) {
+      insClinical.run({
+        no: d.no,
+        receptor_id: aliasToReceptor('ledger', NO2CANON[d.no]),
+        sys: d.sys ?? null,
+        name: d.name ?? null,
+        cls: d.cls ?? null,
+        baseline: d.baseline ?? null,
+        mech: d.mech ?? null,
+        over_json: JSON.stringify(d.over ?? []),
+        under_json: JSON.stringify(d.under ?? []),
+        stahl: d.stahl ?? null,
+        agonists_json: JSON.stringify(d.agonists ?? []),
+        antagonists_json: JSON.stringify(d.antagonists ?? []),
+      });
+      clinical++;
+    }
+  });
+  tx();
+  return { binding, clinical };
+}
+
+// Run directly with `node scripts/migrate-structured.js`.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const db = openDb();
+  const r = migrateStructured(db);
+  console.log(`structured: ${r.binding} binding values, ${r.clinical} clinical rows`);
+}

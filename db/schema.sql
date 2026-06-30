@@ -64,6 +64,40 @@ CREATE TABLE IF NOT EXISTS review_state (
   mastery INTEGER DEFAULT 0,
   note TEXT DEFAULT ''
 );
+-- Structured data extracted from the volume files (Task 14).
+-- binding_values: the Cabinet's agent×target affinity matrix (AFF_AGENTS). One row
+-- per (agent, target). target_alias is the Cabinet's own target id (= the cabinet
+-- alias), resolved to receptor_id via receptor_aliases.
+CREATE TABLE IF NOT EXISTS binding_values (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  receptor_id TEXT REFERENCES receptors(id),
+  target_alias TEXT NOT NULL,
+  agent_name TEXT NOT NULL,
+  agent_group TEXT,
+  cid INTEGER,                 -- PubChem CID
+  ki REAL,                     -- representative Ki in nM
+  ki_text TEXT,                -- reported range, e.g. '0.4-1.2 nM'
+  act TEXT,                    -- action code: ag/an/pa/ri/…
+  act_full TEXT,
+  src TEXT,
+  note TEXT
+);
+-- clinical_rows: the Ledger's per-receptor clinical entry (DATA). List-valued
+-- fields (over/under/agonists/antagonists) are stored as JSON text.
+CREATE TABLE IF NOT EXISTS clinical_rows (
+  no INTEGER PRIMARY KEY,      -- Ledger row number
+  receptor_id TEXT REFERENCES receptors(id),
+  sys TEXT,
+  name TEXT,
+  cls TEXT,
+  baseline TEXT,
+  mech TEXT,
+  over_json TEXT,
+  under_json TEXT,
+  stahl TEXT,
+  agonists_json TEXT,
+  antagonists_json TEXT
+);
 CREATE TABLE IF NOT EXISTS section_activity (
   receptor_id TEXT NOT NULL REFERENCES receptors(id),
   volume TEXT NOT NULL,

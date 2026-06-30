@@ -1,6 +1,17 @@
 import { openDb } from '../db/index.js';
 import { RX, HALLS, ALIASES } from './seed-data.js';
+import { migrateStructured } from './migrate-structured.js';
 import { pathToFileURL } from 'node:url';
+
+/**
+ * Load the structured volume data (binding_values, clinical_rows). Best-effort:
+ * wrapped so a missing/unreadable volume file can never break the core seed that
+ * the rest of the app depends on. Depends on aliases being seeded first.
+ */
+function structuredBestEffort(db) {
+  try { return migrateStructured(db); }
+  catch (e) { return { binding: 0, clinical: 0, error: e.message }; }
+}
 
 /**
  * Seed the cross-volume id aliases (Task 13). Pure reference data, so this runs
@@ -32,7 +43,7 @@ export function seedAliases(db) {
  */
 export function migrate(db) {
   const existing = db.prepare('SELECT COUNT(*) c FROM receptors').get().c;
-  if (existing > 0) { seedAliases(db); return { skipped: true, receptors: existing }; }
+  if (existing > 0) { seedAliases(db); structuredBestEffort(db); return { skipped: true, receptors: existing }; }
 
   const tx = db.transaction(() => {
     const rcpt = db.prepare('INSERT INTO receptors (id,label,system,hall,sort_order,stahl_note) VALUES (?,?,?,?,?,?)');
@@ -73,6 +84,7 @@ export function migrate(db) {
   });
   tx();
   seedAliases(db);
+  structuredBestEffort(db);
   return { skipped: false, receptors: RX.length };
 }
 
