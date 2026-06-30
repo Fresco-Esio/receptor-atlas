@@ -2619,28 +2619,54 @@
     });
   }
 
+  /* Fill each ENTRIES entry's prose from the DB (the single source of truth) before
+     first render, matched by entry number. Best-effort: offline/file:// keeps the
+     embedded text. */
+  async function hydrateNarrativeFromApi() {
+    try {
+      const rows = await (await fetch('/api/atlas/archive/narrative')).json();
+      const byNo = {}; rows.forEach(r => { byNo[r.alias] = r; });
+      ENTRIES.forEach(e => {
+        const a = byNo[String(e.number)]; if (!a || !e.exhibit) return;
+        const x = e.exhibit;
+        if (a.abstract != null) x.abstract = a.abstract;
+        if (Array.isArray(a.body)) x.body = a.body;
+        if (a.presentation != null) x.presentation = a.presentation;
+        if (a.effect != null) x.effect = a.effect;
+        if (a.receptor_class != null) x.receptorClass = a.receptor_class;
+        if (a.ligand != null) x.ligand = a.ligand;
+        if (Array.isArray(a.tags)) x.tags = a.tags;
+        if (a.figure_caption != null) x.figureCaption = a.figure_caption;
+      });
+    } catch (e) { /* offline / file://: keep embedded ENTRIES */ }
+  }
+
   /* ════════════════════════════════════════════════════════════════
      Boot: render from data first, then attach behaviors to the result
      ════════════════════════════════════════════════════════════════ */
 
-  renderHalls();
-  renderCatalog();
-  const railMarkers = renderRailMarkers();
+  (async () => {
+    await hydrateNarrativeFromApi();
 
-  setupReveals();
-  setupRoomSwitching(railMarkers);
-  setupProgressRail();
-  setupAccessionCounters();
-  setupParallax();
-  document.querySelectorAll(".fig-link").forEach(attachFlashlight);
-  setupNavigation();
-  setupWayfinder();
+    renderHalls();
+    renderCatalog();
+    const railMarkers = renderRailMarkers();
 
-  /* Deep links (#/entry/N) land directly inside the exhibit. */
-  if (ENTRY_ROUTE.test(location.hash)) {
-    instantNavigation = true;
-    route();
-  }
+    setupReveals();
+    setupRoomSwitching(railMarkers);
+    setupProgressRail();
+    setupAccessionCounters();
+    setupParallax();
+    document.querySelectorAll(".fig-link").forEach(attachFlashlight);
+    setupNavigation();
+    setupWayfinder();
+
+    /* Deep links (#/entry/N) land directly inside the exhibit. */
+    if (ENTRY_ROUTE.test(location.hash)) {
+      instantNavigation = true;
+      route();
+    }
+  })();
 })();
 </script>
 
