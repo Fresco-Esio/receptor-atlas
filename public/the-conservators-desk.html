@@ -522,6 +522,18 @@ function structEditorHtml(data){
     });
     html+='</div></div>';
   }
+  if(data.narrative){
+    const nv=data.narrative;
+    html+=`<div class="struct-sec"><div class="pk">Archive narrative</div>
+      <div class="struct-field"><span>abstract</span><textarea data-nk="abstract" rows="3">${esc(nv.abstract||'')}</textarea></div>
+      <div class="struct-field"><span>body (one paragraph per blank-line block)</span><textarea data-nk="body" rows="6">${esc((nv.body||[]).join('\n\n'))}</textarea></div>
+      <div class="struct-field"><span>presentation</span><textarea data-nk="presentation" rows="2">${esc(nv.presentation||'')}</textarea></div>
+      <div class="struct-field"><span>effect</span><input data-nk="effect" value="${esc(nv.effect||'')}" /></div>
+      <div class="struct-field"><span>receptor class</span><input data-nk="receptor_class" value="${esc(nv.receptor_class||'')}" /></div>
+      <div class="struct-field"><span>ligand</span><input data-nk="ligand" value="${esc(nv.ligand||'')}" /></div>
+      <div class="struct-field"><span>tags (one per line)</span><textarea data-nk="tags" rows="3">${esc((nv.tags||[]).join('\n'))}</textarea></div>
+      <div class="struct-field"><span>figure caption</span><input data-nk="figure_caption" value="${esc(nv.figure_caption||'')}" /></div></div>`;
+  }
   return html;
 }
 function wireStructEditor(r,bodyEl){
@@ -539,6 +551,13 @@ function wireStructEditor(r,bodyEl){
     const id=Number(inp.dataset.bid),k=inp.dataset.bk;
     const val=(k==='ki')?(inp.value.trim()===''?null:Number(inp.value)):inp.value;
     patchStructuredDebounced(r.id,r.id+':b'+id+':'+k,{volume:'cabinet',binding:{id,[k]:val}},bodyEl);
+  }));
+  bodyEl.querySelectorAll('[data-nk]').forEach(f=>f.addEventListener('input',()=>{
+    const k=f.dataset.nk;
+    let val=f.value;
+    if(k==='body')val=f.value.split(/\n\s*\n/).map(s=>s.trim()).filter(Boolean);   // blank-line split
+    else if(k==='tags')val=f.value.split('\n').map(s=>s.trim()).filter(Boolean);
+    patchStructuredDebounced(r.id,r.id+':n:'+k,{volume:'archive',narrative:{[k]:val}},bodyEl);
   }));
 }
 
