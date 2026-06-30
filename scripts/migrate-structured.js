@@ -14,7 +14,7 @@ const PUBLIC = join(HERE, '..', 'public');
  * with `new Function` — safe here because the input is our own repo's source files,
  * never user data.
  */
-export function extractLiteral(src, declName, open = '[', close = ']') {
+export function sliceLiteral(src, declName, open = '[', close = ']') {
   const re = new RegExp(declName + '\\s*=\\s*\\' + open);
   const m = re.exec(src);
   if (!m) throw new Error('declaration not found: ' + declName);
@@ -31,13 +31,17 @@ export function extractLiteral(src, declName, open = '[', close = ']') {
     } else if (c === open) {
       depth++;
     } else if (c === close) {
-      if (--depth === 0) {
-        const lit = src.slice(start, i + 1);
-        return new Function('return ' + lit)();
-      }
+      if (--depth === 0) return src.slice(start, i + 1);
     }
   }
   throw new Error('unbalanced literal: ' + declName);
+}
+
+// Evaluate a pure-data literal (AFF_AGENTS, DATA, CANON2NO). For literals that contain
+// function calls / identifier refs (e.g. the Archive ENTRIES), use a sandboxed eval
+// instead — see scripts/migrate-archive.js.
+export function extractLiteral(src, declName, open = '[', close = ']') {
+  return new Function('return ' + sliceLiteral(src, declName, open, close))();
 }
 
 // The Ledger's row-number → canonical-id map, inverted to no → canon, so each
