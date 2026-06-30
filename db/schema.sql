@@ -98,6 +98,19 @@ CREATE TABLE IF NOT EXISTS clinical_rows (
   agonists_json TEXT,
   antagonists_json TEXT
 );
+-- Archive narrative prose (Archive content editing). One row per receptor that has an
+-- Archive entry. List fields (body paragraphs, tags) stored as JSON text.
+CREATE TABLE IF NOT EXISTS archive_entries (
+  receptor_id    TEXT PRIMARY KEY REFERENCES receptors(id),
+  abstract       TEXT,
+  presentation   TEXT,
+  effect         TEXT,
+  receptor_class TEXT,
+  ligand         TEXT,
+  figure_caption TEXT,
+  body_json      TEXT,
+  tags_json      TEXT
+);
 CREATE TABLE IF NOT EXISTS section_activity (
   receptor_id TEXT NOT NULL REFERENCES receptors(id),
   volume TEXT NOT NULL,
