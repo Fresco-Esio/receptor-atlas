@@ -1,6 +1,18 @@
 import { openDb } from '../db/index.js';
-import { RX, HALLS } from './seed-data.js';
+import { RX, HALLS, ALIASES } from './seed-data.js';
 import { pathToFileURL } from 'node:url';
+
+/**
+ * Seed the cross-volume id aliases (Task 13). Pure reference data, so this runs
+ * INSERT OR IGNORE every migrate — it adds aliases to an already-seeded DB without
+ * touching content or user data, and never duplicates (PRIMARY KEY (volume, alias)).
+ */
+export function seedAliases(db) {
+  const ins = db.prepare('INSERT OR IGNORE INTO receptor_aliases (volume, alias, receptor_id) VALUES (?,?,?)');
+  const tx = db.transaction(() => { for (const [vol, alias, id] of ALIASES) ins.run(vol, alias, id); });
+  tx();
+  return ALIASES.length;
+}
 
 /**
  * Seed the database from the Conservator's Desk's `RX` content.
@@ -20,7 +32,7 @@ import { pathToFileURL } from 'node:url';
  */
 export function migrate(db) {
   const existing = db.prepare('SELECT COUNT(*) c FROM receptors').get().c;
-  if (existing > 0) return { skipped: true, receptors: existing };
+  if (existing > 0) { seedAliases(db); return { skipped: true, receptors: existing }; }
 
   const tx = db.transaction(() => {
     const rcpt = db.prepare('INSERT INTO receptors (id,label,system,hall,sort_order,stahl_note) VALUES (?,?,?,?,?,?)');
@@ -60,6 +72,7 @@ export function migrate(db) {
     });
   });
   tx();
+  seedAliases(db);
   return { skipped: false, receptors: RX.length };
 }
 

@@ -30,6 +30,18 @@ CREATE TABLE IF NOT EXISTS receptor_sources (
   search_query TEXT,       -- PubMed search recipe for needs-source receptors (RX.search)
   PRIMARY KEY (receptor_id)
 );
+-- Cross-volume id reconciliation (Task 12 discovery): each atlas volume names the
+-- same receptor differently and none match the DB id (e.g. DB `m1` is `muscarinic_m1`
+-- in the Cabinet and `m1` in the Ledger). This table maps a volume's own id (alias)
+-- back to the canonical receptor_id so a volume page can fetch /api/atlas/:volume and
+-- match each row by the id it already uses. PRIMARY KEY (volume, alias): an alias is
+-- unique within a volume, but the same alias string may recur across volumes.
+CREATE TABLE IF NOT EXISTS receptor_aliases (
+  volume TEXT NOT NULL,
+  alias TEXT NOT NULL,
+  receptor_id TEXT NOT NULL REFERENCES receptors(id),
+  PRIMARY KEY (volume, alias)
+);
 CREATE TABLE IF NOT EXISTS stahl_loci (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   receptor_id TEXT NOT NULL REFERENCES receptors(id),

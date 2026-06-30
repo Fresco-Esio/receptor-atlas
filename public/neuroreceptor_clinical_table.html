@@ -791,13 +791,39 @@
     });
   })();
 
+  // Task 13: each DATA row's `cite` comes from the live DB (the single source of
+  // truth) so a citation fixed in the Conservator's Desk shows here too. Rows carry
+  // `no`; the Ledger's canonical ids (CANON2NO) are the aliases the API returns, so
+  // map no -> canon -> API source. Best-effort: if the API is unreachable, the
+  // embedded cites stand as a fallback.
+  async function hydrateCitationsFromApi() {
+    const NO2CANON = {1:'gaba_a',2:'nmda',3:'d2',4:'d1',5:'dat',6:'5ht2a',7:'5ht1a',8:'5ht2c',9:'sert',10:'beta1',11:'alpha1',12:'alpha2',13:'net',14:'m1',15:'h1',16:'mu'};
+    try {
+      const rows = await (await fetch('/api/atlas/ledger')).json();
+      const byAlias = {};
+      rows.forEach(r => { if (r.alias) byAlias[r.alias] = r; });
+      DATA.forEach(d => {
+        const row = byAlias[NO2CANON[d.no]];
+        if (row && row.source) {
+          const s = row.source, prev = d.cite || {};
+          d.cite = {
+            t: s.authors + ' (' + s.year + '). ' + s.title,
+            j: prev.j || '',
+            p: 'PMID ' + s.pmid,
+            u: 'https://pubmed.ncbi.nlm.nih.gov/' + s.pmid + '/'
+          };
+        }
+      });
+    } catch (e) { /* offline / file://: keep the embedded cites */ }
+  }
+
   // sticky-header offset = masthead height
   const masthead = document.querySelector('.masthead');
   const setMastH = () => document.documentElement.style.setProperty('--mast-h', masthead.offsetHeight + 'px');
   window.addEventListener('resize', setMastH);
   setMastH();
   restoreView();
-  render();
+  hydrateCitationsFromApi().then(render);
 </script>
 
   <script>

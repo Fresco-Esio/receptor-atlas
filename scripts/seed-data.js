@@ -136,3 +136,24 @@ export const RX=[
  ref:{a:"Muehlan et al.",y:2023,t:"The orexin story and orexin receptor antagonists for the treatment of insomnia",pmid:"37086045",doi:"10.1111/jsr.13902"},cs:"verified",
  quiz:"How do DORAs treat insomnia differently from benzodiazepines mechanistically?"}
 ];
+
+// Cross-volume id aliases (Task 12 map → Task 13). Each row is [volume, alias,
+// receptor_id]: the `alias` is the id that volume's own embedded data uses, and
+// `receptor_id` is the canonical DB id. A volume page fetches /api/atlas/:volume
+// (rows carry their per-volume alias) and matches by the id it already has.
+//   Cabinet alias = neuroceptors[].id (neuroreceptor_pharmacology_explorer_dashboard.html)
+//   Ledger  alias = CANON2NO canonical key (neuroreceptor_clinical_table.html)
+export const ALIASES = [
+  // ---- Cabinet ----
+  ['cabinet','gaba_a','gabaa'], ['cabinet','mu_opioid','mor'], ['cabinet','dopamine_d2','d2'],
+  ['cabinet','serotonin_5ht2a','ht2a'], ['cabinet','beta_1','b1'], ['cabinet','alpha_1','a1'],
+  ['cabinet','alpha_2','a2'], ['cabinet','sert','sert'], ['cabinet','net','net'],
+  ['cabinet','nmda_glutamate','nmda'], ['cabinet','histamine_h1','h1'],
+  ['cabinet','muscarinic_m1','m1'], ['cabinet','muscarinic_m3','m3'],
+  // ---- Ledger ----
+  ['ledger','gaba_a','gabaa'], ['ledger','nmda','nmda'], ['ledger','d2','d2'],
+  ['ledger','d1','d1'], ['ledger','dat','dat'], ['ledger','5ht2a','ht2a'],
+  ['ledger','5ht1a','ht1a'], ['ledger','5ht2c','ht2c'], ['ledger','sert','sert'],
+  ['ledger','beta1','b1'], ['ledger','alpha1','a1'], ['ledger','alpha2','a2'],
+  ['ledger','net','net'], ['ledger','m1','m1'], ['ledger','h1','h1'], ['ledger','mu','mor'],
+];

@@ -2322,7 +2322,33 @@
     let currentViewMode = 'explorer';
     let searchQuery = '';
 
-    window.addEventListener('DOMContentLoaded', () => {
+    // Task 13: pull each receptor's citation from the live DB (the single source of
+    // truth) before first paint, so corrections made in the Conservator's Desk — e.g.
+    // the M1/M3 PMID fix — show here too. Best-effort: if the API is unreachable
+    // (opened as a file, server down), the embedded citations are kept as a fallback.
+    async function hydrateCitationsFromApi() {
+      try {
+        const rows = await (await fetch('/api/atlas/cabinet')).json();
+        const byAlias = {};
+        rows.forEach(r => { if (r.alias) byAlias[r.alias] = r; });
+        neuroceptors.forEach(n => {
+          const row = byAlias[n.id];
+          if (row && row.source) {
+            const s = row.source, prev = n.citation || {};
+            n.citation = {
+              title: `${s.authors} (${s.year}). ${s.title}`,
+              journal: prev.journal || '',
+              pmid: 'PMID: ' + s.pmid,
+              url: 'https://pubmed.ncbi.nlm.nih.gov/' + s.pmid + '/',
+              doi: s.doi || prev.doi || ''
+            };
+          }
+        });
+      } catch (e) { /* offline / file://: keep the embedded citations */ }
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      await hydrateCitationsFromApi();
       renderExplorerList();
       renderSelectedReceptor();
       renderBindingAffinityPlate();
