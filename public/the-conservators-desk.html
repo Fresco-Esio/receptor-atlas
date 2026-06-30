@@ -287,6 +287,14 @@ input[type=file]{display:none;}
 .spec-id .nm::after{content:"▾"; display:inline-block; margin-left:.5rem; font-size:.6em; color:currentColor; opacity:.45; transition:transform .25s var(--ease), opacity .2s var(--ease);}
 .spec:hover .nm::after{opacity:.85;}
 .spec.open .nm::after{transform:rotate(180deg);}
+
+/* ---------- Source & citation = the primary action panel ---------- */
+.panel-action{border-color:var(--brass-line); box-shadow:inset 0 1px 0 var(--brass-faint);}
+.panel-action .cite-caption{margin-top:.8rem; color:var(--bone-dim);}
+.panel-action .citestat{gap:.35rem; margin-top:.45rem;}
+.panel-action .cs{flex:1 1 auto; min-width:5.4rem; text-align:center; padding:.5rem .4rem; font-size:.58rem;}
+/* Stahl is reference reading, kept visibly secondary to the action above it */
+.panel-ref{background:transparent;}
 </style>
 </head>
 <body>
@@ -674,15 +682,16 @@ function specRow(r){
          </div>
        </div>
        <div class="side">
-         <div class="panel">
-            <div class="pk">Evidence</div>
-            <div class="sub"><div class="pk-sub">Cross-reference &middot; Stahl 5e <span class="forcheck">Clinical-claim check</span></div>${stahlBlock(r)}</div>
-            <div class="sub"><div class="pk-sub">Peer-reviewed source <span class="forcheck">Citation check</span></div>
-               <div class="src-display">${refBlock(r)}</div>
-               <div class="src-pick"><span class="picklabel">Replace from library</span><select class="srcselect">${sourceOptions(r.sourceId)}</select></div>
-               <div class="cite-caption">Citation status &mdash; how far you&rsquo;ve trusted this paper (hover each for its meaning):</div>
-               <div class="citestat">${["verified","provided","conflicting","needs-source"].map(v=>`<button class="cs" data-v="${v}" title="${CS_HELP[v]}">${v}</button>`).join("")}</div>
-            </div>
+         <div class="panel panel-action">
+            <div class="pk">Source &amp; citation <span class="forcheck">Citation check</span></div>
+            <div class="src-display">${refBlock(r)}</div>
+            <div class="src-pick"><span class="picklabel">Replace from library</span><select class="srcselect">${sourceOptions(r.sourceId)}</select></div>
+            <div class="cite-caption">Set how far you&rsquo;ve verified this paper (hover a status for its meaning):</div>
+            <div class="citestat">${["verified","provided","conflicting","needs-source"].map(v=>`<button class="cs" data-v="${v}" title="${CS_HELP[v]}">${v}</button>`).join("")}</div>
+         </div>
+         <div class="panel panel-ref">
+            <div class="pk">Stahl 5e &mdash; where to read <span class="forcheck">Clinical-claim check</span></div>
+            ${stahlBlock(r)}
          </div>
          <div class="panel">
            <div class="pk">Your mastery &amp; notes</div>
