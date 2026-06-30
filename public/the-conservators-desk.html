@@ -242,6 +242,16 @@ input[type=file]{display:none;}
 .bind-table input{width:100%; background:var(--wall-recess); border:1px solid var(--brass-line); border-radius:2px; color:var(--bone); font-family:"Fragment Mono",monospace; font-size:.72rem; padding:.3rem .4rem;}
 .struct-saved{position:absolute; top:1rem; right:0; font-family:"Fragment Mono",monospace; font-size:.55rem; letter-spacing:.1em; text-transform:uppercase; color:var(--good); opacity:0; transition:opacity .3s var(--ease);}
 .struct-saved.show{opacity:1;}
+
+/* ---------- Sync & cross-reference panel ---------- */
+.datesline{display:flex; flex-direction:column; gap:.3rem; margin-bottom:.7rem;}
+.dl-row{display:flex; justify-content:space-between; gap:.7rem; font-family:"Fragment Mono",monospace; font-size:.62rem;}
+.dl-row > span{color:var(--bone-faint); letter-spacing:.1em; text-transform:uppercase;}
+.dl-row > b{color:var(--bone-dim); font-weight:400;}
+.drift-flag{font-family:"Fragment Mono",monospace; font-size:.58rem; letter-spacing:.08em; text-transform:uppercase; color:var(--warn); margin-top:.2rem;}
+.deeplinks{display:flex; flex-wrap:wrap; gap:.4rem;}
+.deeplink{font-family:"Fragment Mono",monospace; font-size:.6rem; letter-spacing:.08em; text-transform:uppercase; color:var(--bone-faint); background:transparent; border:1px solid var(--brass-line); border-radius:2px; padding:.4rem .55rem; cursor:pointer; transition:color .2s var(--ease), border-color .2s var(--ease);}
+.deeplink:hover{color:var(--vermilion); border-color:var(--vermilion);}
 </style>
 </head>
 <body>
@@ -344,6 +354,7 @@ input[type=file]{display:none;}
     <button class="seg" data-filter="done">Cleared</button>
     <button class="seg" data-filter="flag">Flagged</button>
     <button class="seg" data-filter="lowconf">Low mastery</button>
+    <button class="seg" data-filter="changed">Changed</button>
     <span class="spacer"></span>
     <button id="nextBtn">Next up &rarr;</button>
   </div>
@@ -402,10 +413,16 @@ function rxFromDetail(d){
   };
 }
 async function loadSources(){ SOURCES = await (await fetch('/api/sources')).json(); }
+// Cross-volume "canonical" subject id each volume's nav bridge understands (Task 18
+// deep links). Shared by the Cabinet and Ledger bridges; the Archive navigates by
+// hall instead. DB id → canon.
+const NAV_CANON={gabaa:'gaba_a',nmda:'nmda',d2:'d2',d1:'d1',dat:'dat',ht2a:'5ht2a',ht1a:'5ht1a',ht2c:'5ht2c',sert:'sert',b1:'beta1',a1:'alpha1',a2:'alpha2',net:'net',m1:'m1',h1:'h1',mor:'mu',m3:'m3'};
 async function loadRX(){
   const list = await (await fetch('/api/receptors')).json();
+  const dates = {}; list.forEach(x => { dates[x.id] = { editedAt: x.edited_at, reviewedAt: x.reviewed_at }; });
   const details = await Promise.all(list.map(r => fetch('/api/receptors/'+r.id).then(x=>x.json())));
   RX = details.map(rxFromDetail);
+  RX.forEach(r => { const d = dates[r.id] || {}; r.editedAt = d.editedAt || null; r.reviewedAt = d.reviewedAt || null; });
   // Review state now lives in the DB — seed STATE from each detail's `review` object.
   STATE={};
   details.forEach(d=>{
@@ -442,6 +459,31 @@ async function refreshReceptor(r){
   }
 }
 
+/* ============ SYNC UI — dates, drift, deep links (Task 18) ============ */
+const DRIFT=new Set();
+async function loadDrift(){
+  try{ const d=await (await fetch('/api/review/drift')).json(); DRIFT.clear(); d.forEach(x=>DRIFT.add(x.receptor_id)); }catch(e){}
+}
+function fmtStamp(s){ if(!s) return '—'; const d=new Date(s); if(isNaN(d)) return '—';
+  return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+' · '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'}); }
+function deepLinks(r){
+  const canon=NAV_CANON[r.id];
+  const href={
+    Cabinet: canon?`neuroreceptor_pharmacology_explorer_dashboard.html?embed&subject=${canon}&station=cabinet`:null,
+    Ledger:  canon?`neuroreceptor_clinical_table.html?embed&subject=${canon}`:null,
+    Archive: `receptor-function.html?embed`,
+  };
+  return (r.vols||[]).map(v=>href[v]?`<a class="deeplink" href="${href[v]}" target="_blank" rel="noopener">Open in ${v} ↗</a>`:'').join('');
+}
+function renderDates(r,el){
+  el=el||document.querySelector('#spec-'+r.id+' [data-dates]'); if(!el) return;
+  el.innerHTML=`<div class="dl-row"><span>edited</span><b>${fmtStamp(r.editedAt)}</b></div>
+    <div class="dl-row"><span>reviewed</span><b>${fmtStamp(r.reviewedAt)}</b></div>
+    ${DRIFT.has(r.id)?'<div class="drift-flag">⚠ changed since last review</div>':''}`;
+}
+function markEdited(id){ const r=RX.find(x=>x.id===id); if(!r)return; r.editedAt=new Date().toISOString(); DRIFT.add(id); renderDates(r); }
+function markReviewed(id){ const r=RX.find(x=>x.id===id); if(!r)return; r.reviewedAt=new Date().toISOString(); DRIFT.delete(id); renderDates(r); }
+
 /* ============ STRUCTURED-DATA EDIT MODE (Task 17) ============ */
 async function patchStructured(id,body){
   try{const r=await fetch('/api/receptors/'+id+'/structured',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return r.ok;}catch(e){return false;}
@@ -449,7 +491,7 @@ async function patchStructured(id,body){
 const structTimers={};
 function patchStructuredDebounced(id,key,body,flashEl){
   clearTimeout(structTimers[key]);
-  structTimers[key]=setTimeout(async()=>{const ok=await patchStructured(id,body);if(ok&&flashEl){const f=flashEl.querySelector('.struct-saved');if(f){f.classList.add('show');clearTimeout(f._t);f._t=setTimeout(()=>f.classList.remove('show'),1200);}}},450);
+  structTimers[key]=setTimeout(async()=>{const ok=await patchStructured(id,body);if(ok){markEdited(id);if(flashEl){const f=flashEl.querySelector('.struct-saved');if(f){f.classList.add('show');clearTimeout(f._t);f._t=setTimeout(()=>f.classList.remove('show'),1200);}}}},450);
 }
 async function loadStructEditor(r,bodyEl){
   let data;
@@ -562,6 +604,11 @@ function specRow(r){
            <div class="quiz"><button type="button">Self-quiz ▸</button><div class="q">${r.quiz}</div></div>
            <textarea class="notes" placeholder="Correction, discrepancy, or learning note…"></textarea>
          </div>
+         <div class="panel">
+           <div class="pk">Sync &amp; cross-reference</div>
+           <div class="datesline" data-dates></div>
+           <div class="deeplinks">${deepLinks(r)}</div>
+         </div>
        </div>
      </div>
      <div class="struct" data-loaded="0">
@@ -572,7 +619,7 @@ function specRow(r){
   // header toggle
   el.querySelector(".spec-head").addEventListener("click",e=>{if(e.target.closest("a"))return;el.classList.toggle("open");});
   // subchecks → persist review
-  el.querySelectorAll(".check").forEach(c=>{c.addEventListener("click",()=>{const k=c.dataset.k;STATE[r.id][k]=!STATE[r.id][k];paintRow(r);refresh();persistReview(r.id);});});
+  el.querySelectorAll(".check").forEach(c=>{c.addEventListener("click",()=>{const k=c.dataset.k;STATE[r.id][k]=!STATE[r.id][k];paintRow(r);refresh();persistReview(r.id);markReviewed(r.id);});});
   // citation status → persist on the receptor_sources link (keeps current source)
   el.querySelectorAll(".cs").forEach(b=>{b.addEventListener("click",()=>{const v=b.dataset.v;STATE[r.id].cs=v;r.cs=v;paintRow(r);refresh();persistCitation(r.id,r.sourceId,v);});});
   // pick a source from the library → link it, then refresh the displayed citation
@@ -584,7 +631,7 @@ function specRow(r){
     if(ok)await refreshReceptor(r),refresh();
   });
   // confidence (mastery) → persist review
-  el.querySelectorAll(".cdot").forEach(d=>{d.addEventListener("click",()=>{const n=+d.dataset.n;STATE[r.id].conf=(STATE[r.id].conf===n?0:n);paintRow(r);refresh();persistReview(r.id);});});
+  el.querySelectorAll(".cdot").forEach(d=>{d.addEventListener("click",()=>{const n=+d.dataset.n;STATE[r.id].conf=(STATE[r.id].conf===n?0:n);paintRow(r);refresh();persistReview(r.id);markReviewed(r.id);});});
   // quiz
   const qz=el.querySelector(".quiz");qz.querySelector("button").addEventListener("click",()=>qz.classList.toggle("show"));
   // notes → debounced persist
@@ -621,6 +668,7 @@ function paintRow(r,el){
   el.querySelector(".conflabel").textContent=s.conf?`mastery ${s.conf}/5`:"unrated";
   el.querySelectorAll(".cs").forEach(b=>b.classList.toggle("on",b.dataset.v===s.cs));
   el.querySelector(".notes").value=s.note||"";
+  const de=el.querySelector("[data-dates]");if(de)renderDates(r,de);
   applyFilter(el,r);
 }
 /* ============ SUMMARY ============ */
@@ -659,12 +707,15 @@ function applyFilter(el,r){
   else if(FILTER==="done")show=st==="done";
   else if(FILTER==="flag")show=(s.cs==="conflicting"||s.cs==="needs-source");
   else if(FILTER==="lowconf")show=(s.conf>0&&s.conf<3);
+  else if(FILTER==="changed")show=DRIFT.has(r.id);
   el.classList.toggle("hidden",!show);
 }
 function runFilter(){RX.forEach(r=>applyFilter(document.getElementById("spec-"+r.id),r));
   // hide empty halls
   Object.keys(HALLS).forEach(hk=>{const h=document.querySelector(`.hall[data-hall="${hk}"]`);const any=[...h.querySelectorAll(".spec")].some(s=>!s.classList.contains("hidden"));h.classList.toggle("hidden",!any);});}
-document.getElementById("rail").addEventListener("click",e=>{const b=e.target.closest(".seg");if(!b)return;document.querySelectorAll(".rail .seg").forEach(x=>x.classList.remove("active"));b.classList.add("active");FILTER=b.dataset.filter;runFilter();});
+document.getElementById("rail").addEventListener("click",async e=>{const b=e.target.closest(".seg");if(!b)return;document.querySelectorAll(".rail .seg").forEach(x=>x.classList.remove("active"));b.classList.add("active");FILTER=b.dataset.filter;
+  if(FILTER==="changed"){await loadDrift();RX.forEach(r=>renderDates(r));}
+  runFilter();});
 document.getElementById("nextBtn").addEventListener("click",()=>{const r=RX.find(r=>specStatus(r.id)!=="done");if(!r){alert("Every specimen is cleared. Fine work.");return;}const el=document.getElementById("spec-"+r.id);el.classList.remove("hidden");el.classList.add("open");el.scrollIntoView({behavior:"smooth",block:"center"});});
 
 /* ============ TOOLBAR ============ */
@@ -754,7 +805,7 @@ addEventListener("scroll",()=>mast.classList.toggle("is-scrolled",scrollY>8));
 /* ============ PAGE-LOAD REVEAL ============ */
 async function init(){
   try{
-    await Promise.all([loadRX(), loadSources()]);   // RX + STATE (review) + SOURCES
+    await Promise.all([loadRX(), loadSources(), loadDrift()]);   // RX + STATE (review) + SOURCES + drift set
   }catch(e){
     hallsEl.innerHTML='<div class="hall"><div class="hall-head"><h2>Couldn’t reach the Atlas API</h2></div><p style="padding:0 18px 18px;line-height:1.5;">This page now reads its receptor data from the running server. Start the app with <b>start.bat</b> and open <a href="http://localhost:3000/the-conservators-desk.html">http://localhost:3000/the-conservators-desk.html</a>.</p></div>';
     return;
