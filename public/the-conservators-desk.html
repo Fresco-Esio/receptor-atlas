@@ -208,6 +208,23 @@ footer .mono{font-size:.62rem; letter-spacing:.1em;}
 .hidden{display:none !important;}
 @media(prefers-reduced-motion:reduce){*{animation:none !important; transition:none !important;}}
 input[type=file]{display:none;}
+
+/* ---------- Sources library ---------- */
+.src-head{display:flex; align-items:baseline; justify-content:space-between; gap:1rem; flex-wrap:wrap;}
+#sourcesSection .srcrow{display:flex; gap:1rem; align-items:flex-start; justify-content:space-between; padding:.7rem .85rem; background:var(--wall-panel); border:1px solid var(--brass-faint); border-radius:3px; margin-bottom:.5rem;}
+.srcrow-cite{font-size:.86rem; color:var(--bone-dim); line-height:1.5;}
+.srcrow-ids{display:flex; gap:.7rem; flex-wrap:wrap; margin-top:.3rem; align-items:center;}
+.srcrow-cited{font-family:"Fragment Mono",monospace; font-size:.56rem; letter-spacing:.08em; text-transform:uppercase; color:var(--bone-faint);}
+.srcform{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:.6rem; padding:.9rem 1rem; background:var(--wall-recess); border:1px solid var(--brass-line); border-radius:3px; margin-bottom:.6rem;}
+.srcfield{display:flex; flex-direction:column; gap:.25rem;}
+.srcfield.wide{grid-column:1 / -1;}
+.srcfield span{font-family:"Fragment Mono",monospace; font-size:.56rem; letter-spacing:.12em; text-transform:uppercase; color:var(--bone-faint);}
+.srcfield input{background:var(--wall-atrium); border:1px solid var(--brass-line); border-radius:2px; color:var(--bone); font-family:"Schibsted Grotesk",sans-serif; font-size:.84rem; padding:.45rem .55rem;}
+.srcfield input:focus{outline:1px solid var(--brass); outline-offset:1px; border-color:var(--brass);}
+.srcform-actions{grid-column:1 / -1; display:flex; gap:.5rem;}
+.src-pick{display:flex; align-items:center; gap:.5rem; margin-top:.6rem;}
+.srcselect{flex:1; min-width:0; background:var(--wall-recess); border:1px solid var(--brass-line); border-radius:2px; color:var(--bone); font-family:"Fragment Mono",monospace; font-size:.62rem; letter-spacing:.04em; padding:.42rem .5rem;}
+.srcselect:focus{outline:1px solid var(--brass); border-color:var(--brass);}
 </style>
 </head>
 <body>
@@ -286,6 +303,21 @@ input[type=file]{display:none;}
     </div>
   </section>
 
+  <!-- SOURCES LIBRARY -->
+  <section id="sourcesSection">
+    <div class="src-head">
+      <span class="eyebrow">Sources library &mdash; edit a paper once, every citing specimen updates</span>
+      <button class="ctrl" id="srcToggle">Show library &#9662;</button>
+    </div>
+    <div id="srcLibrary" class="hidden" style="margin-top:1rem;">
+      <div id="srcList"></div>
+      <div style="margin-top:1rem;">
+        <span class="eyebrow">Add a source</span>
+        <div id="srcAddForm" style="margin-top:.6rem;"></div>
+      </div>
+    </div>
+  </section>
+
   <!-- FILTER RAIL -->
   <div class="rail" id="rail">
     <span class="lab">Show</span>
@@ -336,31 +368,62 @@ function pm(id){return "https://pubmed.ncbi.nlm.nih.gov/"+id+"/";}
 function doiU(d){return "https://doi.org/"+d;}
 function pmSearch(q){return "https://pubmed.ncbi.nlm.nih.gov/?term="+encodeURIComponent(q);}
 
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
+
 /* ============ RECEPTOR DATA ============ */
-let RX=[];
-async function loadRX(){
-  const list = await (await fetch('/api/receptors')).json();
-  const details = await Promise.all(list.map(r => fetch('/api/receptors/'+r.id).then(x=>x.json())));
+let RX=[], SOURCES=[];
+function rxFromDetail(d){
   const VOL = {archive:'Archive', cabinet:'Cabinet', ledger:'Ledger'};
-  RX = details.map(d => ({
+  return {
     id:d.id, nm:d.label, hall:d.hall,
     vols:(d.volumes||[]).map(v=>VOL[v]||v),
     stahl:(d.stahl||[]).map(c=>[c]),
     note:d.note, claim:d.claim,
     ref:d.source ? {a:d.source.authors,y:d.source.year,t:d.source.title,pmid:d.source.pmid,doi:d.source.doi} : null,
+    sourceId:d.source ? d.source.id : null,
     cs:d.status, note2:d.note2, search:d.search, quiz:d.quiz,
-  }));
+  };
+}
+async function loadSources(){ SOURCES = await (await fetch('/api/sources')).json(); }
+async function loadRX(){
+  const list = await (await fetch('/api/receptors')).json();
+  const details = await Promise.all(list.map(r => fetch('/api/receptors/'+r.id).then(x=>x.json())));
+  RX = details.map(rxFromDetail);
+  // Review state now lives in the DB — seed STATE from each detail's `review` object.
+  STATE={};
+  details.forEach(d=>{
+    const rv=d.review||{};
+    STATE[d.id]={
+      mechanism:!!rv.mechanism, affinity:!!rv.affinity, clinical:!!rv.clinical, citation:!!rv.citation,
+      conf:rv.mastery||0, note:rv.note||"", cs:d.status,
+    };
+  });
 }
 const CHECK_KEYS=["mechanism","affinity","clinical","citation"];
 const CHECK_LABEL={mechanism:"Mechanism",affinity:"Affinity / pKi",clinical:"Clinical claim",citation:"Citation"};
 
-/* ============ STATE ============ */
-const LS_KEY="conservators-desk-v1";
+/* ============ STATE PERSISTENCE (DB-backed) ============ */
 let STATE={};
-// TODO (Task 11): persist review via PATCH /api/receptors/:id/review
-function blank(){const o={};RX.forEach(r=>{o[r.id]={mechanism:false,affinity:false,clinical:false,citation:false,conf:0,note:"",cs:r.cs};});return o;}
-function load(){try{const s=JSON.parse(localStorage.getItem(LS_KEY));if(!s)return blank();const b=blank();for(const id in b){if(s[id])Object.assign(b[id],s[id]);}return b;}catch(e){return blank();}}
-function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(STATE));}catch(e){}}
+function reviewBody(id){const s=STATE[id];return {mechanism:s.mechanism?1:0,affinity:s.affinity?1:0,clinical:s.clinical?1:0,citation:s.citation?1:0,mastery:s.conf,note:s.note};}
+async function persistReview(id){try{await fetch('/api/receptors/'+id+'/review',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(reviewBody(id))});}catch(e){}}
+const noteTimers={};
+function persistReviewDebounced(id){clearTimeout(noteTimers[id]);noteTimers[id]=setTimeout(()=>persistReview(id),400);}
+async function persistCitation(id,sourceId,status){
+  try{const res=await fetch('/api/receptors/'+id+'/citation',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({source_id:sourceId,status})});return res.ok;}catch(e){return false;}
+}
+// Re-fetch one receptor's detail and repaint its source panel (used after a
+// citation link OR a shared-source edit, so the corrected paper shows at once).
+async function refreshReceptor(r){
+  const d=await (await fetch('/api/receptors/'+r.id)).json();
+  const fresh=rxFromDetail(d);
+  r.ref=fresh.ref; r.sourceId=fresh.sourceId; r.cs=fresh.cs; STATE[r.id].cs=fresh.cs;
+  const el=document.getElementById('spec-'+r.id);
+  if(el){
+    const disp=el.querySelector('.src-display'); if(disp) disp.innerHTML=refBlock(r);
+    const sel=el.querySelector('.srcselect'); if(sel) sel.value=r.sourceId==null?'':String(r.sourceId);
+    paintRow(r,el);
+  }
+}
 
 /* ============ RENDER ============ */
 const hallsEl=document.getElementById("halls");
@@ -389,6 +452,11 @@ function refBlock(r){
   return `<div class="srcline" style="color:var(--bone-faint)">No peer-reviewed source assigned yet.</div>
     <div><a class="srclink" href="${pmSearch(r.search)}" target="_blank" rel="noopener">Search PubMed ↗</a></div>`;
 }
+function srcLabel(s){const t=(s.title||s.pmid||'untitled');return `${s.authors||'—'} (${s.year||'n.d.'}) — ${t.length>56?t.slice(0,56)+'…':t}`;}
+function sourceOptions(selId){
+  return `<option value="">— none (needs-source) —</option>`
+    + SOURCES.map(s=>`<option value="${s.id}"${s.id===selId?' selected':''}>${esc(srcLabel(s))}</option>`).join("");
+}
 function specRow(r){
   const el=document.createElement("div");el.className="spec";el.dataset.id=r.id;el.id="spec-"+r.id;
   el.innerHTML=`
@@ -408,7 +476,9 @@ function specRow(r){
        </div>
        <div class="side">
          <div class="panel"><div class="pk">Stahl 5e &mdash; where to read</div>${stahlBlock(r)}</div>
-         <div class="panel"><div class="pk">Peer-reviewed source</div>${refBlock(r)}
+         <div class="panel"><div class="pk">Peer-reviewed source</div>
+            <div class="src-display">${refBlock(r)}</div>
+            <div class="src-pick"><span class="conflabel">Cite from library</span><select class="srcselect">${sourceOptions(r.sourceId)}</select></div>
             <div class="citestat">${["verified","provided","conflicting","needs-source"].map(v=>`<button class="cs" data-v="${v}">${v}</button>`).join("")}</div>
          </div>
          <div class="panel">
@@ -422,16 +492,24 @@ function specRow(r){
    </div>`;
   // header toggle
   el.querySelector(".spec-head").addEventListener("click",e=>{if(e.target.closest("a"))return;el.classList.toggle("open");});
-  // subchecks
-  el.querySelectorAll(".check").forEach(c=>{c.addEventListener("click",()=>{const k=c.dataset.k;STATE[r.id][k]=!STATE[r.id][k];save();paintRow(r);refresh();});});
-  // citation status
-  el.querySelectorAll(".cs").forEach(b=>{b.addEventListener("click",()=>{STATE[r.id].cs=b.dataset.v;save();paintRow(r);refresh();});});
-  // confidence
-  el.querySelectorAll(".cdot").forEach(d=>{d.addEventListener("click",()=>{const n=+d.dataset.n;STATE[r.id].conf=(STATE[r.id].conf===n?0:n);save();paintRow(r);refresh();});});
+  // subchecks → persist review
+  el.querySelectorAll(".check").forEach(c=>{c.addEventListener("click",()=>{const k=c.dataset.k;STATE[r.id][k]=!STATE[r.id][k];paintRow(r);refresh();persistReview(r.id);});});
+  // citation status → persist on the receptor_sources link (keeps current source)
+  el.querySelectorAll(".cs").forEach(b=>{b.addEventListener("click",()=>{const v=b.dataset.v;STATE[r.id].cs=v;r.cs=v;paintRow(r);refresh();persistCitation(r.id,r.sourceId,v);});});
+  // pick a source from the library → link it, then refresh the displayed citation
+  const sel=el.querySelector(".srcselect");
+  if(sel)sel.addEventListener("change",async()=>{
+    const v=sel.value===''?null:Number(sel.value);
+    const status=v==null?'needs-source':(STATE[r.id].cs==='needs-source'?'provided':STATE[r.id].cs);
+    const ok=await persistCitation(r.id,v,status);
+    if(ok)await refreshReceptor(r),refresh();
+  });
+  // confidence (mastery) → persist review
+  el.querySelectorAll(".cdot").forEach(d=>{d.addEventListener("click",()=>{const n=+d.dataset.n;STATE[r.id].conf=(STATE[r.id].conf===n?0:n);paintRow(r);refresh();persistReview(r.id);});});
   // quiz
   const qz=el.querySelector(".quiz");qz.querySelector("button").addEventListener("click",()=>qz.classList.toggle("show"));
-  // notes
-  const ta=el.querySelector(".notes");ta.addEventListener("input",()=>{STATE[r.id].note=ta.value;save();});
+  // notes → debounced persist
+  const ta=el.querySelector(".notes");ta.addEventListener("input",()=>{STATE[r.id].note=ta.value;persistReviewDebounced(r.id);});
   paintRow(r,el);
   return el;
 }
@@ -504,13 +582,82 @@ document.getElementById("nextBtn").addEventListener("click",()=>{const r=RX.find
 /* ============ TOOLBAR ============ */
 document.getElementById("expandAll").addEventListener("click",()=>document.querySelectorAll(".spec").forEach(s=>s.classList.add("open")));
 document.getElementById("collapseAll").addEventListener("click",()=>document.querySelectorAll(".spec").forEach(s=>s.classList.remove("open")));
-document.getElementById("resetBtn").addEventListener("click",()=>{if(confirm("Reset all checks, ratings, notes, and citation flags to their seed state? This cannot be undone unless you exported a copy.")){STATE=blank();save();build();}});
+document.getElementById("resetBtn").addEventListener("click",async()=>{
+  if(!confirm("Reset every specimen's checks, mastery ratings, and notes to blank? Citation links are kept. This writes to the database and cannot be undone unless you exported a copy."))return;
+  RX.forEach(r=>{const s=STATE[r.id];s.mechanism=s.affinity=s.clinical=s.citation=false;s.conf=0;s.note="";});
+  await Promise.all(RX.map(r=>persistReview(r.id)));
+  build();
+});
 document.getElementById("exportBtn").addEventListener("click",()=>{
   const blob=new Blob([JSON.stringify({app:"conservators-desk",date:new Date().toISOString(),state:STATE},null,2)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="atlas-review-progress-"+new Date().toISOString().slice(0,10)+".json";a.click();
 });
 document.getElementById("importBtn").addEventListener("click",()=>document.getElementById("importFile").click());
-document.getElementById("importFile").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const j=JSON.parse(rd.result);const src=j.state||j;const b=blank();for(const id in b){if(src[id])Object.assign(b[id],src[id]);}STATE=b;save();build();alert("Progress imported.");}catch(err){alert("Could not read that file.");}};rd.readAsText(f);});
+document.getElementById("importFile").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=async()=>{try{const j=JSON.parse(rd.result);const src=j.state||j;
+  RX.forEach(r=>{const s=src[r.id];if(!s)return;const t=STATE[r.id];
+    if('mechanism'in s)t.mechanism=!!s.mechanism; if('affinity'in s)t.affinity=!!s.affinity;
+    if('clinical'in s)t.clinical=!!s.clinical; if('citation'in s)t.citation=!!s.citation;
+    if('conf'in s)t.conf=s.conf||0; if('note'in s)t.note=s.note||"";});
+  await Promise.all(RX.map(r=>persistReview(r.id)));build();alert("Progress imported.");
+}catch(err){alert("Could not read that file.");}};rd.readAsText(f);});
+
+/* ============ SOURCES LIBRARY ============ */
+const SRC_FIELDS=[['authors','Authors'],['year','Year'],['title','Title','wide'],['journal','Journal'],['pmid','PMID'],['doi','DOI'],['url','URL','wide'],['notes','Notes','wide']];
+function citedCount(id){return RX.filter(r=>r.sourceId===id).length;}
+function sourceCard(s){
+  return `<div class="srcrow" data-sid="${s.id}">
+    <div class="srcrow-main">
+      <div class="srcrow-cite">${esc(s.authors)||'—'} (${s.year||'n.d.'}). <i>${esc(s.title)||'untitled'}</i>${s.journal?' · '+esc(s.journal):''}</div>
+      <div class="srcrow-ids">
+        ${s.pmid?`<a class="srclink" href="${pm(s.pmid)}" target="_blank" rel="noopener">PMID ${esc(s.pmid)} ↗</a>`:''}
+        ${s.doi?`<a class="srclink" href="${doiU(s.doi)}" target="_blank" rel="noopener">DOI ↗</a>`:''}
+        <span class="srcrow-cited">#${s.id} · cited by ${citedCount(s.id)}</span>
+      </div>
+    </div>
+    <button class="ctrl srcedit" data-sid="${s.id}">Edit</button>
+  </div>`;
+}
+function sourceForm(s){
+  return `<div class="srcform" data-sid="${s?s.id:''}">
+    ${SRC_FIELDS.map(([k,lab,wide])=>`<label class="srcfield${wide?' wide':''}"><span>${lab}</span><input data-k="${k}" value="${s?esc(s[k]):''}" /></label>`).join('')}
+    <div class="srcform-actions">
+      <button class="ctrl accent" data-act="save">${s?'Save changes':'Add source'}</button>
+      ${s?'<button class="ctrl" data-act="cancel">Cancel</button>':''}
+    </div>
+  </div>`;
+}
+function readForm(formEl){const o={};formEl.querySelectorAll('input[data-k]').forEach(i=>{const v=i.value.trim();o[i.dataset.k]=v===''?null:(i.dataset.k==='year'?(isNaN(Number(v))?v:Number(v)):v);});return o;}
+function renderLibrary(){
+  document.getElementById('srcList').innerHTML=SOURCES.length?SOURCES.map(sourceCard).join(''):'<p class="srcline" style="color:var(--bone-faint)">No sources yet.</p>';
+  document.getElementById('srcAddForm').innerHTML=sourceForm(null);
+}
+function refreshAllSelects(){
+  document.querySelectorAll('.spec').forEach(el=>{const r=RX.find(x=>x.id===el.dataset.id);const sel=el.querySelector('.srcselect');if(r&&sel)sel.innerHTML=sourceOptions(r.sourceId);});
+}
+// After a paper is added/edited: reload the library, re-render every specimen
+// that cites the edited paper (so a one-time PMID fix shows everywhere at once).
+async function afterSourceChange(editedId){
+  await loadSources();
+  if(editedId!=null)for(const r of RX.filter(x=>x.sourceId===editedId))await refreshReceptor(r);
+  renderLibrary();refreshAllSelects();refresh();
+}
+function setupLibrary(){
+  renderLibrary();
+  const lib=document.getElementById('srcLibrary'),toggle=document.getElementById('srcToggle');
+  toggle.addEventListener('click',()=>{const hidden=lib.classList.toggle('hidden');toggle.innerHTML=hidden?'Show library &#9662;':'Hide library &#9652;';});
+  lib.addEventListener('click',async e=>{
+    const editBtn=e.target.closest('.srcedit');
+    if(editBtn){const sid=Number(editBtn.dataset.sid);const s=SOURCES.find(x=>x.id===sid);const row=lib.querySelector(`.srcrow[data-sid="${sid}"]`);if(row&&s)row.outerHTML=sourceForm(s);return;}
+    const saveBtn=e.target.closest('[data-act="save"]');
+    if(saveBtn){const form=saveBtn.closest('.srcform');const sid=form.dataset.sid;const body=readForm(form);
+      try{
+        if(sid){await fetch('/api/sources/'+sid,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});await afterSourceChange(Number(sid));}
+        else{await fetch('/api/sources',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});await afterSourceChange(null);}
+      }catch(err){alert('Could not save the source.');}
+      return;}
+    if(e.target.closest('[data-act="cancel"]')){renderLibrary();return;}
+  });
+}
 
 /* ============ MAST SHADOW ============ */
 const mast=document.getElementById("mast");
@@ -519,13 +666,13 @@ addEventListener("scroll",()=>mast.classList.toggle("is-scrolled",scrollY>8));
 /* ============ PAGE-LOAD REVEAL ============ */
 async function init(){
   try{
-    await loadRX();
+    await Promise.all([loadRX(), loadSources()]);   // RX + STATE (review) + SOURCES
   }catch(e){
     hallsEl.innerHTML='<div class="hall"><div class="hall-head"><h2>Couldn’t reach the Atlas API</h2></div><p style="padding:0 18px 18px;line-height:1.5;">This page now reads its receptor data from the running server. Start the app with <b>start.bat</b> and open <a href="http://localhost:3000/the-conservators-desk.html">http://localhost:3000/the-conservators-desk.html</a>.</p></div>';
     return;
   }
-  STATE=load();           // load() depends on RX (via blank()), so call it after RX is populated
-  build();
+  build();                // STATE was populated inside loadRX(); SOURCES feed the pick lists
+  setupLibrary();
   document.getElementById("rcount").textContent=RX.length;
   if(window.matchMedia && !matchMedia("(prefers-reduced-motion: reduce)").matches){
     const rows=[...document.querySelectorAll(".spec")];
