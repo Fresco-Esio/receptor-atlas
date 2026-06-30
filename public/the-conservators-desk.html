@@ -225,6 +225,23 @@ input[type=file]{display:none;}
 .src-pick{display:flex; align-items:center; gap:.5rem; margin-top:.6rem;}
 .srcselect{flex:1; min-width:0; background:var(--wall-recess); border:1px solid var(--brass-line); border-radius:2px; color:var(--bone); font-family:"Fragment Mono",monospace; font-size:.62rem; letter-spacing:.04em; padding:.42rem .5rem;}
 .srcselect:focus{outline:1px solid var(--brass); border-color:var(--brass);}
+
+/* ---------- Structured-data edit mode ---------- */
+.struct{margin-top:1.2rem; border-top:1px solid var(--brass-faint); padding-top:1rem; position:relative;}
+.struct-toggle{font-family:"Fragment Mono",monospace; font-size:.62rem; letter-spacing:.1em; text-transform:uppercase; color:var(--bone-faint); background:transparent; border:1px dashed var(--brass-line); border-radius:2px; padding:.45rem .7rem; cursor:pointer;}
+.struct-toggle:hover{color:var(--bone-dim); border-color:var(--brass);}
+.struct-body{margin-top:1rem; display:flex; flex-direction:column; gap:1.1rem;}
+.struct-sec .pk{font-family:"Fragment Mono",monospace; font-size:.58rem; letter-spacing:.14em; text-transform:uppercase; color:var(--vermilion); margin-bottom:.5rem;}
+.struct-field{display:flex; flex-direction:column; gap:.25rem; margin-bottom:.6rem;}
+.struct-field > span{font-family:"Fragment Mono",monospace; font-size:.55rem; letter-spacing:.1em; text-transform:uppercase; color:var(--bone-faint);}
+.struct-field textarea, .struct-field input{width:100%; background:var(--wall-recess); border:1px solid var(--brass-line); border-radius:2px; color:var(--bone); font-family:"Schibsted Grotesk",sans-serif; font-size:.84rem; padding:.5rem .6rem; line-height:1.5; resize:vertical;}
+.struct-field textarea:focus, .struct-field input:focus{outline:1px solid var(--brass); border-color:var(--brass);}
+.bind-table{display:grid; grid-template-columns:minmax(0,1fr) 5.5rem minmax(0,1fr); gap:.4rem .7rem; align-items:center;}
+.bind-table .bh{font-family:"Fragment Mono",monospace; font-size:.54rem; letter-spacing:.1em; text-transform:uppercase; color:var(--bone-faint); border-bottom:1px solid var(--brass-faint); padding-bottom:.3rem;}
+.bind-agent{font-size:.8rem; color:var(--bone-dim);}
+.bind-table input{width:100%; background:var(--wall-recess); border:1px solid var(--brass-line); border-radius:2px; color:var(--bone); font-family:"Fragment Mono",monospace; font-size:.72rem; padding:.3rem .4rem;}
+.struct-saved{position:absolute; top:1rem; right:0; font-family:"Fragment Mono",monospace; font-size:.55rem; letter-spacing:.1em; text-transform:uppercase; color:var(--good); opacity:0; transition:opacity .3s var(--ease);}
+.struct-saved.show{opacity:1;}
 </style>
 </head>
 <body>
@@ -425,6 +442,64 @@ async function refreshReceptor(r){
   }
 }
 
+/* ============ STRUCTURED-DATA EDIT MODE (Task 17) ============ */
+async function patchStructured(id,body){
+  try{const r=await fetch('/api/receptors/'+id+'/structured',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return r.ok;}catch(e){return false;}
+}
+const structTimers={};
+function patchStructuredDebounced(id,key,body,flashEl){
+  clearTimeout(structTimers[key]);
+  structTimers[key]=setTimeout(async()=>{const ok=await patchStructured(id,body);if(ok&&flashEl){const f=flashEl.querySelector('.struct-saved');if(f){f.classList.add('show');clearTimeout(f._t);f._t=setTimeout(()=>f.classList.remove('show'),1200);}}},450);
+}
+async function loadStructEditor(r,bodyEl){
+  let data;
+  try{ data=await (await fetch('/api/receptors/'+r.id+'/structured')).json(); }
+  catch(e){ bodyEl.innerHTML='<div class="srcline" style="color:var(--bone-faint)">Couldn’t load structured data.</div>'; return; }
+  bodyEl.innerHTML=structEditorHtml(data);
+  wireStructEditor(r,bodyEl);
+}
+function structEditorHtml(data){
+  let html='<div class="struct-saved">saved ✓</div>';
+  html+=`<div class="struct-sec"><div class="pk">Claim under review (Archive)</div>
+    <div class="struct-field"><span>claim</span><textarea data-sk="claim" rows="2">${esc(data.claim||'')}</textarea></div></div>`;
+  if(data.clinical){
+    const c=data.clinical;
+    html+=`<div class="struct-sec"><div class="pk">Clinical row (Ledger)</div>
+      <div class="struct-field"><span>baseline role</span><textarea data-ck="baseline" rows="2">${esc(c.baseline||'')}</textarea></div>
+      <div class="struct-field"><span>mechanism</span><textarea data-ck="mech" rows="3">${esc(c.mech||'')}</textarea></div>
+      <div class="struct-field"><span>overstimulated (one per line)</span><textarea data-ck="over" rows="3">${esc((c.over||[]).join('\n'))}</textarea></div>
+      <div class="struct-field"><span>understimulated (one per line)</span><textarea data-ck="under" rows="3">${esc((c.under||[]).join('\n'))}</textarea></div></div>`;
+  }
+  if(data.binding&&data.binding.length){
+    html+=`<div class="struct-sec"><div class="pk">Binding affinities (Cabinet)</div><div class="bind-table">
+      <div class="bh">Agent</div><div class="bh">Ki (nM)</div><div class="bh">Note</div>`;
+    data.binding.forEach(b=>{
+      html+=`<div class="bind-agent">${esc(b.agent_name)} <span class="mono" style="color:var(--bone-faint)">${esc(b.act||'')}</span></div>
+        <input data-bk="ki" data-bid="${b.id}" value="${b.ki==null?'':b.ki}" />
+        <input data-bk="note" data-bid="${b.id}" value="${esc(b.note||'')}" />`;
+    });
+    html+='</div></div>';
+  }
+  return html;
+}
+function wireStructEditor(r,bodyEl){
+  const claimTa=bodyEl.querySelector('[data-sk="claim"]');
+  if(claimTa)claimTa.addEventListener('input',()=>{
+    patchStructuredDebounced(r.id,r.id+':claim',{volume:'archive',claim:claimTa.value},bodyEl);
+    const cp=document.querySelector('#spec-'+r.id+' .claim p'); if(cp) cp.textContent=claimTa.value; r.claim=claimTa.value;
+  });
+  bodyEl.querySelectorAll('[data-ck]').forEach(f=>f.addEventListener('input',()=>{
+    const k=f.dataset.ck;
+    const val=(k==='over'||k==='under')?f.value.split('\n').map(s=>s.trim()).filter(Boolean):f.value;
+    patchStructuredDebounced(r.id,r.id+':c:'+k,{volume:'ledger',clinical:{[k]:val}},bodyEl);
+  }));
+  bodyEl.querySelectorAll('[data-bk]').forEach(inp=>inp.addEventListener('input',()=>{
+    const id=Number(inp.dataset.bid),k=inp.dataset.bk;
+    const val=(k==='ki')?(inp.value.trim()===''?null:Number(inp.value)):inp.value;
+    patchStructuredDebounced(r.id,r.id+':b'+id+':'+k,{volume:'cabinet',binding:{id,[k]:val}},bodyEl);
+  }));
+}
+
 /* ============ RENDER ============ */
 const hallsEl=document.getElementById("halls");
 function specStatus(id){const s=STATE[id];const n=CHECK_KEYS.filter(k=>s[k]).length;return n===4?"done":n>0?"review":"todo";}
@@ -489,6 +564,10 @@ function specRow(r){
          </div>
        </div>
      </div>
+     <div class="struct" data-loaded="0">
+       <button type="button" class="struct-toggle">Edit structured data &#9662;</button>
+       <div class="struct-body hidden"></div>
+     </div>
    </div>`;
   // header toggle
   el.querySelector(".spec-head").addEventListener("click",e=>{if(e.target.closest("a"))return;el.classList.toggle("open");});
@@ -510,6 +589,15 @@ function specRow(r){
   const qz=el.querySelector(".quiz");qz.querySelector("button").addEventListener("click",()=>qz.classList.toggle("show"));
   // notes → debounced persist
   const ta=el.querySelector(".notes");ta.addEventListener("input",()=>{STATE[r.id].note=ta.value;persistReviewDebounced(r.id);});
+  // structured-data edit mode (lazy-loaded on first open)
+  const struct=el.querySelector(".struct");
+  const structToggle=struct.querySelector(".struct-toggle");
+  structToggle.addEventListener("click",async()=>{
+    const sbody=struct.querySelector(".struct-body");
+    if(struct.dataset.loaded==="0"){struct.dataset.loaded="1";await loadStructEditor(r,sbody);}
+    const hidden=sbody.classList.toggle("hidden");
+    structToggle.innerHTML=hidden?'Edit structured data &#9662;':'Edit structured data &#9652;';
+  });
   paintRow(r,el);
   return el;
 }

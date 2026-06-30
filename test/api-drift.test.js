@@ -42,3 +42,21 @@ test('GET /api/review/drift exposes the drift list and reflects a fresh edit', a
   drift = await (await fetch(`${base}/api/review/drift`)).json();
   assert.ok(drift.some(d => d.receptor_id === 'gabaa' && d.volume === 'cabinet'));
 });
+
+test('a review touch stamps last_reviewed_at and clears the receptor\'s drift (Task 17)', async () => {
+  // d2 belongs to cabinet+ledger+archive; edit one section to create drift
+  await fetch(`${base}/api/receptors/d2/structured`, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ volume: 'cabinet', claim: 'touched d2' }),
+  });
+  let drift = await (await fetch(`${base}/api/review/drift`)).json();
+  assert.ok(drift.some(d => d.receptor_id === 'd2'), 'edit should create drift');
+
+  // reviewing d2 stamps last_reviewed_at on all its sections → drift clears
+  await fetch(`${base}/api/receptors/d2/review`, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mechanism: 1 }),
+  });
+  drift = await (await fetch(`${base}/api/review/drift`)).json();
+  assert.ok(!drift.some(d => d.receptor_id === 'd2'), 'review should clear d2 drift');
+});
