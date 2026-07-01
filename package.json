@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "migrate": "node scripts/migrate.js",
+    "snapshot": "node scripts/publish.js",
+    "preview": "node scripts/serve-dist.js",
     "test": "node --test"
   },
   "dependencies": {

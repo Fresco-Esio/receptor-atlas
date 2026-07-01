@@ -7,6 +7,13 @@
       "runtimeArgs": ["server.js"],
       "port": 3100,
       "env": { "PORT": "3100" }
+    },
+    {
+      "name": "atlas-dist",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/serve-dist.js"],
+      "port": 4180,
+      "env": { "PORT": "4180" }
     }
   ]
 }

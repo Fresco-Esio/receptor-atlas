@@ -25,7 +25,7 @@ export function createServer(dbPath, { seed = false } = {}) {
   if (seed) migrate(db);
   const routes = apiRoutes(db);
 
-  return http.createServer(async (req, res) => {
+  const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://x');
     for (const r of routes) {
       const m = url.pathname.match(r.pattern);
@@ -66,6 +66,12 @@ export function createServer(dbPath, { seed = false } = {}) {
       notFound(res);
     }
   });
+
+  // Release the DB handle when the server closes so it doesn't hold the file open
+  // (harmless for an in-memory DB; on Windows a file-backed DB would otherwise stay
+  // locked after close). Fires before the close callback registered by the caller.
+  server.on('close', () => db.close());
+  return server;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

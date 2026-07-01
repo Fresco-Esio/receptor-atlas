@@ -3,5 +3,8 @@ db/atlas.db
 db/atlas.db-*
 *.log
 
+# Generated static snapshot (npm run snapshot)
+dist/
+
 # Claude Code machine-local settings (per-machine permission allowlist)
 .claude/settings.local.json
