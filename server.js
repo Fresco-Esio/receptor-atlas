@@ -5,6 +5,7 @@ import { dirname, join, normalize, extname, sep } from 'node:path';
 import { openDb } from './db/index.js';
 import { migrate } from './scripts/migrate.js';
 import { apiRoutes } from './lib/router.js';
+import { publish } from './scripts/publish.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PUBLIC = join(HERE, 'public');
@@ -20,10 +21,30 @@ function notFound(res) {
   res.end(JSON.stringify({ error: 'not found' }));
 }
 
-export function createServer(dbPath, { seed = false } = {}) {
+// How long to wait after the last write before re-publishing, so a burst of
+// quick edits (e.g. several fields saved in succession) collapses into one
+// snapshot instead of one per request.
+const AUTO_PUBLISH_DEBOUNCE_MS = 400;
+
+export function createServer(dbPath, { seed = false, autoPublish = false, publishDir } = {}) {
   const db = openDb(dbPath);
   if (seed) migrate(db);
   const routes = apiRoutes(db);
+  const distDir = publishDir || join(HERE, 'dist');
+
+  // Auto-publish: a Desk save (any non-GET route) schedules a snapshot refresh a
+  // moment later, so dist/ always reflects the database without a manual step.
+  // Failures are logged, never thrown — a bad publish must not break editing.
+  let publishTimer = null;
+  function schedulePublish() {
+    if (!autoPublish) return;
+    clearTimeout(publishTimer);
+    publishTimer = setTimeout(() => {
+      publish(db, distDir)
+        .then(() => console.log(`auto-publish: dist/ refreshed (${new Date().toISOString()})`))
+        .catch(e => console.error('auto-publish failed:', e));
+    }, AUTO_PUBLISH_DEBOUNCE_MS);
+  }
 
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://x');
@@ -33,7 +54,9 @@ export function createServer(dbPath, { seed = false } = {}) {
         // A handler that throws (e.g. a DB error) must become a 500, not a
         // silent hang — Node won't auto-respond to a rejected request promise.
         try {
-          return await r.handler(req, res, m, url);
+          await r.handler(req, res, m, url);
+          if (r.method !== 'GET') schedulePublish();
+          return;
         } catch (e) {
           console.error('handler error:', e);
           if (!res.headersSent) {
@@ -70,7 +93,7 @@ export function createServer(dbPath, { seed = false } = {}) {
   // Release the DB handle when the server closes so it doesn't hold the file open
   // (harmless for an in-memory DB; on Windows a file-backed DB would otherwise stay
   // locked after close). Fires before the close callback registered by the caller.
-  server.on('close', () => db.close());
+  server.on('close', () => { clearTimeout(publishTimer); db.close(); });
   return server;
 }
 
@@ -79,5 +102,12 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   // Bind to loopback by default so a personal, no-auth tool isn't exposed to the
   // local network. Set HOST=0.0.0.0 explicitly to opt into LAN access.
   const HOST = process.env.HOST || '127.0.0.1';
-  createServer().listen(PORT, HOST, () => console.log(`Atlas app: http://localhost:${PORT}`));
+  // Auto-publish is on by default for the real app — every Desk save keeps dist/
+  // current with no manual `npm run snapshot` step. Set NO_AUTO_PUBLISH=1 to
+  // disable (e.g. if you only ever publish manually).
+  const autoPublish = process.env.NO_AUTO_PUBLISH !== '1';
+  createServer(undefined, { autoPublish }).listen(PORT, HOST, () => {
+    console.log(`Atlas app: http://localhost:${PORT}`);
+    if (autoPublish) console.log('auto-publish: on (dist/ refreshes after each save; set NO_AUTO_PUBLISH=1 to disable)');
+  });
 }
