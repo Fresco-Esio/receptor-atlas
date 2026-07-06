@@ -31,6 +31,7 @@
     --letter-stagger: 55ms;
     --rail-x: clamp(0.9rem, 2.5vw, 2.2rem);
     --lintel-h: 3.3rem;
+    --mast-h: 5.5rem;
 
     --display: "Marcellus", serif;
     --body: "Schibsted Grotesk", sans-serif;
@@ -189,6 +190,10 @@
   .vseg:hover { color: var(--bone); background: oklch(93% 0.012 85 / 0.05); }
   .vseg.active { color: var(--bone); background: oklch(70% 0.055 80 / 0.1); }
   .vseg.active .rn { color: var(--vermilion); }
+  /* while following an entry, the volumes that don't hold it read as dimmed —
+     still clickable (they open that volume), just marked as "the entry isn't here" */
+  .vseg.no-entry { opacity: 0.4; }
+  .vseg.no-entry:hover { opacity: 0.72; }
   @media (max-width: 680px) { .vseg .vn { display: none; } .vseg { padding: 0.42rem 0.55rem; } }
 
   .lintel-btn {
@@ -386,11 +391,44 @@
   .tl-stage { font-family: var(--mono); font-size: var(--lbl-sm); letter-spacing: 0.18em;
     text-transform: uppercase; color: var(--bone-faint); }
   .tl-ask { font-family: var(--display); font-size: clamp(0.95rem, 1.7vw, 1.2rem);
-    color: var(--bone); text-transform: uppercase; letter-spacing: 0.03em; margin-top: 0.3rem; }
+    color: var(--bone); text-transform: uppercase; letter-spacing: 0.03em; margin-top: 0.3rem;
+    transition: color 0.3s var(--ease); }
+  /* the three nodes are doors: each one is the explanation AND the entrance */
+  button.tl-node { background: none; border: 0; font: inherit; cursor: pointer;
+    padding: 0.4rem 0.2rem; border-radius: 3px; }
+  button.tl-node:hover .tl-ask, button.tl-node:focus-visible .tl-ask { color: var(--vermilion); }
+  button.tl-node:hover .tl-dot { border-color: var(--vermilion); }
+  .tl-enter { display: block; margin-top: 0.5rem; font-family: var(--mono);
+    font-size: var(--lbl-sm); letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--bone-faint); opacity: 0; translate: 0 -4px;
+    transition: opacity 0.3s var(--ease), translate 0.3s var(--ease), color 0.3s var(--ease); }
+  button.tl-node:hover .tl-enter, button.tl-node:focus-visible .tl-enter {
+    opacity: 1; translate: 0 0; color: var(--vermilion); }
   @media (max-width: 640px) {
     .throughline { grid-template-columns: 1fr; gap: 1.4rem; }
     .tl-spine { display: none; }
   }
+
+  /* ───────── the diagnostic axis, taught once at the front door ─────────
+     One three-part axis runs through the whole Atlas — its colours reappear as
+     the Cabinet's state dial and the Ledger's excess/deficit columns, so a reader
+     learns it here and recognises it everywhere. */
+  .axis-key { display: flex; justify-content: center; align-items: center;
+    flex-wrap: wrap; gap: clamp(0.8rem, 2.6vw, 1.8rem);
+    max-width: 60rem; margin: 0 auto clamp(2rem, 7vh, 4.5rem);
+    padding: 0 clamp(1.4rem, 8vw, 6rem);
+    opacity: 0; translate: 0 12px; transition: opacity 0.8s var(--ease), translate 0.8s var(--ease); }
+  .throughline.is-in ~ .axis-key, .axis-key.is-in { opacity: 1; translate: 0 0; }
+  .ak-cap { font-family: var(--mono); font-size: var(--lbl-sm); letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--bone-faint); }
+  .ak-item { display: inline-flex; align-items: center; gap: 0.5rem;
+    font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--bone-dim); }
+  .ak-tick { width: 0.66rem; height: 0.66rem; rotate: 45deg;
+    background: var(--ak); border: 1px solid var(--ak); }
+  .ak-over   { --ak: var(--st-over); }
+  .ak-normal { --ak: var(--st-normal); }
+  .ak-under  { --ak: var(--st-under); }
 
   /* ───────── rotunda: the three volume plates ───────── */
   #volumes { padding-bottom: clamp(3rem, 8vh, 6rem); }
@@ -546,7 +584,9 @@
     box-shadow: 0 18px 40px oklch(0% 0 0 / 0.45); padding: 0.95rem 1.05rem;
     opacity: 0; translate: 0 -8px; pointer-events: none;
     transition: opacity 0.4s var(--ease), translate 0.4s var(--ease); }
-  body.coach-on .coach { opacity: 1; translate: 0 0; pointer-events: auto; }
+  body.coach-on #coach { opacity: 1; translate: 0 0; pointer-events: auto; }
+  body.tracecoach-on #traceCoach { opacity: 1; translate: 0 0; pointer-events: auto; }
+  .coach-trace { border-color: var(--vermilion); }
   .coach-h { font-family: var(--mono); font-size: var(--lbl-sm); letter-spacing: 0.2em;
     text-transform: uppercase; color: var(--vermilion); margin-bottom: 0.5rem; }
   .coach-p { font-family: var(--body); font-size: 0.86rem; line-height: 1.55; color: var(--bone-dim); }
@@ -618,10 +658,19 @@
   </div>
 
   <!-- ═══════════ first-run coachmark ═══════════ -->
+  <!-- onboarding, staged: orient first, teach the follow later -->
+  <!-- 1 · arrival: what this is, pointing down into the through-line — not a feature dump -->
   <aside class="coach" id="coach" aria-live="polite">
-    <div class="coach-h">Find anything, fast</div>
-    <div class="coach-p">Press <b>/</b> or tap <b>Find</b> to jump straight to any receptor, drug, or clinical sign. Open a receptor and the <b>Trace</b> pills follow it from mechanism to bedside across all three volumes.</div>
+    <div class="coach-h">One reference, three volumes</div>
+    <div class="coach-p">Every receptor has three faces — <b>what it does</b>, <b>what binds it</b>, and <b>how it presents</b>. Scroll down to see how they fit, then open any receptor to follow it across all three.</div>
     <button class="coach-x" id="coachX" type="button">Got it</button>
+  </aside>
+
+  <!-- 2 · first receptor: now the reader is holding one, so the follow-lesson lands -->
+  <aside class="coach coach-trace" id="traceCoach" aria-live="polite">
+    <div class="coach-h">Follow this receptor</div>
+    <div class="coach-p">The <b>Archive · Cabinet · Ledger</b> buttons up top now carry <i>this same receptor</i> into its other volumes — or use the three doors at the foot of the page.</div>
+    <button class="coach-x" id="traceCoachX" type="button">Got it</button>
   </aside>
 
   <div class="wf-edge-trigger" id="wfEdgeTrigger" aria-hidden="true"></div>
@@ -661,12 +710,22 @@
       <p>Every psychotropic acts somewhere precise. The Atlas reads that chain in order: <span class="accent">what a receptor does</span>, <em>what binds it</em>, and what its excess or absence looks like in a patient. Three volumes, one continuous argument from molecule to presentation. Pick a receptor in any volume and the Atlas lets you <span class="accent">follow it</span> into the other two.</p>
     </section>
 
-    <section class="throughline" aria-label="The reading order">
+    <section class="throughline" aria-label="The reading order — start anywhere">
       <div class="tl-spine" aria-hidden="true"></div>
-      <div class="tl-node"><div class="tl-dot"></div><div class="tl-stage">Volume I</div><div class="tl-ask">What it does</div></div>
-      <div class="tl-node"><div class="tl-dot"></div><div class="tl-stage">Volume II</div><div class="tl-ask">What binds it</div></div>
-      <div class="tl-node"><div class="tl-dot"></div><div class="tl-stage">Volume III</div><div class="tl-ask">How it presents</div></div>
+      <button type="button" class="tl-node" onclick="enterVolume('archive')" aria-label="Open Volume I, the Archive — what a receptor does">
+        <div class="tl-dot"></div><div class="tl-stage">Volume I</div><div class="tl-ask">What it does</div><span class="tl-enter">Open the Archive →</span></button>
+      <button type="button" class="tl-node" onclick="enterVolume('cabinet')" aria-label="Open Volume II, the Cabinet — what binds it">
+        <div class="tl-dot"></div><div class="tl-stage">Volume II</div><div class="tl-ask">What binds it</div><span class="tl-enter">Open the Cabinet →</span></button>
+      <button type="button" class="tl-node" onclick="enterVolume('ledger')" aria-label="Open Volume III, the Ledger — how it presents">
+        <div class="tl-dot"></div><div class="tl-stage">Volume III</div><div class="tl-ask">How it presents</div><span class="tl-enter">Open the Ledger →</span></button>
     </section>
+
+    <p class="axis-key" aria-label="The diagnostic axis, read the same way in every volume">
+      <span class="ak-cap">One axis, every volume</span>
+      <span class="ak-item ak-over"><span class="ak-tick" aria-hidden="true"></span>Excess ▲</span>
+      <span class="ak-item ak-normal"><span class="ak-tick" aria-hidden="true"></span>Steady</span>
+      <span class="ak-item ak-under"><span class="ak-tick" aria-hidden="true"></span>Deficit ▼</span>
+    </p>
 
     <main id="volumes">
 
@@ -725,8 +784,8 @@
           <div class="vol-kicker">Volume III · Clinical</div>
           <h2>The Clinical Ledger</h2>
           <div class="vol-rule"></div>
-          <p class="vol-desc">The bedside reading. Sixteen receptors and transporters, each row running from baseline physiology into its two failure modes, overstimulation and understimulation, with the signs you would actually see.</p>
-          <div class="vol-tags"><span class="vol-tag">16 specimens</span><span class="vol-tag">Over ▲ / Under ▼</span><span class="vol-tag">Stahl cross-refs</span></div>
+          <p class="vol-desc">The bedside reading. Sixteen receptors and transporters, each row running from baseline physiology into its two failure modes, excess and deficit, with the signs you would actually see.</p>
+          <div class="vol-tags"><span class="vol-tag">16 specimens</span><span class="vol-tag">Excess ▲ / Deficit ▼</span><span class="vol-tag">Stahl cross-refs</span></div>
           <button class="vol-enter" data-enter="ledger">Read the Ledger <span class="arr" aria-hidden="true">→</span></button>
         </div>
         <div class="vol-fig" aria-hidden="true">
@@ -771,7 +830,7 @@
 
   const VOLUMES = {
     archive: {
-      numeral: "I", name: "The Receptor Archive", short: "Archive", room: "celestial",
+      numeral: "I", name: "The Receptor Archive", short: "Archive", face: "what it does", room: "celestial",
       file: "receptor-function.html",
       stations: [
         { label: "Hall I · Serotonin", station: "hall-i" },
@@ -782,7 +841,7 @@
       ]
     },
     cabinet: {
-      numeral: "II", name: "The Receptor Cabinet", short: "Cabinet", room: "umber",
+      numeral: "II", name: "The Receptor Cabinet", short: "Cabinet", face: "what binds it", room: "umber",
       file: "neuroreceptor_pharmacology_explorer_dashboard.html",
       stations: [
         { label: "Cabinet · explorer", station: "cabinet" },
@@ -791,7 +850,7 @@
       ]
     },
     ledger: {
-      numeral: "III", name: "The Clinical Ledger", short: "Ledger", room: "verdigris",
+      numeral: "III", name: "The Clinical Ledger", short: "Ledger", face: "how it presents", room: "verdigris",
       file: "neuroreceptor_clinical_table.html",
       stations: [
         { label: "The Ledger · full table", station: "" },
@@ -871,6 +930,14 @@
     ret.textContent = "↑ Return to the rotunda";
     ret.addEventListener("click", returnToRotunda);
     c.appendChild(ret);
+
+    // a quiet way to re-summon the onboarding, since it only auto-shows once
+    const replay = document.createElement("button");
+    replay.className = "wf-return";
+    replay.type = "button";
+    replay.textContent = "↺ Show the tour again";
+    replay.addEventListener("click", replayTour);
+    c.appendChild(replay);
   }
 
   function litIndex(id) {
@@ -879,6 +946,10 @@
   }
 
   /* ---- the volume switcher in the lintel ---- */
+  // The one volume control. With no entry open it's a plain volume switch; with
+  // an entry open it FOLLOWS that entry into whichever volume holds it (carrying
+  // the subject), and dims the volumes that don't — folding the old Trace pills
+  // and the switcher into a single control instead of two side by side.
   function buildSwitcher() {
     ORDER.forEach(id => {
       const v = VOLUMES[id];
@@ -889,15 +960,28 @@
       b.setAttribute("role", "tab");
       b.innerHTML = `<span class="rn">${v.numeral}</span><span class="vn">${v.short}</span>`;
       b.title = v.name;
-      b.addEventListener("click", () => enterVolume(id));
+      b.addEventListener("click", () => {
+        const carry = currentSubject && SPECIMENS[currentSubject] && SPECIMENS[currentSubject].in.includes(id);
+        if (carry) dismissTraceCoach();
+        enterVolume(id, carry ? { subject: currentSubject } : {});
+      });
       vswitchEl.appendChild(b);
     });
   }
   function litSwitcher(id) {
+    const spec = currentSubject ? SPECIMENS[currentSubject] : null;
     vswitchEl.querySelectorAll(".vseg").forEach(s => {
-      const on = s.dataset.vol === id;
+      const vol = s.dataset.vol;
+      const on = vol === id;
       s.classList.toggle("active", on);
       s.setAttribute("aria-selected", on ? "true" : "false");
+      const absent = !!spec && !spec.in.includes(vol);
+      s.classList.toggle("no-entry", absent);
+      if (on) s.title = spec ? `${spec.label} · ${VOLUMES[vol].face}` : VOLUMES[vol].name;
+      else if (spec) s.title = spec.in.includes(vol)
+        ? `Follow ${spec.label} into the ${VOLUMES[vol].short} — ${VOLUMES[vol].face}`
+        : `Open the ${VOLUMES[vol].short} · ${spec.label} isn't catalogued here`;
+      else s.title = VOLUMES[vol].name;
     });
   }
 
@@ -938,44 +1022,14 @@
       const sub = document.createElement("span"); sub.className = "crumb here";
       sub.textContent = currentSubjectLabel || SPECIMENS[currentSubject].label;
       trailEl.appendChild(sub);
-      renderThread();
+      maybeTraceCoach();
     } else {
       body.classList.remove("has-thread");
     }
   }
 
-  function renderThread() {
-    const thread = document.getElementById("thread");
-    const spec = SPECIMENS[currentSubject];
-    if (!spec) { thread.innerHTML = ""; body.classList.remove("has-thread"); return; }
-    thread.innerHTML = "";
-    const lbl = document.createElement("span");
-    lbl.className = "thread-lbl";
-    lbl.innerHTML = `Trace <b>${spec.label}</b>`;
-    thread.appendChild(lbl);
-    const pills = document.createElement("div");
-    pills.className = "thread-pills";
-    ORDER.forEach(volId => {
-      const present = spec.in.includes(volId);
-      const here = volId === currentVolume;
-      const pill = document.createElement("button");
-      pill.className = "thread-pill";
-      pill.type = "button";
-      pill.textContent = VOLUMES[volId].short;
-      if (here) pill.dataset.here = "1";
-      if (!present) { pill.dataset.absent = "1"; pill.disabled = true;
-        pill.title = `${spec.label} is not catalogued in the ${VOLUMES[volId].short}`; }
-      if (present && !here) {
-        pill.title = `Follow ${spec.label} into the ${VOLUMES[volId].short}`;
-        pill.addEventListener("click", () => enterVolume(volId, { subject: currentSubject }));
-      }
-      pills.appendChild(pill);
-    });
-    thread.appendChild(pills);
-    body.classList.add("has-thread");
-  }
-
-  // the same thread, mirrored into the index so it works where the lintel is tight
+  // the trace is mirrored into the index panel, where there's room to spell out
+  // each volume as a full "does / binds / presents" face
   function renderIndexTrace() {
     const el = document.getElementById("wfTrace");
     const spec = currentSubject && SPECIMENS[currentSubject] ? SPECIMENS[currentSubject] : null;
@@ -994,12 +1048,12 @@
       const pill = document.createElement("button");
       pill.className = "wf-trace-pill";
       pill.type = "button";
-      pill.textContent = VOLUMES[volId].numeral + " · " + VOLUMES[volId].short;
+      pill.textContent = VOLUMES[volId].numeral + " · " + VOLUMES[volId].face;
       if (here) pill.dataset.here = "1";
       if (!present) { pill.dataset.absent = "1"; pill.disabled = true;
         pill.title = `${spec.label} is not catalogued in the ${VOLUMES[volId].short}`; }
       if (present && !here) {
-        pill.title = `Follow ${spec.label} into the ${VOLUMES[volId].short}`;
+        pill.title = `Follow ${spec.label} into the ${VOLUMES[volId].short} — ${VOLUMES[volId].face}`;
         pill.addEventListener("click", () => enterVolume(volId, { subject: currentSubject }));
       }
       pills.appendChild(pill);
@@ -1151,6 +1205,12 @@
       // a freshly loaded volume announces itself; re-assert any pending subject
       if (d.volume === currentVolume && currentSubject) {
         postToActive({ type: "atlas:nav", subject: currentSubject, station: null });
+      }
+    } else if (d.type === "atlas:trace") {
+      // an in-volume facet rail asks to follow the current entry into another face
+      if (VOLUMES[d.to]) {
+        const subj = d.subject && SPECIMENS[d.subject] ? d.subject : null;
+        enterVolume(d.to, subj ? { subject: subj } : {});
       }
     }
   });
@@ -1347,9 +1407,39 @@
     let seen = false;
     try { seen = localStorage.getItem(COACH_KEY) === "1"; } catch (e) {}
     if (seen) return;
+    // 1400ms lets the hero letters finish rising before the advice appears
     setTimeout(() => { if (!body.classList.contains("search-open")) body.classList.add("coach-on"); }, 1400);
   }
   document.getElementById("coachX").addEventListener("click", dismissCoach);
+
+  /* ---- second lesson: the follow, taught the first time a receptor is open ---- */
+  const TRACE_COACH_KEY = "atlas.coach.trace.v1";
+  function dismissTraceCoach() {
+    body.classList.remove("tracecoach-on");
+    try { localStorage.setItem(TRACE_COACH_KEY, "1"); } catch (e) {}
+  }
+  function maybeTraceCoach() {
+    let seen = false;
+    try { seen = localStorage.getItem(TRACE_COACH_KEY) === "1"; } catch (e) {}
+    if (seen) return;
+    // only when a genuinely cross-volume receptor is open, and not colliding with lesson 1
+    if (!currentVolume || !currentSubject || body.classList.contains("coach-on")) return;
+    const spec = SPECIMENS[currentSubject];
+    if (!spec || spec.in.length < 2) return;
+    body.classList.add("tracecoach-on");
+  }
+  document.getElementById("traceCoachX").addEventListener("click", dismissTraceCoach);
+
+  // re-summon the onboarding on demand (from the index): clears both lesson flags,
+  // returns to the rotunda, and re-shows the orientation lesson. The follow lesson
+  // then re-arms for the next receptor opened.
+  function replayTour() {
+    try { localStorage.removeItem(COACH_KEY); localStorage.removeItem(TRACE_COACH_KEY); } catch (e) {}
+    closeIndex();
+    returnToRotunda();
+    body.classList.remove("tracecoach-on");
+    setTimeout(() => { if (!body.classList.contains("search-open")) body.classList.add("coach-on"); }, 400);
+  }
 
   /* ---- rotunda choreography ---- */
   document.querySelectorAll(".vol-enter").forEach(btn =>
