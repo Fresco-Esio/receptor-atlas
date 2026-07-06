@@ -35,6 +35,8 @@
     --display: "Marcellus", serif;
     --body: "Schibsted Grotesk", sans-serif;
     --mono: "Fragment Mono", monospace;
+    --lbl: 0.6875rem;
+    --lbl-sm: 0.6rem;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -280,6 +282,25 @@
   .cite { font-family: var(--mono); font-size: 0.68rem; color: var(--bone-faint); line-height: 1.5; }
   .cite a { color: var(--bone-dim); text-decoration: none; border-bottom: 1px solid var(--brass-faint); }
   .cite a:hover { color: var(--vermilion); border-color: var(--vermilion); }
+
+  /* ── facet rail: one receptor, three volumes (shared verbatim across all volumes) ── */
+  .facet-rail { margin-top: 2.2rem; padding-top: 1.4rem; border-top: 1px solid var(--brass-line); }
+  .facet-rail-lead { display:block; font-family: var(--mono); font-size: var(--lbl-sm); letter-spacing: 0.16em; text-transform: uppercase; color: var(--bone-faint); margin-bottom: 0.9rem; }
+  .facet-rail-name { color: var(--bone); }
+  .facet-faces { list-style:none; display:grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; padding:0; margin:0; }
+  @media (max-width: 620px){ .facet-faces { grid-template-columns: 1fr; } }
+  .facet-face { display:block; }
+  .facet-face-here, .facet-face-off, .facet-face-go { width:100%; text-align:left; display:flex; flex-direction:column; gap:0.4rem; border:1px solid var(--brass-line); border-radius:3px; padding:0.75rem 0.9rem; background: transparent; }
+  .facet-face-here { border-color: var(--vermilion); background: oklch(62% 0.19 35 / 0.06); }
+  .facet-face-go { cursor:pointer; font: inherit; transition: border-color .22s var(--ease), background-color .22s var(--ease); }
+  .facet-face-go:hover { border-color: var(--brass); background: oklch(93% 0.012 85 / 0.04); }
+  .facet-face.is-next .facet-face-go { border-color: var(--brass); }
+  .facet-face-off { opacity:0.42; }
+  .ff-q { font-family: var(--display); font-size: 1.05rem; letter-spacing:0.02em; color: var(--bone); text-transform: none; line-height:1.15; }
+  .facet-face-off .ff-q { color: var(--bone-dim); }
+  .ff-tag { font-family: var(--mono); font-size: var(--lbl-sm); letter-spacing:0.14em; text-transform: uppercase; color: var(--bone-faint); }
+  .facet-face-here .ff-tag { color: var(--vermilion); }
+  .facet-face.is-next .ff-tag { color: var(--vermilion); }
 
   .empty { padding: 3rem 1rem; text-align: center; color: var(--bone-faint); font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; }
 
@@ -631,6 +652,36 @@
     }
   ];
 
+  const NO2CANON = {1:'gaba_a',2:'nmda',3:'d2',4:'d1',5:'dat',6:'5ht2a',7:'5ht1a',8:'5ht2c',9:'sert',10:'beta1',11:'alpha1',12:'alpha2',13:'net',14:'m1',15:'h1',16:'mu'};
+  /* ── the facet rail: one receptor, three volumes. Shared verbatim across all volumes.
+     Resolve the current entry's canon key from this volume's own canon map, then hand
+     it to facetRailHTML(canon, displayName, thisVolumeId). ── */
+  const ATLAS_FACES = {"5ht1a":["archive","ledger"], "5ht2a":["archive","cabinet","ledger"], "5ht2c":["archive","ledger"], "alpha1":["archive","cabinet","ledger"], "alpha2":["archive","cabinet","ledger"], "beta1":["archive","cabinet","ledger"], "d1":["archive","ledger"], "d2":["archive","cabinet","ledger"], "dat":["archive","ledger"], "gaba_a":["archive","cabinet","ledger"], "h1":["archive","cabinet","ledger"], "m1":["archive","cabinet","ledger"], "m3":["cabinet"], "mu":["archive","cabinet","ledger"], "net":["archive","cabinet","ledger"], "nmda":["archive","cabinet","ledger"], "sert":["archive","cabinet","ledger"]};
+  const ATLAS_FACE_LABEL = { archive:"what it does", cabinet:"what binds it", ledger:"how it presents" };
+  const ATLAS_FACE_ORDER = ["archive","cabinet","ledger"];
+  const ATLAS_SYS = { '5ht1a':'Serotonin','5ht2a':'Serotonin','5ht2c':'Serotonin','sert':'Serotonin','d1':'Dopamine','d2':'Dopamine','dat':'Dopamine','alpha1':'Noradrenergic','alpha2':'Noradrenergic','beta1':'Noradrenergic','net':'Noradrenergic','nmda':'Glutamate','gaba_a':'GABA','m1':'Cholinergic','m3':'Cholinergic','h1':'Histamine','mu':'Opioid' };
+  function atlasFollow(toVol, canon){
+    if (window.self !== window.top) parent.postMessage({type:'atlas:trace', to:toVol, subject:canon}, '*');
+    else location.href = 'the-receptor-atlas.html#vol/' + toVol + '/' + canon;
+  }
+  window.atlasFollow = atlasFollow; /* the rail's inline onclick resolves in global scope */
+  function facetRailHTML(canon, name, hereVol){
+    if (!canon || !ATLAS_FACES[canon]) return '';
+    const faces = ATLAS_FACES[canon];
+    const nextVol = { archive:'cabinet', cabinet:'ledger', ledger:'archive' }[hereVol];
+    const sys = ATLAS_SYS[canon] || '';
+    const items = ATLAS_FACE_ORDER.map(vol => {
+      const q = ATLAS_FACE_LABEL[vol];
+      if (vol === hereVol) return '<li class="facet-face"><span class="facet-face-here"><span class="ff-q">'+q+'</span><span class="ff-tag">you are here</span></span></li>';
+      if (!faces.includes(vol)) return '<li class="facet-face"><span class="facet-face-off"><span class="ff-q">'+q+'</span><span class="ff-tag">not in this atlas</span></span></li>';
+      const nx = vol === nextVol;
+      return '<li class="facet-face'+(nx?' is-next':'')+'"><button type="button" class="facet-face-go" onclick="atlasFollow(\''+vol+'\',\''+canon+'\')"><span class="ff-q">'+q+'</span><span class="ff-tag">'+(nx?'next →':'follow →')+'</span></button></li>';
+    }).join('');
+    const lead = (sys ? '<span class="facet-rail-name">'+name+'</span> · '+sys+' · one receptor, three volumes'
+                      : '<span class="facet-rail-name">'+name+'</span> · one receptor, three volumes');
+    return '<nav class="facet-rail" aria-label="Follow this receptor across the Atlas"><span class="facet-rail-lead">'+lead+'</span><ol class="facet-faces">'+items+'</ol></nav>';
+  }
+
   // ============================================================
   //  RENDER
   // ============================================================
@@ -697,12 +748,15 @@
         '<div class="det-block"><h4>' + (xport ? 'Reuptake Inhibitors' : 'Agonists / Enhancers') + '</h4>' + tags(d.agonists,'ag') + '</div>' +
         '<div class="det-block"><h4>' + (xport ? 'Reuptake Enhancers &amp; Others' : 'Antagonists / Blockers') + '</h4>' + tags(d.antagonists,'an') + '</div>' +
         '<div class="det-block" style="grid-column:1/-1"><h4>Primary Citation</h4><p class="cite">' + (d.cite.u ? '<a href="'+d.cite.u+'" target="_blank" rel="noopener">'+esc(d.cite.t)+'</a>' : esc(d.cite.t)) + ' · <i>' + esc(d.cite.j) + '</i> · ' + esc(d.cite.p) + '</p></div>' +
+        '<div class="det-block" style="grid-column:1/-1">' + facetRailHTML(NO2CANON[d.no], d.name, 'ledger') + '</div>' +
         '</div></div></div></td>';
+      drawer.inert = true;
 
       const toggleRow = () => {
         const open = drawer.classList.toggle('open');
         row.classList.toggle('is-open', open);
         row.setAttribute('aria-expanded', open ? 'true' : 'false');
+        drawer.inert = !open;
       };
       row.onclick = toggleRow;
       row.tabIndex = 0;

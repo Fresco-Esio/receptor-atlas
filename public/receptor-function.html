@@ -11,7 +11,7 @@
   :root {
     /* wall paint: each hall (category) repaints the page background */
     --wall-atrium: oklch(17% 0.012 75);
-    --wall-celestial: oklch(16% 0.018 280);
+    --wall-celestial: oklch(16% 0.02 280);
     --wall-oxblood: oklch(26% 0.065 25);
     --wall-cobalt: oklch(17% 0.05 255);
     --wall-verdigris: oklch(19% 0.028 155);
@@ -41,6 +41,10 @@
 
     /* the timeline rail's x position; the menu grows out of this same line */
     --rail-x: clamp(0.9rem, 2.5vw, 2.2rem);
+
+    /* typography system */
+    --lbl: 0.6875rem;
+    --lbl-sm: 0.6rem;
 
     --display: "Marcellus", serif;
     --body: "Schibsted Grotesk", sans-serif;
@@ -1120,6 +1124,25 @@
   html.embedded #viewHome > .hero,
   html.embedded #viewHome > .manifesto { display: none; }
   html.embedded #halls { padding-top: clamp(1.2rem, 4vh, 2.4rem); }
+
+  /* ── facet rail: one receptor, three volumes (shared verbatim across all volumes) ── */
+  .facet-rail { margin-top: 2.2rem; padding-top: 1.4rem; border-top: 1px solid var(--brass-line); }
+  .facet-rail-lead { display:block; font-family: var(--mono); font-size: var(--lbl-sm); letter-spacing: 0.16em; text-transform: uppercase; color: var(--bone-faint); margin-bottom: 0.9rem; }
+  .facet-rail-name { color: var(--bone); }
+  .facet-faces { list-style:none; display:grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; padding:0; margin:0; }
+  @media (max-width: 620px){ .facet-faces { grid-template-columns: 1fr; } }
+  .facet-face { display:block; }
+  .facet-face-here, .facet-face-off, .facet-face-go { width:100%; text-align:left; display:flex; flex-direction:column; gap:0.4rem; border:1px solid var(--brass-line); border-radius:3px; padding:0.75rem 0.9rem; background: transparent; }
+  .facet-face-here { border-color: var(--vermilion); background: oklch(62% 0.19 35 / 0.06); }
+  .facet-face-go { cursor:pointer; font: inherit; transition: border-color .22s var(--ease), background-color .22s var(--ease); }
+  .facet-face-go:hover { border-color: var(--brass); background: oklch(93% 0.012 85 / 0.04); }
+  .facet-face.is-next .facet-face-go { border-color: var(--brass); }
+  .facet-face-off { opacity:0.42; }
+  .ff-q { font-family: var(--display); font-size: 1.05rem; letter-spacing:0.02em; color: var(--bone); text-transform: none; line-height:1.15; }
+  .facet-face-off .ff-q { color: var(--bone-dim); }
+  .ff-tag { font-family: var(--mono); font-size: var(--lbl-sm); letter-spacing:0.14em; text-transform: uppercase; color: var(--bone-faint); }
+  .facet-face-here .ff-tag { color: var(--vermilion); }
+  .facet-face.is-next .ff-tag { color: var(--vermilion); }
 </style>
 <script>
   (function () {
@@ -1962,6 +1985,36 @@
     return markers;
   }
 
+  /* ── the facet rail: one receptor, three volumes. Shared verbatim across all volumes.
+     Resolve the current entry's canon key from this volume's own canon map, then hand
+     it to facetRailHTML(canon, displayName, thisVolumeId). ── */
+  const ATLAS_FACES = {"5ht1a":["archive","ledger"], "5ht2a":["archive","cabinet","ledger"], "5ht2c":["archive","ledger"], "alpha1":["archive","cabinet","ledger"], "alpha2":["archive","cabinet","ledger"], "beta1":["archive","cabinet","ledger"], "d1":["archive","ledger"], "d2":["archive","cabinet","ledger"], "dat":["archive","ledger"], "gaba_a":["archive","cabinet","ledger"], "h1":["archive","cabinet","ledger"], "m1":["archive","cabinet","ledger"], "m3":["cabinet"], "mu":["archive","cabinet","ledger"], "net":["archive","cabinet","ledger"], "nmda":["archive","cabinet","ledger"], "sert":["archive","cabinet","ledger"]};
+  const ATLAS_FACE_LABEL = { archive:"what it does", cabinet:"what binds it", ledger:"how it presents" };
+  const ATLAS_FACE_ORDER = ["archive","cabinet","ledger"];
+  const ATLAS_SYS = { '5ht1a':'Serotonin','5ht2a':'Serotonin','5ht2c':'Serotonin','sert':'Serotonin','d1':'Dopamine','d2':'Dopamine','dat':'Dopamine','alpha1':'Noradrenergic','alpha2':'Noradrenergic','beta1':'Noradrenergic','net':'Noradrenergic','nmda':'Glutamate','gaba_a':'GABA','m1':'Cholinergic','m3':'Cholinergic','h1':'Histamine','mu':'Opioid' };
+  function atlasFollow(toVol, canon){
+    if (window.self !== window.top) parent.postMessage({type:'atlas:trace', to:toVol, subject:canon}, '*');
+    else location.href = 'the-receptor-atlas.html#vol/' + toVol + '/' + canon;
+  }
+  window.atlasFollow = atlasFollow; /* the rail's inline onclick resolves in global scope */
+  function facetRailHTML(canon, name, hereVol){
+    if (!canon || !ATLAS_FACES[canon]) return '';
+    const faces = ATLAS_FACES[canon];
+    const nextVol = { archive:'cabinet', cabinet:'ledger', ledger:'archive' }[hereVol];
+    const sys = ATLAS_SYS[canon] || '';
+    const items = ATLAS_FACE_ORDER.map(vol => {
+      const q = ATLAS_FACE_LABEL[vol];
+      if (vol === hereVol) return '<li class="facet-face"><span class="facet-face-here"><span class="ff-q">'+q+'</span><span class="ff-tag">you are here</span></span></li>';
+      if (!faces.includes(vol)) return '<li class="facet-face"><span class="facet-face-off"><span class="ff-q">'+q+'</span><span class="ff-tag">not in this atlas</span></span></li>';
+      const nx = vol === nextVol;
+      return '<li class="facet-face'+(nx?' is-next':'')+'"><button type="button" class="facet-face-go" onclick="atlasFollow(\''+vol+'\',\''+canon+'\')"><span class="ff-q">'+q+'</span><span class="ff-tag">'+(nx?'next →':'follow →')+'</span></button></li>';
+    }).join('');
+    const lead = (sys ? '<span class="facet-rail-name">'+name+'</span> · '+sys+' · one receptor, three volumes'
+                      : '<span class="facet-rail-name">'+name+'</span> · one receptor, three volumes');
+    return '<nav class="facet-rail" aria-label="Follow this receptor across the Atlas"><span class="facet-rail-lead">'+lead+'</span><ol class="facet-faces">'+items+'</ol></nav>';
+  }
+  const NUM2CANON = {1:'5ht1a',2:'5ht2a',3:'5ht2c',5:'sert',6:'d1',7:'d2',9:'dat',10:'alpha1',11:'alpha2',12:'beta1',13:'net',14:'nmda',16:'gaba_a',18:'m1',20:'h1',21:'mu'};
+
   /* The full entry page for one accession. */
   function entryMarkup(entry) {
     const hall = hallById[entry.hall];
@@ -2028,6 +2081,7 @@
             <span class="t">${formatAccession(next.number)} · ${next.title}</span>
           </a>
         </nav>
+        ${facetRailHTML(NUM2CANON[entry.number], entry.title, 'archive')}
       </div>`;
   }
 
