@@ -1201,6 +1201,9 @@
       currentSubjectLabel = key ? (d.label || SPECIMENS[key].label) : "";
       renderTrail();
       renderIndexTrace();
+      // keep the subject-aware switcher's dimming in sync when the subject
+      // changes via in-volume navigation, not just via enterVolume()
+      litSwitcher(currentVolume);
       if (!routing && currentVolume) { routing = true; location.hash = hashFor(currentVolume, currentSubject); routing = false; }
     } else if (d.type === "atlas:ready") {
       // a freshly loaded volume announces itself; re-assert any pending subject
