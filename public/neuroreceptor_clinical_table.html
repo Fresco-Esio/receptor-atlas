@@ -275,6 +275,9 @@
   }
   .stahl-note .ref { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--vermilion); display: block; margin-bottom: 0.45rem; }
   .stahl-note p { font-size: 0.82rem; color: var(--bone-read); }
+  .ledger-pointer { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.03em; line-height: 1.6; color: var(--bone-faint); margin: 0; }
+  .ptr-link { font: inherit; color: var(--vermilion); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+  .ptr-link:hover { color: var(--bone-read); }
   .tag-wrap { display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .tag { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.03em; padding: 0.28rem 0.5rem; border-radius: 2px; border: 1px solid var(--brass-faint); color: var(--bone-dim); background: oklch(0% 0 0 / 0.12); }
   .tag.ag { border-color: oklch(78% 0.085 158 / 0.45); color: var(--st-normal); }
@@ -390,7 +393,7 @@
     <div class="intro">
       <span class="section-label">Symptom &amp; Clinical Presentation Matrix</span>
       <h2>What each receptor does, and what its loss or excess looks like at the bedside.</h2>
-      <p><span class="lede-accent">Sixteen receptors and transporters, organized by neurotransmitter system.</span> Each row reads left to right from baseline physiology into the two failure modes: <span style="color:var(--st-over)">overstimulation</span> and <span style="color:var(--st-under)">understimulation / blockade</span>. Open any row for mechanism, the matched cross-reference from Stahl's <i>Essential Psychopharmacology</i>, and the drugs that move it.</p>
+      <p><span class="lede-accent">Sixteen receptors and transporters, organized by neurotransmitter system.</span> Each row reads left to right from baseline physiology into the two failure modes: <span style="color:var(--st-over)">excess</span> and <span style="color:var(--st-under)">deficit / blockade</span>. Open any row for mechanism, the matched cross-reference from Stahl's <i>Essential Psychopharmacology</i>, and the drugs that move it.</p>
     </div>
 
     <div class="controls">
@@ -402,8 +405,8 @@
         <span class="ctrl-label">State Focus</span>
         <div class="segmented" role="group" aria-label="Emphasize a receptor state">
           <button type="button" class="is-active" data-focus="both" onclick="setFocus('both')"><span class="seg-dot both"></span>Both</button>
-          <button type="button" data-focus="over" onclick="setFocus('over')"><span class="seg-dot over"></span>Overstim.</button>
-          <button type="button" data-focus="under" onclick="setFocus('under')"><span class="seg-dot under"></span>Understim.</button>
+          <button type="button" data-focus="over" onclick="setFocus('over')"><span class="seg-dot over"></span>Excess</button>
+          <button type="button" data-focus="under" onclick="setFocus('under')"><span class="seg-dot under"></span>Deficit</button>
         </div>
       </div>
       <div class="ctrl-group">
@@ -432,8 +435,8 @@
               <th class="col-no">№</th>
               <th class="col-recep">Receptor / Transporter</th>
               <th>Baseline Role</th>
-              <th class="th-over">Overstimulated ▲<span class="th-sub">excess agonism · presentation</span></th>
-              <th class="th-under">Understimulated ▼<span class="th-sub">blockade / deficit · presentation</span></th>
+              <th class="th-over">Excess ▲<span class="th-sub">excess agonism · presentation</span></th>
+              <th class="th-under">Deficit ▼<span class="th-sub">blockade / deficit · presentation</span></th>
               <th style="width:1.6rem"></th>
             </tr>
           </thead>
@@ -709,6 +712,18 @@
   function li(arr){ return '<ul>' + arr.map(x => '<li><span>'+esc(x)+'</span></li>').join('') + '</ul>'; }
   function tags(arr, c){ return '<div class="tag-wrap">' + arr.map(t => '<span class="tag '+c+'">'+esc(t)+'</span>').join('') + '</div>'; }
 
+  // Drawer pointer: mechanism now lives in the Archive, modulators/drugs in the
+  // Cabinet — this replaces the trimmed blocks with a link that follows the same
+  // receptor into those volumes (only offered where the receptor is catalogued).
+  function ledgerPointer(canon){
+    var faces = ATLAS_FACES[canon] || [];
+    var parts = [];
+    if (faces.indexOf('cabinet') !== -1) parts.push('the <button type="button" class="ptr-link" onclick="atlasFollow(\'cabinet\',\'' + canon + '\')">Cabinet</button> for modulators &amp; binding');
+    if (faces.indexOf('archive') !== -1) parts.push('the <button type="button" class="ptr-link" onclick="atlasFollow(\'archive\',\'' + canon + '\')">Archive</button> for mechanism');
+    if (!parts.length) return '';
+    return '<p class="ledger-pointer">See ' + parts.join(' · ') + '.</p>';
+  }
+
   function render() {
     body.innerHTML = '';
     const q = document.getElementById('search').value.trim().toLowerCase();
@@ -737,17 +752,15 @@
         '<td><div class="rec-name">' + esc(d.name) + '</div>' +
           '<div class="rec-class"><span class="chip">' + esc(d.cls) + '</span>' + (d.added ? '<span class="chip" style="color:var(--vermilion);border-color:var(--vermilion)">+ Stahl</span>' : '') + '</div></td>' +
         '<td class="rec-baseline">' + esc(d.baseline) + '</td>' +
-        '<td class="sx-cell sx-over"><span class="sx-lead">Overstimulated</span>' + li(d.over) + '</td>' +
-        '<td class="sx-cell sx-under"><span class="sx-lead">Understim. / Blockade</span>' + li(d.under) + '</td>' +
+        '<td class="sx-cell sx-over"><span class="sx-lead">Excess</span>' + li(d.over) + '</td>' +
+        '<td class="sx-cell sx-under"><span class="sx-lead">Deficit / Blockade</span>' + li(d.under) + '</td>' +
         '<td><span class="expander">+</span></td>';
 
       const drawer = mk('tr', { class: 'detail-row', 'data-detail': d.no });
       drawer.innerHTML = '<td colspan="6"><div class="detail-inner"><div class="detail-clip"><div class="detail-pad" style="--st-accent:' + accent + '">' +
-        '<div class="det-block"><h4>Mechanism</h4><p class="mech-text">' + esc(d.mech) + '</p></div>' +
         '<div class="det-block"><h4>Stahl Cross-Reference</h4><div class="stahl-note"><span class="ref">Essential Psychopharmacology</span><p>' + esc(d.stahl) + '</p></div></div>' +
-        '<div class="det-block"><h4>' + (xport ? 'Reuptake Inhibitors' : 'Agonists / Enhancers') + '</h4>' + tags(d.agonists,'ag') + '</div>' +
-        '<div class="det-block"><h4>' + (xport ? 'Reuptake Enhancers &amp; Others' : 'Antagonists / Blockers') + '</h4>' + tags(d.antagonists,'an') + '</div>' +
         '<div class="det-block" style="grid-column:1/-1"><h4>Primary Citation</h4><p class="cite">' + (d.cite.u ? '<a href="'+d.cite.u+'" target="_blank" rel="noopener">'+esc(d.cite.t)+'</a>' : esc(d.cite.t)) + ' · <i>' + esc(d.cite.j) + '</i> · ' + esc(d.cite.p) + '</p></div>' +
+        '<div class="det-block" style="grid-column:1/-1">' + ledgerPointer(NO2CANON[d.no]) + '</div>' +
         '<div class="det-block" style="grid-column:1/-1">' + facetRailHTML(NO2CANON[d.no], d.name, 'ledger') + '</div>' +
         '</div></div></div></td>';
       drawer.inert = true;
