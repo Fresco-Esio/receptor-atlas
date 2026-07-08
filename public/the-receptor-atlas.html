@@ -323,11 +323,24 @@
   /* ───────── rotunda: hero ───────── */
   #rotunda { position: relative; z-index: 1; }
   .hero { min-height: 100svh; display: grid; place-content: center;
-    text-align: center; position: relative; padding: 2rem; }
-  .hero-rings { position: absolute; inset: 0; margin: auto;
+    text-align: center; position: relative; padding: 2rem;
+    isolation: isolate; overflow: hidden; }
+  /* Arrival: the gallery lights coming up after hours. One warm wash rises out
+     of the dark on load and then holds — no looping, no spin. Confident silence. */
+  .hero::before { content: ""; position: absolute; inset: 0; z-index: 0;
+    pointer-events: none; opacity: 0;
+    background: radial-gradient(120% 82% at 50% 38%,
+      oklch(30% 0.03 78 / 0.55) 0%, oklch(22% 0.02 78 / 0.30) 34%, transparent 66%);
+    animation: lights-up 2s var(--ease) 0.1s forwards; }
+  @keyframes lights-up { to { opacity: 1; } }
+  /* the rotunda's concentric architecture resolves out of the dark and settles once */
+  .hero-rings { position: absolute; inset: 0; margin: auto; z-index: 0;
     width: min(150vmin, 1100px); height: min(150vmin, 1100px);
-    opacity: 0.45; animation: slow-turn 240s linear infinite; pointer-events: none; }
-  @keyframes slow-turn { to { rotate: 360deg; } }
+    opacity: 0; scale: 1.06; transform-origin: center; pointer-events: none;
+    animation: rings-settle 2.4s var(--ease) 0.2s forwards; }
+  @keyframes rings-settle { to { opacity: 0.45; scale: 1; } }
+  /* keep hero content above the light wash and the architecture */
+  .hero-est, .hero h1, .hero-sub { position: relative; z-index: 1; }
   .hero-est { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.32em;
     color: var(--bone-faint); text-transform: uppercase; margin-bottom: 2rem;
     display: inline-flex; align-items: center; gap: 0.8rem; justify-self: center; }
@@ -347,18 +360,24 @@
   .hero-sub { animation-delay: 1.25s; }
   .hero-cue { animation-delay: 1.9s; }
   @keyframes fade-up { from { opacity: 0; translate: 0 18px; } to { opacity: 1; translate: 0 0; } }
-  .hero-cue { position: absolute; bottom: 2.2rem; left: 50%; margin-left: -0.5px;
+  .hero-cue { position: absolute; bottom: 2.2rem; left: 50%; margin-left: -0.5px; z-index: 1;
     font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.3em;
     color: var(--bone-faint); text-transform: uppercase; writing-mode: vertical-rl;
-    text-decoration: none; }
-  .hero-cue::after { content: ""; display: block; width: 1px; height: 3rem;
-    background: linear-gradient(var(--brass), transparent);
-    margin: 0.9rem auto 0; animation: cue-drip 2.6s var(--ease) infinite; }
-  @keyframes cue-drip {
-    0% { transform: scaleY(0); transform-origin: top; }
-    45% { transform: scaleY(1); transform-origin: top; }
-    55% { transform: scaleY(1); transform-origin: bottom; }
-    100% { transform: scaleY(0); transform-origin: bottom; }
+    text-decoration: none; transition: color 0.3s var(--ease); }
+  .hero-cue:hover { color: var(--vermilion); }
+  /* a quiet beacon: a faint rail with a single gleam that descends it and rests —
+     a light travelling "this way down", not a drip */
+  .hero-cue::after { content: ""; display: block; width: 1px; height: 3.2rem;
+    margin: 0.9rem auto 0; background-repeat: no-repeat;
+    background-image: linear-gradient(var(--brass-line), transparent),
+      linear-gradient(180deg, transparent 0%, var(--brass) 50%, transparent 100%);
+    background-size: 100% 100%, 100% 260%;
+    background-position: 50% 0, 50% -80%;
+    animation: cue-descend 2.8s var(--ease) infinite; }
+  @keyframes cue-descend {
+    0%   { background-position: 50% 0, 50% -80%; }
+    58%  { background-position: 50% 0, 50% 180%; }
+    100% { background-position: 50% 0, 50% 180%; }
   }
 
   /* ───────── rotunda: manifesto ───────── */
@@ -376,28 +395,38 @@
     display: grid; grid-template-columns: repeat(3, 1fr); align-items: start;
     gap: clamp(0.5rem, 3vw, 1.5rem); position: relative;
   }
-  .tl-spine { position: absolute; left: 12%; right: 12%; top: 1.1rem; height: 1px;
-    background: linear-gradient(90deg, var(--st-normal), var(--vermilion), var(--st-under));
-    opacity: 0.5; }
+  /* a brass lintel-rail joining the three doors — architecture, not the diagnostic
+     axis. The state colours stay reserved for the axis key below, so no colour
+     ever carries two meanings. */
+  .tl-spine { position: absolute; left: 12%; right: 12%; top: 2.1rem; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--brass-line) 18%, var(--brass) 50%, var(--brass-line) 82%, transparent);
+    opacity: 0.8; }
   .tl-node { position: relative; text-align: center; opacity: 0; translate: 0 12px;
     transition: opacity 0.8s var(--ease), translate 0.8s var(--ease); }
   .throughline.is-in .tl-node { opacity: 1; translate: 0 0; }
   .throughline.is-in .tl-node:nth-child(3) { transition-delay: 0.1s; }
   .throughline.is-in .tl-node:nth-child(4) { transition-delay: 0.2s; }
   .tl-dot { width: 0.85rem; height: 0.85rem; rotate: 45deg; margin: 0.6rem auto 1rem;
-    background: var(--wall); border: 1px solid var(--brass); position: relative; z-index: 1; }
-  .tl-node:nth-child(2) .tl-dot { border-color: var(--st-normal); }
-  .tl-node:nth-child(4) .tl-dot { border-color: var(--st-under); }
+    background: var(--wall); border: 1px solid var(--brass); position: relative; z-index: 1;
+    transition: background-color 0.35s var(--ease), border-color 0.35s var(--ease), box-shadow 0.35s var(--ease); }
   .tl-stage { font-family: var(--mono); font-size: var(--lbl-sm); letter-spacing: 0.18em;
     text-transform: uppercase; color: var(--bone-faint); }
   .tl-ask { font-family: var(--display); font-size: clamp(0.95rem, 1.7vw, 1.2rem);
     color: var(--bone); text-transform: uppercase; letter-spacing: 0.03em; margin-top: 0.3rem;
     transition: color 0.3s var(--ease); }
-  /* the three nodes are doors: each one is the explanation AND the entrance */
+  /* the three nodes are doors: each is the explanation AND the entrance.
+     A recessed doorway frame deepens and the whole plate lifts on approach. */
   button.tl-node { background: none; border: 0; font: inherit; cursor: pointer;
-    padding: 0.4rem 0.2rem; border-radius: 3px; }
+    padding: 1.1rem 0.6rem 0.9rem; border-radius: 3px;
+    box-shadow: inset 0 0 0 1px transparent;
+    transition: transform 0.4s var(--ease), background-color 0.4s var(--ease), box-shadow 0.4s var(--ease); }
+  button.tl-node:hover, button.tl-node:focus-visible {
+    transform: translateY(-4px); background: oklch(0% 0 0 / 0.16);
+    box-shadow: inset 0 0 0 1px var(--brass-line), 0 14px 30px oklch(0% 0 0 / 0.32); }
   button.tl-node:hover .tl-ask, button.tl-node:focus-visible .tl-ask { color: var(--vermilion); }
-  button.tl-node:hover .tl-dot { border-color: var(--vermilion); }
+  button.tl-node:hover .tl-dot, button.tl-node:focus-visible .tl-dot {
+    border-color: var(--vermilion); background: oklch(62% 0.19 35 / 0.16);
+    box-shadow: 0 0 10px oklch(62% 0.19 35 / 0.35); }
   .tl-enter { display: block; margin-top: 0.5rem; font-family: var(--mono);
     font-size: var(--lbl-sm); letter-spacing: 0.2em; text-transform: uppercase;
     color: var(--bone-faint); opacity: 0; translate: 0 -4px;
@@ -603,6 +632,9 @@
       transition-duration: 0.001s !important; transition-delay: 0s !important; }
     .hero h1 .ch { translate: 0 0; }
     .hero-est, .hero-sub, .hero-cue { opacity: 1; }
+    .hero::before { opacity: 1; }
+    .hero-rings { opacity: 0.45; scale: 1; }
+    .hero-cue::after { animation: none; }
     .vol-fig .stroke { stroke-dashoffset: 0; }
   }
 </style>
