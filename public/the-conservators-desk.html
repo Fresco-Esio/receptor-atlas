@@ -670,7 +670,6 @@ function build(){
     hallsEl.appendChild(hall);
   });
   refresh();
-  renderBindSummary();
 }
 function volChips(v){return v.map(x=>`<span class="vchip">${x}</span>`).join("");}
 function srcLabel(s){const t=(s.title||s.pmid||'untitled');return `${s.authors||'—'} (${s.year||'n.d.'}) — ${t.length>56?t.slice(0,56)+'…':t}`;}
