@@ -311,26 +311,34 @@ input[type=file]{display:none;}
 
 /* ---------- Binding affinities section ---------- */
 #bindingSection{margin-top:2.5rem;}
-.bind-summary{display:flex;gap:1.4rem;flex-wrap:wrap;margin:.8rem 0 1.2rem;}
-.bstat{font-family:"Fragment Mono",monospace;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--bone-faint);}
-.bstat b{font-size:1.1rem;color:var(--bone);}
-.bind-subhead{font-family:"Fragment Mono",monospace;font-size:.62rem;letter-spacing:.09em;text-transform:uppercase;color:var(--brass);margin:.6rem 0;}
-.bsrc-row{display:grid;grid-template-columns:1fr auto auto;gap:1rem;align-items:center;padding:.6rem .2rem;border-bottom:1px solid var(--brass-line);}
-.bsrc-cite{font-size:.86rem;color:var(--bone);}
+.bind-summary{display:flex;gap:.5rem;flex-wrap:wrap;margin:.8rem 0 1.4rem;}
+.bind-subhead{font-family:"Fragment Mono",monospace;font-size:.62rem;letter-spacing:.09em;text-transform:uppercase;color:var(--brass);margin:1.4rem 0 .5rem;}
+.bsrc-row{display:grid;grid-template-columns:1fr auto auto;gap:1rem;align-items:center;padding:.6rem .1rem;border-bottom:1px solid var(--brass-faint);}
+.bsrc-cite{font-size:.86rem;color:var(--bone-dim);}
 .bsrc-count{font-family:"Fragment Mono",monospace;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--bone-faint);white-space:nowrap;}
-#bindRail{margin:1rem 0;}
-.bdrug{border-bottom:1px solid var(--brass-line);}
-.bdrug-head{display:flex;align-items:center;gap:.6rem;padding:.65rem .2rem;cursor:pointer;}
-.bdrug-head b{font-size:.95rem;color:var(--bone);}
+/* by-drug: expandable ledger rows, no side-stripe (tonal + hairline, per the Cabinet system) */
+#bindRail{margin:1.4rem 0 .4rem;position:static;}
+.bdrug{border-bottom:1px solid var(--brass-faint);}
+.bdrug-head{display:flex;align-items:center;gap:.55rem;padding:.7rem .1rem;cursor:pointer;transition:background .2s var(--ease);}
+.bdrug-head:hover{background:var(--wall-panel);}
+.bdrug-head::before{content:"\203A";font-family:"Fragment Mono",monospace;color:var(--brass);font-size:.9rem;line-height:1;width:.7rem;text-align:center;transition:transform .2s var(--ease);}
+.bdrug.open .bdrug-head::before{transform:rotate(90deg);}
+.bdrug-head b{font-size:.95rem;color:var(--bone);letter-spacing:.01em;}
 .bdrug-n{font-family:"Fragment Mono",monospace;font-size:.6rem;letter-spacing:.06em;text-transform:uppercase;color:var(--bone-faint);margin-left:auto;}
-.bdrug-body{display:none;padding:0 .2rem .8rem 1.4rem;}
+.bdrug-body{display:none;padding:.2rem .1rem .9rem 1.65rem;}
 .bdrug.open .bdrug-body{display:block;}
-.bbind{border-left:2px solid var(--brass-line);padding:.5rem .8rem;margin:.5rem 0;}
-.bbind-head{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;}
+.bbind{padding:.65rem 0;border-bottom:1px solid var(--brass-faint);}
+.bbind:last-child{border-bottom:none;padding-bottom:.2rem;}
+.bbind-head{display:flex;align-items:baseline;gap:.55rem;flex-wrap:wrap;}
+.bbind-head .dot{align-self:center;}
 .bbind-ki{font-family:"Fragment Mono",monospace;font-size:.72rem;color:var(--brass);}
 .bbind-act{font-size:.8rem;color:var(--bone-faint);}
-.bbind-sources{margin:.5rem 0;}
-.valctl{display:flex;gap:.3rem;margin-top:.5rem;}
+.bbind-sources{margin:.55rem 0;}
+.valctl{display:flex;gap:.3rem;margin-top:.55rem;align-items:center;flex-wrap:wrap;}
+.valctl-lab{font-family:"Fragment Mono",monospace;font-size:.55rem;letter-spacing:.08em;text-transform:uppercase;color:var(--bone-faint);margin-right:.15rem;}
+.cs[data-vact="confirmed"].on{background:var(--good);color:var(--wall-recess);border-color:var(--good);}
+.cs[data-vact="mismatch"].on{background:var(--warn);color:var(--wall-recess);border-color:var(--warn);}
+.cs[data-vact="unchecked"].on{background:var(--wall-recess);color:var(--bone-dim);border-color:var(--brass-line);}
 </style>
 </head>
 <body>
@@ -949,9 +957,9 @@ function renderBindSummary(){
   const srcTotal=BINDING_USAGE.length;
   const srcVerified=BINDING_USAGE.filter(u=>u.status==='verified').length;
   bs.innerHTML=`
-    <div class="bstat"><b>${confirmed}</b> / ${total} numbers confirmed</div>
-    <div class="bstat"><b>${srcVerified}</b> / ${srcTotal} sources verified</div>
-    <div class="bstat"><b>${needs}</b> bindings need a source</div>`;
+    <span class="schip"><span class="dot good"></span>${confirmed} / ${total} numbers confirmed</span>
+    <span class="schip"><span class="dot good"></span>${srcVerified} / ${srcTotal} sources verified</span>
+    <span class="schip"><span class="dot info"></span>${needs} need a source</span>`;
 }
 
 /* ============ BINDING AFFINITIES — BY SOURCE (bulk verify) ============ */
@@ -1049,18 +1057,21 @@ function bindingBlockHtml(agent,b){
     </div>
     <div class="bbind-sources">${srcHtml}</div>
     <div class="src-add-combo"><input type="text" class="src-add-input" placeholder="Add a source — search by author, title, or PMID…" autocomplete="off"/><div class="src-add-menu hidden"></div></div>
-    <div class="valctl">${VALUE_STATES.map(v=>`<button type="button" class="cs${b.value_status===v?' on':''}" data-vact="${v}" title="${VALUE_LABEL[v]}">${v}</button>`).join('')}</div>
+    <div class="valctl"><span class="valctl-lab">Our Ki vs source</span>${VALUE_STATES.map(v=>`<button type="button" class="cs${b.value_status===v?' on':''}" data-vact="${v}" title="${VALUE_LABEL[v]}">${v}</button>`).join('')}</div>
   </div>`;
 }
 function renderBindByDrug(){
   const host=document.getElementById('bindByDrug'); if(!host) return;
+  // Preserve which drawers are open across a re-render, so editing a binding in
+  // place doesn't collapse the drug the curator is working in.
+  const openAgents=new Set([...host.querySelectorAll('.bdrug.open')].map(d=>d.dataset.agent));
   const agents=[...AGENTS].sort((a,b)=>a.name.localeCompare(b.name)).filter(agentPasses);
   host.innerHTML=`<div class="bind-subhead">By drug &mdash; ${agents.length} shown</div>`
     + agents.map(a=>{
         const worst=a.bindings.some(b=>b.status==='needs-source')?'info'
           :a.bindings.some(b=>b.value_status==='mismatch'||b.status==='conflicting')?'warn'
           :a.bindings.every(b=>b.status==='verified'&&b.value_status==='confirmed')?'good':'brass';
-        return `<div class="bdrug" data-agent="${esc(a.name)}">
+        return `<div class="bdrug${openAgents.has(a.name)?' open':''}" data-agent="${esc(a.name)}">
           <div class="bdrug-head"><span class="dot ${worst}"></span><b>${esc(a.name)}</b>
             <span class="bdrug-n">${a.bindings.length} binding${a.bindings.length===1?'':'s'}</span></div>
           <div class="bdrug-body">${a.bindings.map(b=>bindingBlockHtml(a.name,b)).join('')}</div>
