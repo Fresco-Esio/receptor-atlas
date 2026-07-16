@@ -83,6 +83,33 @@ CREATE TABLE IF NOT EXISTS binding_values (
   src TEXT,
   note TEXT
 );
+-- Binding-affinity provenance (binding-affinity provenance feature). Keyed on the
+-- STABLE (agent_name, target_alias) pair, NOT binding_values.id — that id is
+-- regenerated on every startup because migrateStructured rebuilds binding_values.
+-- binding_sources is the citation edge (a binding may cite any number of library
+-- sources); status mirrors receptor_sources ('verified'|'provided'|'conflicting').
+CREATE TABLE IF NOT EXISTS binding_sources (
+  agent_name   TEXT NOT NULL,
+  target_alias TEXT NOT NULL,
+  source_id    INTEGER NOT NULL REFERENCES sources(id),
+  status       TEXT NOT NULL DEFAULT 'provided',
+  PRIMARY KEY (agent_name, target_alias, source_id)
+);
+-- The per-number transcription check, separate from citation soundness: does OUR Ki
+-- match what the cited source says? A binding with no row here is implicitly 'unchecked'.
+CREATE TABLE IF NOT EXISTS binding_review (
+  agent_name   TEXT NOT NULL,
+  target_alias TEXT NOT NULL,
+  value_status TEXT NOT NULL DEFAULT 'unchecked',  -- 'unchecked' | 'confirmed' | 'mismatch'
+  PRIMARY KEY (agent_name, target_alias)
+);
+-- Stable tag → source_id map so the seed migration is idempotent even after a curator
+-- backfills a migrated source's title/authors: the mapping (not the source's mutable
+-- fields) is what dedupes, so re-runs never create a duplicate sources row.
+CREATE TABLE IF NOT EXISTS binding_source_tags (
+  tag       TEXT PRIMARY KEY,
+  source_id INTEGER NOT NULL REFERENCES sources(id)
+);
 -- clinical_rows: the Ledger's per-receptor clinical entry (DATA). List-valued
 -- fields (over/under/agonists/antagonists) are stored as JSON text.
 CREATE TABLE IF NOT EXISTS clinical_rows (
