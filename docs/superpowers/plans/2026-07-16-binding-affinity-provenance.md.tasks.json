@@ -50,5 +50,5 @@
       "description": "public/the-conservators-desk.html: bindSrowHtml + bindAttach/bindEdge/bindUnlink/bindReview; renderBindByDrug + bindStatusDot + agentPasses; wireBindByDrug; #bindRail + wireBindRail; CSS; call from build(). Browser-verify expand Chlorpromazine, attach/confirm/verify/filter.\n\n```json:metadata\n{\"files\":[\"public/the-conservators-desk.html\"],\"verifyCommand\":\"browser: expand Chlorpromazine, attach+confirm+verify+filter, confirm network + summary updates\",\"acceptanceCriteria\":[\"expandable per-drug bindings\",\"per-binding citations + value_status persist\",\"filter rail scopes list\"]}\n```"
     }
   ],
-  "lastUpdated": "2026-07-16"
+  "lastUpdated": "2026-07-16T-impeccable-polish-complete"
 }
