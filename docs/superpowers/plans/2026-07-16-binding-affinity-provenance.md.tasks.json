@@ -31,21 +31,21 @@
     {
       "id": 5,
       "subject": "Task 5: Desk UI — shell + summary strip",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [4],
       "description": "public/the-conservators-desk.html: loadAgents/loadBindingUsage into init Promise.all; #bindingSection after #halls; renderBindSummary; kindLabel + newSourceFormHtml learn 'database'; CSS. Browser-verify summary 0/136,0/13,31, no console errors.\n\n```json:metadata\n{\"files\":[\"public/the-conservators-desk.html\"],\"verifyCommand\":\"browser: load /the-conservators-desk.html, check summary 0/136,0/13,31 and no console errors\",\"acceptanceCriteria\":[\"fetches both endpoints\",\"summary strip correct\",\"database kind labeled\"]}\n```"
     },
     {
       "id": 6,
       "subject": "Task 6: Desk UI — by-source bulk panel",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [5],
       "description": "public/the-conservators-desk.html: renderBindBySource + bulkSourceStatus + wireBindBySource + CSS (stub renderBindByDrug until Task 7). Browser-verify PDSP 41 bindings, verified click → summary 1/13 + PATCH updated:41.\n\n```json:metadata\n{\"files\":[\"public/the-conservators-desk.html\"],\"verifyCommand\":\"browser: click verified on PDSP row, confirm summary 1/13 and PATCH updated:41\",\"acceptanceCriteria\":[\"13 sources listed by count\",\"bulk verify persists + re-renders\",\"PDSP shows 41 bindings\"]}\n```"
     },
     {
       "id": 7,
       "subject": "Task 7: Desk UI — by-drug list + value_status + filter",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [6],
       "description": "public/the-conservators-desk.html: bindSrowHtml + bindAttach/bindEdge/bindUnlink/bindReview; renderBindByDrug + bindStatusDot + agentPasses; wireBindByDrug; #bindRail + wireBindRail; CSS; call from build(). Browser-verify expand Chlorpromazine, attach/confirm/verify/filter.\n\n```json:metadata\n{\"files\":[\"public/the-conservators-desk.html\"],\"verifyCommand\":\"browser: expand Chlorpromazine, attach+confirm+verify+filter, confirm network + summary updates\",\"acceptanceCriteria\":[\"expandable per-drug bindings\",\"per-binding citations + value_status persist\",\"filter rail scopes list\"]}\n```"
     }
