@@ -314,6 +314,10 @@ input[type=file]{display:none;}
 .bind-summary{display:flex;gap:1.4rem;flex-wrap:wrap;margin:.8rem 0 1.2rem;}
 .bstat{font-family:"Fragment Mono",monospace;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--bone-faint);}
 .bstat b{font-size:1.1rem;color:var(--bone);}
+.bind-subhead{font-family:"Fragment Mono",monospace;font-size:.62rem;letter-spacing:.09em;text-transform:uppercase;color:var(--brass);margin:.6rem 0;}
+.bsrc-row{display:grid;grid-template-columns:1fr auto auto;gap:1rem;align-items:center;padding:.6rem .2rem;border-bottom:1px solid var(--brass-line);}
+.bsrc-cite{font-size:.86rem;color:var(--bone);}
+.bsrc-count{font-family:"Fragment Mono",monospace;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--bone-faint);white-space:nowrap;}
 </style>
 </head>
 <body>
@@ -670,6 +674,7 @@ function build(){
     hallsEl.appendChild(hall);
   });
   refresh();
+  wireBindBySource();
 }
 function volChips(v){return v.map(x=>`<span class="vchip">${x}</span>`).join("");}
 function srcLabel(s){const t=(s.title||s.pmid||'untitled');return `${s.authors||'—'} (${s.year||'n.d.'}) — ${t.length>56?t.slice(0,56)+'…':t}`;}
@@ -906,6 +911,7 @@ function refresh(){
     const hm=document.getElementById("hm-"+hk);if(hm)hm.textContent=`${list.length} specimens · ${p}%`;
   });
   renderBindSummary();
+  renderBindBySource();
 }
 function renderBindSummary(){
   const bs=document.getElementById('bindSummary'); if(!bs) return;
@@ -922,6 +928,38 @@ function renderBindSummary(){
     <div class="bstat"><b>${srcVerified}</b> / ${srcTotal} sources verified</div>
     <div class="bstat"><b>${needs}</b> bindings need a source</div>`;
 }
+
+/* ============ BINDING AFFINITIES — BY SOURCE (bulk verify) ============ */
+const BIND_STATUSES=["verified","provided","conflicting"];
+function renderBindBySource(){
+  const host=document.getElementById('bindBySource'); if(!host) return;
+  if(!BINDING_USAGE.length){ host.innerHTML=''; return; }
+  const sorted=[...BINDING_USAGE].sort((a,b)=>b.count-a.count);
+  host.innerHTML=`<div class="bind-subhead">By source &mdash; verify a source to clear every Ki that cites it</div>`
+    + sorted.map(u=>`
+      <div class="bsrc-row" data-id="${u.id}">
+        <div class="bsrc-cite"><span class="srow-kind">${kindLabel(u)}</span>
+          ${esc(u.authors)||'—'}${u.year?' ('+u.year+')':''} &middot; <i>${esc(u.title)||esc(u.journal)||'untitled'}</i></div>
+        <div class="bsrc-count">${u.count} binding${u.count===1?'':'s'}</div>
+        <div class="citestat">${BIND_STATUSES.map(v=>`<button type="button" class="cs${u.status===v?' on':''}" data-act="bulk" data-id="${u.id}" data-v="${v}">${v}</button>`).join('')}</div>
+      </div>`).join('');
+}
+async function bulkSourceStatus(id,status){
+  const r=await fetch('/api/sources/'+id+'/binding-status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});
+  return r.ok;
+}
+function wireBindBySource(){
+  const host=document.getElementById('bindBySource'); if(!host) return;
+  host.addEventListener('click', async e=>{
+    const btn=e.target.closest('button[data-act="bulk"]'); if(!btn) return;
+    if(await bulkSourceStatus(Number(btn.dataset.id), btn.dataset.v)){
+      await Promise.all([loadAgents(), loadBindingUsage()]);
+      renderBindSummary(); renderBindBySource(); renderBindByDrug();
+    }
+  });
+}
+function renderBindByDrug(){}  /* replaced in Task 7 (by-drug list) */
+
 /* ============ FILTER ============ */
 let FILTER="all";
 function applyFilter(el,r){
