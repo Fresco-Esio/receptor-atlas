@@ -24,7 +24,7 @@
     {
       "id": 4,
       "subject": "Task 4: Write API — edges, value_status, bulk",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [3],
       "description": "Add prepared statements + 5 routes to lib/router.js: POST/PATCH/DELETE /api/bindings/:agent/:target/sources[/:sid], PATCH .../review, PATCH /api/sources/:id/binding-status (decodeURIComponent captures, whitelist CITATION_STATUS + VALUE_STATUS). Test with real pairs.\n\n```json:metadata\n{\"files\":[\"lib/router.js\",\"test/api-binding-write.test.js\"],\"verifyCommand\":\"node --test test/api-binding-write.test.js\",\"acceptanceCriteria\":[\"attach/status/unlink edges\",\"value_status whitelist\",\"bulk source-status\",\"404 unknown pair\"]}\n```"
     },
