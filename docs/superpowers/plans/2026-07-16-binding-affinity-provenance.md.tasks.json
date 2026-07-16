@@ -1,0 +1,54 @@
+{
+  "planPath": "docs/superpowers/plans/2026-07-16-binding-affinity-provenance.md",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Task 1: Schema — three provenance tables",
+      "status": "pending",
+      "description": "Add binding_sources, binding_review, binding_source_tags to db/schema.sql (CREATE IF NOT EXISTS, keyed on stable (agent_name,target_alias) pair). Test PRAGMA columns + PKs.\n\n```json:metadata\n{\"files\":[\"db/schema.sql\",\"test/schema-binding-provenance.test.js\"],\"verifyCommand\":\"node --test test/schema-binding-provenance.test.js\",\"acceptanceCriteria\":[\"three tables exist with documented columns\",\"binding_sources PK is (agent_name,target_alias,source_id)\"]}\n```"
+    },
+    {
+      "id": 2,
+      "subject": "Task 2: Seed migration — tags to sources + edges",
+      "status": "pending",
+      "blockedBy": [1],
+      "description": "Create scripts/migrate-binding-sources.js (SOURCE_TEMPLATES 13, TAG_ALIAS, UNATTRIBUTED, INSERT OR IGNORE edges, binding_source_tags dedup). Wire into migrate.js both paths after structuredBestEffort. Test 13 sources / 105 edges / 31 needs-source, idempotency, PDSP 41.\n\n```json:metadata\n{\"files\":[\"scripts/migrate-binding-sources.js\",\"scripts/migrate.js\",\"test/migrate-binding-sources.test.js\"],\"verifyCommand\":\"node --test test/migrate-binding-sources.test.js\",\"acceptanceCriteria\":[\"13 sources / 105 edges / 31 needs-source\",\"idempotent + preserves verified status\",\"PDSP has 41 edges\"]}\n```"
+    },
+    {
+      "id": 3,
+      "subject": "Task 3: Read API — drug-first payload + usage",
+      "status": "pending",
+      "blockedBy": [2],
+      "description": "Add agentBindingProvenance + bindingSourceUsage to lib/queries.js (join on stable pair, reuse rollupStatus). Add GET /api/agents/binding + GET /api/sources/binding-usage to lib/router.js. Test 71 agents, needs-source empty, PDSP count 41, total 105.\n\n```json:metadata\n{\"files\":[\"lib/queries.js\",\"lib/router.js\",\"test/api-binding-provenance.test.js\"],\"verifyCommand\":\"node --test test/api-binding-provenance.test.js\",\"acceptanceCriteria\":[\"71 agents with rolled-up provenance\",\"needs-source has no edges\",\"binding-usage counts (PDSP 41, total 105)\"]}\n```"
+    },
+    {
+      "id": 4,
+      "subject": "Task 4: Write API — edges, value_status, bulk",
+      "status": "pending",
+      "blockedBy": [3],
+      "description": "Add prepared statements + 5 routes to lib/router.js: POST/PATCH/DELETE /api/bindings/:agent/:target/sources[/:sid], PATCH .../review, PATCH /api/sources/:id/binding-status (decodeURIComponent captures, whitelist CITATION_STATUS + VALUE_STATUS). Test with real pairs.\n\n```json:metadata\n{\"files\":[\"lib/router.js\",\"test/api-binding-write.test.js\"],\"verifyCommand\":\"node --test test/api-binding-write.test.js\",\"acceptanceCriteria\":[\"attach/status/unlink edges\",\"value_status whitelist\",\"bulk source-status\",\"404 unknown pair\"]}\n```"
+    },
+    {
+      "id": 5,
+      "subject": "Task 5: Desk UI — shell + summary strip",
+      "status": "pending",
+      "blockedBy": [4],
+      "description": "public/the-conservators-desk.html: loadAgents/loadBindingUsage into init Promise.all; #bindingSection after #halls; renderBindSummary; kindLabel + newSourceFormHtml learn 'database'; CSS. Browser-verify summary 0/136,0/13,31, no console errors.\n\n```json:metadata\n{\"files\":[\"public/the-conservators-desk.html\"],\"verifyCommand\":\"browser: load /the-conservators-desk.html, check summary 0/136,0/13,31 and no console errors\",\"acceptanceCriteria\":[\"fetches both endpoints\",\"summary strip correct\",\"database kind labeled\"]}\n```"
+    },
+    {
+      "id": 6,
+      "subject": "Task 6: Desk UI — by-source bulk panel",
+      "status": "pending",
+      "blockedBy": [5],
+      "description": "public/the-conservators-desk.html: renderBindBySource + bulkSourceStatus + wireBindBySource + CSS (stub renderBindByDrug until Task 7). Browser-verify PDSP 41 bindings, verified click → summary 1/13 + PATCH updated:41.\n\n```json:metadata\n{\"files\":[\"public/the-conservators-desk.html\"],\"verifyCommand\":\"browser: click verified on PDSP row, confirm summary 1/13 and PATCH updated:41\",\"acceptanceCriteria\":[\"13 sources listed by count\",\"bulk verify persists + re-renders\",\"PDSP shows 41 bindings\"]}\n```"
+    },
+    {
+      "id": 7,
+      "subject": "Task 7: Desk UI — by-drug list + value_status + filter",
+      "status": "pending",
+      "blockedBy": [6],
+      "description": "public/the-conservators-desk.html: bindSrowHtml + bindAttach/bindEdge/bindUnlink/bindReview; renderBindByDrug + bindStatusDot + agentPasses; wireBindByDrug; #bindRail + wireBindRail; CSS; call from build(). Browser-verify expand Chlorpromazine, attach/confirm/verify/filter.\n\n```json:metadata\n{\"files\":[\"public/the-conservators-desk.html\"],\"verifyCommand\":\"browser: expand Chlorpromazine, attach+confirm+verify+filter, confirm network + summary updates\",\"acceptanceCriteria\":[\"expandable per-drug bindings\",\"per-binding citations + value_status persist\",\"filter rail scopes list\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-07-16"
+}
