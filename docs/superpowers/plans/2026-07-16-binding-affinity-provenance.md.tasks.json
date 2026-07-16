@@ -4,20 +4,20 @@
     {
       "id": 1,
       "subject": "Task 1: Schema — three provenance tables",
-      "status": "pending",
+      "status": "completed",
       "description": "Add binding_sources, binding_review, binding_source_tags to db/schema.sql (CREATE IF NOT EXISTS, keyed on stable (agent_name,target_alias) pair). Test PRAGMA columns + PKs.\n\n```json:metadata\n{\"files\":[\"db/schema.sql\",\"test/schema-binding-provenance.test.js\"],\"verifyCommand\":\"node --test test/schema-binding-provenance.test.js\",\"acceptanceCriteria\":[\"three tables exist with documented columns\",\"binding_sources PK is (agent_name,target_alias,source_id)\"]}\n```"
     },
     {
       "id": 2,
       "subject": "Task 2: Seed migration — tags to sources + edges",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [1],
       "description": "Create scripts/migrate-binding-sources.js (SOURCE_TEMPLATES 13, TAG_ALIAS, UNATTRIBUTED, INSERT OR IGNORE edges, binding_source_tags dedup). Wire into migrate.js both paths after structuredBestEffort. Test 13 sources / 105 edges / 31 needs-source, idempotency, PDSP 41.\n\n```json:metadata\n{\"files\":[\"scripts/migrate-binding-sources.js\",\"scripts/migrate.js\",\"test/migrate-binding-sources.test.js\"],\"verifyCommand\":\"node --test test/migrate-binding-sources.test.js\",\"acceptanceCriteria\":[\"13 sources / 105 edges / 31 needs-source\",\"idempotent + preserves verified status\",\"PDSP has 41 edges\"]}\n```"
     },
     {
       "id": 3,
       "subject": "Task 3: Read API — drug-first payload + usage",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [2],
       "description": "Add agentBindingProvenance + bindingSourceUsage to lib/queries.js (join on stable pair, reuse rollupStatus). Add GET /api/agents/binding + GET /api/sources/binding-usage to lib/router.js. Test 71 agents, needs-source empty, PDSP count 41, total 105.\n\n```json:metadata\n{\"files\":[\"lib/queries.js\",\"lib/router.js\",\"test/api-binding-provenance.test.js\"],\"verifyCommand\":\"node --test test/api-binding-provenance.test.js\",\"acceptanceCriteria\":[\"71 agents with rolled-up provenance\",\"needs-source has no edges\",\"binding-usage counts (PDSP 41, total 105)\"]}\n```"
     },
