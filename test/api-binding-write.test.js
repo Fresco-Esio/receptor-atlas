@@ -65,3 +65,13 @@ test('bulk: verify a source sets all its binding edges', async () => {
 test('unknown binding pair is 404', async () => {
   assert.equal((await j('POST', `/api/bindings/Nobody/nowhere/sources`, { source_id: 1 })).status, 404);
 });
+
+test('POST validation error paths', async () => {
+  const agent = 'Diazepam', target = 'gaba_a';
+  // neither source_id nor source → 400
+  assert.equal((await j('POST', `/api/bindings/${enc(agent)}/${enc(target)}/sources`, { status: 'provided' })).status, 400);
+  // unknown source_id → 400
+  assert.equal((await j('POST', `/api/bindings/${enc(agent)}/${enc(target)}/sources`, { source_id: 999999 })).status, 400);
+  // value_status on an unknown pair → 404
+  assert.equal((await j('PATCH', `/api/bindings/Nobody/nowhere/review`, { value_status: 'confirmed' })).status, 404);
+});
