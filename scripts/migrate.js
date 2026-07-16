@@ -2,6 +2,7 @@ import { openDb } from '../db/index.js';
 import { RX, HALLS, ALIASES, STAHL_CHAPTERS } from './seed-data.js';
 import { migrateStructured } from './migrate-structured.js';
 import { migrateArchive } from './migrate-archive.js';
+import { migrateBindingSources } from './migrate-binding-sources.js';
 import { pathToFileURL } from 'node:url';
 
 /**
@@ -17,6 +18,11 @@ function structuredBestEffort(db) {
 function archiveBestEffort(db) {
   try { return migrateArchive(db); }
   catch (e) { return { archive: 0, error: e.message }; }
+}
+
+function bindingSourcesBestEffort(db) {
+  try { return migrateBindingSources(db); }
+  catch (e) { return { sources: 0, edges: 0, needs: 0, error: e.message }; }
 }
 
 /**
@@ -53,7 +59,7 @@ export function seedAliases(db) {
  */
 export function migrate(db) {
   const existing = db.prepare('SELECT COUNT(*) c FROM receptors').get().c;
-  if (existing > 0) { seedAliases(db); structuredBestEffort(db); archiveBestEffort(db); return { skipped: true, receptors: existing }; }
+  if (existing > 0) { seedAliases(db); structuredBestEffort(db); bindingSourcesBestEffort(db); archiveBestEffort(db); return { skipped: true, receptors: existing }; }
 
   const tx = db.transaction(() => {
     const rcpt = db.prepare('INSERT INTO receptors (id,label,system,hall,sort_order,stahl_note,search_query) VALUES (?,?,?,?,?,?,?)');
@@ -107,6 +113,7 @@ export function migrate(db) {
   tx();
   seedAliases(db);
   structuredBestEffort(db);
+  bindingSourcesBestEffort(db);
   archiveBestEffort(db);
   return { skipped: false, receptors: RX.length };
 }
