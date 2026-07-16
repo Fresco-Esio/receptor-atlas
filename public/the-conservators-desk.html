@@ -308,6 +308,12 @@ input[type=file]{display:none;}
 .src-add-opt .srow-kind{margin-right:.4rem;}
 .src-add-opt.src-add-new{color:var(--vermilion); border-style:dashed; border-color:var(--brass-line);}
 .src-add-opt.src-add-new:hover{border-color:var(--vermilion);}
+
+/* ---------- Binding affinities section ---------- */
+#bindingSection{margin-top:2.5rem;}
+.bind-summary{display:flex;gap:1.4rem;flex-wrap:wrap;margin:.8rem 0 1.2rem;}
+.bstat{font-family:"Fragment Mono",monospace;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--bone-faint);}
+.bstat b{font-size:1.1rem;color:var(--bone);}
 </style>
 </head>
 <body>
@@ -438,6 +444,16 @@ input[type=file]{display:none;}
   </div>
 
   <div id="halls"></div>
+
+  <!-- BINDING AFFINITIES (drug-first provenance review) -->
+  <section id="bindingSection">
+    <div class="src-head">
+      <span class="eyebrow">Binding affinities &mdash; authenticate every Ki against its source</span>
+    </div>
+    <div id="bindSummary" class="bind-summary"></div>
+    <div id="bindBySource"></div>
+    <div id="bindByDrug"></div>
+  </section>
 </main>
 
 <footer>
@@ -472,6 +488,9 @@ function rxFromDetail(d){
   };
 }
 async function loadSources(){ SOURCES = await (await fetch('/api/sources')).json(); }
+let AGENTS=[], BINDING_USAGE=[];
+async function loadAgents(){ AGENTS = await (await fetch('/api/agents/binding')).json(); }
+async function loadBindingUsage(){ BINDING_USAGE = await (await fetch('/api/sources/binding-usage')).json(); }
 // Cross-volume "canonical" subject id each volume's nav bridge understands (Task 18
 // deep links). Shared by the Cabinet and Ledger bridges; the Archive navigates by
 // hall instead. DB id → canon.
@@ -651,10 +670,11 @@ function build(){
     hallsEl.appendChild(hall);
   });
   refresh();
+  renderBindSummary();
 }
 function volChips(v){return v.map(x=>`<span class="vchip">${x}</span>`).join("");}
 function srcLabel(s){const t=(s.title||s.pmid||'untitled');return `${s.authors||'—'} (${s.year||'n.d.'}) — ${t.length>56?t.slice(0,56)+'…':t}`;}
-function kindLabel(s){return s.kind==='book'?'Book':'Article';}
+function kindLabel(s){return s.kind==='book'?'Book':s.kind==='database'?'Database':'Article';}
 
 /* ============ SOURCES & CITATIONS PANEL (one list, not a single ref + a separate
    Stahl block — Citation/verification redesign: Stahl is an ordinary source) ============ */
@@ -690,7 +710,7 @@ function matchesSourceQuery(s,q){
 }
 function newSourceFormHtml(prefillTitle){
   return `<div class="srcform" data-newsource="1">
-    <label class="srcfield"><span>Kind</span><select data-k="kind"><option value="article">Article</option><option value="book">Book</option></select></label>
+    <label class="srcfield"><span>Kind</span><select data-k="kind"><option value="article">Article</option><option value="book">Book</option><option value="database">Database</option></select></label>
     <label class="srcfield"><span>Authors</span><input data-k="authors" /></label>
     <label class="srcfield"><span>Year</span><input data-k="year" /></label>
     <label class="srcfield wide"><span>Title</span><input data-k="title" value="${esc(prefillTitle||'')}" /></label>
@@ -886,6 +906,22 @@ function refresh(){
     hp.appendChild(row);
     const hm=document.getElementById("hm-"+hk);if(hm)hm.textContent=`${list.length} specimens · ${p}%`;
   });
+  renderBindSummary();
+}
+function renderBindSummary(){
+  const bs=document.getElementById('bindSummary'); if(!bs) return;
+  let total=0, confirmed=0, needs=0;
+  for(const a of AGENTS) for(const b of a.bindings){
+    total++;
+    if(b.value_status==='confirmed') confirmed++;
+    if(b.status==='needs-source') needs++;
+  }
+  const srcTotal=BINDING_USAGE.length;
+  const srcVerified=BINDING_USAGE.filter(u=>u.status==='verified').length;
+  bs.innerHTML=`
+    <div class="bstat"><b>${confirmed}</b> / ${total} numbers confirmed</div>
+    <div class="bstat"><b>${srcVerified}</b> / ${srcTotal} sources verified</div>
+    <div class="bstat"><b>${needs}</b> bindings need a source</div>`;
 }
 /* ============ FILTER ============ */
 let FILTER="all";
@@ -996,7 +1032,7 @@ addEventListener("scroll",()=>mast.classList.toggle("is-scrolled",scrollY>8));
 /* ============ PAGE-LOAD REVEAL ============ */
 async function init(){
   try{
-    await Promise.all([loadRX(), loadSources(), loadDrift()]);   // RX + STATE (review) + SOURCES + drift set
+    await Promise.all([loadRX(), loadSources(), loadDrift(), loadAgents(), loadBindingUsage()]);   // RX + STATE (review) + SOURCES + drift + AGENTS + BINDING_USAGE set
   }catch(e){
     hallsEl.innerHTML='<div class="hall"><div class="hall-head"><h2>Couldn’t reach the Atlas API</h2></div><p style="padding:0 18px 18px;line-height:1.5;">This page now reads its receptor data from the running server. Start the app with <b>start.bat</b> and open <a href="http://localhost:3000/the-conservators-desk.html">http://localhost:3000/the-conservators-desk.html</a>.</p></div>';
     return;
