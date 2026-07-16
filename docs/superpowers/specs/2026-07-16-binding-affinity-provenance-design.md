@@ -75,35 +75,54 @@ Parsed directly from `public/neuroreceptor_pharmacology_explorer_dashboard.html`
 
 ## Data model
 
-### New table — mirror `receptor_sources`
+> **Verified constraint (probe, 2026-07-16):** `migrate()` runs on every server
+> startup and, when the DB is already seeded, calls `migrateStructured()`, which does
+> `DELETE FROM binding_values` and rebuilds it. A file-backed probe confirmed a binding
+> row's `id` changes across a restart (1 → 137) and any column edit is wiped. Therefore
+> **`binding_values.id` is NOT a stable key** and nothing durable may reference it. The
+> stable identity of a binding is the pair **`(agent_name, target_alias)`**, which comes
+> from the volume HTML and is reproduced identically on every rebuild. Both new tables key
+> off that pair. (This also means the new provenance tables need no coupling to the
+> destructive rebuild — they simply join on the stable pair.)
+
+### New table — the citation edge (mirrors `receptor_sources`, keyed by the stable pair)
 
 ```sql
--- A binding value can cite any number of library sources (mirrors receptor_sources).
--- Per-edge status answers "is this citation sound?"; the number-vs-source check lives
--- separately on binding_values.value_status. A binding with zero rows here is
+-- A binding (identified by the stable agent_name × target_alias pair, since
+-- binding_values.id is regenerated on every migrate) can cite any number of library
+-- sources. Per-edge status answers "is this citation sound?"; the number-vs-source
+-- check lives separately in binding_review. A binding with zero rows here is
 -- "needs-source" (same convention as rollupStatus for receptors).
 CREATE TABLE IF NOT EXISTS binding_sources (
-  binding_id INTEGER NOT NULL REFERENCES binding_values(id),
-  source_id  INTEGER NOT NULL REFERENCES sources(id),
-  status     TEXT NOT NULL DEFAULT 'provided',  -- 'verified' | 'provided' | 'conflicting'
-  PRIMARY KEY (binding_id, source_id)
+  agent_name   TEXT NOT NULL,
+  target_alias TEXT NOT NULL,
+  source_id    INTEGER NOT NULL REFERENCES sources(id),
+  status       TEXT NOT NULL DEFAULT 'provided',  -- 'verified' | 'provided' | 'conflicting'
+  PRIMARY KEY (agent_name, target_alias, source_id)
 );
 ```
 
 No `is_primary` — unlike receptors, bindings have no "atlas volume shows exactly one
 citation" invariant to protect, so the primary-edge machinery is omitted.
 
-### New column — the per-number transcription check
+### New table — the per-number transcription check (also keyed by the stable pair)
 
 ```sql
-ALTER TABLE binding_values ADD COLUMN value_status TEXT NOT NULL DEFAULT 'unchecked';
--- 'unchecked' | 'confirmed' | 'mismatch'
+-- The "does our Ki match what the source says?" check, separate from citation
+-- soundness. Keyed by the stable pair so a value_status survives the binding_values
+-- rebuild. A binding with no row here is implicitly 'unchecked'.
+CREATE TABLE IF NOT EXISTS binding_review (
+  agent_name   TEXT NOT NULL,
+  target_alias TEXT NOT NULL,
+  value_status TEXT NOT NULL DEFAULT 'unchecked',  -- 'unchecked' | 'confirmed' | 'mismatch'
+  PRIMARY KEY (agent_name, target_alias)
+);
 ```
 
 Two **independent** trust signals, as decided:
 
 - **`binding_sources.status`** — *is the source sound?* Per-edge, verified/provided/conflicting.
-- **`binding_values.value_status`** — *does our Ki match what the source says?*
+- **`binding_review.value_status`** — *does our Ki match what the source says?*
   `mismatch` is first-class: "the paper is fine, our number is wrong" — the exact error
   class the hand-authored data cannot currently record.
 
@@ -113,62 +132,77 @@ the 31 needs-source bindings, where it's the only starting hint).
 
 ### Schema-change handling
 
-- `binding_sources` is `CREATE TABLE IF NOT EXISTS` — free on existing DBs.
-- `value_status` needs `ALTER TABLE ... ADD COLUMN` for the already-built `db/atlas.db`.
-  Guard it (check `PRAGMA table_info(binding_values)` for the column before adding) so a
-  re-run is a no-op. Add the column to `db/schema.sql` too, for fresh builds.
+- Both `binding_sources` and `binding_review` are `CREATE TABLE IF NOT EXISTS` — free on
+  existing DBs, no `ALTER TABLE`, no dependence on the unstable `binding_values.id`.
 - `sources.kind` gains a third value `'database'` (for PDSP Ki DB, IUPHAR/BPS,
   StatPearls). The router already accepts any `kind` string (`body.kind ?? 'article'`),
   so **no validation change** is required — only the migration inserts it, and the Desk's
   source combobox learns to label it.
 
-## Migration (one-time, idempotent)
+## Migration (runs every startup, seed-only, never clobbers)
 
-New script `scripts/migrate-binding-sources.js`, following `migrate-structured.js` style
-(idempotent: clears `binding_sources` and resets `value_status`, then rebuilds):
+New script `scripts/migrate-binding-sources.js`, following `migrate-structured.js` style.
+Because `binding_values` is rebuilt on every startup, this **also runs on every startup**
+(right after `migrateStructured`, since it reads the freshly-built `binding_values`). It is
+**seed-only**, not destructive: it uses `INSERT OR IGNORE`, so it fills in any missing
+migration edge but **never overwrites a status a curator has since changed**. It does not
+touch `binding_review` at all (that is pure user data).
 
-1. A hardcoded **tag → source template** map (17 tags): kind, and whatever metadata the
-   tag carries (databases get a name + `url`; `article` tags get `journal`+`year` or a PMC
-   `url`; title/authors left blank where the tag never carried them).
-2. For each `binding_values` row: look up its `src` tag.
-   - **Real tag** → find-or-create the `sources` row (dedup by the template), insert a
-     `binding_sources` edge with `status='provided'` (carried, *not* verified — the
-     migration attributes, it does not authenticate).
+1. A hardcoded **tag → source template** map (16 template tags + 1 alias): kind, and
+   whatever metadata the tag carries (databases get a name + `url`; `article` tags get
+   `journal`+`year` or a PMC `url`; title/authors left blank where the tag never carried
+   them — see the concrete map in the plan's Task 2).
+2. For each `binding_values` row (reading `agent_name`, `target_alias`, `src`):
+   - **Real tag** → **find-or-create** the `sources` row (dedup: reuse an existing row
+     matching the template's defining fields, else insert once), then
+     `INSERT OR IGNORE INTO binding_sources (agent_name, target_alias, source_id, status)`
+     with `status='provided'` (carried, *not* verified — the migration attributes, it does
+     not authenticate).
    - **Unattributed tag** (`literature`, `literature (tier)`, `qualitative`) → **no edge**;
-     the binding is `needs-source`. `src` stays as the label.
-   - `PDSP / literature` → maps to the PDSP source (it names the database).
-3. All `value_status` stay `'unchecked'`.
+     the binding is `needs-source`. `binding_values.src` stays as the label.
+   - `PDSP / literature` → aliases to the `PDSP Ki DB` source (it names the database).
+3. `binding_review` is left empty — every binding is implicitly `unchecked` until a
+   curator sets it.
 
-**End state:** 13 sources, 105 edges (all `provided`), 31 needs-source, 136 numbers
-`unchecked`. The backlog, made visible and truthful. PMC `url`s are resolvable, so those
-citations become clickable immediately.
+**End state on a fresh build:** 13 sources, 105 edges (all `provided`), 31 needs-source,
+136 numbers `unchecked`. The backlog, made visible and truthful. PMC `url`s are resolvable,
+so those citations become clickable immediately. **On a re-run** (restart), the 13 sources
+are found-not-recreated and the 105 edges are `INSERT OR IGNORE`d — so a curator's
+`verified`/`conflicting` statuses and any hand-attached sources are preserved.
 
-Wire into the migrate chain so a fresh `db/atlas.db` build runs it after
-`migrate-structured` (which must populate `binding_values` first, since edges reference
-`binding_values.id`).
+Wire into the migrate chain (`migrate.js`) so both the fresh-build and the
+already-seeded paths call it after `structuredBestEffort`, wrapped best-effort like its
+neighbours so a volume-file problem can't break the core seed.
 
-## API — twin the receptor-source routes
+## API — twin the receptor-source routes (keyed by the stable pair)
 
-New read shape for the drug-first section, and binding twins of the three receptor-source
-write routes (copied from `lib/router.js` handlers):
+Binding identity in URLs is the stable pair, `encodeURIComponent`-encoded:
+`/api/bindings/:agent/:target/...` (handlers `decodeURIComponent` the two captures).
+This avoids the unstable `binding_values.id` entirely.
 
 - `GET /api/agents/binding` — drug-first payload: one object per agent, each with its
   bindings, and for each binding its attached sources (`{id, kind, authors, year, title,
   journal, pmid, doi, url, status}`) + `value_status` + preserved `src` label. New query
-  `agentBindingProvenance(db)` in `lib/queries.js`.
-- `GET /api/sources/binding-usage` (or fold into `GET /api/sources`) — per source, the
-  count of binding edges and a rolled-up status, powering the by-source panel.
-- `POST /api/bindings/:id/sources` — attach a library source (`source_id`) or create-inline
-  (`source`) and attach, with `status`. Twin of the receptor `POST .../sources` handler.
-- `PATCH /api/bindings/:id/sources/:sid` — set edge `status`. Twin of receptor edge PATCH.
-- `DELETE /api/bindings/:id/sources/:sid` — unlink (keeps the shared library row).
-- `PATCH /api/bindings/:id` — set `value_status` (whitelisted; only that column).
-- `PATCH /api/sources/:id/binding-status` — **bulk**: set every binding edge citing this
-  source to a status in one call. The leverage route: verify PDSP Ki DB once → 40 numbers
-  clear. Since two databases account for 75 of 105 edges, most curation happens here.
+  `agentBindingProvenance(db)` in `lib/queries.js` (joins `binding_values` →
+  `binding_sources` and `binding_review` on the stable pair).
+- `GET /api/sources/binding-usage` — per source: the count of binding edges citing it and
+  a rolled-up status (reusing `rollupStatus`), powering the by-source panel. Separate route,
+  so the existing `GET /api/sources` stays byte-for-byte unchanged.
+- `POST /api/bindings/:agent/:target/sources` — attach a library source (`source_id`) or
+  create-inline (`source`) and attach, with `status`. Twin of the receptor
+  `POST .../sources` handler; validates the pair exists in `binding_values`.
+- `PATCH /api/bindings/:agent/:target/sources/:sid` — set edge `status`. Twin of the
+  receptor edge PATCH.
+- `DELETE /api/bindings/:agent/:target/sources/:sid` — unlink (keeps the shared library row).
+- `PATCH /api/bindings/:agent/:target/review` — upsert `value_status` into `binding_review`
+  (whitelisted to the three allowed values).
+- `PATCH /api/sources/:id/binding-status` — **bulk**: set every `binding_sources` edge
+  citing this source to a status in one call (the source `id` IS stable). The leverage
+  route: verify PDSP Ki DB once → all 41 of its edges clear. Since two databases account
+  for 75 of 105 edges, most curation happens here.
 
-All routes parameterized (`?`), whitelisted columns only — same SQL-injection discipline
-as the existing router. Reuse the existing `sources` library routes (`POST`/`PATCH
+All routes parameterized (`?`), whitelisted values only — same SQL-injection discipline as
+the existing router. Reuse the existing `sources` library routes (`POST`/`PATCH
 /api/sources`) unchanged for creating/editing source records.
 
 ## The Desk section — "Binding affinities," drug-first
@@ -207,15 +241,18 @@ button); source-combobox add-flow is reused from the receptor sources panel.
 
 ## Testing
 
-Mirror `test/` patterns:
-- Unit: `agentBindingProvenance` shape; migration idempotency; the tag→source map yields
-  13 sources / 105 edges / 31 needs-source over the real `AFF_AGENTS`.
+Mirror `test/` patterns (`node --test`, `createServer(':memory:', {seed:true})`):
+- Unit: the tag→source map yields 13 sources / 105 edges / 31 needs-source over the real
+  seeded DB; migration idempotency (re-run keeps counts and preserves a hand-set
+  `verified` status); `agentBindingProvenance` shape (71 agents, edges + `value_status`).
+- **Persistence regression** (the reason for the stable key): seed → set a binding edge to
+  `verified` and a `value_status` to `confirmed` → re-run `migrate(db)` → assert both
+  survive. This is the test that would have failed under the id-keyed design.
 - Route: attach/status/unlink binding edges; `value_status` PATCH whitelist; bulk
   `binding-status` sets all edges for a source; 404/400 paths matching existing handlers.
 
 ## Open implementation questions (for the plan, not blocking)
 
-- Whether `GET /api/sources/binding-usage` is a separate route or an enrichment on
-  `GET /api/sources` (leaning: separate, to keep the library route unchanged).
-- Exact `sources` template metadata for each of the 13 tags (journal names, PMC URLs) —
-  a lookup table authored during implementation.
+- Exact `sources` template metadata for each of the 13 tags (journal names, PMC URLs) is
+  pinned in the plan's Task 2 map; titles/authors for the article shells are left blank on
+  purpose, for the curator to backfill through the new UI.
