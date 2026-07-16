@@ -318,6 +318,19 @@ input[type=file]{display:none;}
 .bsrc-row{display:grid;grid-template-columns:1fr auto auto;gap:1rem;align-items:center;padding:.6rem .2rem;border-bottom:1px solid var(--brass-line);}
 .bsrc-cite{font-size:.86rem;color:var(--bone);}
 .bsrc-count{font-family:"Fragment Mono",monospace;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--bone-faint);white-space:nowrap;}
+#bindRail{margin:1rem 0;}
+.bdrug{border-bottom:1px solid var(--brass-line);}
+.bdrug-head{display:flex;align-items:center;gap:.6rem;padding:.65rem .2rem;cursor:pointer;}
+.bdrug-head b{font-size:.95rem;color:var(--bone);}
+.bdrug-n{font-family:"Fragment Mono",monospace;font-size:.6rem;letter-spacing:.06em;text-transform:uppercase;color:var(--bone-faint);margin-left:auto;}
+.bdrug-body{display:none;padding:0 .2rem .8rem 1.4rem;}
+.bdrug.open .bdrug-body{display:block;}
+.bbind{border-left:2px solid var(--brass-line);padding:.5rem .8rem;margin:.5rem 0;}
+.bbind-head{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;}
+.bbind-ki{font-family:"Fragment Mono",monospace;font-size:.72rem;color:var(--brass);}
+.bbind-act{font-size:.8rem;color:var(--bone-faint);}
+.bbind-sources{margin:.5rem 0;}
+.valctl{display:flex;gap:.3rem;margin-top:.5rem;}
 </style>
 </head>
 <body>
@@ -456,6 +469,15 @@ input[type=file]{display:none;}
     </div>
     <div id="bindSummary" class="bind-summary"></div>
     <div id="bindBySource"></div>
+    <div class="rail" id="bindRail">
+      <span class="lab">Show</span>
+      <button class="seg active" data-bfilter="all">All</button>
+      <button class="seg" data-bfilter="needs">Needs source</button>
+      <button class="seg" data-bfilter="unverified">Unverified</button>
+      <button class="seg" data-bfilter="unconfirmed">Unconfirmed</button>
+      <button class="seg" data-bfilter="mismatch">Has mismatch</button>
+      <button class="seg" data-bfilter="cleared">Cleared</button>
+    </div>
     <div id="bindByDrug"></div>
   </section>
 </main>
@@ -675,6 +697,8 @@ function build(){
   });
   refresh();
   wireBindBySource();
+  wireBindByDrug();
+  wireBindRail();
 }
 function volChips(v){return v.map(x=>`<span class="vchip">${x}</span>`).join("");}
 function srcLabel(s){const t=(s.title||s.pmid||'untitled');return `${s.authors||'—'} (${s.year||'n.d.'}) — ${t.length>56?t.slice(0,56)+'…':t}`;}
@@ -912,6 +936,7 @@ function refresh(){
   });
   renderBindSummary();
   renderBindBySource();
+  renderBindByDrug();
 }
 function renderBindSummary(){
   const bs=document.getElementById('bindSummary'); if(!bs) return;
@@ -958,7 +983,137 @@ function wireBindBySource(){
     }
   });
 }
-function renderBindByDrug(){}  /* replaced in Task 7 (by-drug list) */
+/* ============ BINDING AFFINITIES — BY DRUG (per-binding citations + value_status) ============ */
+const VALUE_LABEL={unchecked:"Number unchecked",confirmed:"Number confirmed",mismatch:"Number ≠ source"};
+const VALUE_STATES=["confirmed","mismatch","unchecked"];
+let BIND_FILTER='all';
+
+function bindSrowHtml(agent,target,s){
+  return `<div class="srow" data-sid="${s.id}">
+    <div class="srow-top"><span class="srow-kind">${kindLabel(s)}</span></div>
+    <div class="srow-cite">${esc(s.authors)||'—'} (${s.year||'n.d.'}). <i>${esc(s.title)||esc(s.journal)||'untitled'}</i>${s.journal&&s.title?' &middot; '+esc(s.journal):''}</div>
+    <div class="srow-ids">
+      ${s.pmid?`<a class="srclink" href="${pm(s.pmid)}" target="_blank" rel="noopener">PMID ${esc(s.pmid)} ↗</a>`:''}
+      ${s.doi?`<a class="srclink" href="${doiU(s.doi)}" target="_blank" rel="noopener">DOI ↗</a>`:''}
+      ${(!s.pmid&&!s.doi&&s.url)?`<a class="srclink" href="${esc(s.url)}" target="_blank" rel="noopener">Open ↗</a>`:''}
+    </div>
+    <div class="citestat">${CITATION_STATUSES.map(v=>`<button type="button" class="cs${s.status===v?' on':''}" data-bact="status" data-sid="${s.id}" data-v="${v}" title="${CS_HELP[v]}">${v}</button>`).join('')}</div>
+    <div class="srow-actions"><button type="button" class="ctrl" data-bact="unlink" data-sid="${s.id}">Remove</button></div>
+  </div>`;
+}
+
+async function bindAttach(agent,target,body){
+  const r=await fetch(`/api/bindings/${encodeURIComponent(agent)}/${encodeURIComponent(target)}/sources`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  return r.ok;
+}
+async function bindEdge(agent,target,sid,status){
+  const r=await fetch(`/api/bindings/${encodeURIComponent(agent)}/${encodeURIComponent(target)}/sources/${sid}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});
+  return r.ok;
+}
+async function bindUnlink(agent,target,sid){
+  const r=await fetch(`/api/bindings/${encodeURIComponent(agent)}/${encodeURIComponent(target)}/sources/${sid}`,{method:'DELETE'});
+  return r.ok;
+}
+async function bindReview(agent,target,value_status){
+  const r=await fetch(`/api/bindings/${encodeURIComponent(agent)}/${encodeURIComponent(target)}/review`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({value_status})});
+  return r.ok;
+}
+
+function targetLabel(b){ const r=RX.find(x=>x.id===b.receptor_id); return r?r.nm:b.target_alias; }
+function bindStatusDot(b){
+  if(b.status==='needs-source') return 'info';
+  if(b.value_status==='mismatch'||b.status==='conflicting') return 'warn';
+  if(b.status==='verified'&&b.value_status==='confirmed') return 'good';
+  return 'brass';
+}
+function agentPasses(a){
+  if(BIND_FILTER==='all') return true;
+  return a.bindings.some(b=>{
+    if(BIND_FILTER==='needs') return b.status==='needs-source';
+    if(BIND_FILTER==='unverified') return b.status!=='verified';
+    if(BIND_FILTER==='unconfirmed') return b.value_status!=='confirmed';
+    if(BIND_FILTER==='mismatch') return b.value_status==='mismatch';
+    if(BIND_FILTER==='cleared') return b.status==='verified'&&b.value_status==='confirmed';
+    return true;
+  });
+}
+function bindingBlockHtml(agent,b){
+  const srcHtml = b.sources.length ? b.sources.map(s=>bindSrowHtml(agent,b.target_alias,s)).join('')
+    : `<div class="srcline" style="color:var(--bone-faint)">No source cited yet &middot; imported label: <i>${esc(b.src)||'—'}</i></div>`;
+  return `<div class="bbind" data-target="${esc(b.target_alias)}">
+    <div class="bbind-head">
+      <span class="dot ${bindStatusDot(b)}"></span>
+      <b>${esc(targetLabel(b))}</b>
+      <span class="bbind-ki">Ki ${esc(b.ki_text)||(b.ki!=null?b.ki+' nM':'—')}</span>
+      <span class="bbind-act">${esc(b.act_full)||''}</span>
+    </div>
+    <div class="bbind-sources">${srcHtml}</div>
+    <div class="src-add-combo"><input type="text" class="src-add-input" placeholder="Add a source — search by author, title, or PMID…" autocomplete="off"/><div class="src-add-menu hidden"></div></div>
+    <div class="valctl">${VALUE_STATES.map(v=>`<button type="button" class="cs${b.value_status===v?' on':''}" data-vact="${v}" title="${VALUE_LABEL[v]}">${v}</button>`).join('')}</div>
+  </div>`;
+}
+function renderBindByDrug(){
+  const host=document.getElementById('bindByDrug'); if(!host) return;
+  const agents=[...AGENTS].sort((a,b)=>a.name.localeCompare(b.name)).filter(agentPasses);
+  host.innerHTML=`<div class="bind-subhead">By drug &mdash; ${agents.length} shown</div>`
+    + agents.map(a=>{
+        const worst=a.bindings.some(b=>b.status==='needs-source')?'info'
+          :a.bindings.some(b=>b.value_status==='mismatch'||b.status==='conflicting')?'warn'
+          :a.bindings.every(b=>b.status==='verified'&&b.value_status==='confirmed')?'good':'brass';
+        return `<div class="bdrug" data-agent="${esc(a.name)}">
+          <div class="bdrug-head"><span class="dot ${worst}"></span><b>${esc(a.name)}</b>
+            <span class="bdrug-n">${a.bindings.length} binding${a.bindings.length===1?'':'s'}</span></div>
+          <div class="bdrug-body">${a.bindings.map(b=>bindingBlockHtml(a.name,b)).join('')}</div>
+        </div>`;
+      }).join('');
+}
+function wireBindByDrug(){
+  const host=document.getElementById('bindByDrug'); if(!host) return;
+  async function reloadAll(){ await Promise.all([loadAgents(),loadBindingUsage()]); renderBindSummary(); renderBindBySource(); renderBindByDrug(); }
+  host.addEventListener('click', async e=>{
+    const head=e.target.closest('.bdrug-head');
+    if(head){ head.parentElement.classList.toggle('open'); return; }
+    const bind=e.target.closest('.bbind'); if(!bind) return;
+    const agent=e.target.closest('.bdrug').dataset.agent, target=bind.dataset.target;
+    const statusBtn=e.target.closest('button[data-bact="status"]');
+    if(statusBtn){ if(await bindEdge(agent,target,Number(statusBtn.dataset.sid),statusBtn.dataset.v)) reloadAll(); return; }
+    const unlinkBtn=e.target.closest('button[data-bact="unlink"]');
+    if(unlinkBtn){ if(!confirm('Remove this source from the binding? The shared library record is kept.'))return;
+      if(await bindUnlink(agent,target,Number(unlinkBtn.dataset.sid))) reloadAll(); return; }
+    const valBtn=e.target.closest('button[data-vact]');
+    if(valBtn){ if(await bindReview(agent,target,valBtn.dataset.vact)) reloadAll(); return; }
+    const opt=e.target.closest('.src-add-opt');
+    if(opt){
+      const menu=opt.closest('.src-add-menu');
+      if(opt.dataset.sid){ if(await bindAttach(agent,target,{source_id:Number(opt.dataset.sid),status:'provided'})) reloadAll(); }
+      else if(opt.dataset.act==='newform'){
+        const title=menu.dataset.q||'';
+        if(await bindAttach(agent,target,{source:{kind:'article',title},status:'provided'})) reloadAll();
+      }
+      return;
+    }
+  });
+  host.addEventListener('input', e=>{
+    const input=e.target.closest('.src-add-input'); if(!input) return;
+    const menu=input.parentElement.querySelector('.src-add-menu');
+    const q=input.value.trim().toLowerCase();
+    if(!q){ menu.classList.add('hidden'); menu.innerHTML=''; return; }
+    menu.dataset.q=input.value.trim();
+    const matches=SOURCES.filter(s=>matchesSourceQuery(s,q)).slice(0,8);
+    menu.innerHTML=matches.map(s=>`<button type="button" class="src-add-opt" data-sid="${s.id}"><span class="srow-kind">${kindLabel(s)}</span>${esc(srcLabel(s))}</button>`).join('')
+      + `<button type="button" class="src-add-opt src-add-new" data-act="newform">+ Create a new source for &ldquo;${esc(input.value.trim())}&rdquo;</button>`;
+    menu.classList.remove('hidden');
+  });
+}
+function wireBindRail(){
+  const rail=document.getElementById('bindRail'); if(!rail) return;
+  rail.addEventListener('click',e=>{
+    const seg=e.target.closest('.seg'); if(!seg) return;
+    rail.querySelectorAll('.seg').forEach(s=>s.classList.remove('active')); seg.classList.add('active');
+    BIND_FILTER=seg.dataset.bfilter;
+    renderBindByDrug();
+  });
+}
 
 /* ============ FILTER ============ */
 let FILTER="all";
