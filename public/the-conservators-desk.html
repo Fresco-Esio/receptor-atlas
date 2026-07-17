@@ -233,10 +233,21 @@ input[type=file]{display:none;}
 .struct-field > span{font-family:"Fragment Mono",monospace; font-size:.55rem; letter-spacing:.1em; text-transform:uppercase; color:var(--bone-faint);}
 .struct-field textarea, .struct-field input{width:100%; background:var(--wall-recess); border:1px solid var(--brass-line); border-radius:2px; color:var(--bone); font-family:"Schibsted Grotesk",sans-serif; font-size:.84rem; padding:.5rem .6rem; line-height:1.5; resize:vertical;}
 .struct-field textarea:focus, .struct-field input:focus{outline:1px solid var(--brass); border-color:var(--brass);}
-.bind-table{display:grid; grid-template-columns:minmax(0,1fr) 5.5rem minmax(0,1fr); gap:.4rem .7rem; align-items:center;}
-.bind-table .bh{font-family:"Fragment Mono",monospace; font-size:.54rem; letter-spacing:.1em; text-transform:uppercase; color:var(--bone-faint); border-bottom:1px solid var(--brass-faint); padding-bottom:.3rem;}
-.bind-agent{font-size:.8rem; color:var(--bone-dim);}
-.bind-table input{width:100%; background:var(--wall-recess); border:1px solid var(--brass-line); border-radius:2px; color:var(--bone); font-family:"Fragment Mono",monospace; font-size:.72rem; padding:.3rem .4rem;}
+/* specimen binding rows: each Ki beside its source (receptor-first provenance) */
+.sbind-list{display:flex; flex-direction:column;}
+.sbind{padding:.7rem 0; border-bottom:1px solid var(--brass-faint);}
+.sbind:last-child{border-bottom:none; padding-bottom:.1rem;}
+.sbind-head{display:flex; align-items:center; gap:.5rem; flex-wrap:wrap;}
+.sbind-head b{font-size:.86rem; color:var(--bone);}
+.sbind-act{font-size:.62rem; color:var(--bone-faint);}
+.sbind-in{display:inline-flex; align-items:center; gap:.35rem; font-family:"Fragment Mono",monospace; font-size:.55rem; letter-spacing:.06em; text-transform:uppercase; color:var(--bone-faint);}
+.sbind-in.wide{flex:1 1 12rem; min-width:8rem;}
+.sbind-in input{background:var(--wall-recess); border:1px solid var(--brass-line); border-radius:2px; color:var(--bone); font-family:"Fragment Mono",monospace; font-size:.72rem; padding:.28rem .4rem; width:4.5rem;}
+.sbind-in.wide input{width:100%; font-family:"Schibsted Grotesk",sans-serif; text-transform:none; letter-spacing:normal;}
+.sbind-in input:focus{outline:1px solid var(--brass); border-color:var(--brass);}
+.sbind-head .dot{align-self:center;}
+.sbind-prov{margin:.5rem 0 0 1.1rem; padding-left:.9rem; border-left:1px solid var(--brass-faint);}
+.sbind-sources{margin-bottom:.4rem;}
 .struct-saved{position:absolute; top:1rem; right:0; font-family:"Fragment Mono",monospace; font-size:.55rem; letter-spacing:.1em; text-transform:uppercase; color:var(--good); opacity:0; transition:opacity .3s var(--ease);}
 .struct-saved.show{opacity:1;}
 
@@ -630,6 +641,32 @@ async function loadStructEditor(r,bodyEl){
   bodyEl.innerHTML=structEditorHtml(data);
   wireStructEditor(r,bodyEl);
 }
+/* One binding inside the specimen editor: the Ki (editable) sits beside its cited
+   source + status + value_status — provenance where the number is (receptor-first). */
+function structBindingDot(b){
+  if(b.citation_status==='needs-source') return 'info';
+  if(b.value_status==='mismatch'||b.citation_status==='conflicting') return 'warn';
+  if(b.citation_status==='verified'&&b.value_status==='confirmed') return 'good';
+  return 'brass';
+}
+function structBindingHtml(b){
+  const srcHtml = (b.sources&&b.sources.length)
+    ? b.sources.map(s=>bindSrowHtml(b.agent_name,b.target_alias,s)).join('')
+    : `<div class="srcline" style="color:var(--bone-faint)">No source cited yet &middot; imported label: <i>${esc(b.src)||'—'}</i></div>`;
+  return `<div class="sbind" data-target="${esc(b.target_alias)}" data-agent="${esc(b.agent_name)}">
+    <div class="sbind-head">
+      <span class="dot ${structBindingDot(b)}"></span>
+      <b>${esc(b.agent_name)}</b>${b.act?` <span class="mono sbind-act">${esc(b.act)}</span>`:''}
+      <label class="sbind-in">Ki <input data-bk="ki" data-bid="${b.id}" value="${b.ki==null?'':b.ki}" /> nM</label>
+      <label class="sbind-in wide">note <input data-bk="note" data-bid="${b.id}" value="${esc(b.note||'')}" /></label>
+    </div>
+    <div class="sbind-prov">
+      <div class="sbind-sources">${srcHtml}</div>
+      <div class="src-add-combo"><input type="text" class="src-add-input" placeholder="Cite a source — search author, title, or PMID…" autocomplete="off"/><div class="src-add-menu hidden"></div></div>
+      <div class="valctl"><span class="valctl-lab">Our Ki vs source</span>${VALUE_STATES.map(v=>`<button type="button" class="cs${b.value_status===v?' on':''}" data-vact="${v}" title="${VALUE_LABEL[v]}">${v}</button>`).join('')}</div>
+    </div>
+  </div>`;
+}
 function structEditorHtml(data){
   let html='<div class="struct-saved">saved ✓</div>';
   html+=`<div class="struct-sec"><div class="pk">Claim under review (Archive)</div>
@@ -643,14 +680,8 @@ function structEditorHtml(data){
       <div class="struct-field"><span>understimulated (one per line)</span><textarea data-ck="under" rows="3">${esc((c.under||[]).join('\n'))}</textarea></div></div>`;
   }
   if(data.binding&&data.binding.length){
-    html+=`<div class="struct-sec"><div class="pk">Binding affinities (Cabinet)</div><div class="bind-table">
-      <div class="bh">Agent</div><div class="bh">Ki (nM)</div><div class="bh">Note</div>`;
-    data.binding.forEach(b=>{
-      html+=`<div class="bind-agent">${esc(b.agent_name)} <span class="mono" style="color:var(--bone-faint)">${esc(b.act||'')}</span></div>
-        <input data-bk="ki" data-bid="${b.id}" value="${b.ki==null?'':b.ki}" />
-        <input data-bk="note" data-bid="${b.id}" value="${esc(b.note||'')}" />`;
-    });
-    html+='</div></div>';
+    html+=`<div class="struct-sec"><div class="pk">Binding affinities (Cabinet) &mdash; each Ki beside its source</div>
+      <div class="sbind-list">${data.binding.map(structBindingHtml).join('')}</div></div>`;
   }
   if(data.narrative){
     const nv=data.narrative;
@@ -677,11 +708,8 @@ function wireStructEditor(r,bodyEl){
     const val=(k==='over'||k==='under')?f.value.split('\n').map(s=>s.trim()).filter(Boolean):f.value;
     patchStructuredDebounced(r.id,r.id+':c:'+k,{volume:'ledger',clinical:{[k]:val}},bodyEl);
   }));
-  bodyEl.querySelectorAll('[data-bk]').forEach(inp=>inp.addEventListener('input',()=>{
-    const id=Number(inp.dataset.bid),k=inp.dataset.bk;
-    const val=(k==='ki')?(inp.value.trim()===''?null:Number(inp.value)):inp.value;
-    patchStructuredDebounced(r.id,r.id+':b'+id+':'+k,{volume:'cabinet',binding:{id,[k]:val}},bodyEl);
-  }));
+  const slist=bodyEl.querySelector('.sbind-list');
+  if(slist){ wireBindKiNote(r,bodyEl,slist); wireSpecimenProvenance(r,bodyEl,slist); }
   bodyEl.querySelectorAll('[data-nk]').forEach(f=>f.addEventListener('input',()=>{
     const k=f.dataset.nk;
     let val=f.value;
@@ -689,6 +717,56 @@ function wireStructEditor(r,bodyEl){
     else if(k==='tags')val=f.value.split('\n').map(s=>s.trim()).filter(Boolean);
     patchStructuredDebounced(r.id,r.id+':n:'+k,{volume:'archive',narrative:{[k]:val}},bodyEl);
   }));
+}
+
+// Wire the editable Ki/note inputs inside a specimen's binding list (re-called after a
+// provenance change re-renders the list).
+function wireBindKiNote(r,bodyEl,container){
+  container.querySelectorAll('[data-bk]').forEach(inp=>inp.addEventListener('input',()=>{
+    const id=Number(inp.dataset.bid),k=inp.dataset.bk;
+    const val=(k==='ki')?(inp.value.trim()===''?null:Number(inp.value)):inp.value;
+    patchStructuredDebounced(r.id,r.id+':b'+id+':'+k,{volume:'cabinet',binding:{id,[k]:val}},bodyEl);
+  }));
+}
+// Delegated (attached once) source + value_status controls for a specimen's bindings.
+// Reuses the same binding routes as the drug-first section; a change re-renders this
+// list and keeps the drug-first panels + summary in sync.
+function wireSpecimenProvenance(r,bodyEl,slist){
+  async function reloadBindings(){
+    const data=await (await fetch('/api/receptors/'+r.id+'/structured')).json();
+    slist.innerHTML=(data.binding||[]).map(structBindingHtml).join('');
+    wireBindKiNote(r,bodyEl,slist);
+    await Promise.all([loadAgents(),loadBindingUsage()]);
+    renderBindSummary(); renderBindBySource(); renderBindByDrug();
+  }
+  slist.addEventListener('click', async e=>{
+    const block=e.target.closest('.sbind'); if(!block) return;
+    const agent=block.dataset.agent, target=block.dataset.target;
+    const statusBtn=e.target.closest('button[data-bact="status"]');
+    if(statusBtn){ if(await bindEdge(agent,target,Number(statusBtn.dataset.sid),statusBtn.dataset.v)) reloadBindings(); return; }
+    const unlinkBtn=e.target.closest('button[data-bact="unlink"]');
+    if(unlinkBtn){ if(!confirm('Remove this source from the binding? The shared library record is kept.'))return;
+      if(await bindUnlink(agent,target,Number(unlinkBtn.dataset.sid))) reloadBindings(); return; }
+    const valBtn=e.target.closest('button[data-vact]');
+    if(valBtn){ if(await bindReview(agent,target,valBtn.dataset.vact)) reloadBindings(); return; }
+    const opt=e.target.closest('.src-add-opt');
+    if(opt){ const menu=opt.closest('.src-add-menu');
+      if(opt.dataset.sid){ if(await bindAttach(agent,target,{source_id:Number(opt.dataset.sid),status:'provided'})) reloadBindings(); }
+      else if(opt.dataset.act==='newform'){ const title=menu.dataset.q||''; if(await bindAttach(agent,target,{source:{kind:'article',title},status:'provided'})) reloadBindings(); }
+      return;
+    }
+  });
+  slist.addEventListener('input', e=>{
+    const input=e.target.closest('.src-add-input'); if(!input) return;
+    const menu=input.parentElement.querySelector('.src-add-menu');
+    const q=input.value.trim().toLowerCase();
+    if(!q){ menu.classList.add('hidden'); menu.innerHTML=''; return; }
+    menu.dataset.q=input.value.trim();
+    const matches=SOURCES.filter(s=>matchesSourceQuery(s,q)).slice(0,8);
+    menu.innerHTML=matches.map(s=>`<button type="button" class="src-add-opt" data-sid="${s.id}"><span class="srow-kind">${kindLabel(s)}</span>${esc(srcLabel(s))}</button>`).join('')
+      + `<button type="button" class="src-add-opt src-add-new" data-act="newform">+ Create a new source for &ldquo;${esc(input.value.trim())}&rdquo;</button>`;
+    menu.classList.remove('hidden');
+  });
 }
 
 /* ============ RENDER ============ */
