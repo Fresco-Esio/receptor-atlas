@@ -52,6 +52,20 @@ header.mast.is-scrolled{box-shadow:0 1px 0 var(--brass-faint),0 8px 28px oklch(0
 .brand .wm{font-family:"Marcellus",serif; font-size:1.18rem; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap; transition:color .25s var(--ease);}
 .brand .sub{font-family:"Fragment Mono",monospace; font-size:.62rem; letter-spacing:.16em; text-transform:uppercase; color:var(--bone-faint); white-space:nowrap;}
 .brand:hover .wm{color:var(--vermilion);}
+html{scroll-behavior:smooth;}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto;}}
+/* ---------- Section tabs (sticky under the masthead) ---------- */
+.desk-tabs{position:sticky; top:var(--mast-h); z-index:40; display:flex; flex-wrap:wrap; align-items:stretch;
+  background:var(--wall-atrium); border-bottom:1px solid var(--brass-line); padding:0 clamp(1rem,3.5vw,2.4rem);}
+.desk-tabs a{font-family:"Fragment Mono",monospace; font-size:.66rem; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--bone-faint); text-decoration:none; border-bottom:2px solid transparent; border-top:2px solid transparent;
+  padding:.8rem .2rem; margin-right:1.3rem; transition:color .2s var(--ease), border-color .2s var(--ease); white-space:nowrap;}
+.desk-tabs a:hover{color:var(--bone-dim);}
+.desk-tabs a.active{color:var(--bone); border-bottom-color:var(--brass);}
+.desk-anchor{height:0; scroll-margin-top:calc(var(--mast-h) + 3.6rem);}
+#sourcesSection, #bindingSection{scroll-margin-top:calc(var(--mast-h) + 3.6rem);}
+/* both section filters are in-flow now; the sticky chrome is masthead + tabs only */
+#rail{position:static; z-index:auto;}
 .mast-tools{display:flex; align-items:center; gap:.45rem; flex-wrap:wrap;}
 button.ctrl{
   font-family:"Fragment Mono",monospace; font-size:.64rem; letter-spacing:.12em; text-transform:uppercase;
@@ -370,7 +384,15 @@ input[type=file]{display:none;}
   </div>
 </header>
 
+<nav class="desk-tabs" id="deskTabs" aria-label="Desk sections">
+  <a href="#sec-overview" data-tab="sec-overview" class="active">Overview</a>
+  <a href="#sec-specimens" data-tab="sec-specimens">Specimens</a>
+  <a href="#sourcesSection" data-tab="sourcesSection">Sources</a>
+  <a href="#bindingSection" data-tab="bindingSection">Binding affinities</a>
+</nav>
+
 <main>
+  <div class="desk-anchor" id="sec-overview"></div>
   <section class="lead">
     <span class="eyebrow">A working protocol for verifying The Receptor Atlas</span>
     <h1>Authenticate every specimen<br/>before it goes on the wall</h1>
@@ -450,21 +472,8 @@ input[type=file]{display:none;}
     </div>
   </section>
 
-  <!-- SOURCES LIBRARY -->
-  <section id="sourcesSection">
-    <div class="src-head">
-      <span class="eyebrow">Sources library &mdash; edit a paper once, every citing specimen updates</span>
-      <button class="ctrl" id="srcToggle">Show library &#9662;</button>
-    </div>
-    <div id="srcLibrary" class="hidden" style="margin-top:1rem;">
-      <div id="srcList"></div>
-      <div style="margin-top:1rem;">
-        <span class="eyebrow">Add a source</span>
-        <div id="srcAddForm" style="margin-top:.6rem;"></div>
-      </div>
-    </div>
-  </section>
-
+  <!-- SPECIMENS (the per-receptor review — the main workspace) -->
+  <div class="desk-anchor" id="sec-specimens"></div>
   <!-- FILTER RAIL -->
   <div class="rail" id="rail">
     <span class="lab">Show</span>
@@ -480,6 +489,21 @@ input[type=file]{display:none;}
   </div>
 
   <div id="halls"></div>
+
+  <!-- SOURCES LIBRARY -->
+  <section id="sourcesSection">
+    <div class="src-head">
+      <span class="eyebrow">Sources library &mdash; edit a paper once, every citing specimen updates</span>
+      <button class="ctrl" id="srcToggle">Show library &#9662;</button>
+    </div>
+    <div id="srcLibrary" class="hidden" style="margin-top:1rem;">
+      <div id="srcList"></div>
+      <div style="margin-top:1rem;">
+        <span class="eyebrow">Add a source</span>
+        <div id="srcAddForm" style="margin-top:.6rem;"></div>
+      </div>
+    </div>
+  </section>
 
   <!-- BINDING AFFINITIES (drug-first provenance review) -->
   <section id="bindingSection">
@@ -1311,6 +1335,27 @@ const mast=document.getElementById("mast");
 addEventListener("scroll",()=>mast.classList.toggle("is-scrolled",scrollY>8));
 
 /* ============ PAGE-LOAD REVEAL ============ */
+/* Sticky section tabs: click to jump (scroll-margin handles the sticky offset),
+   scroll-spy highlights the section you're in. */
+function wireDeskTabs(){
+  const nav=document.getElementById('deskTabs'); if(!nav) return;
+  const tabs=[...nav.querySelectorAll('a[data-tab]')];
+  const targets=tabs.map(a=>({tab:a, el:document.getElementById(a.dataset.tab)})).filter(t=>t.el);
+  // Jump is the native anchor (href="#id") + CSS scroll-behavior + scroll-margin-top,
+  // which is more robust than a JS scroll. This function only drives the scroll-spy.
+  const offset=()=>{ const m=document.getElementById('mast'); return (m?m.offsetHeight:70)+(nav.offsetHeight||44)+10; };
+  let ticking=false;
+  function spy(){
+    ticking=false;
+    const y=offset();
+    let active=targets[0];
+    for(const t of targets){ if(t.el.getBoundingClientRect().top<=y) active=t; }
+    tabs.forEach(a=>a.classList.toggle('active', !!active && a===active.tab));
+  }
+  window.addEventListener('scroll',()=>{ if(!ticking){ ticking=true; requestAnimationFrame(spy); } }, {passive:true});
+  spy();
+}
+
 async function init(){
   try{
     await Promise.all([loadRX(), loadSources(), loadDrift(), loadAgents(), loadBindingUsage()]);   // RX + STATE (review) + SOURCES + drift + AGENTS + BINDING_USAGE set
@@ -1320,6 +1365,7 @@ async function init(){
   }
   build();                // STATE was populated inside loadRX(); SOURCES feed the pick lists
   setupLibrary();
+  wireDeskTabs();
   document.getElementById("rcount").textContent=RX.length;
   if(window.matchMedia && !matchMedia("(prefers-reduced-motion: reduce)").matches){
     const rows=[...document.querySelectorAll(".spec")];
