@@ -336,6 +336,12 @@ input[type=file]{display:none;}
 
 /* ---------- Binding affinities section ---------- */
 #bindingSection{margin-top:2.5rem;}
+.bind-intro{font-size:.84rem;color:var(--bone-dim);line-height:1.6;max-width:70ch;margin:.5rem 0 1.1rem;}
+.bind-intro b{color:var(--bone);font-weight:400;}
+.bind-search{background:var(--wall-recess);border:1px solid var(--brass-line);border-radius:2px;color:var(--bone);font-family:"Fragment Mono",monospace;font-size:.64rem;letter-spacing:.04em;padding:.4rem .55rem;min-width:9rem;}
+.bind-search::placeholder{color:var(--bone-faint);text-transform:uppercase;letter-spacing:.08em;}
+.bind-search:focus{outline:1px solid var(--brass);border-color:var(--brass);}
+.struct-hint{font-size:.76rem;color:var(--bone-faint);line-height:1.5;margin:0 0 .6rem;max-width:66ch;}
 .bind-summary{display:flex;gap:.5rem;flex-wrap:wrap;margin:.8rem 0 1.4rem;}
 .bind-subhead{font-family:"Fragment Mono",monospace;font-size:.62rem;letter-spacing:.09em;text-transform:uppercase;color:var(--brass);margin:1.4rem 0 .5rem;}
 .bsrc-row{display:grid;grid-template-columns:1fr auto auto;gap:1rem;align-items:center;padding:.6rem .1rem;border-bottom:1px solid var(--brass-faint);}
@@ -510,6 +516,7 @@ input[type=file]{display:none;}
     <div class="src-head">
       <span class="eyebrow">Binding affinities &mdash; authenticate every Ki against its source</span>
     </div>
+    <p class="bind-intro">Two lenses on the same numbers. Start <b>by source</b>: verify a database or paper once and every Ki that cites it clears together. Then work <b>by drug</b> to inspect or cite each binding individually. (The same numbers are also editable per receptor, under each specimen&rsquo;s <i>Edit structured data &amp; bindings</i>.)</p>
     <div id="bindSummary" class="bind-summary"></div>
     <div id="bindBySource"></div>
     <div class="rail" id="bindRail">
@@ -520,6 +527,8 @@ input[type=file]{display:none;}
       <button class="seg" data-bfilter="unconfirmed">Unconfirmed</button>
       <button class="seg" data-bfilter="mismatch">Has mismatch</button>
       <button class="seg" data-bfilter="cleared">Cleared</button>
+      <span class="spacer"></span>
+      <input type="text" id="bindSearch" class="bind-search" placeholder="Find a drug…" autocomplete="off" />
     </div>
     <div id="bindByDrug"></div>
   </section>
@@ -705,6 +714,7 @@ function structEditorHtml(data){
   }
   if(data.binding&&data.binding.length){
     html+=`<div class="struct-sec"><div class="pk">Binding affinities (Cabinet) &mdash; each Ki beside its source</div>
+      <div class="struct-hint">These sources back the Ki value only. General citations for the receptor&rsquo;s claim and mechanism live in the <i>Sources &amp; citations</i> panel above.</div>
       <div class="sbind-list">${data.binding.map(structBindingHtml).join('')}</div></div>`;
   }
   if(data.narrative){
@@ -787,7 +797,7 @@ function wireSpecimenProvenance(r,bodyEl,slist){
     if(!q){ menu.classList.add('hidden'); menu.innerHTML=''; return; }
     menu.dataset.q=input.value.trim();
     const matches=SOURCES.filter(s=>matchesSourceQuery(s,q)).slice(0,8);
-    menu.innerHTML=matches.map(s=>`<button type="button" class="src-add-opt" data-sid="${s.id}"><span class="srow-kind">${kindLabel(s)}</span>${esc(srcLabel(s))}</button>`).join('')
+    menu.innerHTML=matches.map(s=>`<button type="button" class="src-add-opt" data-sid="${s.id}" title="${esc((s.authors||'—')+' ('+(s.year||'n.d.')+') '+(s.title||s.pmid||'untitled'))}"><span class="srow-kind">${kindLabel(s)}</span>${esc(srcLabel(s))}</button>`).join('')
       + `<button type="button" class="src-add-opt src-add-new" data-act="newform">+ Create a new source for &ldquo;${esc(input.value.trim())}&rdquo;</button>`;
     menu.classList.remove('hidden');
   });
@@ -886,7 +896,7 @@ function wireSourcesPanel(r,panelEl){
     const q=query.trim().toLowerCase();
     if(!q){closeMenu();return;}
     const matches=SOURCES.filter(s=>!r.sources.some(rs=>rs.id===s.id)&&matchesSourceQuery(s,q)).slice(0,8);
-    menu.innerHTML = matches.map(s=>`<button type="button" class="src-add-opt" data-sid="${s.id}"><span class="srow-kind">${kindLabel(s)}</span>${esc(srcLabel(s))}</button>`).join('')
+    menu.innerHTML = matches.map(s=>`<button type="button" class="src-add-opt" data-sid="${s.id}" title="${esc((s.authors||'—')+' ('+(s.year||'n.d.')+') '+(s.title||s.pmid||'untitled'))}"><span class="srow-kind">${kindLabel(s)}</span>${esc(srcLabel(s))}</button>`).join('')
       + `<button type="button" class="src-add-opt src-add-new" data-act="newform">+ Create a new source for &ldquo;${esc(query.trim())}&rdquo;</button>`;
     menu.classList.remove('hidden');
   }
@@ -965,7 +975,7 @@ function specRow(r){
        <div class="deeplinks">${deepLinks(r)}</div>
      </div>
      <div class="struct" data-loaded="0">
-       <button type="button" class="struct-toggle">Edit structured data &#9662;</button>
+       <button type="button" class="struct-toggle">Edit structured data &amp; bindings &#9662;</button>
        <div class="struct-body hidden"></div>
      </div>
    </div>`;
@@ -989,9 +999,13 @@ function specRow(r){
   const structToggle=struct.querySelector(".struct-toggle");
   structToggle.addEventListener("click",async()=>{
     const sbody=struct.querySelector(".struct-body");
-    if(struct.dataset.loaded==="0"){struct.dataset.loaded="1";await loadStructEditor(r,sbody);}
+    if(struct.dataset.loaded==="0"){
+      struct.dataset.loaded="1";
+      structToggle.innerHTML='Loading data &amp; bindings…';
+      await loadStructEditor(r,sbody);
+    }
     const hidden=sbody.classList.toggle("hidden");
-    structToggle.innerHTML=hidden?'Edit structured data &#9662;':'Edit structured data &#9652;';
+    structToggle.innerHTML=hidden?'Edit structured data &amp; bindings &#9662;':'Edit structured data &amp; bindings &#9652;';
   });
   paintRow(r,el);
   return el;
@@ -1096,7 +1110,7 @@ function wireBindBySource(){
 /* ============ BINDING AFFINITIES — BY DRUG (per-binding citations + value_status) ============ */
 const VALUE_LABEL={unchecked:"Number unchecked",confirmed:"Number confirmed",mismatch:"Number ≠ source"};
 const VALUE_STATES=["confirmed","mismatch","unchecked"];
-let BIND_FILTER='all';
+let BIND_FILTER='all', BIND_SEARCH='';
 
 function bindSrowHtml(agent,target,s){
   return `<div class="srow" data-sid="${s.id}">
@@ -1167,8 +1181,10 @@ function renderBindByDrug(){
   // Preserve which drawers are open across a re-render, so editing a binding in
   // place doesn't collapse the drug the curator is working in.
   const openAgents=new Set([...host.querySelectorAll('.bdrug.open')].map(d=>d.dataset.agent));
-  const agents=[...AGENTS].sort((a,b)=>a.name.localeCompare(b.name)).filter(agentPasses);
-  host.innerHTML=`<div class="bind-subhead">By drug &mdash; ${agents.length} shown</div>`
+  const q=(BIND_SEARCH||'').trim().toLowerCase();
+  const agents=[...AGENTS].sort((a,b)=>a.name.localeCompare(b.name))
+    .filter(agentPasses).filter(a=>!q||a.name.toLowerCase().includes(q));
+  host.innerHTML=`<div class="bind-subhead">By drug &mdash; ${agents.length} shown${q?` &middot; &ldquo;${esc(BIND_SEARCH.trim())}&rdquo;`:''}</div>`
     + agents.map(a=>{
         const worst=a.bindings.some(b=>b.status==='needs-source')?'info'
           :a.bindings.some(b=>b.value_status==='mismatch'||b.status==='conflicting')?'warn'
@@ -1213,7 +1229,7 @@ function wireBindByDrug(){
     if(!q){ menu.classList.add('hidden'); menu.innerHTML=''; return; }
     menu.dataset.q=input.value.trim();
     const matches=SOURCES.filter(s=>matchesSourceQuery(s,q)).slice(0,8);
-    menu.innerHTML=matches.map(s=>`<button type="button" class="src-add-opt" data-sid="${s.id}"><span class="srow-kind">${kindLabel(s)}</span>${esc(srcLabel(s))}</button>`).join('')
+    menu.innerHTML=matches.map(s=>`<button type="button" class="src-add-opt" data-sid="${s.id}" title="${esc((s.authors||'—')+' ('+(s.year||'n.d.')+') '+(s.title||s.pmid||'untitled'))}"><span class="srow-kind">${kindLabel(s)}</span>${esc(srcLabel(s))}</button>`).join('')
       + `<button type="button" class="src-add-opt src-add-new" data-act="newform">+ Create a new source for &ldquo;${esc(input.value.trim())}&rdquo;</button>`;
     menu.classList.remove('hidden');
   });
@@ -1226,6 +1242,8 @@ function wireBindRail(){
     BIND_FILTER=seg.dataset.bfilter;
     renderBindByDrug();
   });
+  const search=document.getElementById('bindSearch');
+  if(search) search.addEventListener('input',()=>{ BIND_SEARCH=search.value; renderBindByDrug(); });
 }
 
 /* ============ FILTER ============ */
