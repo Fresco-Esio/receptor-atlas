@@ -55,3 +55,13 @@ test('PATCH structured rejects unknown receptor and bad volume', async () => {
   assert.equal((await patch('gabaa', { volume: 'nonsense', claim: 'x' })).status, 400);
   assert.equal((await patch('gabaa', { volume: 'archive' })).status, 400); // nothing to change
 });
+
+test('structured binding rows carry inline sources + value_status (receptor-first provenance)', async () => {
+  const s = await (await fetch(`${base}/api/receptors/d2/structured`)).json();
+  assert.ok(Array.isArray(s.binding) && s.binding.length, 'd2 has binding rows');
+  const halo = s.binding.find(b => b.agent_name === 'Haloperidol');
+  assert.ok(halo, 'd2 should include the Haloperidol binding');
+  assert.ok(Array.isArray(halo.sources) && halo.sources.length >= 1, 'binding carries its own cited sources');
+  assert.equal(halo.value_status, 'unchecked', 'value_status defaults to unchecked');
+  assert.ok(['verified', 'provided', 'conflicting', 'needs-source'].includes(halo.citation_status), 'binding carries a rolled-up citation_status');
+});
