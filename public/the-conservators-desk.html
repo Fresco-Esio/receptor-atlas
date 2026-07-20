@@ -259,6 +259,7 @@ input[type=file]{display:none;}
 .sbind-in input{background:var(--wall-recess); border:1px solid var(--brass-line); border-radius:2px; color:var(--bone); font-family:"Fragment Mono",monospace; font-size:.72rem; padding:.28rem .4rem; width:4.5rem;}
 .sbind-in.wide input{width:100%; font-family:"Schibsted Grotesk",sans-serif; text-transform:none; letter-spacing:normal;}
 .sbind-in input:focus{outline:1px solid var(--brass); border-color:var(--brass);}
+.sbind-pki{font-family:"Fragment Mono",monospace; font-size:.72rem; color:var(--brass); letter-spacing:.03em;}
 .sbind-head .dot{align-self:center;}
 .sbind-prov{margin:.5rem 0 0 1.1rem; padding-left:.9rem; border-left:1px solid var(--brass-faint);}
 .sbind-sources{margin-bottom:.4rem;}
@@ -676,6 +677,8 @@ async function loadStructEditor(r,bodyEl){
 }
 /* One binding inside the specimen editor: the Ki (editable) sits beside its cited
    source + status + value_status — provenance where the number is (receptor-first). */
+// Affinity is stored as Ki (nM, PDSP-native) and shown as pKi, the field standard.
+function pKiOf(b){ return (b && b.ki>0) ? (9-Math.log10(b.ki)).toFixed(2) : null; }
 function structBindingDot(b){
   if(b.citation_status==='needs-source') return 'info';
   if(b.value_status==='mismatch'||b.citation_status==='conflicting') return 'warn';
@@ -690,6 +693,7 @@ function structBindingHtml(b){
     <div class="sbind-head">
       <span class="dot ${structBindingDot(b)}"></span>
       <b>${esc(b.agent_name)}</b>${b.act?` <span class="mono sbind-act">${esc(b.act)}</span>`:''}
+      <span class="sbind-pki">pKi ${pKiOf(b)||'—'}</span>
       <label class="sbind-in">Ki <input data-bk="ki" data-bid="${b.id}" value="${b.ki==null?'':b.ki}" /> nM</label>
       <label class="sbind-in wide">note <input data-bk="note" data-bid="${b.id}" value="${esc(b.note||'')}" /></label>
     </div>
@@ -1168,7 +1172,8 @@ function bindingBlockHtml(agent,b){
     <div class="bbind-head">
       <span class="dot ${bindStatusDot(b)}"></span>
       <b>${esc(targetLabel(b))}</b>
-      <span class="bbind-ki">Ki ${esc(b.ki_text)||(b.ki!=null?b.ki+' nM':'—')}</span>
+      <span class="bbind-ki">pKi ${pKiOf(b)||'—'}</span>
+      <span class="bbind-act">${esc(b.ki_text)||''}</span>
       <span class="bbind-act">${esc(b.act_full)||''}</span>
     </div>
     <div class="bbind-sources">${srcHtml}</div>

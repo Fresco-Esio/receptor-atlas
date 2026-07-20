@@ -14,9 +14,10 @@ test('GET /api/atlas/cabinet/binding rebuilds the agent×target matrix', async (
   const agents = await (await fetch(`${base}/api/atlas/cabinet/binding`)).json();
   const diazepam = agents.find(a => a.name === 'Diazepam');
   assert.ok(diazepam, 'Diazepam present');
-  assert.equal(diazepam.b.gaba_a.ki, 0.69);
-  assert.equal(diazepam.b.gaba_a.act, 'pa');
-  assert.equal(diazepam.b.gaba_a.kiText, '0.4-1.2 nM');
+  // Values now come from the single PDSP spine (human, median), shown in the UI as pKi.
+  assert.equal(diazepam.b.gaba_a.ki, 16.2);
+  assert.equal(diazepam.b.gaba_a.kiText, 'median of 15 human values');
+  assert.equal(diazepam.b.gaba_a.src, 'PDSP KiDB (human)');
 });
 
 test('GET /api/atlas/ledger/clinical returns the 16 rows with array list fields', async () => {
