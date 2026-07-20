@@ -56,10 +56,27 @@ function ledgerNoToCanon(clinicalSrc) {
 /**
  * Load binding_values (Cabinet AFF_AGENTS) and clinical_rows (Ledger DATA) from the
  * volume files into the DB, resolving each to a canonical receptor_id via the alias
- * table. Idempotent: clears both tables first, so a re-run rebuilds cleanly.
- * Returns { binding, clinical }. Requires receptor_aliases to be seeded first.
+ * table. Requires receptor_aliases to be seeded first.
+ *
+ * SEED-ONLY, never a rebuild. Once a table holds rows it is authoritative: the
+ * Conservator's Desk edits binding_values/clinical_rows in place (PATCH .../structured),
+ * so re-reading the volume HTML and rebuilding would silently clobber every curator edit
+ * on the next startup — and regenerate binding_values.id, breaking id-keyed edits. So we
+ * seed a table only while it is still empty (a fresh DB, or one seeded before this feature
+ * existed) and otherwise leave it untouched. To rebuild from the HTML, delete db/atlas.db
+ * and re-migrate (the documented reset path). Because a populated DB is never re-read, a
+ * seeded DB no longer depends on the volume files being present at startup.
+ *
+ * Returns { binding, clinical } (live row counts) plus { skipped:true } when both tables
+ * were already populated.
  */
 export function migrateStructured(db) {
+  const bindingCount = db.prepare('SELECT COUNT(*) c FROM binding_values').get().c;
+  const clinicalCount = db.prepare('SELECT COUNT(*) c FROM clinical_rows').get().c;
+  if (bindingCount > 0 && clinicalCount > 0) {
+    return { binding: bindingCount, clinical: clinicalCount, skipped: true };
+  }
+
   const cabinetSrc = readFileSync(join(PUBLIC, 'neuroreceptor_pharmacology_explorer_dashboard.html'), 'utf8');
   const ledgerSrc = readFileSync(join(PUBLIC, 'neuroreceptor_clinical_table.html'), 'utf8');
 
@@ -79,51 +96,54 @@ export function migrateStructured(db) {
     VALUES (@no, @receptor_id, @sys, @name, @cls, @baseline, @mech, @over_json, @under_json, @stahl, @agonists_json, @antagonists_json)
   `);
 
-  let binding = 0, clinical = 0;
   const tx = db.transaction(() => {
-    db.prepare('DELETE FROM binding_values').run();
-    db.prepare('DELETE FROM clinical_rows').run();
-
-    for (const agent of AFF_AGENTS) {
-      for (const targetAlias in agent.b) {
-        const v = agent.b[targetAlias];
-        insBinding.run({
-          receptor_id: aliasToReceptor('cabinet', targetAlias),
-          target_alias: targetAlias,
-          agent_name: agent.name,
-          agent_group: agent.g ?? null,
-          cid: agent.cid ?? null,
-          ki: typeof v.ki === 'number' ? v.ki : null,
-          ki_text: v.kiText ?? null,
-          act: v.act ?? null,
-          act_full: v.actFull ?? null,
-          src: v.src ?? null,
-          note: v.note ?? null,
-        });
-        binding++;
+    // Seed each table only while empty, independently — a DB left half-seeded by an
+    // earlier interrupted run self-heals without touching the populated table's edits.
+    if (bindingCount === 0) {
+      for (const agent of AFF_AGENTS) {
+        for (const targetAlias in agent.b) {
+          const v = agent.b[targetAlias];
+          insBinding.run({
+            receptor_id: aliasToReceptor('cabinet', targetAlias),
+            target_alias: targetAlias,
+            agent_name: agent.name,
+            agent_group: agent.g ?? null,
+            cid: agent.cid ?? null,
+            ki: typeof v.ki === 'number' ? v.ki : null,
+            ki_text: v.kiText ?? null,
+            act: v.act ?? null,
+            act_full: v.actFull ?? null,
+            src: v.src ?? null,
+            note: v.note ?? null,
+          });
+        }
       }
     }
 
-    for (const d of DATA) {
-      insClinical.run({
-        no: d.no,
-        receptor_id: aliasToReceptor('ledger', NO2CANON[d.no]),
-        sys: d.sys ?? null,
-        name: d.name ?? null,
-        cls: d.cls ?? null,
-        baseline: d.baseline ?? null,
-        mech: d.mech ?? null,
-        over_json: JSON.stringify(d.over ?? []),
-        under_json: JSON.stringify(d.under ?? []),
-        stahl: d.stahl ?? null,
-        agonists_json: JSON.stringify(d.agonists ?? []),
-        antagonists_json: JSON.stringify(d.antagonists ?? []),
-      });
-      clinical++;
+    if (clinicalCount === 0) {
+      for (const d of DATA) {
+        insClinical.run({
+          no: d.no,
+          receptor_id: aliasToReceptor('ledger', NO2CANON[d.no]),
+          sys: d.sys ?? null,
+          name: d.name ?? null,
+          cls: d.cls ?? null,
+          baseline: d.baseline ?? null,
+          mech: d.mech ?? null,
+          over_json: JSON.stringify(d.over ?? []),
+          under_json: JSON.stringify(d.under ?? []),
+          stahl: d.stahl ?? null,
+          agonists_json: JSON.stringify(d.agonists ?? []),
+          antagonists_json: JSON.stringify(d.antagonists ?? []),
+        });
+      }
     }
   });
   tx();
-  return { binding, clinical };
+  return {
+    binding: db.prepare('SELECT COUNT(*) c FROM binding_values').get().c,
+    clinical: db.prepare('SELECT COUNT(*) c FROM clinical_rows').get().c,
+  };
 }
 
 // Run directly with `node scripts/migrate-structured.js`.

@@ -27,10 +27,10 @@ const UNATTRIBUTED = new Set(['literature', 'literature (tier)', 'qualitative'])
 const SRC_COLS = ['kind', 'authors', 'year', 'title', 'journal', 'pmid', 'doi', 'url', 'notes'];
 
 /**
- * Seed binding_sources + binding_source_tags from each binding's `src` tag. Runs every
- * startup (binding_values is rebuilt each boot). Non-destructive: INSERT OR IGNORE edges,
- * and reuse the tag→source_id map so a re-run neither duplicates sources nor resets a
- * curator's edge status. binding_review is never touched here (pure user data).
+ * Seed binding_sources + binding_source_tags from each binding's `src` tag. Runs on every
+ * migrate, so it must stay idempotent. Non-destructive: INSERT OR IGNORE edges, and reuse
+ * the tag→source_id map so a re-run neither duplicates sources nor resets a curator's edge
+ * status. binding_review is never touched here (pure user data).
  * Returns { sources, edges, needs }.
  */
 export function migrateBindingSources(db) {

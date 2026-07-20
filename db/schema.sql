@@ -84,8 +84,9 @@ CREATE TABLE IF NOT EXISTS binding_values (
   note TEXT
 );
 -- Binding-affinity provenance (binding-affinity provenance feature). Keyed on the
--- STABLE (agent_name, target_alias) pair, NOT binding_values.id — that id is
--- regenerated on every startup because migrateStructured rebuilds binding_values.
+-- STABLE (agent_name, target_alias) pair, NOT binding_values.id — that id only holds
+-- until the next rebuild (delete db/atlas.db + re-migrate re-inserts every row with a
+-- fresh id), whereas the pair is reproduced identically from the volume HTML every time.
 -- binding_sources is the citation edge (a binding may cite any number of library
 -- sources); status mirrors receptor_sources ('verified'|'provided'|'conflicting').
 CREATE TABLE IF NOT EXISTS binding_sources (

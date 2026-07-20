@@ -17,7 +17,16 @@ function evalEntries(src) {
   return new Function('__sb', 'with(__sb){ return (' + lit + '); }')(sandbox);
 }
 
+// SEED-ONLY, never a rebuild — same contract as migrateStructured. The Desk edits
+// archive_entries in place (PATCH .../structured narrative), so once the table holds rows
+// it is authoritative: re-reading the Archive HTML and rebuilding would clobber every
+// curator edit on the next startup. Seed only while the table is empty; to rebuild from
+// the HTML, delete db/atlas.db and re-migrate. Returns { archive } (live row count), plus
+// { skipped:true } when it was already populated.
 export function migrateArchive(db) {
+  const count = db.prepare('SELECT COUNT(*) c FROM archive_entries').get().c;
+  if (count > 0) return { archive: count, skipped: true };
+
   const ENTRIES = evalEntries(readFileSync(ARCHIVE, 'utf8'));
   const alias = (n) => db.prepare(
     "SELECT receptor_id FROM receptor_aliases WHERE volume='archive' AND alias=?").get(String(n))?.receptor_id ?? null;
@@ -27,7 +36,6 @@ export function migrateArchive(db) {
     VALUES (@receptor_id,@abstract,@presentation,@effect,@receptor_class,@ligand,@figure_caption,@body_json,@tags_json)`);
   let n = 0;
   const tx = db.transaction(() => {
-    db.prepare('DELETE FROM archive_entries').run();
     for (const e of ENTRIES) {
       const rid = alias(e.number); if (!rid) continue;
       const x = e.exhibit || {};

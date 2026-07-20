@@ -44,12 +44,21 @@ test('clinical_rows resolve to canonical receptor_ids and keep list fields as JS
   assert.ok(Array.isArray(over) && over.length > 0);
 });
 
-test('migrateStructured is idempotent (clears then reloads)', () => {
+test('migrateStructured is seed-only: a re-run preserves rows, edits, and row ids', () => {
   const db = openDb(':memory:');
   migrate(db);
   const first = db.prepare('SELECT COUNT(*) c FROM binding_values').get().c;
+
+  // A curator edits a binding value in place (as the Desk's PATCH does).
+  const row = db.prepare("SELECT id FROM binding_values WHERE agent_name='Diazepam' AND target_alias='gaba_a'").get();
+  db.prepare('UPDATE binding_values SET ki = ?, note = ? WHERE id = ?').run(9.99, 'edited', row.id);
+
+  migrateStructured(db);   // a "restart" re-migrate must not rebuild
   migrateStructured(db);
-  migrateStructured(db);
-  const again = db.prepare('SELECT COUNT(*) c FROM binding_values').get().c;
-  assert.equal(again, first);
+
+  assert.equal(db.prepare('SELECT COUNT(*) c FROM binding_values').get().c, first, 'row count unchanged');
+  const after = db.prepare("SELECT id, ki, note FROM binding_values WHERE agent_name='Diazepam' AND target_alias='gaba_a'").get();
+  assert.equal(after.ki, 9.99, 'edited Ki not clobbered');
+  assert.equal(after.note, 'edited', 'edited note not clobbered');
+  assert.equal(after.id, row.id, 'row id is stable (no delete + re-insert)');
 });
