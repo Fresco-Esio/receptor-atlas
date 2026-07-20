@@ -24,13 +24,13 @@ test('migrate populates binding_values and clinical_rows', () => {
 test('binding_values resolve to canonical receptor_ids via the cabinet alias', () => {
   const db = openDb(':memory:');
   migrate(db);
-  // Diazepam @ GABA-A: target_alias gaba_a -> receptor_id gabaa, Ki 0.69 nM
+  // Diazepam @ GABA-A: target_alias gaba_a -> receptor_id gabaa; Ki is the PDSP human median
   const row = db.prepare(`
     SELECT * FROM binding_values WHERE agent_name = 'Diazepam' AND target_alias = 'gaba_a'
   `).get();
   assert.equal(row.receptor_id, 'gabaa');
-  assert.equal(row.ki, 0.69);
-  assert.equal(row.act, 'pa');
+  assert.equal(row.ki, 16.2);
+  assert.equal(row.src, 'PDSP KiDB (human)');
 });
 
 test('clinical_rows resolve to canonical receptor_ids and keep list fields as JSON', () => {

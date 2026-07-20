@@ -22,7 +22,7 @@ test('GET /api/sources returns all seeded sources, articles and Stahl books alik
   assert.equal(res.status, 200);
   const body = await res.json();
   assert.equal(Array.isArray(body), true);
-  assert.equal(body.length, 45); // deduped peer-reviewed articles + deduped Stahl chapters + 13 binding sources
+  assert.equal(body.length, 33); // deduped peer-reviewed articles + Stahl chapters + the single PDSP binding source
   for (const key of ['id', 'authors', 'pmid']) {
     assert.ok(key in body[0], `first item missing ${key}`);
   }

@@ -7,22 +7,13 @@ import { openDb } from '../db/index.js';
 // the Desk; dedup survives that backfill because binding_source_tags maps by tag, not by
 // the source's mutable fields.
 const SOURCE_TEMPLATES = {
-  'PDSP Ki DB':      { kind: 'database', authors: 'NIMH PDSP', title: 'Ki Database (PDSP)', url: 'https://pdsp.unc.edu/databases/kidb.php' },
-  'IUPHAR/BPS':      { kind: 'database', authors: 'IUPHAR/BPS', title: 'Guide to PHARMACOLOGY', url: 'https://www.guidetopharmacology.org/' },
-  'StatPearls':      { kind: 'database', authors: 'StatPearls Publishing', title: 'StatPearls', url: 'https://www.ncbi.nlm.nih.gov/books/NBK430685/' },
-  'Proudman 2020':   { kind: 'article', authors: 'Proudman et al.', year: 2020, notes: 'imported from binding tag "Proudman 2020" — verify & complete' },
-  'Neuropsychopharmacology 2009': { kind: 'article', journal: 'Neuropsychopharmacology', year: 2009, notes: 'imported from binding tag — verify & complete' },
-  'J Neural Transm 2003':         { kind: 'article', journal: 'J Neural Transm', year: 2003, notes: 'imported from binding tag — verify & complete' },
-  'Biol Psychiatry 2001':         { kind: 'article', journal: 'Biol Psychiatry', year: 2001, notes: 'imported from binding tag — verify & complete' },
-  'Eur Neuropsychopharmacol 2020':{ kind: 'article', journal: 'Eur Neuropsychopharmacol', year: 2020, notes: 'imported from binding tag — verify & complete' },
-  'eLife 2020':      { kind: 'article', journal: 'eLife', year: 2020, notes: 'imported from binding tag — verify & complete' },
-  'PMC5756147':      { kind: 'article', url: 'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5756147/', notes: 'PMCID PMC5756147 — verify & complete' },
-  'PMC4662164':      { kind: 'article', url: 'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4662164/', notes: 'PMCID PMC4662164 — verify & complete' },
-  'PMC5437659':      { kind: 'article', url: 'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5437659/', notes: 'PMCID PMC5437659 — verify & complete' },
-  'PMC10851641':     { kind: 'article', url: 'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10851641/', notes: 'PMCID PMC10851641 — verify & complete' },
+  // Single spine: every binding affinity now comes from PDSP (human, median).
+  'PDSP KiDB (human)': { kind: 'database', authors: 'NIMH PDSP', title: 'Ki Database (PDSP) — human, median', url: 'https://pdsp.unc.edu/databases/kidb.php' },
+  // Action (agonist/antagonist) is curated separately by IUPHAR where available.
+  'IUPHAR/BPS': { kind: 'database', authors: 'IUPHAR/BPS', title: 'Guide to PHARMACOLOGY', url: 'https://www.guidetopharmacology.org/' },
 };
-const TAG_ALIAS = { 'PDSP / literature': 'PDSP Ki DB' };
-const UNATTRIBUTED = new Set(['literature', 'literature (tier)', 'qualitative']);
+const TAG_ALIAS = {};
+const UNATTRIBUTED = new Set([]);
 
 const SRC_COLS = ['kind', 'authors', 'year', 'title', 'journal', 'pmid', 'doi', 'url', 'notes'];
 

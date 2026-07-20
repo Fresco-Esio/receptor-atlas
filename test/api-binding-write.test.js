@@ -21,7 +21,8 @@ test('attach an existing library source to a binding', async () => {
   assert.equal(res.status, 201);
   const agents = await (await fetch(`${base}/api/agents/binding`)).json();
   const b = agents.find(a => a.name === agent).bindings.find(x => x.target_alias === target);
-  assert.equal(b.sources.length, 1);
+  // every binding already cites the PDSP spine, so attaching adds a second source
+  assert.equal(b.sources.length, 2);
   assert.equal(b.status, 'provided');
 });
 
@@ -55,7 +56,7 @@ test('value_status upsert with whitelist', async () => {
 
 test('bulk: verify a source sets all its binding edges', async () => {
   const usage = await (await fetch(`${base}/api/sources/binding-usage`)).json();
-  const pdsp = usage.find(u => u.title === 'Ki Database (PDSP)');
+  const pdsp = usage.find(u => /PDSP/.test(u.title));
   const res = await j('PATCH', `/api/sources/${pdsp.id}/binding-status`, { status: 'verified' });
   assert.equal(res.status, 200);
   const after = await (await fetch(`${base}/api/sources/binding-usage`)).json();
