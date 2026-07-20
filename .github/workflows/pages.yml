@@ -1,0 +1,61 @@
+name: Publish the atlas to GitHub Pages
+
+# Rebuilds the read-only public atlas on every push and deploys it.
+#
+# The database is deliberately NOT in the repo, so the runner rebuilds it from the
+# committed seed data (npm run migrate) and then freezes the volume pages to dist/
+# (npm run snapshot). That means the published site always reflects what is committed
+# — never a local database — and your Conservator's Desk review marks are never
+# published. The Desk itself is excluded from the snapshot by design: it writes to a
+# database, which a static host cannot do.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:        # lets you re-publish by hand from the Actions tab
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22          # better-sqlite3 ships prebuilt binaries for LTS
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the database from the committed seed data
+        run: npm run migrate
+
+      - name: Freeze the atlas to a static site
+        run: npm run snapshot
+
+      - name: Stop Pages running Jekyll over the bundle
+        run: touch dist/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
