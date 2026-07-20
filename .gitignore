@@ -8,3 +8,6 @@ dist/
 
 # Claude Code machine-local settings (per-machine permission allowlist)
 .claude/settings.local.json
+
+# affinity-sourcing caches (large, re-fetchable)
+scripts/sourcing/cache/
