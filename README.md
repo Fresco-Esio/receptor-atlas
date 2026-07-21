@@ -1,7 +1,19 @@
 # The Receptor Atlas — app
 
+**Read the atlas online: <https://fresco-esio.github.io/receptor-atlas/>**
+
 A small local app: a Node + SQLite server that serves the Receptor Atlas and the
 Conservator's Desk, with one database (`db/atlas.db`) as the single source of truth.
+
+The public site is a read-only snapshot of the three volumes, rebuilt automatically on
+every push (see [`DEPLOY.md`](DEPLOY.md)). The Conservator's Desk — the review and
+editing tool — is deliberately **not** published: it writes to the database, so it only
+runs locally, and your review marks never leave your machine.
+
+Binding affinities come from a single source, the NIMH PDSP Kᵢ Database (human receptors,
+median of all human values), shown as **pKi**; agonist/antagonist direction is curated
+separately by IUPHAR/BPS. See [`scripts/sourcing/README.md`](scripts/sourcing/README.md)
+for the rules and how to refresh them.
 
 ## Run it
 

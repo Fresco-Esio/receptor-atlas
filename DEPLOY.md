@@ -1,5 +1,9 @@
 # Putting the atlas online
 
+> **Live now:** <https://fresco-esio.github.io/receptor-atlas/>
+> Repo: <https://github.com/Fresco-Esio/receptor-atlas> (public — GitHub Pages requires it
+> unless you have a paid plan). It republishes itself on every push to `main`.
+
 The public atlas can be published to GitHub Pages. The Conservator's Desk cannot, and
 that is intentional — the Desk *saves* things (review marks, citations, notes), which
 needs the server and database behind it. A static host can only serve files.
@@ -23,18 +27,18 @@ IUPHAR/BPS. The atlas already credits both on the page, which is the right insti
 publishing a derived dataset publicly can carry conditions. Worth two minutes on each
 database's terms before you make it public.
 
-## The three commands
+## How it was set up (already done — kept for reference)
 
 ```bash
-gh auth login                                   # opens your browser, one time only
-gh repo create atlas-app --private --source=. --remote=origin --push
+gh auth login
+gh repo create receptor-atlas --public --source=. --remote=origin --push
+gh api -X POST repos/Fresco-Esio/receptor-atlas/pages -f build_type=workflow
 ```
 
-Use `--public` instead of `--private` if you've decided that.
+The last line is the API equivalent of **Settings → Pages → Source: "GitHub Actions"**.
+From then on the workflow at `.github/workflows/pages.yml` does everything.
 
-Then turn Pages on: **repo → Settings → Pages → Source: "GitHub Actions"**.
-
-That's it. The workflow at `.github/workflows/pages.yml` takes over from there.
+You only need these again if you move the project to a different account or repo.
 
 ## What happens on every push
 
@@ -43,7 +47,7 @@ That's it. The workflow at `.github/workflows/pages.yml` takes over from there.
 3. Freezes the atlas into a standalone site (`npm run snapshot`)
 4. Publishes it
 
-Your site lands at `https://<your-username>.github.io/atlas-app/`.
+Your site lands at `https://fresco-esio.github.io/receptor-atlas/`.
 
 Note the database is **rebuilt on the runner**, not uploaded. `db/atlas.db` is
 deliberately not in the repo, so the published atlas always reflects what's committed —
