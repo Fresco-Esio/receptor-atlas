@@ -11,3 +11,6 @@ dist/
 
 # affinity-sourcing caches (large, re-fetchable)
 scripts/sourcing/cache/
+
+# reference PDFs (copyrighted journal articles — never publish)
+references/
