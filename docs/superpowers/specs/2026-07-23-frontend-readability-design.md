@@ -1,7 +1,9 @@
 # Frontend readability: a shared design layer and one source of truth for action colour
 
 **Date:** 2026-07-23
-**Status:** approved, ready for planning
+**Status:** SUPERSEDED by `2026-07-25-frontend-architecture-design.md`, which widens the
+scope from the radar/tokens to a whole-frontend architecture pass. This document is kept
+for the radar diagnosis, which the successor references rather than repeats.
 
 ## Why
 
