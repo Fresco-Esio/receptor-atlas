@@ -406,14 +406,15 @@
     <div class="ledger-wrap">
       <div class="ledger-scroll">
         <table class="ledger" id="ledger" data-focus="both">
+          <caption class="sr-only">Receptors by system, with the clinical effect of over- and under-activity.</caption>
           <thead>
             <tr>
-              <th class="col-no">№</th>
-              <th class="col-recep">Receptor / Transporter</th>
-              <th>Baseline Role</th>
-              <th class="th-over">Excess ▲<span class="th-sub">excess agonism · presentation</span></th>
-              <th class="th-under">Deficit ▼<span class="th-sub">blockade / deficit · presentation</span></th>
-              <th style="width:1.6rem"></th>
+              <th class="col-no" scope="col">№</th>
+              <th class="col-recep" scope="col">Receptor / Transporter</th>
+              <th scope="col">Baseline Role</th>
+              <th class="th-over" scope="col">Excess ▲<span class="th-sub">excess agonism · presentation</span></th>
+              <th class="th-under" scope="col">Deficit ▼<span class="th-sub">blockade / deficit · presentation</span></th>
+              <th style="width:1.6rem" scope="col"></th>
             </tr>
           </thead>
           <tbody id="ledger-body"></tbody>

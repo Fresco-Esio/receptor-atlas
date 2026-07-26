@@ -378,7 +378,7 @@ input[type=file]{display:none;}
     <button class="ctrl" id="collapseAll">Collapse all</button>
     <button class="ctrl" id="exportBtn">Export ⤓</button>
     <button class="ctrl" id="importBtn">Import ⤒</button>
-    <input type="file" id="importFile" accept="application/json" />
+    <input type="file" id="importFile" accept="application/json" aria-label="Import JSON file" />
     <button class="ctrl accent" id="resetBtn">Reset</button>
   </div>
 </header>
@@ -521,7 +521,7 @@ input[type=file]{display:none;}
       <button class="seg" data-bfilter="mismatch">Has mismatch</button>
       <button class="seg" data-bfilter="cleared">Cleared</button>
       <span class="spacer"></span>
-      <input type="text" id="bindSearch" class="bind-search" placeholder="Find a drug…" autocomplete="off" />
+      <input type="text" id="bindSearch" class="bind-search" aria-label="Filter bindings by drug or target" placeholder="Find a drug…" autocomplete="off" />
     </div>
     <div id="bindByDrug"></div>
   </section>
@@ -691,7 +691,7 @@ function structBindingHtml(b){
     </div>
     <div class="sbind-prov">
       <div class="sbind-sources">${srcHtml}</div>
-      <div class="src-add-combo"><input type="text" class="src-add-input" placeholder="Cite a source — search author, title, or PMID…" autocomplete="off"/><div class="src-add-menu hidden"></div></div>
+      <div class="src-add-combo"><input type="text" class="src-add-input" aria-label="Cite a source — search author, title, or PMID" placeholder="Cite a source — search author, title, or PMID…" autocomplete="off"/><div class="src-add-menu hidden"></div></div>
       <div class="valctl"><span class="valctl-lab">Our Ki vs source</span>${VALUE_STATES.map(v=>`<button type="button" class="cs${b.value_status===v?' on':''}" data-vact="${v}" title="${VALUE_LABEL[v]}">${v}</button>`).join('')}</div>
     </div>
   </div>`;
@@ -699,14 +699,14 @@ function structBindingHtml(b){
 function structEditorHtml(data){
   let html='<div class="struct-saved">saved ✓</div>';
   html+=`<div class="struct-sec"><div class="pk">Claim under review (Archive)</div>
-    <div class="struct-field"><span>claim</span><textarea data-sk="claim" rows="2">${esc(data.claim||'')}</textarea></div></div>`;
+    <div class="struct-field"><span>claim</span><textarea data-sk="claim" aria-label="Claim under review" rows="2">${esc(data.claim||'')}</textarea></div></div>`;
   if(data.clinical){
     const c=data.clinical;
     html+=`<div class="struct-sec"><div class="pk">Clinical row (Ledger)</div>
-      <div class="struct-field"><span>baseline role</span><textarea data-ck="baseline" rows="2">${esc(c.baseline||'')}</textarea></div>
-      <div class="struct-field"><span>mechanism</span><textarea data-ck="mech" rows="3">${esc(c.mech||'')}</textarea></div>
-      <div class="struct-field"><span>overstimulated (one per line)</span><textarea data-ck="over" rows="3">${esc((c.over||[]).join('\n'))}</textarea></div>
-      <div class="struct-field"><span>understimulated (one per line)</span><textarea data-ck="under" rows="3">${esc((c.under||[]).join('\n'))}</textarea></div></div>`;
+      <div class="struct-field"><span>baseline role</span><textarea data-ck="baseline" aria-label="Baseline role" rows="2">${esc(c.baseline||'')}</textarea></div>
+      <div class="struct-field"><span>mechanism</span><textarea data-ck="mech" aria-label="Mechanism" rows="3">${esc(c.mech||'')}</textarea></div>
+      <div class="struct-field"><span>overstimulated (one per line)</span><textarea data-ck="over" aria-label="Overstimulated effects" rows="3">${esc((c.over||[]).join('\n'))}</textarea></div>
+      <div class="struct-field"><span>understimulated (one per line)</span><textarea data-ck="under" aria-label="Understimulated effects" rows="3">${esc((c.under||[]).join('\n'))}</textarea></div></div>`;
   }
   if(data.binding&&data.binding.length){
     html+=`<div class="struct-sec"><div class="pk">Binding affinities (Cabinet) &mdash; each Ki beside its source</div>
@@ -716,14 +716,14 @@ function structEditorHtml(data){
   if(data.narrative){
     const nv=data.narrative;
     html+=`<div class="struct-sec"><div class="pk">Archive narrative</div>
-      <div class="struct-field"><span>abstract</span><textarea data-nk="abstract" rows="3">${esc(nv.abstract||'')}</textarea></div>
-      <div class="struct-field"><span>body (one paragraph per blank-line block)</span><textarea data-nk="body" rows="6">${esc((nv.body||[]).join('\n\n'))}</textarea></div>
-      <div class="struct-field"><span>presentation</span><textarea data-nk="presentation" rows="2">${esc(nv.presentation||'')}</textarea></div>
-      <div class="struct-field"><span>effect</span><input data-nk="effect" value="${esc(nv.effect||'')}" /></div>
-      <div class="struct-field"><span>receptor class</span><input data-nk="receptor_class" value="${esc(nv.receptor_class||'')}" /></div>
-      <div class="struct-field"><span>ligand</span><input data-nk="ligand" value="${esc(nv.ligand||'')}" /></div>
-      <div class="struct-field"><span>tags (one per line)</span><textarea data-nk="tags" rows="3">${esc((nv.tags||[]).join('\n'))}</textarea></div>
-      <div class="struct-field"><span>figure caption</span><input data-nk="figure_caption" value="${esc(nv.figure_caption||'')}" /></div></div>`;
+      <div class="struct-field"><span>abstract</span><textarea data-nk="abstract" aria-label="Abstract" rows="3">${esc(nv.abstract||'')}</textarea></div>
+      <div class="struct-field"><span>body (one paragraph per blank-line block)</span><textarea data-nk="body" aria-label="Body text" rows="6">${esc((nv.body||[]).join('\n\n'))}</textarea></div>
+      <div class="struct-field"><span>presentation</span><textarea data-nk="presentation" aria-label="Presentation" rows="2">${esc(nv.presentation||'')}</textarea></div>
+      <div class="struct-field"><span>effect</span><input data-nk="effect" aria-label="Effect" value="${esc(nv.effect||'')}" /></div>
+      <div class="struct-field"><span>receptor class</span><input data-nk="receptor_class" aria-label="Receptor class" value="${esc(nv.receptor_class||'')}" /></div>
+      <div class="struct-field"><span>ligand</span><input data-nk="ligand" aria-label="Ligand" value="${esc(nv.ligand||'')}" /></div>
+      <div class="struct-field"><span>tags (one per line)</span><textarea data-nk="tags" aria-label="Tags" rows="3">${esc((nv.tags||[]).join('\n'))}</textarea></div>
+      <div class="struct-field"><span>figure caption</span><input data-nk="figure_caption" aria-label="Figure caption" value="${esc(nv.figure_caption||'')}" /></div></div>`;
   }
   return html;
 }
@@ -952,7 +952,7 @@ function specRow(r){
             <div class="src-rows"></div>
             <div class="src-add">
               <div class="src-add-combo">
-                <input type="text" class="src-add-input" placeholder="Add a source — search by author, title, or PMID…" autocomplete="off" />
+                <input type="text" class="src-add-input" aria-label="Add a source" placeholder="Add a source — search by author, title, or PMID…" autocomplete="off" />
                 <div class="src-add-menu hidden"></div>
               </div>
               <div class="src-add-form hidden"></div>
@@ -962,7 +962,7 @@ function specRow(r){
            <div class="pk">Your mastery &amp; notes</div>
            <div class="confrow"><div class="confdots">${[1,2,3,4,5].map(n=>`<span class="cdot" data-n="${n}"></span>`).join("")}</div><span class="conflabel"></span></div>
            <div class="quiz"><button type="button">Self-quiz ▸</button><div class="q">${r.quiz}</div></div>
-           <textarea class="notes" placeholder="Correction, discrepancy, or learning note…"></textarea>
+           <textarea class="notes" aria-label="Correction or learning note" placeholder="Correction, discrepancy, or learning note…"></textarea>
          </div>
        </div>
      </div>
@@ -1169,7 +1169,7 @@ function bindingBlockHtml(agent,b){
       <span class="bbind-act">${esc(b.act_full)||''}</span>
     </div>
     <div class="bbind-sources">${srcHtml}</div>
-    <div class="src-add-combo"><input type="text" class="src-add-input" placeholder="Add a source — search by author, title, or PMID…" autocomplete="off"/><div class="src-add-menu hidden"></div></div>
+    <div class="src-add-combo"><input type="text" class="src-add-input" aria-label="Add a source" placeholder="Add a source — search by author, title, or PMID…" autocomplete="off"/><div class="src-add-menu hidden"></div></div>
     <div class="valctl"><span class="valctl-lab">Our Ki vs source</span>${VALUE_STATES.map(v=>`<button type="button" class="cs${b.value_status===v?' on':''}" data-vact="${v}" title="${VALUE_LABEL[v]}">${v}</button>`).join('')}</div>
   </div>`;
 }

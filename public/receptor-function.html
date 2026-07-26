@@ -620,7 +620,6 @@
     text-transform: uppercase;
     max-width: 16ch;
     margin-top: var(--space-md);
-    outline: none;
   }
 
   .entry-grid {
@@ -973,7 +972,7 @@
   .wf-section-head[data-dest] { cursor: pointer; }
   .wf-section-head[data-dest]:hover,
   .wf-section-head.is-focus { color: var(--bone); }
-  .wf-section-head:focus { outline: none; }
+  .wf-section-head:focus:not(:focus-visible) { outline: none; }
 
   .wf-item {
     position: relative;
@@ -1007,7 +1006,7 @@
     background: var(--brass-line);
     transition: background-color 0.2s var(--ease), width 0.2s var(--ease);
   }
-  .wf-item:focus { outline: none; }
+  .wf-item:focus:not(:focus-visible) { outline: none; }
   @media (pointer: coarse) {
     .wf-item { min-height: 44px; display: flex; align-items: center; }
   }
@@ -2002,7 +2001,7 @@
       .join("");
 
     return `
-      <div class="entry">
+      <article class="entry">
         <header>
           <div class="entry-topline rv" style="--reveal-order:0">
             <a class="entry-crumb" href="#" data-back data-hall="${hall.id}">← Hall ${hall.numeral} · ${hall.name}</a>
@@ -2050,7 +2049,7 @@
           </a>
         </nav>
         ${facetRailHTML(NUM2CANON[entry.number], entry.title, 'archive')}
-      </div>`;
+      </article>`;
   }
 
   /* ════════════════════════════════════════════════════════════════
