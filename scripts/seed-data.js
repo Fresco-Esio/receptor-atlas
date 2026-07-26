@@ -159,7 +159,7 @@ export const RX=[
  quiz:"How do DORAs treat insomnia differently from benzodiazepines mechanistically?"}
 ];
 
-// Cross-volume id aliases (Task 12 map → Task 13). Each row is [volume, alias,
+// Cross-volume id aliases: each row is [volume, alias,
 // receptor_id]: the `alias` is the id that volume's own embedded data uses, and
 // `receptor_id` is the canonical DB id. A volume page fetches /api/atlas/:volume
 // (rows carry their per-volume alias) and matches by the id it already has.

@@ -26,7 +26,7 @@ function bindingSourcesBestEffort(db) {
 }
 
 /**
- * Seed the cross-volume id aliases (Task 13). Pure reference data, so this runs
+ * Seed the cross-volume id aliases: pure reference data, so this runs
  * INSERT OR IGNORE every migrate — it adds aliases to an already-seeded DB without
  * touching content or user data, and never duplicates (PRIMARY KEY (volume, alias)).
  */

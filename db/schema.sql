@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS receptor_sources (
   correction_note TEXT,    -- citation-correction provenance (RX.note2), e.g. wrong-PMID fixes
   PRIMARY KEY (receptor_id, source_id)
 );
--- Cross-volume id reconciliation (Task 12 discovery): each atlas volume names the
+-- Cross-volume id reconciliation: each atlas volume names the
 -- same receptor differently and none match the DB id (e.g. DB `m1` is `muscarinic_m1`
 -- in the Cabinet and `m1` in the Ledger). This table maps a volume's own id (alias)
 -- back to the canonical receptor_id so a volume page can fetch /api/atlas/:volume and
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS review_state (
   mastery INTEGER DEFAULT 0,
   note TEXT DEFAULT ''
 );
--- Structured data extracted from the volume files (Task 14).
+-- Structured data extracted from the volume files.
 -- binding_values: the Cabinet's agent×target affinity matrix (AFF_AGENTS). One row
 -- per (agent, target). target_alias is the Cabinet's own target id (= the cabinet
 -- alias), resolved to receptor_id via receptor_aliases.
