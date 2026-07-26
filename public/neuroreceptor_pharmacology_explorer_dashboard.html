@@ -7,41 +7,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Schibsted+Grotesk:wght@400;500;700&family=Fragment+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/base.css">
 <style>
   :root {
-    /* wall paint, the cabinet stands in the warm-charcoal atrium */
-    --wall-atrium:    oklch(17% 0.012 75);
-    --wall-panel:     oklch(20% 0.013 75);   /* lifted surface, one shade up */
-    --wall-recess:    oklch(14% 0.011 75);   /* sunk wells, one shade down */
-
-    /* the three diagnostic rooms, selecting a state repaints the exhibit wall */
-    --st-normal:      oklch(78% 0.085 158);
-    --st-over:        oklch(66% 0.185 38);
-    --st-under:       oklch(72% 0.10 245);
-    --wall-normal:    oklch(18% 0.030 158);
-    --wall-over:      oklch(23% 0.060 28);
-    --wall-under:     oklch(18% 0.045 255);
-
-    /* ink and metal */
-    --bone:       oklch(93% 0.012 85);
-    --bone-dim:   oklch(72% 0.015 85);
-    --bone-read:  oklch(86% 0.013 85);
-    --bone-faint: oklch(63% 0.013 85);
-    --vermilion:  oklch(62% 0.19 35);
-    --brass:      oklch(70% 0.055 80);
-    --brass-line: oklch(70% 0.055 80 / 0.28);
-    --brass-faint:oklch(70% 0.055 80 / 0.14);
-
-    --ease: cubic-bezier(0.16, 1, 0.3, 1);
     --row-stagger: 60ms;
-    --block-stagger: 80ms;
-    --stroke-stagger: 140ms;
-
-    --display: "Marcellus", serif;
-    --body: "Schibsted Grotesk", sans-serif;
-    --mono: "Fragment Mono", monospace;
-    --lbl: 0.6875rem;
-    --lbl-sm: 0.6rem;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -352,9 +322,9 @@
     overflow: hidden;
     transition: background-color 1.1s var(--ease), border-color 0.6s var(--ease);
   }
-  .plate[data-state="normal"]       { background: var(--wall-normal); --st: var(--st-normal); }
-  .plate[data-state="overstimulated"]   { background: var(--wall-over);   --st: var(--st-over); }
-  .plate[data-state="understimulated"]  { background: var(--wall-under);  --st: var(--st-under); }
+  .plate[data-state="normal"]       { background: var(--wall-normal); --st: var(--state-normal); }
+  .plate[data-state="overstimulated"]   { background: var(--wall-over);   --st: var(--state-over); }
+  .plate[data-state="understimulated"]  { background: var(--wall-under);  --st: var(--state-under); }
 
   .plate-head {
     padding: clamp(1.4rem, 3vw, 2rem) clamp(1.4rem, 3vw, 2.2rem);
@@ -414,9 +384,9 @@
   .sim button:first-child { border-left: 0; }
   .sim button:hover { color: var(--bone); background: oklch(93% 0.012 85 / 0.06); }
   .sim button.is-active { color: var(--wall-recess); font-weight: 500; }
-  .sim button.is-active.s-normal { background: var(--st-normal); }
-  .sim button.is-active.s-over   { background: var(--st-over); }
-  .sim button.is-active.s-under  { background: var(--st-under); }
+  .sim button.is-active.s-normal { background: var(--state-normal); }
+  .sim button.is-active.s-over   { background: var(--state-over); }
+  .sim button.is-active.s-under  { background: var(--state-under); }
 
   .plate-body { padding: clamp(1.6rem, 3.5vw, 2.4rem); }
 
@@ -611,8 +581,8 @@
     color: var(--bone-dim);
     background: oklch(0% 0 0 / 0.12);
   }
-  .tag.agonist { border-color: oklch(78% 0.085 158 / 0.45); color: var(--st-normal); }
-  .tag.antagonist { border-color: oklch(66% 0.185 38 / 0.45); color: var(--st-over); }
+  .tag.agonist { border-color: color-mix(in oklch, var(--action-agonist) 45%, transparent); color: var(--state-normal); }
+  .tag.antagonist { border-color: color-mix(in oklch, var(--action-antagonist) 45%, transparent); color: var(--state-over); }
 
   /* provenance footer */
   .provenance {
@@ -681,10 +651,10 @@
   .legend-row { display: flex; gap: 1.1rem; font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--bone-faint); flex-wrap: wrap; }
   .legend-row span { display: inline-flex; align-items: center; gap: 0.4rem; }
   .lk { width: 9px; height: 9px; border-radius: 50%; }
-  .lk.ag { background: var(--st-normal); }
-  .lk.an { background: var(--st-over); }
+  .lk.ag { background: var(--state-normal); }
+  .lk.an { background: var(--state-over); }
   .lk.pa { background: var(--brass); }
-  .lk.ri { background: var(--st-under); }
+  .lk.ri { background: var(--state-under); }
 
   /* Binding Affinity Plate body */
   .cat-body { display: grid; grid-template-columns: minmax(300px, 24rem) minmax(0, 1fr); flex: 1 1 auto; min-height: 0; }
@@ -738,10 +708,10 @@
   .agent-name { font-size: 0.875rem; color: var(--bone-dim); padding: 0.45rem 0.7rem 0.45rem 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: sticky; left: 0; z-index: 1; background: var(--wall-panel); border-right: 1px solid var(--brass-line); transition: color 0.3s var(--ease); cursor: pointer; }
   .cell { display: grid; place-content: center; border-left: 1px solid var(--brass-faint); padding: 0.35rem 0; }
   .dot { border-radius: 50%; transition: transform 0.3s var(--ease); }
-  .dot.ag { background: var(--st-normal); }
-  .dot.an { background: var(--st-over); }
+  .dot.ag { background: var(--state-normal); }
+  .dot.an { background: var(--state-over); }
   .dot.pa { background: var(--brass); }
-  .dot.ri { background: var(--st-under); }
+  .dot.ri { background: var(--state-under); }
   /* affinity known, action not curated in IUPHAR */
   .dot.noact { background: var(--brass); opacity: .85; }
   /* tested, no meaningful binding (pKi <= 5): hollow ring, not a filled hit */
@@ -812,8 +782,8 @@
     border-radius: 2px;
     padding: 0.16rem 0.45rem;
   }
-  .concept-chip.ag { color: var(--st-normal); border-color: oklch(78% 0.085 158 / 0.4); }
-  .concept-chip.an { color: var(--st-over);   border-color: oklch(66% 0.185 38 / 0.4); }
+  .concept-chip.ag { color: var(--state-normal); border-color: color-mix(in oklch, var(--action-agonist) 40%, transparent); }
+  .concept-chip.an { color: var(--state-over);   border-color: color-mix(in oklch, var(--action-antagonist) 40%, transparent); }
   .concept-chip.pa { color: var(--brass);     border-color: var(--brass-line); }
   .concept-def { color: var(--bone-read); }
   .concept-def p { font-size: 0.9375rem; line-height: 1.7; max-width: 74ch; margin-bottom: 0.6rem; }
@@ -2932,7 +2902,7 @@
       }
 
       // Action colors match the matrix dots exactly (one color = one meaning).
-      const ACT_COLOR = { ag: 'var(--st-normal)', pa: 'var(--brass)', an: 'var(--st-over)', ri: 'var(--st-under)' };
+      const ACT_COLOR = { ag: 'var(--state-normal)', pa: 'var(--brass)', an: 'var(--state-over)', ri: 'var(--state-under)' };
       // Pinned agents share action colors, so identity is carried by line style, not hue.
       const DASHES = ['', '6 4', '2 3', '9 3 2 3'];
 

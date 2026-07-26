@@ -7,22 +7,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Schibsted+Grotesk:wght@400;500;700&family=Fragment+Mono&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/base.css">
 <style>
 :root{
-  --wall-atrium: oklch(17% 0.012 75);
-  --wall-panel:  oklch(20% 0.013 75);
-  --wall-recess: oklch(14% 0.011 75);
-  --bone:        oklch(93% 0.012 85);
-  --bone-dim:    oklch(72% 0.015 85);
-  --bone-faint:  oklch(63% 0.013 85);
-  --vermilion:   oklch(62% 0.19 35);
-  --brass:       oklch(70% 0.055 80);
-  --brass-line:  oklch(70% 0.055 80 / 0.28);
-  --brass-faint: oklch(70% 0.055 80 / 0.14);
-  --good:        oklch(78% 0.085 158);   /* green  — verified / done */
-  --warn:        oklch(66% 0.185 38);    /* red    — conflicting / flag */
-  --info:        oklch(72% 0.10 245);    /* blue   — needs-source / todo */
-  --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --mast-h: 70px;
 }
 *{box-sizing:border-box;}
@@ -38,6 +26,8 @@ a:hover{color:var(--vermilion); border-color:var(--vermilion);}
 .mono{font-family:"Fragment Mono",monospace; letter-spacing:.06em;}
 .eyebrow{font-family:"Fragment Mono",monospace; font-size:.6875rem; letter-spacing:.18em; text-transform:uppercase; color:var(--bone-faint);}
 h1,h2,h3{font-family:"Marcellus",serif; font-weight:400; letter-spacing:.03em; margin:0;}
+/* The Desk predates the shared reset and sets its own vertical rhythm. */
+h1, h2, h3, p, ul, ol { margin: revert; }
 
 /* ---------- Masthead ---------- */
 header.mast{
@@ -101,7 +91,7 @@ section{margin-bottom:clamp(2.2rem,5vw,3.6rem);}
 .statline{display:flex; flex-wrap:wrap; gap:.5rem; margin-top:1rem;}
 .schip{font-family:"Fragment Mono",monospace; font-size:.6rem; letter-spacing:.08em; text-transform:uppercase; padding:.34rem .55rem; border-radius:2px; border:1px solid var(--brass-line); color:var(--bone-dim); display:flex; gap:.45rem; align-items:center;}
 .dot{width:8px;height:8px;border-radius:50%;flex:none;}
-.dot.good{background:var(--good);} .dot.warn{background:var(--warn);} .dot.info{background:var(--info);} .dot.brass{background:var(--brass);} .dot.faint{background:var(--bone-faint);}
+.dot.good{background:var(--status-verified);} .dot.warn{background:var(--status-conflict);} .dot.info{background:var(--status-todo);} .dot.brass{background:var(--brass);} .dot.faint{background:var(--bone-faint);}
 
 /* per-hall progress in summary */
 .halls-prog{display:flex; flex-direction:column; gap:.9rem;}
@@ -110,7 +100,7 @@ section{margin-bottom:clamp(2.2rem,5vw,3.6rem);}
 .hp-row .hp-val{font-family:"Fragment Mono",monospace; font-size:.62rem; color:var(--bone-faint);}
 .bar{grid-column:1 / -1; height:5px; background:var(--wall-recess); border-radius:3px; overflow:hidden;}
 .bar > i{display:block; height:100%; width:0; background:var(--brass); border-radius:3px; transition:width .8s var(--ease);}
-.bar > i.full{background:var(--good);}
+.bar > i.full{background:var(--status-verified);}
 
 /* ---------- Protocol cards ---------- */
 .proto{display:grid; grid-template-columns:repeat(auto-fit,minmax(225px,1fr)); gap:1px; background:var(--brass-faint); border:1px solid var(--brass-line); border-radius:3px; overflow:hidden;}
@@ -154,9 +144,9 @@ section{margin-bottom:clamp(2.2rem,5vw,3.6rem);}
 /* mini check pips */
 .pips{display:flex; gap:.32rem; align-items:center;}
 .pip{width:13px;height:13px;border-radius:50%;border:1px solid var(--brass-line); position:relative; transition:background .25s var(--ease), border-color .25s var(--ease);}
-.pip.on{background:var(--good); border-color:var(--good);}
+.pip.on{background:var(--status-verified); border-color:var(--status-verified);}
 .spec-stat{font-family:"Fragment Mono",monospace; font-size:.58rem; letter-spacing:.1em; text-transform:uppercase; text-align:right; min-width:8ch; color:var(--bone-faint);}
-.spec-stat.review{color:var(--brass);} .spec-stat.done{color:var(--good);}
+.spec-stat.review{color:var(--brass);} .spec-stat.done{color:var(--status-verified);}
 .conf-mini{display:flex; gap:2px; justify-content:flex-end; margin-top:.2rem;}
 .conf-mini i{width:6px;height:6px;border-radius:50%;background:var(--wall-recess);border:1px solid var(--brass-faint);}
 .conf-mini i.on{background:var(--vermilion);border-color:var(--vermilion);}
@@ -172,7 +162,7 @@ section{margin-bottom:clamp(2.2rem,5vw,3.6rem);}
 .check{display:grid; grid-template-columns:auto 1fr; gap:.7rem; align-items:start; padding:.6rem .7rem; background:var(--wall-recess); border:1px solid var(--brass-faint); border-radius:3px; cursor:pointer; transition:border-color .2s var(--ease);}
 .check:hover{border-color:var(--brass-line);}
 .box{width:18px;height:18px;border:1px solid var(--brass); border-radius:2px; margin-top:.15rem; position:relative; flex:none; transition:background .2s var(--ease);}
-.check.on .box{background:var(--good); border-color:var(--good);}
+.check.on .box{background:var(--status-verified); border-color:var(--status-verified);}
 .check.on .box::after{content:"";position:absolute;left:5px;top:1px;width:5px;height:10px;border:solid var(--wall-recess);border-width:0 2px 2px 0;transform:rotate(45deg);}
 .check .ctitle{font-family:"Fragment Mono",monospace; font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; color:var(--bone);}
 .check.on .ctitle{color:var(--bone-dim);}
@@ -192,9 +182,9 @@ section{margin-bottom:clamp(2.2rem,5vw,3.6rem);}
 /* citation status segmented (per source row) */
 .citestat{display:flex; gap:.3rem; flex-wrap:wrap; margin-top:.5rem;}
 .cs{font-family:"Fragment Mono",monospace; font-size:.55rem; letter-spacing:.06em; text-transform:uppercase; padding:.3rem .45rem; border-radius:2px; border:1px solid var(--brass-faint); color:var(--bone-faint); cursor:pointer; background:transparent; transition:all .2s var(--ease);}
-.cs[data-v="verified"].on{background:var(--good);color:var(--wall-recess);border-color:var(--good);}
+.cs[data-v="verified"].on{background:var(--status-verified);color:var(--wall-recess);border-color:var(--status-verified);}
 .cs[data-v="provided"].on{background:var(--brass);color:var(--wall-recess);border-color:var(--brass);}
-.cs[data-v="conflicting"].on{background:var(--warn);color:var(--wall-recess);border-color:var(--warn);}
+.cs[data-v="conflicting"].on{background:var(--status-conflict);color:var(--wall-recess);border-color:var(--status-conflict);}
 
 /* confidence picker */
 .confrow{display:flex; align-items:center; gap:.6rem; margin-top:.3rem;}
@@ -263,7 +253,7 @@ input[type=file]{display:none;}
 .sbind-head .dot{align-self:center;}
 .sbind-prov{margin:.5rem 0 0 1.1rem; padding-left:.9rem; border-left:1px solid var(--brass-faint);}
 .sbind-sources{margin-bottom:.4rem;}
-.struct-saved{position:absolute; top:1rem; right:0; font-family:"Fragment Mono",monospace; font-size:.55rem; letter-spacing:.1em; text-transform:uppercase; color:var(--good); opacity:0; transition:opacity .3s var(--ease);}
+.struct-saved{position:absolute; top:1rem; right:0; font-family:"Fragment Mono",monospace; font-size:.55rem; letter-spacing:.1em; text-transform:uppercase; color:var(--status-verified); opacity:0; transition:opacity .3s var(--ease);}
 .struct-saved.show{opacity:1;}
 
 /* ---------- Sync & cross-reference panel ---------- */
@@ -271,7 +261,7 @@ input[type=file]{display:none;}
 .dl-row{display:flex; justify-content:space-between; gap:.7rem; font-family:"Fragment Mono",monospace; font-size:.62rem;}
 .dl-row > span{color:var(--bone-faint); letter-spacing:.1em; text-transform:uppercase;}
 .dl-row > b{color:var(--bone-dim); font-weight:400;}
-.drift-flag{font-family:"Fragment Mono",monospace; font-size:.58rem; letter-spacing:.08em; text-transform:uppercase; color:var(--warn); margin-top:.2rem;}
+.drift-flag{font-family:"Fragment Mono",monospace; font-size:.58rem; letter-spacing:.08em; text-transform:uppercase; color:var(--status-conflict); margin-top:.2rem;}
 .deeplinks{display:flex; flex-wrap:wrap; gap:.4rem;}
 .deeplink{font-family:"Fragment Mono",monospace; font-size:.6rem; letter-spacing:.08em; text-transform:uppercase; color:var(--bone-faint); background:transparent; border:1px solid var(--brass-line); border-radius:2px; padding:.4rem .55rem; cursor:pointer; transition:color .2s var(--ease), border-color .2s var(--ease);}
 .deeplink:hover{color:var(--vermilion); border-color:var(--vermilion);}
@@ -368,8 +358,8 @@ input[type=file]{display:none;}
 .bbind-sources{margin:.55rem 0;}
 .valctl{display:flex;gap:.3rem;margin-top:.55rem;align-items:center;flex-wrap:wrap;}
 .valctl-lab{font-family:"Fragment Mono",monospace;font-size:.55rem;letter-spacing:.08em;text-transform:uppercase;color:var(--bone-faint);margin-right:.15rem;}
-.cs[data-vact="confirmed"].on{background:var(--good);color:var(--wall-recess);border-color:var(--good);}
-.cs[data-vact="mismatch"].on{background:var(--warn);color:var(--wall-recess);border-color:var(--warn);}
+.cs[data-vact="confirmed"].on{background:var(--status-verified);color:var(--wall-recess);border-color:var(--status-verified);}
+.cs[data-vact="mismatch"].on{background:var(--status-conflict);color:var(--wall-recess);border-color:var(--status-conflict);}
 .cs[data-vact="unchecked"].on{background:var(--wall-recess);color:var(--bone-dim);border-color:var(--brass-line);}
 </style>
 </head>
@@ -473,9 +463,9 @@ input[type=file]{display:none;}
     <div class="callout">
       <h3>Conservator&rsquo;s opening findings</h3>
       <p>Two issues were already surfaced while assembling this desk &mdash; treat them as the first entries on your fix-list:</p>
-      <div class="find"><span class="dot warn"></span><p><b>Muscarinic M1 &amp; M3 citation &mdash; wrong PMID.</b> The atlas cites PMID 24445063 for Kruse et al. (2014) <i>Muscarinic acetylcholine receptors</i>. That PMID resolves to an unrelated geriatrics paper. The correct identifier for that DOI (10.1038/nrd4295) is <b>PMID 24903776</b>. Both rows have their primary source pre-flagged <span class="mono" style="color:var(--warn)">conflicting</span>.</p></div>
+      <div class="find"><span class="dot warn"></span><p><b>Muscarinic M1 &amp; M3 citation &mdash; wrong PMID.</b> The atlas cites PMID 24445063 for Kruse et al. (2014) <i>Muscarinic acetylcholine receptors</i>. That PMID resolves to an unrelated geriatrics paper. The correct identifier for that DOI (10.1038/nrd4295) is <b>PMID 24903776</b>. Both rows have their primary source pre-flagged <span class="mono" style="color:var(--status-conflict)">conflicting</span>.</p></div>
       <div class="find"><span class="dot info"></span><p><b>Three specimens have no peer-reviewed article yet.</b> D3, DAT, and 5-HT3 appear in the Archive carrying only their Stahl chapters &mdash; no dedicated journal article is attached as a primary source. Each has a one-click PubMed search in its Sources panel to start from.</p></div>
-      <p style="font-size:.82rem; color:var(--bone-faint); margin-top:.7rem;">Most Cabinet citations are marked <span class="mono" style="color:var(--brass)">provided</span> &mdash; present in the atlas but not yet independently re-verified here. Several were confirmed against PubMed and are marked <span class="mono" style="color:var(--good)">verified</span>.</p>
+      <p style="font-size:.82rem; color:var(--bone-faint); margin-top:.7rem;">Most Cabinet citations are marked <span class="mono" style="color:var(--brass)">provided</span> &mdash; present in the atlas but not yet independently re-verified here. Several were confirmed against PubMed and are marked <span class="mono" style="color:var(--status-verified)">verified</span>.</p>
     </div>
   </section>
 
@@ -842,7 +832,7 @@ function srowHtml(s){
       ${s.doi?`<a class="srclink" href="${doiU(s.doi)}" target="_blank" rel="noopener">DOI ↗</a>`:''}
       ${(!s.pmid&&!s.doi&&s.url)?`<a class="srclink" href="${esc(s.url)}" target="_blank" rel="noopener">Open ↗</a>`:''}
     </div>
-    ${s.correction_note?`<div class="srcline" style="color:var(--warn);font-size:.76rem;">⚠ ${esc(s.correction_note)}</div>`:''}
+    ${s.correction_note?`<div class="srcline" style="color:var(--status-conflict);font-size:.76rem;">⚠ ${esc(s.correction_note)}</div>`:''}
     <div class="citestat">${CITATION_STATUSES.map(v=>`<button type="button" class="cs${s.status===v?' on':''}" data-act="status" data-sid="${s.id}" data-v="${v}" title="${CS_HELP[v]}">${v}</button>`).join("")}</div>
     <div class="srow-actions">
       ${s.is_primary?'':`<button type="button" class="ctrl" data-act="primary" data-sid="${s.id}">Make primary</button>`}

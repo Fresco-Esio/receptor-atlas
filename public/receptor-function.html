@@ -7,48 +7,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Schibsted+Grotesk:wght@400;500;700&family=Fragment+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/base.css">
 <style>
   :root {
-    /* wall paint: each hall (category) repaints the page background */
-    --wall-atrium: oklch(17% 0.012 75);
-    --wall-celestial: oklch(16% 0.02 280);
-    --wall-oxblood: oklch(26% 0.065 25);
-    --wall-cobalt: oklch(17% 0.05 255);
-    --wall-verdigris: oklch(19% 0.028 155);
-    --wall-umber: oklch(22% 0.05 58);
-    --wall-vault: oklch(14% 0.01 75);
-
-    /* ink and metal */
-    --bone: oklch(93% 0.012 85);
-    --bone-dim: oklch(72% 0.015 85);
-    --bone-faint: oklch(65% 0.012 85);
-    --vermilion: oklch(62% 0.19 35);
-    --brass: oklch(70% 0.055 80);
-    --brass-line: oklch(70% 0.055 80 / 0.28);
-
-    /* motion: a single expo-out ease everywhere, plus the stagger steps
-       that pace each kind of sequenced reveal */
-    --ease: cubic-bezier(0.16, 1, 0.3, 1);
-    --letter-stagger: 55ms;   /* hero title, per letter */
-    --line-stagger: 110ms;    /* manifesto, per line */
-    --stroke-stagger: 180ms;  /* engraving figures, per stroke */
     --row-stagger: 70ms;      /* catalogue, per drawer row */
-    --entry-stagger: 90ms;    /* entry page blocks, per block */
 
     /* examination instruments */
     --loupe-size: 170px;      /* diameter of the magnifying loupe */
     --light-radius: 200px;    /* radius of the pointer flashlight glow */
-
-    /* the timeline rail's x position; the menu grows out of this same line */
-    --rail-x: clamp(0.9rem, 2.5vw, 2.2rem);
-
-    /* typography system */
-    --lbl: 0.6875rem;
-    --lbl-sm: 0.6rem;
-
-    --display: "Marcellus", serif;
-    --body: "Schibsted Grotesk", sans-serif;
-    --mono: "Fragment Mono", monospace;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }

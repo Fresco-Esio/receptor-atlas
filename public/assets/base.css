@@ -1,0 +1,36 @@
+/* ============================================================================
+   The Receptor Atlas — base layer
+
+   Reset and primitives shared by every page. Loaded after tokens.css and before
+   the page's own <style>, so a page can override anything here.
+   Page-specific rules do NOT belong in this file.
+   ============================================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+/* The visible keyboard focus ring. If a component needs a different treatment
+   it must still show something — never `outline: none` with no replacement. */
+:focus-visible { outline: 1px solid var(--brass); outline-offset: 3px; }
+
+/* Visually hidden, still read by screen readers. */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

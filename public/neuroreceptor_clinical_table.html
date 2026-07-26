@@ -7,36 +7,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Schibsted+Grotesk:wght@400;500;700&family=Fragment+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/base.css">
 <style>
   :root {
-    --wall-atrium:    oklch(17% 0.012 75);
-    --wall-panel:     oklch(20% 0.013 75);
-    --wall-recess:    oklch(14% 0.011 75);
-
-    --st-normal:      oklch(78% 0.085 158);
-    --st-over:        oklch(66% 0.185 38);
-    --st-under:       oklch(72% 0.10 245);
-    --wall-over:      oklch(23% 0.060 28);
-    --wall-under:     oklch(18% 0.045 255);
-    --wall-normal:    oklch(18% 0.030 158);
-
-    --bone:       oklch(93% 0.012 85);
-    --bone-dim:   oklch(72% 0.015 85);
-    --bone-read:  oklch(86% 0.013 85);
-    --bone-faint: oklch(63% 0.013 85);
-    --vermilion:  oklch(62% 0.19 35);
-    --brass:      oklch(70% 0.055 80);
-    --brass-line: oklch(70% 0.055 80 / 0.28);
-    --brass-faint:oklch(70% 0.055 80 / 0.14);
-
-    --ease: cubic-bezier(0.16, 1, 0.3, 1);
     --row-stagger: 42ms;
-
-    --display: "Marcellus", serif;
-    --body: "Schibsted Grotesk", sans-serif;
-    --mono: "Fragment Mono", monospace;
-    --lbl: 0.6875rem;
-    --lbl-sm: 0.6rem;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -164,8 +139,8 @@
   .segmented button.is-active { color: var(--bone); background: oklch(93% 0.012 85 / 0.06); }
   .seg-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.55; }
   .segmented button.is-active .seg-dot { opacity: 1; }
-  .seg-dot.over { background: var(--st-over); }
-  .seg-dot.under { background: var(--st-under); }
+  .seg-dot.over { background: var(--state-over); }
+  .seg-dot.under { background: var(--state-under); }
   .seg-dot.both { background: var(--brass); }
 
   .spacer { flex: 1 1 auto; }
@@ -199,8 +174,8 @@
     border-bottom: 1px solid var(--brass-line); white-space: nowrap;
   }
   .ledger thead th .th-sub { display: block; color: var(--bone-faint); font-size: 0.6rem; margin-top: 0.2rem; }
-  .th-over { color: var(--st-over) !important; }
-  .th-under { color: var(--st-under) !important; }
+  .th-over { color: var(--state-over) !important; }
+  .th-under { color: var(--state-under) !important; }
   .col-no { width: 2.6rem; }
   .col-recep { width: 14rem; }
 
@@ -234,12 +209,12 @@
 
   .sx-cell { color: var(--bone-read); line-height: 1.55; }
   .sx-cell .sx-lead { display: block; font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.35rem; }
-  .sx-over .sx-lead { color: var(--st-over); }
-  .sx-under .sx-lead { color: var(--st-under); }
+  .sx-over .sx-lead { color: var(--state-over); }
+  .sx-under .sx-lead { color: var(--state-under); }
   .sx-cell ul { list-style: none; display: flex; flex-direction: column; gap: 0.28rem; }
   .sx-cell li { display: grid; grid-template-columns: auto 1fr; gap: 0.45rem; font-size: 0.82rem; }
-  .sx-over li::before { content: "▲"; color: var(--st-over); font-size: 0.5em; line-height: 2.1; }
-  .sx-under li::before { content: "▼"; color: var(--st-under); font-size: 0.5em; line-height: 2.1; }
+  .sx-over li::before { content: "▲"; color: var(--state-over); font-size: 0.5em; line-height: 2.1; }
+  .sx-under li::before { content: "▼"; color: var(--state-under); font-size: 0.5em; line-height: 2.1; }
 
   .expander { color: var(--bone-faint); font-family: var(--mono); font-size: 1.1rem; line-height: 1; transition: transform 0.4s var(--ease), color 0.3s; display: inline-block; }
   tr.rec-row.is-open .expander { transform: rotate(45deg); color: var(--vermilion); }
@@ -280,8 +255,8 @@
   .ptr-link:hover { color: var(--bone-read); }
   .tag-wrap { display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .tag { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.03em; padding: 0.28rem 0.5rem; border-radius: 2px; border: 1px solid var(--brass-faint); color: var(--bone-dim); background: oklch(0% 0 0 / 0.12); }
-  .tag.ag { border-color: oklch(78% 0.085 158 / 0.45); color: var(--st-normal); }
-  .tag.an { border-color: oklch(66% 0.185 38 / 0.45); color: var(--st-over); }
+  .tag.ag { border-color: color-mix(in oklch, var(--action-agonist) 45%, transparent); color: var(--state-normal); }
+  .tag.an { border-color: color-mix(in oklch, var(--action-antagonist) 45%, transparent); color: var(--state-over); }
   .cite { font-family: var(--mono); font-size: 0.68rem; color: var(--bone-faint); line-height: 1.5; }
   .cite a { color: var(--bone-dim); text-decoration: none; border-bottom: 1px solid var(--brass-faint); }
   .cite a:hover { color: var(--vermilion); border-color: var(--vermilion); }
@@ -393,7 +368,7 @@
     <div class="intro">
       <span class="section-label">Symptom &amp; Clinical Presentation Matrix</span>
       <h2>What each receptor does, and what its loss or excess looks like at the bedside.</h2>
-      <p><span class="lede-accent">Sixteen receptors and transporters, organized by neurotransmitter system.</span> Each row reads left to right from baseline physiology into the two failure modes: <span style="color:var(--st-over)">excess</span> and <span style="color:var(--st-under)">deficit / blockade</span>. Open any row for mechanism, the matched cross-reference from Stahl's <i>Essential Psychopharmacology</i>, and the drugs that move it.</p>
+      <p><span class="lede-accent">Sixteen receptors and transporters, organized by neurotransmitter system.</span> Each row reads left to right from baseline physiology into the two failure modes: <span style="color:var(--state-over)">excess</span> and <span style="color:var(--state-under)">deficit / blockade</span>. Open any row for mechanism, the matched cross-reference from Stahl's <i>Essential Psychopharmacology</i>, and the drugs that move it.</p>
     </div>
 
     <div class="controls">

@@ -7,41 +7,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Schibsted+Grotesk:wght@400;500;700&family=Fragment+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/base.css">
 <style>
   :root {
-    --wall-vault:      oklch(14% 0.01 75);
-    --wall-atrium:     oklch(17% 0.012 75);
-    --wall-celestial:  oklch(16% 0.018 280);
-    --wall-umber:      oklch(22% 0.05 58);
-    --wall-verdigris:  oklch(19% 0.028 155);
-
-    --bone:       oklch(93% 0.012 85);
-    --bone-dim:   oklch(72% 0.015 85);
-    --bone-faint: oklch(63% 0.013 85);
-    --vermilion:  oklch(62% 0.19 35);
-    --brass:      oklch(70% 0.055 80);
-    --brass-line: oklch(70% 0.055 80 / 0.28);
-    --brass-faint:oklch(70% 0.055 80 / 0.14);
-
-    --st-normal:  oklch(78% 0.085 158);
-    --st-over:    oklch(66% 0.185 38);
-    --st-under:   oklch(72% 0.10 245);
-
-    --ease: cubic-bezier(0.16, 1, 0.3, 1);
-    --letter-stagger: 55ms;
-    --rail-x: clamp(0.9rem, 2.5vw, 2.2rem);
     --lintel-h: 3.3rem;
     --mast-h: 5.5rem;
-
-    --display: "Marcellus", serif;
-    --body: "Schibsted Grotesk", sans-serif;
-    --mono: "Fragment Mono", monospace;
-
-    /* mono-label ramp — two committed steps so every catalog label reads as
-       one hand. --lbl is the system label (matches the volumes); --lbl-sm is
-       the single step down for secondary meta, chips, and hints. */
-    --lbl: 0.6875rem;
-    --lbl-sm: 0.6rem;
 
     --wall: var(--wall-vault);
     /* accent of the volume currently in the frame — colours the breadcrumb tick */
@@ -455,9 +426,9 @@
     text-transform: uppercase; color: var(--bone-dim); }
   .ak-tick { width: 0.66rem; height: 0.66rem; rotate: 45deg;
     background: var(--ak); border: 1px solid var(--ak); }
-  .ak-over   { --ak: var(--st-over); }
-  .ak-normal { --ak: var(--st-normal); }
-  .ak-under  { --ak: var(--st-under); }
+  .ak-over   { --ak: var(--state-over); }
+  .ak-normal { --ak: var(--state-normal); }
+  .ak-under  { --ak: var(--state-under); }
 
   /* ───────── rotunda: the three volume plates ───────── */
   #volumes { padding-bottom: clamp(3rem, 8vh, 6rem); }
@@ -825,7 +796,7 @@
             <path class="stroke dim" style="--s:0" pathLength="1" d="M34 30 h132 M34 30 v100 M166 30 v100 M34 130 h132"/>
             <path class="stroke dim" style="--s:1" pathLength="1" d="M34 56 h132 M34 82 h132 M34 108 h132 M100 30 v100"/>
             <path class="stroke live" style="--s:2" pathLength="1" d="M120 50 v-14 m-6 6 l6 -6 l6 6"/>
-            <path class="stroke" style="--s:3" pathLength="1" d="M120 92 v14 m-6 -6 l6 6 l6 -6" stroke="var(--st-under)"/>
+            <path class="stroke" style="--s:3" pathLength="1" d="M120 92 v14 m-6 -6 l6 6 l6 -6" stroke="var(--state-under)"/>
             <path class="stroke" style="--s:2" pathLength="1" d="M48 69 h30 M48 95 h30 M48 121 h22"/>
           </svg>
         </div>
@@ -1039,8 +1010,8 @@
 
     const v = VOLUMES[currentVolume];
     body.style.setProperty("--vol-accent",
-      currentVolume === "archive" ? "var(--st-under)" :
-      currentVolume === "cabinet" ? "var(--st-over)" : "var(--st-normal)");
+      currentVolume === "archive" ? "var(--state-under)" :
+      currentVolume === "cabinet" ? "var(--state-over)" : "var(--state-normal)");
 
     const tick = document.createElement("span"); tick.className = "tick"; trailEl.appendChild(tick);
     const sep1 = document.createElement("span"); sep1.className = "sep"; trailEl.appendChild(sep1);
