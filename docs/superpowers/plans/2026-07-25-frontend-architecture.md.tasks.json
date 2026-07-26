@@ -4,13 +4,13 @@
     {
       "id": 1,
       "subject": "Task 1: Publish pipeline carries assets/",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** dist/ includes public/assets/ and the build fails loudly on a dangling asset reference.\n\n**Files:**\n- public/assets/tokens.css\n- scripts/publish.js\n- test/publish.test.js\n\n**Verify:** npm test\n\n```json:metadata\n{\"files\":[\"public/assets/tokens.css\",\"scripts/publish.js\",\"test/publish.test.js\"],\"verifyCommand\":\"npm test\",\"acceptanceCriteria\":[\"tokens.css exists with full palette\",\"publish copies assets recursively\",\"verifyAssetRefs throws on missing asset\",\"existing tests pass\"]}\n```"
     },
     {
       "id": 2,
       "subject": "Task 2: Migrate six pages onto shared layer",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [
         1
       ],
@@ -19,7 +19,7 @@
     {
       "id": 3,
       "subject": "Task 3: Extract cross-volume bridge as factory",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [
         2
       ],
@@ -28,7 +28,7 @@
     {
       "id": 4,
       "subject": "Task 4: Token discipline - spacing and stray colours",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [
         2
       ],
@@ -56,7 +56,7 @@
     {
       "id": 7,
       "subject": "Task 7: Accessibility pass",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [
         6
       ],
@@ -65,13 +65,13 @@
     {
       "id": 8,
       "subject": "Task 8: Fix plan-referencing comments in backend",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Comments describe the code, not a plan document an independent team will never see.\n\n**Files:**\n- lib/router.js\n- lib/queries.js\n- scripts/migrate.js\n- scripts/seed-data.js\n- db/schema.sql\n\n**Verify:** grep -rn \"Task [0-9]\" lib/ scripts/ db/ server.js; npm test\n\n```json:metadata\n{\"files\":[\"lib/router.js\",\"lib/queries.js\",\"scripts/migrate.js\",\"scripts/seed-data.js\",\"db/schema.sql\"],\"verifyCommand\":\"grep -rn \\\"Task [0-9]\\\" lib/ scripts/ db/ server.js; npm test\",\"acceptanceCriteria\":[\"no Task N references remain\",\"replacements state what code does\",\"feature names preserved\"]}\n```"
     },
     {
       "id": 9,
       "subject": "Task 9: Full live verification",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [
         7,
         8
@@ -79,5 +79,5 @@
       "description": "**Goal:** Prove every feature works in the real app and the published bundle, from the running site not from memory.\n\n**Files:**\n\n\n**Verify:** npm test && npm run snapshot\n\n```json:metadata\n{\"files\":[],\"verifyCommand\":\"npm test && npm run snapshot\",\"acceptanceCriteria\":[\"full suite passes\",\"six pages clean console\",\"all interactions verified\",\"published bundle styled\",\"screenshots captured\"]}\n```"
     }
   ],
-  "lastUpdated": "2026-07-25T00:00:00Z"
+  "lastUpdated": "2026-07-28T17:20:00.000Z"
 }
