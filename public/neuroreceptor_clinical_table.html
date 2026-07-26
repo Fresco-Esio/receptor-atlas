@@ -897,6 +897,9 @@
       '5ht2c':8, 'sert':9, 'beta1':10, 'alpha1':11, 'alpha2':12, 'net':13, 'm1':14, 'h1':15, 'mu':16 };
     var NO2CANON = {}; for (var k in CANON2NO) NO2CANON[CANON2NO[k]] = k;
 
+    // Deliberately null: the Ledger opens with no row selected, and it reports a
+    // subject only when the reader actually opens one (see the click handler
+    // below). Matches the behaviour before the bridge was extracted.
     function currentSubject() {
       return null;
     }

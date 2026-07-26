@@ -3252,8 +3252,14 @@
     var STATION2VIEW = { cabinet:'explorer', explorer:'explorer', catalogue:'matrix',
       matrix:'matrix', primer:'primer' };
 
+    // Must return a CANONICAL id — selectedReceptorId is the Cabinet's own local
+    // alias, so translate here. This is the single translation point: every emit
+    // path goes through it, so the shell can never receive a local id.
     function currentSubject() {
-      try { return (typeof selectedReceptorId !== 'undefined') ? selectedReceptorId : null; } catch (e) { return null; }
+      try {
+        var local = (typeof selectedReceptorId !== 'undefined') ? selectedReceptorId : null;
+        return local && LOCAL2CANON[local] ? LOCAL2CANON[local] : null;
+      } catch (e) { return null; }
     }
     function wrap(name, after) {
       var orig = window[name];
@@ -3274,7 +3280,7 @@
 
     var bridge = createAtlasBridge({ volume: 'cabinet', currentSubject: currentSubject, applyNav: applyNav, startDelay: 90 });
     // The Cabinet pushes on selection rather than on hashchange.
-    if (bridge) wrap('selectReceptor', function (id) { bridge.emit(LOCAL2CANON[id] || null); });
+    if (bridge) wrap('selectReceptor', function () { bridge.emit(); });
   })();
   </script>
 </body>
