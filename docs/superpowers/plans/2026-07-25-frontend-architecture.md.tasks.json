@@ -1,0 +1,83 @@
+{
+  "planPath": "docs/superpowers/plans/2026-07-25-frontend-architecture.md",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Task 1: Publish pipeline carries assets/",
+      "status": "pending",
+      "description": "**Goal:** dist/ includes public/assets/ and the build fails loudly on a dangling asset reference.\n\n**Files:**\n- public/assets/tokens.css\n- scripts/publish.js\n- test/publish.test.js\n\n**Verify:** npm test\n\n```json:metadata\n{\"files\":[\"public/assets/tokens.css\",\"scripts/publish.js\",\"test/publish.test.js\"],\"verifyCommand\":\"npm test\",\"acceptanceCriteria\":[\"tokens.css exists with full palette\",\"publish copies assets recursively\",\"verifyAssetRefs throws on missing asset\",\"existing tests pass\"]}\n```"
+    },
+    {
+      "id": 2,
+      "subject": "Task 2: Migrate six pages onto shared layer",
+      "status": "pending",
+      "blockedBy": [
+        1
+      ],
+      "description": "**Goal:** Every page links tokens.css + base.css and drops its own copy of the shared palette/reset.\n\n**Files:**\n- public/assets/base.css\n- public/the-receptor-atlas.html\n- public/neuroreceptor_pharmacology_explorer_dashboard.html\n- public/receptor-function.html\n- public/neuroreceptor_clinical_table.html\n- public/the-conservators-desk.html\n- public/receptor-atlas-demo.html\n\n**Verify:** npm test\n\n```json:metadata\n{\"files\":[\"public/assets/base.css\",\"public/the-receptor-atlas.html\",\"public/neuroreceptor_pharmacology_explorer_dashboard.html\",\"public/receptor-function.html\",\"public/neuroreceptor_clinical_table.html\",\"public/the-conservators-desk.html\",\"public/receptor-atlas-demo.html\"],\"verifyCommand\":\"npm test\",\"acceptanceCriteria\":[\"base.css created\",\"six pages link shared layer relatively\",\"page :root keeps only page-specific tokens\",\"three token vocabularies eliminated\",\"no raw agonist literals remain\",\"Desk checked for margin collapse\"]}\n```"
+    },
+    {
+      "id": 3,
+      "subject": "Task 3: Extract cross-volume bridge as factory",
+      "status": "pending",
+      "blockedBy": [
+        2
+      ],
+      "description": "**Goal:** One implementation of the shell<->volume protocol; each volume supplies only its id-map and navigation.\n\n**Files:**\n- public/assets/atlas.js\n- public/receptor-function.html\n- public/neuroreceptor_pharmacology_explorer_dashboard.html\n- public/neuroreceptor_clinical_table.html\n\n**Verify:** npm test\n\n```json:metadata\n{\"files\":[\"public/assets/atlas.js\",\"public/receptor-function.html\",\"public/neuroreceptor_pharmacology_explorer_dashboard.html\",\"public/neuroreceptor_clinical_table.html\"],\"verifyCommand\":\"npm test\",\"acceptanceCriteria\":[\"factory owns transport and envelopes\",\"each volume passes own idMap/currentSubject/applyNav\",\"atlasTrace replaces inline postMessage\",\"cross-volume tracing works live\"]}\n```"
+    },
+    {
+      "id": 4,
+      "subject": "Task 4: Token discipline - spacing and stray colours",
+      "status": "pending",
+      "blockedBy": [
+        2
+      ],
+      "description": "**Goal:** Repeated fixed spacing references the scale; colour literals duplicating a token reference the token.\n\n**Files:**\n- public/the-receptor-atlas.html\n- public/neuroreceptor_pharmacology_explorer_dashboard.html\n- public/receptor-function.html\n- public/neuroreceptor_clinical_table.html\n- public/the-conservators-desk.html\n- public/receptor-atlas-demo.html\n\n**Verify:** npm test\n\n```json:metadata\n{\"files\":[\"public/the-receptor-atlas.html\",\"public/neuroreceptor_pharmacology_explorer_dashboard.html\",\"public/receptor-function.html\",\"public/neuroreceptor_clinical_table.html\",\"public/the-conservators-desk.html\",\"public/receptor-atlas-demo.html\"],\"verifyCommand\":\"npm test\",\"acceptanceCriteria\":[\"only 3+ repeat values tokenised\",\"clamp/one-offs left alone\",\"duplicate colour literals folded\",\"no visual change\"]}\n```"
+    },
+    {
+      "id": 5,
+      "subject": "Task 5: Decouple class names from JavaScript",
+      "status": "pending",
+      "blockedBy": [
+        2
+      ],
+      "description": "**Goal:** Class names used by JS live in one named list per page, so a future rename is a one-line change.\n\n**Files:**\n- public/the-receptor-atlas.html\n- public/receptor-function.html\n- public/neuroreceptor_clinical_table.html\n- public/the-conservators-desk.html\n\n**Verify:** npm test\n\n```json:metadata\n{\"files\":[\"public/the-receptor-atlas.html\",\"public/receptor-function.html\",\"public/neuroreceptor_clinical_table.html\",\"public/the-conservators-desk.html\"],\"verifyCommand\":\"npm test\",\"acceptanceCriteria\":[\"CLASS constant per page\",\"all coupled names routed through CLASS\",\"values unchanged\",\"interactions verified live\"]}\n```"
+    },
+    {
+      "id": 6,
+      "subject": "Task 6: Cabinet BEM exemplar + action colour source of truth",
+      "status": "pending",
+      "blockedBy": [
+        4,
+        5
+      ],
+      "description": "**Goal:** The Cabinet becomes the reference: strict BEM, ACTION_COLOR hoisted and searchable, affinity-plate legible.\n\n**Files:**\n- public/neuroreceptor_pharmacology_explorer_dashboard.html\n\n**Verify:** npm test\n\n```json:metadata\n{\"files\":[\"public/neuroreceptor_pharmacology_explorer_dashboard.html\"],\"verifyCommand\":\"npm test\",\"acceptanceCriteria\":[\"grep agonist reaches radar colour logic\",\"ACTION_COLOR hoisted\",\"CSS and JS both resolve to --action-*\",\"locals legible\",\"wire-format properties untouched\",\"axis count corrected\",\"BEM via CLASS constant\"]}\n```"
+    },
+    {
+      "id": 7,
+      "subject": "Task 7: Accessibility pass",
+      "status": "pending",
+      "blockedBy": [
+        6
+      ],
+      "description": "**Goal:** Every interactive element including runtime-generated ones has a visible focus state and accessible name.\n\n**Files:**\n- public/the-receptor-atlas.html\n- public/neuroreceptor_pharmacology_explorer_dashboard.html\n- public/receptor-function.html\n- public/neuroreceptor_clinical_table.html\n- public/the-conservators-desk.html\n- public/receptor-atlas-demo.html\n\n**Verify:** npm test\n\n```json:metadata\n{\"files\":[\"public/the-receptor-atlas.html\",\"public/neuroreceptor_pharmacology_explorer_dashboard.html\",\"public/receptor-function.html\",\"public/neuroreceptor_clinical_table.html\",\"public/the-conservators-desk.html\",\"public/receptor-atlas-demo.html\"],\"verifyCommand\":\"npm test\",\"acceptanceCriteria\":[\"Ledger scope+caption\",\"no unreplaced outline:none\",\"generated controls are real buttons\",\"Desk controls labelled\",\"semantic upgrades\",\"keyboard traversal verified\"]}\n```"
+    },
+    {
+      "id": 8,
+      "subject": "Task 8: Fix plan-referencing comments in backend",
+      "status": "pending",
+      "description": "**Goal:** Comments describe the code, not a plan document an independent team will never see.\n\n**Files:**\n- lib/router.js\n- lib/queries.js\n- scripts/migrate.js\n- scripts/seed-data.js\n- db/schema.sql\n\n**Verify:** grep -rn \"Task [0-9]\" lib/ scripts/ db/ server.js; npm test\n\n```json:metadata\n{\"files\":[\"lib/router.js\",\"lib/queries.js\",\"scripts/migrate.js\",\"scripts/seed-data.js\",\"db/schema.sql\"],\"verifyCommand\":\"grep -rn \\\"Task [0-9]\\\" lib/ scripts/ db/ server.js; npm test\",\"acceptanceCriteria\":[\"no Task N references remain\",\"replacements state what code does\",\"feature names preserved\"]}\n```"
+    },
+    {
+      "id": 9,
+      "subject": "Task 9: Full live verification",
+      "status": "pending",
+      "blockedBy": [
+        7,
+        8
+      ],
+      "description": "**Goal:** Prove every feature works in the real app and the published bundle, from the running site not from memory.\n\n**Files:**\n\n\n**Verify:** npm test && npm run snapshot\n\n```json:metadata\n{\"files\":[],\"verifyCommand\":\"npm test && npm run snapshot\",\"acceptanceCriteria\":[\"full suite passes\",\"six pages clean console\",\"all interactions verified\",\"published bundle styled\",\"screenshots captured\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-07-25T00:00:00Z"
+}
