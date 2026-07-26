@@ -110,7 +110,7 @@
 
   /* the specimen thread — follow one receptor across the volumes */
   .thread {
-    display: none; align-items: center; gap: 0.5rem; flex: none;
+    display: none; align-items: center; gap: var(--space-xs); flex: none;
     margin-left: 0.4rem; padding-left: 0.8rem; border-left: 1px solid var(--brass-line);
   }
   body[data-view="stage"].has-thread .thread { display: flex; }
@@ -124,7 +124,7 @@
     font-family: var(--mono); font-size: var(--lbl-sm); letter-spacing: 0.12em;
     text-transform: uppercase; color: var(--bone-dim);
     background: oklch(0% 0 0 / 0.18); border: 1px solid var(--brass-faint);
-    border-radius: 2px; padding: 0.28rem 0.5rem; cursor: pointer; white-space: nowrap;
+    border-radius: 2px; padding: 0.28rem var(--space-xs); cursor: pointer; white-space: nowrap;
     transition: color 0.22s var(--ease), border-color 0.22s var(--ease), background-color 0.22s var(--ease);
   }
   .thread-pill:hover { color: var(--bone); border-color: var(--brass); }
@@ -254,11 +254,11 @@
   .wf-scroll::-webkit-scrollbar { width: 5px; }
   .wf-scroll::-webkit-scrollbar-thumb { background: var(--brass-line); border-radius: 3px; }
   #wfContent { position: relative; padding: 0.7rem 0.85rem 0.9rem 0; }
-  .wf-section { padding: 0 0 0.5rem; }
+  .wf-section { padding: 0 0 var(--space-xs); }
   .wf-section-head {
     position: relative; font-family: var(--mono); font-size: var(--lbl);
     letter-spacing: 0.14em; text-transform: uppercase; color: var(--bone-faint);
-    margin: 0.5rem 0 0.4rem; padding-left: 1.5rem; cursor: pointer; display: block;
+    margin: var(--space-xs) 0 0.4rem; padding-left: 1.5rem; cursor: pointer; display: block;
     background: none; border: 0; text-align: left; width: 100%;
     transition: color 0.3s var(--ease);
   }
@@ -280,7 +280,7 @@
   .wf-item:hover { color: var(--bone); background: oklch(93% 0.012 85 / 0.06); padding-left: 1.7rem; }
   .wf-item:hover::before { background: var(--vermilion); width: 0.85rem; }
   @media (pointer: coarse) { .wf-item { min-height: 44px; display: flex; align-items: center; } }
-  .wf-return { margin: 0.4rem 1rem 0.2rem; padding: 0.55rem 0.9rem;
+  .wf-return { margin: 0.4rem var(--space-md) 0.2rem; padding: 0.55rem 0.9rem;
     font-family: var(--mono); font-size: var(--lbl-sm); letter-spacing: 0.16em;
     text-transform: uppercase; color: var(--bone-dim);
     background: transparent; border: 1px solid var(--brass-line); border-radius: 2px;
@@ -377,7 +377,7 @@
   .throughline.is-in .tl-node { opacity: 1; translate: 0 0; }
   .throughline.is-in .tl-node:nth-child(3) { transition-delay: 0.1s; }
   .throughline.is-in .tl-node:nth-child(4) { transition-delay: 0.2s; }
-  .tl-dot { width: 0.85rem; height: 0.85rem; rotate: 45deg; margin: 0.6rem auto 1rem;
+  .tl-dot { width: 0.85rem; height: 0.85rem; rotate: 45deg; margin: 0.6rem auto var(--space-md);
     background: var(--wall); border: 1px solid var(--brass); position: relative; z-index: 1;
     transition: background-color 0.35s var(--ease), border-color 0.35s var(--ease), box-shadow 0.35s var(--ease); }
   .tl-stage { font-family: var(--mono); font-size: var(--lbl-sm); letter-spacing: 0.18em;
@@ -398,7 +398,7 @@
   button.tl-node:hover .tl-dot, button.tl-node:focus-visible .tl-dot {
     border-color: var(--vermilion); background: oklch(62% 0.19 35 / 0.16);
     box-shadow: 0 0 10px oklch(62% 0.19 35 / 0.35); }
-  .tl-enter { display: block; margin-top: 0.5rem; font-family: var(--mono);
+  .tl-enter { display: block; margin-top: var(--space-xs); font-family: var(--mono);
     font-size: var(--lbl-sm); letter-spacing: 0.2em; text-transform: uppercase;
     color: var(--bone-faint); opacity: 0; translate: 0 -4px;
     transition: opacity 0.3s var(--ease), translate 0.3s var(--ease), color 0.3s var(--ease); }
@@ -421,7 +421,7 @@
   .throughline.is-in ~ .axis-key, .axis-key.is-in { opacity: 1; translate: 0 0; }
   .ak-cap { font-family: var(--mono); font-size: var(--lbl-sm); letter-spacing: 0.2em;
     text-transform: uppercase; color: var(--bone-faint); }
-  .ak-item { display: inline-flex; align-items: center; gap: 0.5rem;
+  .ak-item { display: inline-flex; align-items: center; gap: var(--space-xs);
     font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.12em;
     text-transform: uppercase; color: var(--bone-dim); }
   .ak-tick { width: 0.66rem; height: 0.66rem; rotate: 45deg;
@@ -492,7 +492,7 @@
   .colophon { border-top: 1px solid var(--brass-line);
     padding: 2.4rem clamp(1.4rem, 8vw, 6rem) 3rem;
     max-width: 72rem; margin-inline: auto;
-    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--space-md);
     font-family: var(--mono); font-size: var(--lbl-sm); letter-spacing: 0.14em;
     text-transform: uppercase; color: var(--bone-faint); }
   .colophon .disc { max-width: 52ch; text-transform: none; letter-spacing: normal;
@@ -521,7 +521,7 @@
 
   /* a quiet skeleton behind the frames so a slow load is never a blank stage */
   .stage-skeleton { position: absolute; inset: 0; z-index: 0; display: grid;
-    place-content: center; justify-items: center; gap: 1rem;
+    place-content: center; justify-items: center; gap: var(--space-md);
     opacity: 0; pointer-events: none; transition: opacity 0.3s var(--ease); }
   body.frame-loading .stage-skeleton { opacity: 1; }
   .stage-skeleton svg { width: 40px; height: 40px; opacity: 0.55;
@@ -554,7 +554,7 @@
   .search-results { max-height: min(56vh, 30rem); overflow-y: auto; padding: 0.4rem;
     scrollbar-width: thin; scrollbar-color: var(--brass-line) transparent; }
   .search-section { font-family: var(--mono); font-size: var(--lbl-sm); letter-spacing: 0.18em;
-    text-transform: uppercase; color: var(--bone-faint); padding: 0.5rem 0.7rem 0.3rem; }
+    text-transform: uppercase; color: var(--bone-faint); padding: var(--space-xs) 0.7rem 0.3rem; }
   .search-empty { padding: 1.1rem; color: var(--bone-faint); font-size: 0.9rem; }
   .sr-item { display: flex; align-items: center; gap: 0.7rem; width: 100%; text-align: left;
     background: transparent; border: 0; cursor: pointer; color: var(--bone-dim);
@@ -588,7 +588,7 @@
   body.tracecoach-on #traceCoach { opacity: 1; translate: 0 0; pointer-events: auto; }
   .coach-trace { border-color: var(--vermilion); }
   .coach-h { font-family: var(--mono); font-size: var(--lbl-sm); letter-spacing: 0.2em;
-    text-transform: uppercase; color: var(--vermilion); margin-bottom: 0.5rem; }
+    text-transform: uppercase; color: var(--vermilion); margin-bottom: var(--space-xs); }
   .coach-p { font-family: var(--body); font-size: 0.86rem; line-height: 1.55; color: var(--bone-dim); }
   .coach-p b { color: var(--bone); font-weight: 500; }
   .coach-x { margin-top: 0.75rem; font-family: var(--mono); font-size: var(--lbl-sm);

@@ -126,7 +126,7 @@
     place-content: center;
     text-align: center;
     position: relative;
-    padding: 2rem;
+    padding: var(--space-xl);
   }
   .hero-rings {
     position: absolute;
@@ -589,7 +589,7 @@
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    gap: 2rem;
+    gap: var(--space-xl);
     font-family: var(--mono);
     font-size: 0.72rem;
     letter-spacing: 0.22em;
@@ -619,7 +619,7 @@
     line-height: 1.06;
     text-transform: uppercase;
     max-width: 16ch;
-    margin-top: 1rem;
+    margin-top: var(--space-md);
     outline: none;
   }
 
@@ -704,7 +704,7 @@
     max-width: 55ch;
   }
   .entry-text > p.entry-lede { color: var(--bone); }
-  .entry-text .plate-tags { margin-top: 2rem; }
+  .entry-text .plate-tags { margin-top: var(--space-xl); }
 
   /* provenance ledger: the registrar's record for this acquisition */
   .provenance {
@@ -906,9 +906,9 @@
   /* the back button for the sidebar (mobile/narrow) */
   .wf-header {
     display: none;
-    padding: 0 1rem 1rem;
+    padding: 0 var(--space-md) var(--space-md);
     border-bottom: 1px solid var(--brass-line);
-    margin-bottom: 1rem;
+    margin-bottom: var(--space-md);
   }
   .wf-back {
     background: transparent;
@@ -1097,10 +1097,10 @@
   .facet-rail { margin-top: 2.2rem; padding-top: 1.4rem; border-top: 1px solid var(--brass-line); }
   .facet-rail-lead { display:block; font-family: var(--mono); font-size: var(--lbl-sm); letter-spacing: 0.16em; text-transform: uppercase; color: var(--bone-faint); margin-bottom: 0.9rem; }
   .facet-rail-name { color: var(--bone); }
-  .facet-faces { list-style:none; display:grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; padding:0; margin:0; }
+  .facet-faces { list-style:none; display:grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; padding: 0; margin: 0; }
   @media (max-width: 620px){ .facet-faces { grid-template-columns: 1fr; } }
   .facet-face { display:block; }
-  .facet-face-here, .facet-face-off, .facet-face-go { width:100%; text-align:left; display:flex; flex-direction:column; gap:0.4rem; border:1px solid var(--brass-line); border-radius:3px; padding:0.75rem 0.9rem; background: transparent; }
+  .facet-face-here, .facet-face-off, .facet-face-go { width:100%; text-align:left; display:flex; flex-direction:column; gap: 0.4rem; border:1px solid var(--brass-line); border-radius:3px; padding: 0.75rem 0.9rem; background: transparent; }
   .facet-face-here { border-color: var(--vermilion); background: oklch(62% 0.19 35 / 0.06); }
   .facet-face-go { cursor:pointer; font: inherit; transition: border-color .22s var(--ease), background-color .22s var(--ease); }
   .facet-face-go:hover { border-color: var(--brass); background: oklch(93% 0.012 85 / 0.04); }
