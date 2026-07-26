@@ -13,7 +13,7 @@
 // The Conservator's Desk (the editor) is deliberately left out; the public site is
 // strictly read-only.
 
-import { readFile, writeFile, rm, mkdir, copyFile } from 'node:fs/promises';
+import { readFile, writeFile, rm, mkdir, copyFile, cp, access } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 import { openDb } from '../db/index.js';
@@ -66,6 +66,11 @@ const VOLUME_PAGES = [
 const STANDALONE_PAGES = ['receptor-atlas-demo.html']; // no /api calls; copied as-is
 const SHELL = 'the-receptor-atlas.html';               // served at / -> index.html
 
+// Shared CSS/JS that every page links RELATIVELY (assets/tokens.css, …). Copied
+// wholesale so the bundle is self-contained and works at a domain root or a
+// /repo/ subpath. Pages reference these with relative hrefs — see SHIM above.
+const ASSET_DIR = 'assets';
+
 function injectShim(html) {
   // Every page has exactly one <head>; place the shim first so it wraps fetch
   // before any page script runs.
@@ -79,12 +84,31 @@ function scrubDeskLink(html) {
 }
 
 /**
+ * Fail the build if any published page references an assets/ file that isn't in
+ * the bundle. Without this guard, extracting a new shared file silently ships an
+ * unstyled site — a failure that only shows up in production.
+ */
+export async function verifyAssetRefs(outDir, pages) {
+  for (const page of pages) {
+    const html = await readFile(join(outDir, page), 'utf8');
+    for (const m of html.matchAll(/(?:href|src)="(assets\/[^"]+)"/g)) {
+      try { await access(join(outDir, m[1])); }
+      catch { throw new Error(`publish: ${page} references missing asset ${m[1]}`); }
+    }
+  }
+}
+
+/**
  * Build the static snapshot from an open DB handle into `outDir`. Pure enough to
  * test: pass a seeded in-memory/temp DB and any output dir.
  */
 export async function publish(db, outDir) {
   await rm(outDir, { recursive: true, force: true });
   await mkdir(join(outDir, 'data'), { recursive: true });
+
+  // Shared assets first — the guard at the end checks every page reference
+  // against what actually landed here.
+  await cp(join(PUBLIC, ASSET_DIR), join(outDir, ASSET_DIR), { recursive: true });
 
   // 1. Data payloads (reusing the server's own query functions).
   for (const [name, payload] of Object.entries(dataFiles(db)))
@@ -111,6 +135,9 @@ export async function publish(db, outDir) {
     if (html.includes('the-conservators-desk'))
       throw new Error(`publish: ${page} still references the Conservator's Desk`);
   }
+
+  // 6. Guard the other invariant: no page may reference an asset we didn't ship.
+  await verifyAssetRefs(outDir, ['index.html', ...VOLUME_PAGES, ...STANDALONE_PAGES]);
 }
 
 // CLI: read the live DB as-is and build into dist/. Publishing is strictly a read

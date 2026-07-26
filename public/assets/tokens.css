@@ -1,0 +1,88 @@
+/* ============================================================================
+   The Receptor Atlas — design tokens
+
+   The single source of colour, spacing, and type for every page. Loaded first,
+   before base.css and before each page's own <style>, so a page can override
+   any of these locally.
+
+   Naming rule: a token says what a value MEANS, not what it looks like.
+   --hue-* are raw paint; everything else is a meaning that points at paint.
+   Never use a --hue-* directly in a rule.
+   ============================================================================ */
+:root {
+  /* ---- raw paint -------------------------------------------------------- */
+  --hue-green: oklch(78% 0.085 158);
+  --hue-amber: oklch(66% 0.185 38);
+  --hue-blue:  oklch(72% 0.10 245);
+
+  /* ---- what a drug DOES at a receptor (Cabinet radar + matrix) ----------
+     Search "agonist" and land here. These are the colours the affinity plate
+     encodes actions with; ACTION_COLOR in the Cabinet points at exactly these. */
+  --action-agonist:            var(--hue-green);
+  --action-partial:            var(--brass);
+  --action-antagonist:         var(--hue-amber);
+  --action-reuptake-inhibitor: var(--hue-blue);
+
+  /* ---- what STATE a receptor is in (the exhibit wall repaint) ------------ */
+  --state-normal: var(--hue-green);
+  --state-over:   var(--hue-amber);
+  --state-under:  var(--hue-blue);
+
+  /* ---- review status (Conservator's Desk) -------------------------------- */
+  --status-verified: var(--hue-green);
+  --status-conflict: var(--hue-amber);
+  --status-todo:     var(--hue-blue);
+
+  /* ---- wall paint -------------------------------------------------------- */
+  --wall-vault:     oklch(14% 0.01 75);
+  --wall-recess:    oklch(14% 0.011 75);
+  --wall-atrium:    oklch(17% 0.012 75);
+  --wall-panel:     oklch(20% 0.013 75);
+  --wall-celestial: oklch(16% 0.018 280);
+  --wall-verdigris: oklch(19% 0.028 155);
+  --wall-umber:     oklch(22% 0.05 58);
+  --wall-oxblood:   oklch(26% 0.065 25);
+  --wall-cobalt:    oklch(17% 0.05 255);
+  --wall-normal:    oklch(18% 0.030 158);
+  --wall-over:      oklch(23% 0.060 28);
+  --wall-under:     oklch(18% 0.045 255);
+
+  /* ---- ink and metal ----------------------------------------------------- */
+  --bone:        oklch(93% 0.012 85);
+  --bone-read:   oklch(86% 0.013 85);
+  --bone-dim:    oklch(72% 0.015 85);
+  --bone-faint:  oklch(63% 0.013 85);
+  --vermilion:   oklch(62% 0.19 35);
+  --brass:       oklch(70% 0.055 80);
+  --brass-line:  oklch(70% 0.055 80 / 0.28);
+  --brass-faint: oklch(70% 0.055 80 / 0.14);
+
+  /* ---- spacing scale -----------------------------------------------------
+     Fixed, repeated spacing only. Fluid clamp() values that genuinely scale
+     with the viewport stay inline — a token per one-off value is not progress. */
+  --space-2xs: 0.25rem;
+  --space-xs:  0.5rem;
+  --space-sm:  0.75rem;
+  --space-md:  1rem;
+  --space-lg:  1.5rem;
+  --space-xl:  2rem;
+  --space-2xl: 3rem;
+
+  /* ---- motion ------------------------------------------------------------ */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --letter-stagger: 55ms;
+  --line-stagger:   110ms;
+  --stroke-stagger: 180ms;
+  --entry-stagger:  90ms;
+  --block-stagger:  80ms;
+
+  /* ---- typography -------------------------------------------------------- */
+  --display: "Marcellus", serif;
+  --body:    "Schibsted Grotesk", sans-serif;
+  --mono:    "Fragment Mono", monospace;
+  --lbl:     0.6875rem;
+  --lbl-sm:  0.6rem;
+
+  /* ---- shared layout ----------------------------------------------------- */
+  --rail-x: clamp(0.9rem, 2.5vw, 2.2rem);
+}

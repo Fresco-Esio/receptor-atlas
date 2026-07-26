@@ -7,13 +7,13 @@
 
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, readFile, stat } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, writeFile, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openDb } from '../db/index.js';
 import { migrate } from '../scripts/migrate.js';
 import { createServer } from '../server.js';
-import { publish } from '../scripts/publish.js';
+import { publish, verifyAssetRefs } from '../scripts/publish.js';
 
 const VOLUME_PAGES = [
   'receptor-function.html',
@@ -84,4 +84,26 @@ test('each volume page reroutes /api to the bundled JSON', async () => {
     assert.ok(html.includes('Published snapshot'), `${f} should carry the shim marker`);
     assert.ok(html.includes("'/api/atlas/cabinet': 'data/cabinet.json'"), `${f} should map the API paths`);
   }
+});
+
+test('shared assets are carried into the bundle', async () => {
+  assert.ok((await stat(join(outDir, 'assets/tokens.css'))).isFile(),
+    'assets/tokens.css should exist in dist');
+});
+
+test('publish fails when a page references a missing asset', async () => {
+  // A page that links an asset the bundle does not contain must break the build,
+  // not ship an unstyled site.
+  const probeDir = join(dir, 'dist-probe');
+  const db = openDb(join(dir, 'atlas.db'));
+  await publish(db, probeDir);
+  db.close();
+  const page = join(probeDir, 'index.html');
+  const html = await readFile(page, 'utf8');
+  await writeFile(page, html.replace('<head>', '<head><link rel="stylesheet" href="assets/nope.css">'));
+  await assert.rejects(
+    verifyAssetRefs(probeDir, ['index.html']),
+    /missing asset/,
+    'a dangling asset reference must throw'
+  );
 });
