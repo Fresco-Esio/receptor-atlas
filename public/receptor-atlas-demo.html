@@ -19,7 +19,9 @@ body{background:oklch(10% 0.008 75);color:var(--bone);font-family:var(--body);mi
 .rc-ic{width:1em;height:1em;display:inline-block;vertical-align:-.14em;flex:none}
 .rc-demo{max-width:720px;width:100%}
 .rc-frame{background:var(--wall-recess);border:1px solid var(--brass-line);border-radius:6px;overflow:hidden}
-.rc-screen{position:relative;background:var(--wall-vault);transition:background-color .85s var(--ease)}
+/* --wall is this page's own repaint channel: each step below overrides it to
+   tint the wall behind the walkthrough. It defaults to the shared vault tone. */
+.rc-screen{position:relative;--wall:var(--wall-vault);background:var(--wall);transition:background-color .85s var(--ease)}
 .rc-screen[data-step="1"]{--wall:oklch(13.5% 0.01 75)}
 .rc-screen[data-step="2"]{--wall:oklch(18.5% 0.027 155)}
 .rc-screen[data-step="3"]{--wall:oklch(16.5% 0.012 75)}

@@ -26,8 +26,10 @@ a:hover{color:var(--vermilion); border-color:var(--vermilion);}
 .mono{font-family:"Fragment Mono",monospace; letter-spacing:.06em;}
 .eyebrow{font-family:"Fragment Mono",monospace; font-size:.6875rem; letter-spacing:.18em; text-transform:uppercase; color:var(--bone-faint);}
 h1,h2,h3{font-family:"Marcellus",serif; font-weight:400; letter-spacing:.03em; margin:0;}
-/* The Desk predates the shared reset and sets its own vertical rhythm. */
-h1, h2, h3, p, ul, ol { margin: revert; }
+/* This page predates the shared reset in base.css and leaned on the browser's
+   default margins for flowing text. Headings set their own margin above, so
+   only the text elements are reverted. */
+p, ul, ol { margin: revert; }
 
 /* ---------- Masthead ---------- */
 header.mast{

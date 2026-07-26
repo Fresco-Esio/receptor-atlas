@@ -77,9 +77,12 @@
   --block-stagger:  80ms;
 
   /* ---- typography -------------------------------------------------------- */
-  --display: "Marcellus", serif;
-  --body:    "Schibsted Grotesk", sans-serif;
-  --mono:    "Fragment Mono", monospace;
+  /* Full fallback stacks: the webfonts come from Google Fonts, so these are what
+     the pages render in if that request fails. The demo page carried the richer
+     stacks and the rest did not — this adopts the better one everywhere. */
+  --display: "Marcellus", "Cormorant Garamond", serif;
+  --body:    "Schibsted Grotesk", system-ui, sans-serif;
+  --mono:    "Fragment Mono", ui-monospace, monospace;
   --lbl:     0.6875rem;
   --lbl-sm:  0.6rem;
 
