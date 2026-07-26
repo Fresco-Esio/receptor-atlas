@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Schibsted+Grotesk:wght@400;500;700&family=Fragment+Mono&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/base.css">
+<script src="assets/atlas.js"></script>
 <style>
   :root {
     --row-stagger: 70ms;      /* catalogue, per drawer row */
@@ -1960,8 +1961,8 @@
   const ATLAS_FACE_ORDER = ["archive","cabinet","ledger"];
   const ATLAS_SYS = { '5ht1a':'Serotonin','5ht2a':'Serotonin','5ht2c':'Serotonin','sert':'Serotonin','d1':'Dopamine','d2':'Dopamine','dat':'Dopamine','alpha1':'Noradrenergic','alpha2':'Noradrenergic','beta1':'Noradrenergic','net':'Noradrenergic','nmda':'Glutamate','gaba_a':'GABA','m1':'Cholinergic','m3':'Cholinergic','h1':'Histamine','mu':'Opioid' };
   function atlasFollow(toVol, canon){
-    if (window.self !== window.top) parent.postMessage({type:'atlas:trace', to:toVol, subject:canon}, '*');
-    else location.href = 'the-receptor-atlas.html#vol/' + toVol + '/' + canon;
+    atlasTrace(toVol, canon);
+    if (window.self === window.top) location.href = 'the-receptor-atlas.html#vol/' + toVol + '/' + canon;
   }
   window.atlasFollow = atlasFollow; /* the rail's inline onclick resolves in global scope */
   function facetRailHTML(canon, name, hereVol){
@@ -2697,53 +2698,35 @@
 
   <script>
   /* ════════════════════════════════════════════════════════════════
-     ATLAS BRIDGE, Volume I speaks to the shell
-     Reports the open exhibit upward and accepts cross-volume nav. The
-     Archive's interior is sealed in a module, so the bridge drives it
-     the same way a visitor does: through the entry hash.
+     ATLAS BRIDGE, Volume I speaks to the shell.
+     The Archive's interior is sealed in a module, so the bridge drives
+     it the way a visitor does: through the entry hash.
+     Transport and envelopes live in assets/atlas.js.
      ════════════════════════════════════════════════════════════════ */
   (function () {
     var CANON2NUM = { '5ht1a':1, '5ht2a':2, '5ht2c':3, 'sert':5, 'd1':6, 'd2':7, 'dat':9,
       'alpha1':10, 'alpha2':11, 'beta1':12, 'net':13, 'nmda':14, 'gaba_a':16, 'm1':18, 'h1':20, 'mu':21 };
     var NUM2CANON = {}; for (var k in CANON2NUM) NUM2CANON[CANON2NUM[k]] = k;
-    var VOL = 'archive';
 
-    function framed(){ try { return window.self !== window.top; } catch (e) { return true; } }
-    if (!framed() && location.search.indexOf('embed') === -1) return;
-    function up(msg){ try { parent.postMessage(msg, '*'); } catch (e) {} }
-
-    function currentNum(){
+    function currentSubject() {
       var m = (location.hash || '').match(/^#\/entry\/(\d+)/);
-      return m ? parseInt(m[1], 10) : null;
+      var n = m ? parseInt(m[1], 10) : null;
+      return n && NUM2CANON[n] ? NUM2CANON[n] : null;
     }
-    function emit(){
-      var n = currentNum();
-      var canon = n && NUM2CANON[n] ? NUM2CANON[n] : null;
-      up({ type:'atlas:subject', volume:VOL, subject:canon, label:'' });
-    }
-    function gotoHall(id){
+    function gotoHall(id) {
       if (location.hash) location.hash = '';
-      setTimeout(function(){ var el = document.getElementById(id); if (el) el.scrollIntoView({ block:'start' }); }, 60);
+      setTimeout(function () {
+        var el = document.getElementById(id);
+        if (el) el.scrollIntoView({ block: 'start' });
+      }, 60);
     }
-    function applyNav(subject, station){
+    function applyNav(subject, station) {
       if (subject && CANON2NUM[subject]) { location.hash = '#/entry/' + CANON2NUM[subject]; return; }
       if (station && station.indexOf('hall') === 0) { gotoHall(station); return; }
       if (station === '') { if (location.hash) location.hash = ''; window.scrollTo({ top: 0 }); }
     }
 
-    window.addEventListener('hashchange', emit);
-    window.addEventListener('message', function(e){
-      var d = e.data; if (!d || d.type !== 'atlas:nav') return;
-      applyNav(d.subject, d.station);
-    });
-    function start(){
-      var p; try { p = new URLSearchParams(location.search); } catch (e) { p = null; }
-      if (p) applyNav(p.get('subject'), p.get('station'));
-      up({ type:'atlas:ready', volume:VOL });
-      emit();
-    }
-    if (document.readyState === 'loading') window.addEventListener('DOMContentLoaded', function(){ setTimeout(start, 130); });
-    else setTimeout(start, 130);
+    createAtlasBridge({ volume: 'archive', currentSubject: currentSubject, applyNav: applyNav });
   })();
   </script>
 </body>

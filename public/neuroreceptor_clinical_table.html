@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Schibsted+Grotesk:wght@400;500;700&family=Fragment+Mono&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/base.css">
+<script src="assets/atlas.js"></script>
 <style>
   :root {
     --row-stagger: 42ms;
@@ -639,8 +640,8 @@
   const ATLAS_FACE_ORDER = ["archive","cabinet","ledger"];
   const ATLAS_SYS = { '5ht1a':'Serotonin','5ht2a':'Serotonin','5ht2c':'Serotonin','sert':'Serotonin','d1':'Dopamine','d2':'Dopamine','dat':'Dopamine','alpha1':'Noradrenergic','alpha2':'Noradrenergic','beta1':'Noradrenergic','net':'Noradrenergic','nmda':'Glutamate','gaba_a':'GABA','m1':'Cholinergic','m3':'Cholinergic','h1':'Histamine','mu':'Opioid' };
   function atlasFollow(toVol, canon){
-    if (window.self !== window.top) parent.postMessage({type:'atlas:trace', to:toVol, subject:canon}, '*');
-    else location.href = 'the-receptor-atlas.html#vol/' + toVol + '/' + canon;
+    atlasTrace(toVol, canon);
+    if (window.self === window.top) location.href = 'the-receptor-atlas.html#vol/' + toVol + '/' + canon;
   }
   window.atlasFollow = atlasFollow; /* the rail's inline onclick resolves in global scope */
   function facetRailHTML(canon, name, hereVol){
@@ -886,60 +887,48 @@
 
   <script>
   /* ════════════════════════════════════════════════════════════════
-     ATLAS BRIDGE, Volume III speaks to the shell
+     ATLAS BRIDGE, Volume III speaks to the shell.
      Reports the opened row upward and accepts cross-volume nav, so a
      specimen traced in from the Archive or Cabinet lands on its row.
+     Transport and envelopes live in assets/atlas.js.
      ════════════════════════════════════════════════════════════════ */
   (function () {
     var CANON2NO = { 'gaba_a':1, 'nmda':2, 'd2':3, 'd1':4, 'dat':5, '5ht2a':6, '5ht1a':7,
       '5ht2c':8, 'sert':9, 'beta1':10, 'alpha1':11, 'alpha2':12, 'net':13, 'm1':14, 'h1':15, 'mu':16 };
     var NO2CANON = {}; for (var k in CANON2NO) NO2CANON[CANON2NO[k]] = k;
-    var VOL = 'ledger';
 
-    function framed(){ try { return window.self !== window.top; } catch (e) { return true; } }
-    if (!framed() && location.search.indexOf('embed') === -1) return;
-    function up(msg){ try { parent.postMessage(msg, '*'); } catch (e) {} }
-    function emit(canon){ up({ type:'atlas:subject', volume:VOL, subject: canon || null, label:'' }); }
-
-    function rowByNo(no){ return document.querySelector('tr.rec-row[data-id="' + no + '"]'); }
-    function clearFilters(){
+    function currentSubject() {
+      return null;
+    }
+    function rowByNo(no) { return document.querySelector('tr.rec-row[data-id="' + no + '"]'); }
+    function clearFilters() {
       var s = document.getElementById('search'); if (s) s.value = '';
       var all = document.querySelector('#system-filter button');
-      if (all) all.click();                                   // setSystem('all') + render
+      if (all) all.click();
       else if (typeof window.applyFilters === 'function') window.applyFilters();
     }
-    function openRow(no){
+    function openRow(no) {
       var row = rowByNo(no);
       if (!row) { clearFilters(); row = rowByNo(no); }
       if (!row) return;
-      if (!row.classList.contains('is-open')) row.click();    // toggle the drawer open
-      try { row.scrollIntoView({ block:'center' }); } catch (e) {}
+      if (!row.classList.contains('is-open')) row.click();
+      try { row.scrollIntoView({ block: 'center' }); } catch (e) {}
     }
-    function applyNav(subject, station){
+    function applyNav(subject, station) {
       if (station && (station === 'over' || station === 'under' || station === 'both') &&
           typeof window.setFocus === 'function') window.setFocus(station);
-      if (subject && CANON2NO[subject]) { openRow(CANON2NO[subject]); emit(subject); }
+      if (subject && CANON2NO[subject]) { openRow(CANON2NO[subject]); }
     }
 
-    document.addEventListener('click', function(e){
+    var bridge = createAtlasBridge({ volume: 'ledger', currentSubject: currentSubject, applyNav: applyNav });
+    document.addEventListener('click', function (e) {
       var row = e.target.closest ? e.target.closest('tr.rec-row') : null;
       if (!row) return;
-      setTimeout(function(){
+      setTimeout(function () {
         var canon = row.classList.contains('is-open') ? NO2CANON[parseInt(row.dataset.id, 10)] : null;
-        emit(canon || null);
+        if (bridge) bridge.emit(canon || null);
       }, 0);
     });
-    window.addEventListener('message', function(e){
-      var d = e.data; if (!d || d.type !== 'atlas:nav') return;
-      applyNav(d.subject, d.station);
-    });
-    function start(){
-      var p; try { p = new URLSearchParams(location.search); } catch (e) { p = null; }
-      if (p) applyNav(p.get('subject'), p.get('station'));
-      up({ type:'atlas:ready', volume:VOL });
-    }
-    if (document.readyState === 'loading') window.addEventListener('DOMContentLoaded', function(){ setTimeout(start, 130); });
-    else setTimeout(start, 130);
   })();
   </script>
 </body>
