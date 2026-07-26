@@ -582,8 +582,8 @@
     color: var(--bone-dim);
     background: oklch(0% 0 0 / 0.12);
   }
-  .tag.agonist { border-color: color-mix(in oklch, var(--action-agonist) 45%, transparent); color: var(--state-normal); }
-  .tag.antagonist { border-color: color-mix(in oklch, var(--action-antagonist) 45%, transparent); color: var(--state-over); }
+  .tag.agonist { border-color: color-mix(in oklch, var(--action-agonist) 45%, transparent); color: var(--action-agonist); }
+  .tag.antagonist { border-color: color-mix(in oklch, var(--action-antagonist) 45%, transparent); color: var(--action-antagonist); }
 
   /* provenance footer */
   .provenance {
@@ -652,10 +652,10 @@
   .legend-row { display: flex; gap: 1.1rem; font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--bone-faint); flex-wrap: wrap; }
   .legend-row span { display: inline-flex; align-items: center; gap: 0.4rem; }
   .lk { width: 9px; height: 9px; border-radius: 50%; }
-  .lk.ag { background: var(--state-normal); }
-  .lk.an { background: var(--state-over); }
-  .lk.pa { background: var(--brass); }
-  .lk.ri { background: var(--state-under); }
+  .lk.ag { background: var(--action-agonist); }
+  .lk.an { background: var(--action-antagonist); }
+  .lk.pa { background: var(--action-partial); }
+  .lk.ri { background: var(--action-reuptake-inhibitor); }
 
   /* Binding Affinity Plate body */
   .cat-body { display: grid; grid-template-columns: minmax(300px, 24rem) minmax(0, 1fr); flex: 1 1 auto; min-height: 0; }
@@ -709,10 +709,10 @@
   .agent-name { font-size: 0.875rem; color: var(--bone-dim); padding: 0.45rem 0.7rem 0.45rem 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: sticky; left: 0; z-index: 1; background: var(--wall-panel); border-right: 1px solid var(--brass-line); transition: color 0.3s var(--ease); cursor: pointer; }
   .cell { display: grid; place-content: center; border-left: 1px solid var(--brass-faint); padding: 0.35rem 0; }
   .dot { border-radius: 50%; transition: transform 0.3s var(--ease); }
-  .dot.ag { background: var(--state-normal); }
-  .dot.an { background: var(--state-over); }
-  .dot.pa { background: var(--brass); }
-  .dot.ri { background: var(--state-under); }
+  .dot.ag { background: var(--action-agonist); }
+  .dot.an { background: var(--action-antagonist); }
+  .dot.pa { background: var(--action-partial); }
+  .dot.ri { background: var(--action-reuptake-inhibitor); }
   /* affinity known, action not curated in IUPHAR */
   .dot.noact { background: var(--brass); opacity: .85; }
   /* tested, no meaningful binding (pKi <= 5): hollow ring, not a filled hit */
@@ -783,9 +783,9 @@
     border-radius: 2px;
     padding: 0.16rem 0.45rem;
   }
-  .concept-chip.ag { color: var(--state-normal); border-color: color-mix(in oklch, var(--action-agonist) 40%, transparent); }
-  .concept-chip.an { color: var(--state-over);   border-color: color-mix(in oklch, var(--action-antagonist) 40%, transparent); }
-  .concept-chip.pa { color: var(--brass);     border-color: var(--brass-line); }
+  .concept-chip.ag { color: var(--action-agonist); border-color: color-mix(in oklch, var(--action-agonist) 40%, transparent); }
+  .concept-chip.an { color: var(--action-antagonist); border-color: color-mix(in oklch, var(--action-antagonist) 40%, transparent); }
+  .concept-chip.pa { color: var(--action-partial); border-color: var(--brass-line); }
   .concept-def { color: var(--bone-read); }
   .concept-def p { font-size: 0.9375rem; line-height: 1.7; max-width: 74ch; margin-bottom: 0.6rem; }
   .concept-def p:last-child { margin-bottom: 0; }
@@ -2686,6 +2686,24 @@
 
     // ===== BINDING AFFINITY PLATE DATA =====
     // Embedded from _affinity_data.js
+
+    // ── What an action looks like. One meaning, one definition. ──────────────
+    // Every place the affinity plate paints an action reads this map: the radar
+    // polygon, the radar dots, the matrix dots and the legend swatch. The CSS
+    // classes .dot.ag / .lk.ag / .tag.agonist / .concept-chip.ag point at the
+    // same --action-* tokens, so colour is decided in exactly two files: the
+    // token values in assets/tokens.css, and the action->token mapping here.
+    //   ag = agonist          pa = partial agonist
+    //   an = antagonist       ri = reuptake inhibitor
+    const ACTION_COLOR = {
+      ag: 'var(--action-agonist)',
+      pa: 'var(--action-partial)',
+      an: 'var(--action-antagonist)',
+      ri: 'var(--action-reuptake-inhibitor)',
+    };
+    // Affinity is known but IUPHAR has not curated the action — draw it neutral.
+    const ACTION_COLOR_UNCURATED = 'var(--action-partial)';
+
     const AFF_TARGETS = [
       { id:'gaba_a',          label:'GABA-A', def:'GABA-A benzodiazepine allosteric site (ionotropic Cl- channel)' },
       { id:'mu_opioid',       label:'μ-OR' },
@@ -2811,7 +2829,7 @@
     }
 
     // Map a binding to a 0-3 radar value across the real data range (pKi ~5 to ~10.5).
-    function bindingV(binding) {
+    function affinityToRadius(binding) {
       const pKi = getPKi(binding);
       if (pKi !== null) return Math.min(3, Math.max(0, (pKi - 5) / 5.5 * 3));
       return getTier(binding) || 0;
@@ -2819,7 +2837,7 @@
 
     // Map pKi/tier to dot radius (px)
     const DOT_PX = { 1:6, 2:10, 3:15 };
-    function dotSize(binding) {
+    function affinityToDotRadius(binding) {
       const pKi = getPKi(binding);
       if (pKi !== null) {
         if (pKi <= 5) return 4;          // tested, no meaningful binding
@@ -2837,7 +2855,7 @@
       renderAffinityMatrix();
     }
 
-    // Radar SVG, 10 axes
+    // Radar SVG: one axis per affinity target (13 today - see AFF_TARGETS).
     function renderAffinityRadar() {
       const V = 300, ccx = 150, ccy = 150, Rmax = 104, N = AFF_TARGETS.length;
       function ang(i) { return -Math.PI/2 + i*2*Math.PI/N; }
@@ -2852,7 +2870,7 @@
         }).join(' ') + ' Z';
       }
 
-      let base = `<svg viewBox="0 0 ${V} ${V}" role="img" aria-label="Affinity radar across thirteen targets">`;
+      let base = `<svg viewBox="0 0 ${V} ${V}" role="img" aria-label="Affinity radar across ${AFF_TARGETS.length} targets">`;
       [1,2,3].forEach(v => base += `<path class="ring${v === 3 ? ' outer' : ''}" d="${ringPath(v)}"/>`);
       AFF_TARGETS.forEach((t, i) => {
         const p = coords(i, 3);
@@ -2896,22 +2914,23 @@
 
       function polyPath(a) {
         return AFF_TARGETS.map((t, i) => {
-          const v = a.b[t.id] ? bindingV(a.b[t.id]) : 0;
+          const v = a.b[t.id] ? affinityToRadius(a.b[t.id]) : 0;
           const p = coords(i, v);
           return (i ? 'L' : 'M') + p.x.toFixed(1) + ',' + p.y.toFixed(1);
         }).join(' ') + ' Z';
       }
 
-      // Action colors match the matrix dots exactly (one color = one meaning).
-      const ACT_COLOR = { ag: 'var(--state-normal)', pa: 'var(--brass)', an: 'var(--state-over)', ri: 'var(--state-under)' };
-      // Pinned agents share action colors, so identity is carried by line style, not hue.
+      // Action colours come from ACTION_COLOR at the top of this script — the radar
+      // and the matrix agree because they read the same map, not because someone
+      // kept two copies in step.
+      // Pinned agents share action colours, so identity is carried by line style, not hue.
       const DASHES = ['', '6 4', '2 3', '9 3 2 3'];
 
       // An agent's dominant action = the action of its highest-affinity binding.
-      function primaryAct(a) {
+      function dominantAction(a) {
         let best = null, bestV = -Infinity;
         Object.values(a.b).forEach(b => {
-          const v = bindingV(b);
+          const v = affinityToRadius(b);
           if (v > bestV) { bestV = v; best = b.act; }
         });
         return best || 'an';
@@ -2922,8 +2941,8 @@
         return AFF_TARGETS.map((t, i) => {
           const b = a.b[t.id];
           if (!b) return '';
-          const p = coords(i, bindingV(b));
-          const fill = perAction ? (ACT_COLOR[b.act] || 'var(--brass)') : 'var(--bone)';
+          const p = coords(i, affinityToRadius(b));
+          const fill = perAction ? (ACTION_COLOR[b.act] || ACTION_COLOR_UNCURATED) : 'var(--bone)';
           return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.8" fill="${fill}"/>`;
         }).join('');
       }
@@ -2935,7 +2954,7 @@
         pins.forEach((nm, idx) => {
           const a = AFF_AGENTS.find(x => x.name === nm);
           if (!a) return;
-          const col = ACT_COLOR[primaryAct(a)] || 'var(--brass)';
+          const col = ACTION_COLOR[dominantAction(a)] || ACTION_COLOR_UNCURATED;
           const dash = DASHES[idx % DASHES.length];
           s += `<path class="poly-stroke" d="${polyPath(a)}" fill="${col}" fill-opacity="0.07" stroke="${col}" stroke-width="1.8" stroke-dasharray="${dash}"/>` + polyDots(a, true);
         });
@@ -2952,7 +2971,7 @@
           leg.innerHTML = pins.map((nm, idx) => {
             const a = AFF_AGENTS.find(x => x.name === nm);
             if (!a) return '';
-            const col = ACT_COLOR[primaryAct(a)] || 'var(--brass)';
+            const col = ACTION_COLOR[dominantAction(a)] || ACTION_COLOR_UNCURATED;
             const dash = DASHES[idx % DASHES.length];
             const parts = Object.keys(a.b).map(tid => {
               const t = AFF_TARGETS.find(x => x.id === tid);
@@ -2995,7 +3014,7 @@
           AFF_TARGETS.forEach(t => {
             const v = a.b[t.id];
             if (v) {
-              const px = dotSize(v);
+              const px = affinityToDotRadius(v);
               const inact = isInactive(v);
               const cls = inact ? 'inactive' : (v.act || 'noact');
               html += `<div class="cell"><span class="dot ${cls}" style="width:${px}px;height:${px}px" data-agent="${a.name}" data-target="${t.id}" data-pki="${(getPKi(v) ?? 0).toFixed(2)}" data-detail="${v.kiText || ''}" data-act="${v.actFull || ''}" data-actsrc="${v.actSrc || ''}" data-src="${v.src}" data-inactive="${inact ? '1' : ''}"></span></div>`;
