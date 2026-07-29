@@ -719,8 +719,19 @@
   .dot.ri { background: var(--action-reuptake-inhibitor); }
   /* affinity known, action not curated in IUPHAR */
   .dot.noact { background: var(--brass); opacity: .85; }
-  /* tested, no meaningful binding (pKi <= 5): hollow ring, not a filled hit */
-  .dot.inactive { background: transparent; border: 1px solid var(--brass-line); opacity: .7; }
+  /* Screened and found inert. This must not read as an empty cell: "we looked and found
+     nothing" is evidence of selectivity, "nobody looked" is an absence of evidence, and
+     four of five clinical reviewers could not tell them apart at a glance. A ring alone
+     was too close to nothing; the centre dot gives it presence. */
+  .dot.inactive {
+    background: radial-gradient(circle, var(--bone-faint) 0 1.5px, transparent 1.6px);
+    border: 1px solid var(--bone-faint);
+    opacity: .75;
+  }
+  .lk.inactive-key {
+    background: radial-gradient(circle, var(--bone-faint) 0 1.5px, transparent 1.6px);
+    border: 1px solid var(--bone-faint);
+  }
   .row { display: contents; }
   .row.dim .agent-name, .row.dim .dot { opacity: 0.22; }
   .row.lit .agent-name { color: var(--bone); }
@@ -1173,7 +1184,8 @@
             </div>
             <div class="legend-row">
               <span><i class="lk" style="background:var(--brass);opacity:.85"></i> Affinity known, action not curated</span>
-              <span><i class="lk" style="background:transparent;border:1px solid var(--brass-line)"></i> Tested &mdash; no meaningful binding (pKi &le; 5)</span>
+              <span><i class="lk inactive-key"></i> Screened, no meaningful binding (pKi &le; 5)</span>
+              <span><i class="lk" style="background:transparent;border:1px dashed var(--brass-faint)"></i> Never screened &mdash; not evidence of no binding</span>
             </div>
           </div>
         </div>
