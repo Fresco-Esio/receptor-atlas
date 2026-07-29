@@ -31,6 +31,19 @@ test('no copy claims a target count that disagrees with AFF_TARGETS', () => {
     `copy names a target count that is not ${TARGETS.length}: ${wrong.join(', ')}`);
 });
 
+test('the affinity note states that binding is not occupancy', () => {
+  const note = html.match(/<div class="affinity-note">([\s\S]*?)<\/div>/);
+  assert.ok(note, 'affinity-note block must exist');
+  assert.match(note[1], /occupancy/i,
+    'the note must say pKi is not receptor occupancy at a therapeutic dose');
+});
+
+test('the tooltip does not present the observed range as a confidence interval', () => {
+  assert.ok(!/confidence interval/i.test(html));
+  assert.match(html, /observed across labs|range across labs/i,
+    'the spread must be labelled as an observed range');
+});
+
 test('primer examples do not cite drugs removed from the atlas', () => {
   const egs = [...html.matchAll(/class="concept-eg">([\s\S]*?)<\/p>/g)].map(m => m[1].toLowerCase());
   const stale = REMOVED_FROM_ROSTER.filter(d => egs.some(e => e.includes(d)));

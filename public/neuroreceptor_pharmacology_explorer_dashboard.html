@@ -1205,7 +1205,7 @@
             <div class="matrix-head">Agent × target affinity</div>
             <div class="matrix"><div class="grid" id="grid"></div>
               <div class="affinity-note">
-                Affinity is shown as <strong>pKi</strong> (&minus;log<sub>10</sub> of the molar K<sub>i</sub>; higher binds tighter, each +1 is 10&times;). Every value comes from a single source &mdash; the <strong>NIMH PDSP K<sub>i</sub> Database</strong>, human receptors only, taken as the median of all human values for that pair &mdash; so affinities are comparable across drugs and receptors. Agonist / antagonist direction is curated separately by <strong>IUPHAR/BPS</strong>, and is shown only where IUPHAR reports it. A hollow ring means the pair was tested and showed no meaningful binding (pKi &le; 5); a blank cell means PDSP has no human value, which is not the same as no interaction.
+                Affinity is shown as <strong>pKi</strong> (&minus;log<sub>10</sub> of the molar K<sub>i</sub>; higher binds tighter, each +1 is 10&times;). Every value comes from a single source &mdash; the <strong>NIMH PDSP K<sub>i</sub> Database</strong>, human receptors only, taken as the median of all human values for that pair &mdash; so affinities are comparable across drugs and receptors. Agonist / antagonist direction is curated separately by <strong>IUPHAR/BPS</strong>, and is shown only where IUPHAR reports it. A ringed dot means the pair was screened and showed no meaningful binding (pKi &le; 5); a blank cell means PDSP has no human value, which is not the same as no interaction. <strong>Affinity is not occupancy.</strong> pKi describes how tightly a drug binds in vitro at equilibrium, not how much of the receptor it occupies in a patient: that depends on dose, unbound brain concentration, metabolites, and endogenous tone, none of which are shown here.
               </div>
             </div>
           </div>
@@ -3344,8 +3344,11 @@
           // range the measurements actually covered, and name the subtype the number is
           // reported at, so "alpha_2 7.16" cannot be mistaken for all three subtypes.
           const lo = dot.dataset.lo, hi = dot.dataset.hi, sub = dot.dataset.sub;
+          // Deliberately worded as what was observed, never as an inferential interval:
+          // lo/hi are the extremes of the measurements, with no distributional model
+          // behind them, so any "±" or "95%" framing would claim precision we don't have.
           const spread = (lo && hi && lo !== hi)
-            ? ` <em style="font-size:.62rem;color:var(--bone-faint)">(range ${lo}&ndash;${hi})</em>` : '';
+            ? ` <em style="font-size:.62rem;color:var(--bone-faint)">(${lo}&ndash;${hi} observed across labs)</em>` : '';
           const subLine = sub
             ? `<br/><em style="font-size:.62rem;color:var(--bone-faint)">reported at ${sub}</em>` : '';
           const affinityLine = inactive
