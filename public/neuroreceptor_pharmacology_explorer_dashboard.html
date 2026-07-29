@@ -166,6 +166,7 @@
     margin-inline: auto;
     padding: clamp(2rem, 5vw, 3.5rem) clamp(1.2rem, 5vw, 3.5rem) 5rem;
   }
+
   .section-label {
     font-family: var(--mono);
     font-size: 0.6875rem;
@@ -216,9 +217,9 @@
     text-transform: uppercase;
     color: var(--bone-faint);
   }
-  @media (min-width: 941px) {
-    .index-col { position: sticky; top: calc(var(--mast-h, 5.5rem) + 0.6rem); }
-  }
+  /* The rail used to be sticky so it survived a long page scroll. There is no page
+     scroll to survive any more — see the viewport-fit shell above, where the rail is
+     a full-height column and only its list moves. */
 
   .specimen-row {
     appearance: none;
@@ -1035,6 +1036,66 @@
   @keyframes engrave-in { from { transform: scale(0.93); opacity: 0.6; } }
   html.embedded .masthead .brand { display: none; }
   html.embedded .masthead .masthead-in { justify-content: flex-end; }
+
+  /* ====================== viewport-fit shell ====================== */
+  /* Above the stacking breakpoint the document does not scroll. The window is
+     divided once — masthead, view, disclaimer — and each panel inside a view
+     scrolls in its own box. Body is the flex column that does the dividing, so
+     nothing here has to know the masthead's height or the footer's: the middle
+     row simply takes what is left. That also keeps the disclaimer on screen,
+     which a bare `overflow: hidden` on a 100svh body would have clipped away
+     unreachably.
+
+     This block lives at the end of the sheet on purpose. It overrides settled
+     component decisions — .plate's `overflow: hidden`, .catalogue's own svh
+     arithmetic — and those rules are declared later than the layout section, so
+     an override placed up there loses on source order without changing
+     specificity. Read it as a layer, not as a stray.
+
+     Below 941px the cabinet's two columns stack, and a stack of short scroll
+     boxes on a phone reads worse than one honest page scroll — so the lock
+     lifts there and the document flows again. */
+  @media (min-width: 941px) {
+    body { height: 100svh; display: flex; flex-direction: column; overflow: hidden; }
+    body > footer { flex: none; padding-block: var(--space-md); }
+    main {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      padding-bottom: var(--space-lg);
+    }
+    main > section { flex: 1 1 auto; min-height: 0; }
+
+    /* Cabinet: the specimen rail and the exhibit plate scroll independently, so
+       reading a long plate never moves the index out from under the cursor. */
+    .index-col, .plate-col { min-height: 0; }
+    .index-list { overflow-y: auto; overscroll-behavior: contain; }
+    .plate-col { display: flex; flex-direction: column; }
+
+    /* The card scrolls as one. Scrolling only .plate-body would leave the three
+       blocks under it — provenance, the cross-volume bridge — to absorb the
+       shortfall by shrinking, clipping their text with no way to reach it. */
+    .plate { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+    .plate-head {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      /* The head is a 12% black wash over the plate's state tint. Sticky needs
+         that to be opaque or the body shows through it, so the wash becomes an
+         image and the tint is inherited from .plate as the colour beneath. */
+      background-color: inherit;
+      background-image: linear-gradient(oklch(0% 0 0 / 0.12) 0 100%);
+    }
+
+    /* Catalogue and Primer are single panes: the section becomes the column and
+       the pane takes the height, replacing the catalogue's own svh arithmetic. */
+    #view-matrix, #view-primer { display: flex; flex-direction: column; }
+    .catalogue { flex: 1 1 auto; min-height: 0; max-height: none; }
+    .primer { min-height: 0; display: flex; flex-direction: column; }
+    .primer-head { flex: none; }
+    .primer-body { overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+  }
 </style>
 <script>
   (function () {
@@ -1114,7 +1175,7 @@
       </div>
 
       <!-- right: exhibit plate -->
-      <div>
+      <div class="plate-col">
         <article class="plate" id="main-display-card" data-state="normal">
 
           <div class="plate-head">
@@ -2450,6 +2511,9 @@
       const setMastH = () => document.documentElement.style.setProperty('--mast-h', masthead.offsetHeight + 'px');
       setMastH();
       window.addEventListener('resize', setMastH, { passive: true });
+      // Only fires below the viewport-fit breakpoint. Above it the document does not
+      // scroll at all — the panes do — so nothing ever passes under the masthead and
+      // the depth cue correctly stays off.
       window.addEventListener('scroll', () => {
         masthead.classList.toggle('is-scrolled', window.scrollY > 8);
       }, { passive: true });
