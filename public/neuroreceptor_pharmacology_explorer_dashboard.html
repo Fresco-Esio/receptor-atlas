@@ -3013,12 +3013,20 @@
     }
 
     // ── How long a petal is ─────────────────────────────────────────────────
-    // The scale runs pKi 5 -> 9.75. 9.71 is the strongest binding anyone in this
-    // catalogue has, so the old rim of 10.5 left the outer 14% of the radius
+    // The scale runs pKi 5 -> PETAL_MAX, set to the strongest binding in the
+    // catalogue so no radius is wasted: an earlier rim of 10.5 left the outer 14%
     // permanently unreachable and squeezed every shape into 86% of the plate.
+    //
+    // PETAL_MAX must be >= the real maximum or the clamp below quietly draws a
+    // tighter binder at the same length as the ceiling. It has drifted once
+    // already: it sat at 9.75 against a stated max of 9.71 while re-sourcing had
+    // moved the true maximum to 9.8 (asenapine at 5-HT2A), so that petal was
+    // being drawn short. test/affinity-plate-layout.test.js now fails if any
+    // cell exceeds it, which is the only reliable way to catch the next refresh.
+    //
     // PETAL_FLOOR keeps a screened-but-inert target visibly present: "we looked
     // and found nothing" is evidence, and it must not look like "we never looked".
-    const PETAL_MIN = 5, PETAL_MAX = 9.75, PETAL_FLOOR = 0.075;
+    const PETAL_MIN = 5, PETAL_MAX = 9.8, PETAL_FLOOR = 0.075;
     function affinityToPetal(binding) {
       const pKi = getPKi(binding);
       if (pKi === null) return getTier(binding) ? getTier(binding) / 3 : PETAL_FLOOR;

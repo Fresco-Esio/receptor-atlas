@@ -14,7 +14,7 @@ table whose columns can't be compared. Everything below exists to keep a single 
 | --- | --- | --- |
 | **Affinity** | **NIMH PDSP Kᵢ Database**, human receptors only, median of all human values for the pair | One standardised program, built for psychoactive-drug receptor profiles, and comprehensive enough to cover the atlas |
 | **Action** (agonist / antagonist) | **IUPHAR/BPS**, human preferred | PDSP is a *binding* database and records no direction. Shown only where IUPHAR curates one |
-| **Assay type** | Radioligand **binding** only | The hot-ligand column reads `Functional` for functional-assay rows (~1720 human). Ki and functional potency are different quantities and are never averaged together |
+| **Assay type** | Radioligand **binding** only | The hot-ligand column reads `Functional` for functional-assay rows: 2226 human rows in the export, of which 14 fall inside this atlas's scope and moved 13 cells. Ki and functional potency are different quantities and are never averaged together |
 
 Affinity is displayed as **pKi** (−log₁₀ of the molar Kᵢ): unitless, the field standard, and
 log-scaled so "10× tighter" reads directly. **pKi is the number of record.** Kᵢ in nM is

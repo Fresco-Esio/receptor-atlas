@@ -53,7 +53,11 @@ export const isHumanSpecies = sp => /^\??\s*HUMAN$/i.test(String(sp).trim());
 /** PDSP stores the radioligand in the hot-ligand column, and the literal "Functional"
  *  where the row is a functional-assay result rather than a binding measurement. Ki and
  *  functional potency are different quantities; a table headed "binding affinity" must
- *  not average them together. ~1720 human rows in the current export are functional. */
+ *  not average them together.
+ *
+ *  Scale, counted rather than estimated: 2226 human rows in the current export are
+ *  functional, but only 14 of those fall inside this atlas's drug x target scope. Those
+ *  14 moved 13 cells. The filter matters for what it guarantees, not for its volume. */
 export const isBindingAssay = row => !/^functional$/i.test(String(row.hot || '').trim());
 
 /** Normalise a ligand name for matching across databases. */
