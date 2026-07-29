@@ -211,7 +211,7 @@
     border-top: 1px solid var(--brass-line);
     display: flex; justify-content: space-between;
     font-family: var(--mono);
-    font-size: 0.625rem;
+    font-size: var(--lbl);
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--bone-faint);
@@ -279,7 +279,7 @@
     grid-row: span 2;
     align-self: center;
     font-family: var(--mono);
-    font-size: 0.625rem;
+    font-size: var(--lbl);
     letter-spacing: 0.12em;
     color: var(--bone-faint);
     text-transform: uppercase;
@@ -358,7 +358,7 @@
   .sim-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem; }
   .sim-axis-label {
     font-family: var(--mono);
-    font-size: 0.5625rem;
+    font-size: var(--lbl);
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--bone-faint);
@@ -467,7 +467,7 @@
   .monitor-sub {
     margin-top: 0.7rem;
     font-family: var(--mono);
-    font-size: 0.625rem;
+    font-size: var(--lbl);
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--bone-faint);
@@ -649,7 +649,7 @@
 
   /* Binding Affinity Plate legend */
   .legend { display: flex; flex-direction: column; gap: 0.55rem; align-items: flex-end; }
-  .legend-row { display: flex; gap: 1.1rem; font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--bone-faint); flex-wrap: wrap; }
+  .legend-row { display: flex; gap: 1.1rem; font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.1em; text-transform: uppercase; color: var(--bone-faint); flex-wrap: wrap; }
   .legend-row span { display: inline-flex; align-items: center; gap: 0.4rem; }
   .lk { width: 9px; height: 9px; border-radius: 50%; }
   .lk.ag { background: var(--action-agonist); }
@@ -686,7 +686,7 @@
   .radar-caption p { font-size: 0.9rem; color: var(--bone-dim); margin-bottom: 0.9rem; }
   .radar-legend { font-family: var(--mono); font-size: 0.78rem; display: flex; flex-direction: column; gap: 0.4rem; border-top: 1px solid var(--brass-faint); padding-top: 0.8rem; min-height: 3.5em; }
   .radar-legend span { letter-spacing: 0.02em; }
-  .radar-legend .hint { color: var(--bone-faint); text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.12em; }
+  .radar-legend .hint { color: var(--bone-faint); text-transform: uppercase; font-size: var(--lbl); letter-spacing: 0.12em; }
 
   .matrix-head { padding: 1.1rem clamp(1.4rem, 3vw, 2rem) 0; font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--bone-faint); }
   .matrix {
@@ -790,7 +790,7 @@
   }
   .concept-chip {
     font-family: var(--mono);
-    font-size: 0.5625rem;
+    font-size: var(--lbl);
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--bone-faint);
@@ -805,12 +805,16 @@
   .concept-def p { font-size: 0.9375rem; line-height: 1.7; max-width: 74ch; margin-bottom: 0.6rem; }
   .concept-def p:last-child { margin-bottom: 0; }
   .concept-def b { color: var(--bone); font-weight: 500; }
+  /* No side-stripe: DESIGN.md bans colored border-left/right above 1px. The example
+     block is set apart by its ground and hairline instead. */
   .concept-eg {
     font-family: var(--mono);
     font-size: 0.78rem !important;
     color: var(--bone-faint);
-    border-left: 2px solid var(--brass-line);
-    padding-left: 0.8rem;
+    background: oklch(0% 0 0 / 0.12);
+    border: 1px solid var(--brass-faint);
+    border-radius: 2px;
+    padding: 0.6rem 0.8rem;
     line-height: 1.6 !important;
   }
 
@@ -835,7 +839,7 @@
     font-family: var(--mono); font-size: 0.7rem; color: var(--vermilion);
     letter-spacing: 0.04em; padding-top: 0.15rem;
   }
-  .ref-list .ref-cls { font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--brass); }
+  .ref-list .ref-cls { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.12em; text-transform: uppercase; color: var(--brass); }
   .ref-list a { color: var(--bone); text-decoration: none; border-bottom: 1px solid var(--brass-line); transition: color 0.3s var(--ease), border-color 0.3s var(--ease); white-space: nowrap; }
   .ref-list a:hover { color: var(--vermilion); border-color: var(--vermilion); }
 
@@ -863,7 +867,7 @@
     background: oklch(0% 0 0 / 0.16);
     display: flex; align-items: center; justify-content: space-between; gap: var(--space-md);
   }
-  .dialog-head .dno { font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.16em; color: var(--vermilion); text-transform: uppercase; display: block; margin-bottom: 0.4rem; }
+  .dialog-head .dno { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.16em; color: var(--vermilion); text-transform: uppercase; display: block; margin-bottom: 0.4rem; }
   .dialog-head h4 { font-family: var(--display); font-weight: 400; font-size: 1.25rem; letter-spacing: 0.03em; text-transform: uppercase; line-height: 1.15; }
   .dialog-close {
     appearance: none; flex: none;
@@ -3348,15 +3352,15 @@
           // lo/hi are the extremes of the measurements, with no distributional model
           // behind them, so any "±" or "95%" framing would claim precision we don't have.
           const spread = (lo && hi && lo !== hi)
-            ? ` <em style="font-size:.62rem;color:var(--bone-faint)">(${lo}&ndash;${hi} observed across labs)</em>` : '';
+            ? ` <em style="font-size:var(--lbl);color:var(--bone-faint)">(${lo}&ndash;${hi} observed across labs)</em>` : '';
           const subLine = sub
-            ? `<br/><em style="font-size:.62rem;color:var(--bone-faint)">reported at ${sub}</em>` : '';
+            ? `<br/><em style="font-size:var(--lbl);color:var(--bone-faint)">reported at ${sub}</em>` : '';
           const affinityLine = inactive
             ? `<span style="color:var(--bone-faint)">no meaningful binding (pKi &le; 5)</span>`
             : `pKi <strong>${pki}</strong>${spread}${subLine}`;
           const actionLine = act
-            ? `${act}${actSrc ? ` <em style="font-size:.6rem;color:var(--bone-faint)">(${actSrc})</em>` : ''}`
-            : `<em style="font-size:.6rem;color:var(--bone-faint)">action not curated in IUPHAR</em>`;
+            ? `${act}${actSrc ? ` <em style="font-size:var(--lbl);color:var(--bone-faint)">(${actSrc})</em>` : ''}`
+            : `<em style="font-size:var(--lbl);color:var(--bone-faint)">action not curated in IUPHAR</em>`;
 
           const tooltip = document.createElement('div');
           tooltip.className = 'affinity-tooltip';
@@ -3365,7 +3369,7 @@
             <strong>${target ? target.label : 'Target'}</strong><br/>
             ${affinityLine}<br/>
             ${actionLine}<br/>
-            <em style="font-size: 0.65rem; color: var(--bone-faint);">${src}${detail ? ` &middot; ${detail}` : ''}</em>
+            <em style="font-size: var(--lbl); color: var(--bone-faint);">${src}${detail ? ` &middot; ${detail}` : ''}</em>
           `;
           // Set initial position at mouse cursor
           tooltip.style.left = (e.clientX + 12) + 'px';
