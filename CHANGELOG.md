@@ -178,11 +178,8 @@ publicly readable since 0.5.0; this is the release that makes it defensible.
 - The Conservator's Desk wired to the database, with edit mode and review stamps.
 - `start.bat` launcher and the backend primer in `docs/`.
 
+The 0.x entries were reconstructed from git history after the fact and are **not tagged**,
+so they carry no compare links. Every release from 1.0.0 on is tagged as it ships.
+
 [Unreleased]: https://github.com/Fresco-Esio/receptor-atlas/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/Fresco-Esio/receptor-atlas/compare/v0.6.0...v1.0.0
-[0.6.0]: https://github.com/Fresco-Esio/receptor-atlas/compare/v0.5.0...v0.6.0
-[0.5.0]: https://github.com/Fresco-Esio/receptor-atlas/compare/v0.4.0...v0.5.0
-[0.4.0]: https://github.com/Fresco-Esio/receptor-atlas/compare/v0.3.0...v0.4.0
-[0.3.0]: https://github.com/Fresco-Esio/receptor-atlas/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/Fresco-Esio/receptor-atlas/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/Fresco-Esio/receptor-atlas/releases/tag/v0.1.0
+[1.0.0]: https://github.com/Fresco-Esio/receptor-atlas/releases/tag/v1.0.0
