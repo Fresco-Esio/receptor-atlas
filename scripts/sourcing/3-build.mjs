@@ -9,8 +9,8 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import {
   AGENTS, TARGETS, DASHBOARD, sliceLiteral, drugMatcher, pdspTarget, median,
-  isHumanSpecies, canonReceptor, IUPHAR_TARGETS, AFFINITY_SRC, ACTION_SRC, INACTIVE_PKI,
-  MIN_SUBTYPE_MARGIN, cacheFile,
+  isHumanSpecies, isBindingAssay, canonReceptor, IUPHAR_TARGETS, AFFINITY_SRC, ACTION_SRC,
+  INACTIVE_PKI, MIN_SUBTYPE_MARGIN, cacheFile,
 } from './config.mjs';
 
 const pdspRows = JSON.parse(readFileSync(cacheFile('pdsp-rows.json'), 'utf8'));
@@ -42,6 +42,7 @@ for (const row of pdspRows) {
   const drug = matchDrug(row.test); if (!drug) continue;
   const t = pdspTarget(row.receptor); if (!t) continue;
   if (!isHumanSpecies(row.species)) continue;
+  if (!isBindingAssay(row)) continue;          // Ki only; functional potency is not Ki
   const bucket = ((acc[drug] ??= {})[t] ??= { subs: {}, censored: 0, seen: new Set() });
   // PDSP republishes identical records under several citations; counting them twice
   // inflates n and biases the median toward whichever value got reprinted.

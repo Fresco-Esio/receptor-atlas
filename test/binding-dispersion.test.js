@@ -1,9 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { openDb } from '../db/index.js';
 import { migrate } from '../scripts/migrate.js';
 import { cabinetBinding } from '../lib/queries.js';
-import { AGENTS } from '../scripts/sourcing/config.mjs';
+import {
+  AGENTS, isBindingAssay, drugMatcher, pdspTarget, isHumanSpecies, canonReceptor, median,
+} from '../scripts/sourcing/config.mjs';
 
 // The plate ships a snapshot in the HTML and then REPLACES it with this feed on load, so
 // any field the database cannot hold is silently dropped from the page. These tests pin
@@ -61,6 +64,37 @@ test('a subtype is named only when it decisively beats the runner-up', () => {
 test('a decisive subtype lead is still reported', () => {
   // alpha2A 7.16 vs alpha2B 5.93 is a 1.23 log-unit lead — this is the drug's whole story.
   assert.equal(lit('Guanfacine').b.alpha_2.sub, 'Alpha2A');
+});
+
+test('the hot-ligand column separates binding from functional assays', () => {
+  assert.equal(isBindingAssay({ hot: 'Functional' }), false);
+  assert.equal(isBindingAssay({ hot: '3H-CITALOPRAM' }), true);
+  assert.equal(isBindingAssay({ hot: 'UNDEFINED' }), true, 'unannotated is still binding');
+  assert.equal(isBindingAssay({ hot: '' }), true);
+});
+
+test('the shipped SERT value excludes functional-assay readings', () => {
+  // Recompute from the cached source rows the way the build does, then compare.
+  // Relational rather than a typed-in number, so a data refresh cannot turn a real
+  // regression into a fixture edit.
+  const rows = JSON.parse(readFileSync(
+    new URL('../scripts/sourcing/cache/pdsp-rows.json', import.meta.url), 'utf8'));
+  const md = drugMatcher();
+  const seen = new Set(), vals = [];
+  for (const r of rows) {
+    if (md(r.test) !== 'Fluoxetine') continue;
+    if (pdspTarget(r.receptor) !== 'sert') continue;
+    if (!isHumanSpecies(r.species) || r.censored || !(r.ki > 0)) continue;
+    if (!isBindingAssay(r)) continue;
+    const sub = canonReceptor(r.receptor);
+    const key = `${r.ki}|${sub}|${r.hot}|${r.cite}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    vals.push(9 - Math.log10(r.ki));
+  }
+  const want = lit('Fluoxetine').b.sert;
+  assert.equal(want.n, vals.length, 'n must reflect binding-only rows');
+  assert.equal(want.pki, +median(vals).toFixed(2));
 });
 
 test('the cabinet feed returns the fields the plate was built with', () => {

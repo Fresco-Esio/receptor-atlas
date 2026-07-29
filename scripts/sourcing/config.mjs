@@ -50,6 +50,12 @@ export const MIN_SUBTYPE_MARGIN = 0.3;
 /** PDSP species column values accepted as human. */
 export const isHumanSpecies = sp => /^\??\s*HUMAN$/i.test(String(sp).trim());
 
+/** PDSP stores the radioligand in the hot-ligand column, and the literal "Functional"
+ *  where the row is a functional-assay result rather than a binding measurement. Ki and
+ *  functional potency are different quantities; a table headed "binding affinity" must
+ *  not average them together. ~1720 human rows in the current export are functional. */
+export const isBindingAssay = row => !/^functional$/i.test(String(row.hot || '').trim());
+
 /** Normalise a ligand name for matching across databases. */
 export const norm = s => String(s).toLowerCase().replace(/\(.*?\)/g, '').replace(/[^a-z0-9]/g, '');
 
