@@ -689,6 +689,24 @@
   .radar-legend .hint { color: var(--bone-faint); text-transform: uppercase; font-size: var(--lbl); letter-spacing: 0.12em; }
 
   .matrix-head { padding: 1.1rem clamp(1.4rem, 3vw, 2rem) 0; font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--bone-faint); }
+  /* Finding one of 92 agents was a scroll-and-scan. The control sits in the head it
+     filters, so the scope of what it does is never in doubt. */
+  .matrix-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-md); }
+  .agent-filter {
+    font-family: var(--mono);
+    font-size: var(--lbl);
+    letter-spacing: 0.08em;
+    color: var(--bone);
+    background: var(--wall-recess);
+    border: 1px solid var(--brass-line);
+    border-radius: 2px;
+    padding: 0.35rem 0.55rem;
+    min-width: 12rem;
+  }
+  .agent-filter:focus { outline: none; border-color: var(--brass); }
+  .agent-filter::placeholder { color: var(--bone-faint); }
+  .row.filtered, .group-label.filtered { display: none; }
+
   .matrix {
     padding: 0 clamp(1.0rem, 3vw, 2rem) 1.2rem;
     flex: 1 1 auto;
@@ -1224,7 +1242,11 @@
             </div>
           </div>
           <div class="matrix-col">
-            <div class="matrix-head">Agent × target affinity</div>
+            <div class="matrix-head">
+              <span>Agent × target affinity</span>
+              <input id="agent-filter" class="agent-filter" type="search"
+                     placeholder="Filter agents" aria-label="Filter agents by name" autocomplete="off">
+            </div>
             <div class="matrix"><div class="grid" id="grid"></div>
               <div class="affinity-note">
                 Affinity is shown as <strong>pKi</strong> (&minus;log<sub>10</sub> of the molar K<sub>i</sub>; higher binds tighter, each +1 is 10&times;). Every value comes from a single source &mdash; the <strong>NIMH PDSP K<sub>i</sub> Database</strong>, human receptors only, taken as the median of all human values for that pair &mdash; so affinities are comparable across drugs and receptors. Agonist / antagonist direction is curated separately by <strong>IUPHAR/BPS</strong>, and is shown only where IUPHAR reports it. A ringed dot means the pair was screened and showed no meaningful binding (pKi &le; 5); a blank cell means PDSP has no human value, which is not the same as no interaction. <strong>Affinity is not occupancy.</strong> pKi describes how tightly a drug binds in vitro at equilibrium, not how much of the receptor it occupies in a patient: that depends on dose, unbound brain concentration, metabolites, and endogenous tone, none of which are shown here.
@@ -3413,6 +3435,31 @@
           }, { once: true });
         });
       });
+
+      // Filter by name. Rows use `display: contents`, so hiding one means hiding each of
+      // its cells — the .filtered class on .row does that via the CSS rule above. A group
+      // heading disappears once nothing under it survives.
+      const filterInput = document.getElementById('agent-filter');
+      if (filterInput) {
+        filterInput.addEventListener('input', () => {
+          const q = filterInput.value.trim().toLowerCase();
+          let shown = 0;
+          document.querySelectorAll('#grid .group-label').forEach(label => {
+            let anyVisible = false;
+            let node = label.nextElementSibling;
+            while (node && !node.classList.contains('group-label')) {
+              if (node.classList.contains('row')) {
+                const hit = !q || node.dataset.agent.toLowerCase().includes(q);
+                node.classList.toggle('filtered', !hit);
+                if (hit) { anyVisible = true; shown++; }
+              }
+              node = node.nextElementSibling;
+            }
+            label.classList.toggle('filtered', !anyVisible);
+          });
+          filterInput.setAttribute('aria-label', `Filter agents by name, ${shown} shown`);
+        });
+      }
     }
 
     function handleSearch(val) {
