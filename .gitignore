@@ -1,6 +1,7 @@
 node_modules/
 db/atlas.db
 db/atlas.db-*
+db/.section-activity.bak.json
 *.log
 
 # Generated static snapshot (npm run snapshot)
