@@ -40,6 +40,13 @@ export const ACTION_SRC = 'IUPHAR/BPS';
 /** PDSP records screening results >= 10 uM as Ki 10000 -> pKi 5: "tested, no binding". */
 export const INACTIVE_PKI = 5;
 
+/** How far a subtype must lead the runner-up before the plate names it.
+ *  Between-laboratory pKi noise is routinely a few tenths of a log unit, so a lead
+ *  smaller than this is not evidence of selectivity — it is the ordering of two
+ *  indistinguishable numbers. Mirtazapine's alpha2C leads alpha2A by 0.04 and would
+ *  flip on one new measurement. */
+export const MIN_SUBTYPE_MARGIN = 0.3;
+
 /** PDSP species column values accepted as human. */
 export const isHumanSpecies = sp => /^\??\s*HUMAN$/i.test(String(sp).trim());
 

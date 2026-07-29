@@ -9,22 +9,74 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import {
   AGENTS, TARGETS, DASHBOARD, sliceLiteral, drugMatcher, pdspTarget, median,
-  isHumanSpecies, IUPHAR_TARGETS, AFFINITY_SRC, ACTION_SRC, INACTIVE_PKI, cacheFile,
+  isHumanSpecies, canonReceptor, IUPHAR_TARGETS, AFFINITY_SRC, ACTION_SRC, INACTIVE_PKI,
+  MIN_SUBTYPE_MARGIN, cacheFile,
 } from './config.mjs';
 
 const pdspRows = JSON.parse(readFileSync(cacheFile('pdsp-rows.json'), 'utf8'));
 const iuphar = JSON.parse(readFileSync(cacheFile('iuphar-interactions.json'), 'utf8'));
 const matchDrug = drugMatcher();
 
-// --- affinity: median human pKi per (drug, target) ---
+// --- affinity: human pKi per (drug, target), censoring-aware, subtype-aware ---
+//
+// Three rules, each of which the earlier median-of-everything got wrong:
+//
+//   1. AGGREGATE IN LOG SPACE. Ki is log-normally distributed and its error is
+//      multiplicative, which is why the field reports pKi at all. (For odd n the
+//      median is identical either way — order statistics survive a monotonic
+//      transform — so this only bites on even n, where the log-space answer is
+//      the geometric mean of the two central values, and that is the right one.)
+//   2. A CENSORED SCREEN IS NOT A MEASUREMENT. PDSP writes ">10000" for "tested,
+//      nothing there". Folding those in as Ki 10000 dragged 23 cells' medians down
+//      by up to 1.2 log units. They are counted, never averaged: a cell is inactive
+//      only when EVERY human record for it is censored.
+//   3. A GENERIC COLUMN IS NOT A RECEPTOR. alpha_1 pools A/B/D, whose medians can
+//      differ 60x. Median-across-subtypes understates a subtype-selective drug —
+//      guanfacine's alpha_2 median is 5.97 while its alpha_2A median is 7.16, and
+//      alpha_2A selectivity is the whole point of the drug. So: median WITHIN each
+//      subtype, then report the tightest subtype and name it. Requiring n >= 2 to
+//      be eligible stops a lone outlying measurement from winning on noise.
+const MIN_SUBTYPE_N = 2;
 const acc = {};
 for (const row of pdspRows) {
   const drug = matchDrug(row.test); if (!drug) continue;
   const t = pdspTarget(row.receptor); if (!t) continue;
   if (!isHumanSpecies(row.species)) continue;
-  const ki = parseFloat(String(row.ki).replace(/[^0-9.eE+-]/g, ''));
-  if (!(ki > 0)) continue;
-  ((acc[drug] ??= {})[t] ??= []).push(9 - Math.log10(ki));      // aggregate in log space
+  const bucket = ((acc[drug] ??= {})[t] ??= { subs: {}, censored: 0, seen: new Set() });
+  // PDSP republishes identical records under several citations; counting them twice
+  // inflates n and biases the median toward whichever value got reprinted.
+  const sub = canonReceptor(row.receptor);   // collapse gene-symbol spellings
+  const key = `${row.censored ? 'C' : row.ki}|${sub}|${row.hot}|${row.cite}`;
+  if (bucket.seen.has(key)) continue;
+  bucket.seen.add(key);
+  if (row.censored) { bucket.censored++; continue; }
+  if (!(row.ki > 0)) continue;
+  (bucket.subs[sub] ??= []).push(9 - Math.log10(row.ki));
+}
+
+/** Collapse one bucket to the number the plate shows, plus the spread behind it. */
+function represent(bucket) {
+  const subs = Object.entries(bucket.subs).map(([s, v]) => ({ s, m: median(v), v }));
+  if (!subs.length) return null;                          // every record censored
+  const spread = v => ({ n: v.length, lo: +Math.min(...v).toFixed(2), hi: +Math.max(...v).toFixed(2) });
+  if (subs.length === 1) return { pki: subs[0].m, sub: null, weak: false, ...spread(subs[0].v) };
+  const eligible = subs.filter(x => x.v.length >= MIN_SUBTYPE_N);
+  if (!eligible.length) {
+    // Nothing replicated: fall back to the pooled median and mark it low-confidence
+    // rather than crowning whichever single reading happened to be tightest.
+    const all = subs.flatMap(x => x.v);
+    return { pki: median(all), sub: null, weak: true, ...spread(all) };
+  }
+  const best = eligible.reduce((a, b) => (b.m > a.m ? b : a));
+  const others = eligible.filter(x => x !== best).map(x => x.m);
+  const runnerUp = others.length ? Math.max(...others) : -Infinity;
+  if (others.length && best.m - runnerUp < MIN_SUBTYPE_MARGIN) {
+    // Two subtypes are tied within noise. Naming either overstates the precision of
+    // the data, so fall back to the pooled median and say it is low-confidence.
+    const all = subs.flatMap(x => x.v);
+    return { pki: median(all), sub: null, weak: true, ...spread(all) };
+  }
+  return { pki: best.m, sub: best.s, weak: false, ...spread(best.v) };
 }
 
 // --- action: IUPHAR, human preferred, most frequent label ---
@@ -58,18 +110,39 @@ function action(drug, target) {
 }
 
 // --- emit ---
-let cells = 0, withAction = 0, inactive = 0;
+let cells = 0, withAction = 0, inactive = 0, subtyped = 0, lowConf = 0;
 const lines = AGENTS.map(a => {
   const parts = [];
   for (const t of TARGETS) {
-    const vals = acc[a.name]?.[t];
-    if (!vals?.length) continue;
-    const pki = +median(vals).toFixed(2);
-    const ki = +Math.pow(10, 9 - pki).toPrecision(3);           // nM, PDSP-native of record
+    const bucket = acc[a.name]?.[t];
+    if (!bucket) continue;
+    const rep = represent(bucket);
     const act = action(a.name, t);
-    cells++; if (act) withAction++; if (pki <= INACTIVE_PKI) inactive++;
-    const f = [`ki:${ki}`, `pki:${pki}`, `n:${vals.length}`,
-      `kiText:'median of ${vals.length} human value${vals.length === 1 ? '' : 's'}'`];
+    cells++; if (act) withAction++;
+
+    const f = [];
+    if (!rep) {
+      // Every human record for this pair is a ">10000" screen. That is real evidence
+      // of selectivity, so it is kept as a cell — pinned at the inactive threshold,
+      // with n:0 saying plainly that nothing was ever measured here.
+      inactive++;
+      f.push(`ki:10000`, `pki:${INACTIVE_PKI}`, `n:0`, `nc:${bucket.censored}`,
+        `kiText:'${bucket.censored} human screen${bucket.censored === 1 ? '' : 's'}, none showed binding'`);
+    } else {
+      const pki = +rep.pki.toFixed(2);
+      // Derived, not of record: PDSP's own Ki values are the source, and this is the
+      // median re-expressed in nM for readers who think in Ki. pKi is the stored truth.
+      const ki = +Math.pow(10, 9 - pki).toPrecision(3);
+      if (pki <= INACTIVE_PKI) inactive++;
+      if (rep.sub) subtyped++;
+      if (rep.weak) lowConf++;
+      f.push(`ki:${ki}`, `pki:${pki}`, `n:${rep.n}`, `lo:${rep.lo}`, `hi:${rep.hi}`);
+      if (rep.sub) f.push(`sub:${JSON.stringify(rep.sub)}`);
+      if (bucket.censored) f.push(`nc:${bucket.censored}`);
+      if (rep.weak) f.push(`weak:1`);
+      f.push(`kiText:'median of ${rep.n} human value${rep.n === 1 ? '' : 's'}`
+        + `${rep.sub ? ` at ${rep.sub}` : ''}${bucket.censored ? `, plus ${bucket.censored} screen${bucket.censored === 1 ? '' : 's'} with no binding` : ''}'`);
+    }
     if (act) f.push(`act:'${act.act}'`, `actFull:${JSON.stringify(act.actFull)}`, `actSrc:'${ACTION_SRC}'`);
     f.push(`src:'${AFFINITY_SRC}'`);
     parts.push(`${t}:{${f.join(', ')}}`);
@@ -79,8 +152,25 @@ const lines = AGENTS.map(a => {
 const literal = `    const AFF_AGENTS = [\n${lines}\n    ];\n`;
 writeFileSync(cacheFile('aff-agents.txt'), literal);
 
-console.log(`cells ${cells} | with IUPHAR action ${withAction} | inactive (pKi<=${INACTIVE_PKI}) ${inactive}`);
+console.log(`cells ${cells} | with IUPHAR action ${withAction} | inactive (all records censored) ${inactive}`);
+console.log(`reported at a named subtype: ${subtyped} | low-confidence (unreplicated or tied): ${lowConf}`);
 console.log(`drugs with >=1 value: ${AGENTS.filter(a => acc[a.name]).length}/${AGENTS.length}`);
+
+// Diff against what the dashboard currently ships, so a refresh never lands silently.
+const movers = [];
+for (const a of AGENTS) {
+  for (const t of TARGETS) {
+    const bucket = acc[a.name]?.[t], old = a.b[t];
+    const rep = bucket ? represent(bucket) : undefined;
+    const now = bucket ? (rep ? +rep.pki.toFixed(2) : INACTIVE_PKI) : null;
+    if (old && now === null) movers.push(`  - ${a.name}/${t}  ${old.pki} -> dropped`);
+    else if (!old && now !== null) movers.push(`  + ${a.name}/${t}  new ${now}`);
+    else if (old && Math.abs(now - old.pki) >= 0.01)
+      movers.push(`  ~ ${a.name}/${t}  ${old.pki} -> ${now}${rep?.sub ? `  (${rep.sub})` : ''}`);
+  }
+}
+console.log(`\nchanges vs the shipping dashboard: ${movers.length}`);
+movers.forEach(m => console.log(m));
 
 if (process.argv.includes('--write')) {
   const html = readFileSync(DASHBOARD, 'utf8');

@@ -52,7 +52,14 @@ median-across-subtypes understates a subtype-selective drug: guanfacine's pooled
 So: median **within** each subtype, then report the **tightest** subtype and name it in `sub`.
 A subtype needs `n ≥ 2` (`MIN_SUBTYPE_N`) to be eligible, so a lone outlying reading cannot win
 on noise; where nothing is replicated the cell falls back to the pooled median and is flagged
-`weak:1`. 27 cells currently report at a named subtype, 9 are low-confidence.
+`weak:1`.
+
+A subtype must also lead the runner-up by at least `MIN_SUBTYPE_MARGIN` (0.3 log units)
+to be named. Below that the two are tied within between-laboratory noise, so the cell
+reports the pooled median flagged `weak:1` rather than ordering two indistinguishable
+numbers. Mirtazapine's alpha-2 is the worked example: alpha2C 7.74 against alpha2A 7.70.
+
+24 cells currently report at a named subtype, 39 are low-confidence.
 
 ## Running it
 
