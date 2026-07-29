@@ -10,8 +10,18 @@ dist/
 # Claude Code machine-local settings (per-machine permission allowlist)
 .claude/settings.local.json
 
-# affinity-sourcing caches (large, re-fetchable)
-scripts/sourcing/cache/
+# affinity-sourcing caches (large, re-fetchable). Ignore the CONTENTS, not the
+# directory: git cannot re-include a file whose parent directory is excluded, and
+# the snapshot below has to travel.
+scripts/sourcing/cache/*
+# ...except the provenance record. 189 bytes naming the exact input file, its
+# SHA-256 and its row count, so any published number can be traced to a specific
+# export rather than to whatever the live database served that afternoon.
+!scripts/sourcing/cache/pdsp-snapshot.json
+
+# raw PDSP exports. The snapshot above records which one was used and its checksum;
+# the file itself is ~4MB of redistributable-but-not-ours data, so it stays local.
+KiDatabase_*.xlsx
 
 # reference PDFs (copyrighted journal articles — never publish)
 references/
