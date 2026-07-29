@@ -127,7 +127,7 @@ These three are functional, never decorative. They name receptor state in the Ca
 ### Named Rules
 **The One Voice Rule.** Vermilion is ceremonial. It marks the one thing that matters in a view (the selected specimen, the live accent) and appears on a sliver of any screen. Spend it everywhere and it stops meaning anything.
 
-**The Semantic-Color Rule.** The three state colors carry meaning, never decoration. Green/red/blue mean baseline/over/under in the Cabinet and activate/inhibit/reuptake in the Plate, and they mean the same thing in every component that shows them (matrix dots, radar lines, legends, tags). A color never switches jobs to encode identity or mood.
+**The Semantic-Color Rule.** The three state colors carry meaning, never decoration. Green/red/blue mean baseline/over/under in the Cabinet and activate/inhibit/reuptake in the Plate, and they mean the same thing in every component that shows them (matrix dots, rose petals, legends, tags). A color never switches jobs to encode identity or mood.
 
 **The Tinted-Neutral Rule.** No `#000`, no `#fff`. Every neutral carries a trace of the warm hue (75–85, chroma 0.011–0.018). Pure gray reads as foreign here.
 
@@ -187,19 +187,21 @@ The system is flat by default and conveys depth through tonal layering, not shad
 - **Focus:** border shifts brass-line → brass; global `:focus-visible` is a 1px brass outline at 3px offset.
 
 ### Navigation
-- **Masthead:** sticky, `wall-recess` ground with a brass-line underline; brand mark + wordmark left, search + segmented control right. Gains the lift shadow only on scroll. Its measured height drives `--mast-h`, which sets the sticky offset for the index and radar columns (the bar wraps at narrow widths).
+- **Masthead:** sticky, `wall-recess` ground with a brass-line underline; brand mark + wordmark left, search + segmented control right. Gains the lift shadow only on scroll. Its measured height drives `--mast-h`, which sets the sticky offset for the index and rose columns (the bar wraps at narrow widths).
 
 ### Engraving (signature)
 SVG receptor/transporter figures built from `e-line` / `e-dim` / `e-fill` / `e-text` strokes that draw on via `pathLength` + dashoffset when a specimen or state changes, under a monitor scan-sweep. The central pore/ligand radius scales with state. This is the system's defining motion; treat it as the hero, not an embellishment.
 
 ### Binding Affinity Plate (signature)
-A sticky 10-axis radar fingerprint beside a scrollable agent x target matrix. Matrix dots and radar vertices are sized by relative affinity (pKi) and colored by action using the diagnostic palette; pinned agents on the radar share those action colors and are told apart by line style (solid / dashed / dotted / dash-dot), keyed in the legend. Hover an agent row to trace it; click to pin and compare up to four.
+A sticky 16-slot affinity rose beside a scrollable agent x target matrix. One petal per screened target: its length is relative affinity (pKi) on a scale running 5 to 9.75 — the catalogue's real maximum, so no radius is wasted — and its fill is the action, from the same diagnostic palette the matrix dots use. The distinction the rose exists to keep: a target screened and found inert keeps a short stub at the floor ring, while a target nobody has screened leaves its slot **empty**. A sparse agent must read as thinly characterised, never as inert.
+
+Pinning is capped at **two**, and the pair is told apart by fill: the first pin is solid, the second is hatched in the same action colour, with a hairline down each spoke splitting them. Identity never rides hue — hue is spoken for by action — and position within the spoke proved too weak to carry it alone. Two is a ceiling, not a default: there is no third fill that stays legible at petal size, so a third pin evicts the oldest. Hover an agent row to trace it as a dashed outline; click to pin. Selection changes morph — petals grow out of the floor ring and retract into it — which is the plate's own signature motion, the counterpart to the engraving's draw-on.
 
 ## 6. Do's and Don'ts
 
 ### Do:
 - **Do** keep vermilion ceremonial, one accented thing per view (The One Voice Rule).
-- **Do** keep green/red/blue strictly semantic and identical across the Cabinet, the matrix, the radar, and every legend (The Semantic-Color Rule).
+- **Do** keep green/red/blue strictly semantic and identical across the Cabinet, the matrix, the rose, and every legend (The Semantic-Color Rule).
 - **Do** tint every neutral toward hue 75–85; convey depth with the three wall tones, not shadows.
 - **Do** present each receptor as a catalogued specimen (index numeral, engraving, provenance) and let the engraving draw on as the signature motion.
 - **Do** set all labels, counts, and catalog numerals in Fragment Mono; titles in Marcellus uppercase; prose in Schibsted Grotesk at 65–75ch.

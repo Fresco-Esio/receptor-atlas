@@ -25,7 +25,7 @@ export function sliceLiteral(html, decl) {
 const html = readFileSync(DASHBOARD, 'utf8');
 /** The agents the atlas displays: { name, g, cid, b } — b is replaced by the pipeline. */
 export const AGENTS = eval(sliceLiteral(html, 'const AFF_AGENTS = ['));
-/** The 13 receptor columns, by the Cabinet's own alias. */
+/** The receptor columns, by the Cabinet's own alias. */
 export const TARGETS = eval(sliceLiteral(html, 'const AFF_TARGETS = [')).map(t => t.id);
 export const DRUGS = AGENTS.map(a => a.name);
 
@@ -66,28 +66,59 @@ export function drugMatcher() {
 
 /** Our target alias -> IUPHAR targetId(s). Subtype families are aggregated. */
 export const IUPHAR_TARGETS = {
-  dopamine_d2: [215], serotonin_5ht2a: [6], histamine_h1: [262],
-  muscarinic_m1: [13], muscarinic_m3: [15], beta_1: [28], mu_opioid: [319],
-  sert: [928], net: [926],
+  dopamine_d2: [215], dopamine_d3: [216],
+  serotonin_5ht1a: [1], serotonin_5ht2a: [6], serotonin_5ht2c: [8],
+  histamine_h1: [262], muscarinic_m1: [13], muscarinic_m3: [15], mu_opioid: [319],
+  sert: [928], net: [926], dat: [927], beta_1: [28],
   alpha_1: [22, 23, 24],                      // a1A / a1B / a1D
   alpha_2: [25, 26, 27],                      // a2A / a2B / a2C
   gaba_a: [404, 405, 406, 407, 408, 409],     // GABA-A benzodiazepine-site subunits
-  nmda_glutamate: [],                         // IUPHAR has no human pKi for NMDA
 };
 
-/** PDSP receptor name -> our target alias (subtypes aggregated, combined rows skipped). */
+/** Gene symbol -> the pharmacological name for the SAME receptor.
+ *
+ * These are aliases, not subtypes, and the distinction matters: the subtype logic reports
+ * the tightest subtype, so leaving "SERT" and "SLC6A4" as separate buckets would make the
+ * plate pick whichever NAME happened to carry the tighter values and label it a subtype.
+ * Alpha1A/1B/1D are genuinely different receptors; SERT and SLC6A4 are one receptor with
+ * two spellings. Collapse the spellings, keep the receptors apart.
+ */
+const GENE_ALIAS = {
+  SLC6A4: 'SERT', SLC6A2: 'NET', SLC6A3: 'DAT',
+  HRH1: 'H1', CHRM1: 'M1', CHRM3: 'M3',
+  DRD2: 'D2', DRD3: 'D3',
+  HTR1A: '5-HT1A', HTR2A: '5-HT2A', HTR2C: '5-HT2C',
+};
+export const canonReceptor = name => {
+  const r = String(name).trim();
+  return GENE_ALIAS[r.toUpperCase()] || r;
+};
+
+/** PDSP receptor name -> our target alias (subtypes aggregated, combined rows skipped).
+ *
+ * PDSP files the same receptor under BOTH a pharmacological name and a gene symbol, and
+ * the two are not interchangeable in the data — they are separate rows. Matching only the
+ * pharmacological name silently discarded most of the transporter data: the serotonin
+ * transporter has 216 human values under "SERT" and 607 more under "SLC6A4", so the atlas
+ * was built on a quarter of it and showed NO SERT value at all for sertraline, paroxetine,
+ * escitalopram, venlafaxine or duloxetine. Every alias a target is known by belongs here.
+ */
 export function pdspTarget(name) {
   const r = String(name).trim();
+  if (!r) return null;                                    // 8476 rows carry no receptor
   if (r.includes(',')) return null;                       // combined rows, e.g. "D2, D4"
-  if (/^D2$/i.test(r)) return 'dopamine_d2';
-  if (/^5-?HT2A$/i.test(r)) return 'serotonin_5ht2a';
-  if (/^H1$/i.test(r)) return 'histamine_h1';
-  if (/^M1$/i.test(r)) return 'muscarinic_m1';
-  if (/^M3$/i.test(r)) return 'muscarinic_m3';
+  if (/^(D2|DRD2)$/i.test(r)) return 'dopamine_d2';
+  if (/^(D3|DRD3)$/i.test(r)) return 'dopamine_d3';
+  if (/^(5-?HT1A|HTR1A)$/i.test(r)) return 'serotonin_5ht1a';
+  if (/^(5-?HT2A|HTR2A)$/i.test(r)) return 'serotonin_5ht2a';
+  if (/^(5-?HT2C|HTR2C)$/i.test(r)) return 'serotonin_5ht2c';
+  if (/^(H1|HRH1)$/i.test(r)) return 'histamine_h1';
+  if (/^(M1|CHRM1)$/i.test(r)) return 'muscarinic_m1';
+  if (/^(M3|CHRM3)$/i.test(r)) return 'muscarinic_m3';
   if (/^Beta.?1$/i.test(r)) return 'beta_1';
-  if (/^SERT$/i.test(r)) return 'sert';
-  if (/^NET$/i.test(r)) return 'net';
-  if (/^NMDA$/i.test(r)) return 'nmda_glutamate';
+  if (/^(SERT|SLC6A4)$/i.test(r)) return 'sert';
+  if (/^(NET|SLC6A2)$/i.test(r)) return 'net';
+  if (/^(DAT|SLC6A3)$/i.test(r)) return 'dat';
   if (/^GABA.?A$/i.test(r)) return 'gaba_a';
   if (/^Alpha.?1[ABCD]?$/i.test(r)) return 'alpha_1';
   if (/^Alpha.?2[ABC]?$/i.test(r)) return 'alpha_2';
