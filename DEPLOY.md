@@ -17,9 +17,16 @@ it isn't done yet.
 
 **1. Public or private?**
 GitHub Pages on a *private* repo requires a paid plan (Pro or Team). On a free account
-the repo must be **public**, and public means the whole project is visible — including
-`docs/`, the unfinished `the-threshold*.html` pages, and the stray
-`public/C：Users…drug_mapping.txt` file. Worth a tidy-up first if you go public.
+the repo must be **public**, and public means the whole *repository* is visible, not just
+the four pages the snapshot publishes: `docs/`, the design records, the sourcing pipeline,
+and any unfinished pages sitting in `public/`. The stray `drug_mapping.txt` this file used
+to warn about is gone. Anything you would not want read should leave `public/` or be
+ignored before the repo goes public.
+
+Note the distinction: **`npm run snapshot` publishes a fixed list** (the shell as
+`index.html`, the three volumes, and the standalone walkthrough — see `VOLUME_PAGES` and
+`STANDALONE_PAGES` in `scripts/publish.js`). Draft pages in `public/` are *not* published
+to the site, but they are still visible in a public repo.
 
 **2. Are you comfortable republishing the data?**
 The affinity numbers come from the NIMH PDSP Kᵢ Database and the action labels from

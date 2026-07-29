@@ -10,7 +10,11 @@ Two audiences. Primary: visitors the owner is presenting to — colleagues, coll
 
 ## Product Purpose
 
-A personal knowledge base presented as a digital museum: a database of topics (categories containing entries) where the act of browsing is itself the exhibit. Motion, animation, and scroll choreography are the product's identity, not decoration. Success: a first-time visitor scrolls the whole page unprompted and remembers the experience; the structure (category → entry) scales to real content later.
+A neuroreceptor pharmacology reference presented as a digital museum, where the act of browsing is itself the exhibit. One receptor is followed across three volumes: the **Archive** (what a receptor does), the **Cabinet** (what binds it, including a 92-agent binding-affinity plate), and the **Ledger** (how it presents clinically). A local-only Conservator's Desk is where the collection is curated and every citation verified.
+
+Motion, animation, and scroll choreography are the product's identity, not decoration. Success: a first-time visitor moves through a volume unprompted and remembers the experience, and a clinician can trace any number on the page back to the source and the rule that filtered it.
+
+**It is a reference work, so accuracy outranks the exhibit.** Every displayed value carries its provenance, its spread, and how many measurements sit behind it. A claim the code cannot support does not ship, however good it sounds: the page has already claimed a statistic it never computed, a target count that was wrong in five places, and drug examples that had been removed from the atlas. When the two goals collide, the number wins and the design accommodates it.
 
 ## Brand Personality
 

@@ -107,6 +107,28 @@ Saving works the same way in reverse: you click a checkbox, the page sends a
 | **Back up** | Copy `db/atlas.db` somewhere safe. That single file *is* all your data. |
 | **Move off OneDrive** | Stop the server, cut-and-paste the whole `atlas-app/` folder to e.g. `C:\dev\`, double-click `start.bat` there. |
 | **Move to a new computer** | Copy the folder, delete `node_modules`, run `start.bat` (it reinstalls `better-sqlite3` for that machine). |
+| **Rebuild the database** | See the warning immediately below. Not just `npm run migrate`. |
+
+### The one trap: rebuilding is destructive
+
+`npm run migrate` is **seed-only**. If `atlas.db` already holds receptors it does
+nothing, on purpose, so a re-run can never overwrite your review marks. The flip side
+is that loading new data means *deleting the file first*, and the delete takes one
+thing with it that nothing regenerates: `section_activity`, the record of when each
+section was last edited and reviewed. Everything else re-seeds from `scripts/seed-data.js`
+and the page literals; those timestamps exist nowhere else.
+
+So bracket every rebuild:
+
+```bash
+node scripts/preserve-activity.mjs save
+rm -f db/atlas.db db/atlas.db-wal db/atlas.db-shm
+npm run migrate
+node scripts/preserve-activity.mjs restore
+```
+
+**Stop the server first**, or the delete fails with "Device or resource busy" — a
+running server holds the file open.
 
 ---
 

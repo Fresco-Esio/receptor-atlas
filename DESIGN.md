@@ -145,6 +145,8 @@ These three are functional, never decorative. They name receptor state in the Ca
 - **Body** (Schibsted Grotesk 400, 1rem, line-height 1.65): mechanism prose, presentation bullets, warnings. Cap measure at 65–75ch.
 - **Label** (Fragment Mono 400, 0.6875rem, +0.14em, uppercase): section labels, kickers, counts, provenance, all controls.
 
+**There is exactly one label step.** `--lbl` (0.6875rem / 11px) is the floor for any text a reader has to act on. A second token, `--lbl-sm`, once shipped at 0.6rem (9.6px) and carried real controls on four pages; it is retired to an alias of `--lbl` and must never be given a smaller value again. `test/design-conformance.test.js` enforces both the floor and the alias across every published page.
+
 ### Named Rules
 **The Catalog-Hand Rule.** Index numerals, counts, drug names in the affinity chart, and every control label are set in Fragment Mono. The mono is the catalog hand; prose and titles never borrow it.
 
@@ -185,9 +187,20 @@ The system is flat by default and conveys depth through tonal layering, not shad
 ### Inputs / Fields
 - **Style:** `wall-recess` ground, brass-line border, `rounded.sm`; leading search glyph.
 - **Focus:** border shifts brass-line → brass; global `:focus-visible` is a 1px brass outline at 3px offset.
+- **Sizing:** every field sits on the same control rhythm as the segmented buttons, roughly 33–41px tall. A filter that lives inside a dense header band is not an excuse to shrink it.
 
 ### Navigation
-- **Masthead:** sticky, `wall-recess` ground with a brass-line underline; brand mark + wordmark left, search + segmented control right. Gains the lift shadow only on scroll. Its measured height drives `--mast-h`, which sets the sticky offset for the index and rose columns (the bar wraps at narrow widths).
+- **Masthead:** sticky, `wall-recess` ground with a brass-line underline; brand mark + wordmark left, search + segmented control right. Its measured height drives `--mast-h`, read live by a ResizeObserver because the bar wraps at narrow widths. The lift shadow fires on page scroll, so above the viewport-fit breakpoint it correctly never appears: nothing passes under the bar any more.
+
+## 5b. Layout: the viewport-fit shell
+
+Above 941px the document does not scroll. The window is divided once — masthead, view, disclaimer — and each panel inside a view scrolls in its own box. `body` is the flex column that does the dividing, so no rule has to know the masthead's height or the footer's; the middle row takes what is left. That also keeps the medical disclaimer on screen, which a bare `overflow: hidden` on a `100svh` body would have clipped away unreachably.
+
+- **Cabinet:** the specimen rail and the exhibit plate scroll independently, so reading a long plate never drags the index out from under the cursor. The plate scrolls as one with its head pinned; scrolling only the body would leave provenance and the cross-volume bridge to absorb the shortfall by shrinking and clipping.
+- **Catalogue / Primer:** single panes that take the height, the matrix keeping its column headers pinned.
+- **Below 941px** the columns stack and the lock lifts. A pile of short scroll boxes on a phone reads worse than one honest page scroll.
+
+**The Override-Layer Rule.** The shell lives at the end of the stylesheet, not in the layout section. It overrides settled component decisions (`.plate`'s `overflow: hidden`, the catalogue's own svh arithmetic) which are declared later than the layout section, so an override placed up there loses on source order without changing specificity. Read it as a layer, not as a stray.
 
 ### Engraving (signature)
 SVG receptor/transporter figures built from `e-line` / `e-dim` / `e-fill` / `e-text` strokes that draw on via `pathLength` + dashoffset when a specimen or state changes, under a monitor scan-sweep. The central pore/ligand radius scales with state. This is the system's defining motion; treat it as the hero, not an embellishment.
@@ -196,6 +209,12 @@ SVG receptor/transporter figures built from `e-line` / `e-dim` / `e-fill` / `e-t
 A sticky 16-slot affinity rose beside a scrollable agent x target matrix. One petal per screened target: its length is relative affinity (pKi) on a scale running 5 to `PETAL_MAX`, set to the catalogue's real maximum so no radius is wasted, and its fill is the action, from the same diagnostic palette the matrix dots use. `PETAL_MAX` is currently 9.8 (asenapine at 5-HT2A). It is a constant rather than a value derived from the data, so the scale does not shift under the reader on every re-sourcing; the cost is that a refresh can raise the true maximum past it and the clamp would then draw a tighter binder short, so `test/affinity-plate-layout.test.js` fails if any cell exceeds it. The distinction the rose exists to keep: a target screened and found inert keeps a short stub at the floor ring, while a target nobody has screened leaves its slot **empty**. A sparse agent must read as thinly characterised, never as inert.
 
 Pinning is capped at **two**, and the pair is told apart by fill: the first pin is solid, the second is hatched in the same action colour, with a hairline down each spoke splitting them. Identity never rides hue — hue is spoken for by action — and position within the spoke proved too weak to carry it alone. Two is a ceiling, not a default: there is no third fill that stays legible at petal size, so a third pin evicts the oldest. Hover an agent row to trace it as a dashed outline; click to pin. Selection changes morph — petals grow out of the floor ring and retract into it — which is the plate's own signature motion, the counterpart to the engraving's draw-on.
+
+**A cap has to announce itself.** The row shows a `pin` / `unpin` cue on hover and keyboard focus, because the action was otherwise invisible and its effect (petals changing) happens far from the click. When a third pin evicts the oldest, the legend names the one that was dropped in vermilion rather than letting it vanish. The cue hangs off the row's `.lit` class, not `:hover`: `.row` is `display: contents` and generates no box of its own.
+
+**Finding one of 92 agents.** The matrix carries a name filter in the head it filters. Group headings hide once nothing under them survives, and filtering never disturbs which agents are pinned — the filter is a view over the matrix, not a selection in it.
+
+**Screened-clean versus never-screened.** Four of five clinical reviewers could not tell a hollow ring from an empty cell at a glance, which collapses the single most important distinction on the plate. The inert dot carries a centre mark so it has presence, and the legend names the empty case in words: *never screened, not evidence of no binding*.
 
 ## 6. Do's and Don'ts
 
