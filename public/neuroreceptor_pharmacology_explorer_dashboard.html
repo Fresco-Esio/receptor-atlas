@@ -701,7 +701,9 @@
     background: var(--wall-recess);
     border: 1px solid var(--brass-line);
     border-radius: 2px;
-    padding: 0.35rem 0.55rem;
+    /* Sized to the same control rhythm as the masthead search and the segmented
+       buttons, rather than shrunk to fit the header band it happens to sit in. */
+    padding: 0.5rem 0.7rem;
     min-width: 12rem;
   }
   .agent-filter:focus { outline: none; border-color: var(--brass); }
@@ -1117,7 +1119,7 @@
     <div class="masthead-in">
       <div class="brand">
         <a class="brand-mark" href="the-receptor-atlas.html" title="Return to the Atlas" aria-label="Return to the Atlas">
-          <svg viewBox="0 0 26 26" fill="none">
+          <svg aria-hidden="true" viewBox="0 0 26 26" fill="none">
             <circle class="bm-path bm-outer" pathLength="1" cx="13" cy="13" r="9" stroke="var(--brass)" stroke-width="1"/>
             <circle class="bm-path bm-inner" pathLength="1" cx="13" cy="13" r="3.2" stroke="var(--vermilion)" stroke-width="1"/>
             <path class="bm-path bm-cross" pathLength="1" d="M13 1.5v6M13 18.5v6M1.5 13h6M18.5 13h6" stroke="var(--brass)" stroke-width="1"/>
@@ -1286,7 +1288,7 @@
             <div class="legend-row">
               <span><i class="lk" style="background:var(--brass);opacity:.85"></i> Affinity known, action not curated</span>
               <span><i class="lk inactive-key"></i> Screened, no meaningful binding (pKi &le; 5)</span>
-              <span><i class="lk" style="background:transparent;border:1px dashed var(--brass-faint)"></i> Never screened &mdash; not evidence of no binding</span>
+              <span><i class="lk" style="background:transparent;border:1px dashed var(--brass-faint)"></i> Never screened: not evidence of no binding</span>
             </div>
           </div>
         </div>
@@ -1310,7 +1312,7 @@
             </div>
             <div class="matrix"><div class="grid" id="grid"></div>
               <div class="affinity-note">
-                Affinity is shown as <strong>pKi</strong> (&minus;log<sub>10</sub> of the molar K<sub>i</sub>; higher binds tighter, each +1 is 10&times;). Every value comes from a single source &mdash; the <strong>NIMH PDSP K<sub>i</sub> Database</strong>, human receptors only, taken as the median of all human values for that pair &mdash; so affinities are comparable across drugs and receptors. Agonist / antagonist direction is curated separately by <strong>IUPHAR/BPS</strong>, and is shown only where IUPHAR reports it. A ringed dot means the pair was screened and showed no meaningful binding (pKi &le; 5); a blank cell means PDSP has no human value, which is not the same as no interaction. <strong>Affinity is not occupancy.</strong> pKi describes how tightly a drug binds in vitro at equilibrium, not how much of the receptor it occupies in a patient: that depends on dose, unbound brain concentration, metabolites, and endogenous tone, none of which are shown here.
+                Affinity is shown as <strong>pKi</strong> (&minus;log<sub>10</sub> of the molar K<sub>i</sub>; higher binds tighter, each +1 is 10&times;). Every value comes from a single source (the <strong>NIMH PDSP K<sub>i</sub> Database</strong>, human receptors only, taken as the median of all human values for that pair), so affinities are comparable across drugs and receptors. Agonist / antagonist direction is curated separately by <strong>IUPHAR/BPS</strong>, and is shown only where IUPHAR reports it. A ringed dot means the pair was screened and showed no meaningful binding (pKi &le; 5); a blank cell means PDSP has no human value, which is not the same as no interaction. <strong>Affinity is not occupancy.</strong> pKi describes how tightly a drug binds in vitro at equilibrium, not how much of the receptor it occupies in a patient: that depends on dose, unbound brain concentration, metabolites, and endogenous tone, none of which are shown here.
               </div>
             </div>
           </div>
@@ -1465,7 +1467,7 @@
         };
         const pr = state==='overstimulated' ? 5.5 : state==='understimulated' ? 2 : 3.5;
         const pCls = state==='overstimulated' ? 'e-line' : 'e-dim';
-        return `<svg viewBox="0 0 192 200" fill="none">
+        return `<svg aria-hidden="true" viewBox="0 0 192 200" fill="none">
           <text class="e-text" x="96" y="14" text-anchor="middle">${lbl[id]||'7-TM GPCR'}</text>
           ${fi(rr(96, 107.5, 82, 55, 3))}
           ${xs.map((x,i) => li(tm(x), i+8)).join('')}
@@ -1491,7 +1493,7 @@
           ? ci(96, 45, 1.5, 'e-fill', 1)
           : [ci(96, 48, 2.5, 'e-fill', 1),ci(108, 52, 1.8, 'e-fill', 2)].join('');
         const tms = [30,55,80,105,130,155].map((x,i) => li(rr(x, 80, 8, 28, 2), i+1)).join('');
-        return `<svg viewBox="0 0 192 200" fill="none">
+        return `<svg aria-hidden="true" viewBox="0 0 192 200" fill="none">
           <text class="e-text" x="96" y="14" text-anchor="middle">${lbl[id]||'12-TM'}</text>
           ${fi('M18,85 L174,85 L174,105 L18,105 Z')}
           ${di('M18,85 L174,85 L174,105 L18,105 Z', 0)}
@@ -1511,7 +1513,7 @@
         });
         const pr = state==='overstimulated' ? 14 : state==='understimulated' ? 4 : 9;
         const pCls = state==='overstimulated' ? 'e-line' : 'e-dim';
-        return `<svg viewBox="0 0 192 200" fill="none">
+        return `<svg aria-hidden="true" viewBox="0 0 192 200" fill="none">
           <text class="e-text" x="96" y="20" text-anchor="middle">GABA-A · Cl⁻</text>
           ${fi(`M${cx-cr-sr},${cy} a${cr+sr},${cr+sr},0,1,0,${2*(cr+sr)},0 a${cr+sr},${cr+sr},0,1,0,${-2*(cr+sr)},0`)}
           ${subs.join('')}
@@ -1532,7 +1534,7 @@
         const inner = state==='understimulated'
           ? ci(cx, cy, 5, 'e-line', 9) + `<text class="e-text" x="${cx}" y="${cy+3}" text-anchor="middle">Mg²⁺</text>`
           : `<text class="e-text" x="${cx}" y="${cy+3}" text-anchor="middle">Ca²⁺</text>`;
-        return `<svg viewBox="0 0 192 200" fill="none">
+        return `<svg aria-hidden="true" viewBox="0 0 192 200" fill="none">
           <text class="e-text" x="96" y="18" text-anchor="middle">NMDAR · Ca²⁺</text>
           ${fi(`M${cx-cr-sr},${cy} a${cr+sr},${cr+sr},0,1,0,${2*(cr+sr)},0 a${cr+sr},${cr+sr},0,1,0,${-2*(cr+sr)},0`)}
           ${subs.join('')}
@@ -2854,23 +2856,23 @@
       // NMDA and beta-1 were dropped rather than left empty: PDSP has human values for
       // exactly one drug at NMDA, which cannot carry the ketamine story the column existed
       // to tell, and beta-1 is a cardiology target that only propranolol uses here.
-      { id:'sert',            label:'SERT',   def:'Serotonin transporter (SLC6A4) — the SSRI target' },
+      { id:'sert',            label:'SERT',   def:'Serotonin transporter (SLC6A4): the SSRI target' },
       { id:'net',             label:'NET',    def:'Norepinephrine transporter (SLC6A2)' },
-      { id:'dat',             label:'DAT',    def:'Dopamine transporter (SLC6A3) — the stimulant target' },
-      { id:'dopamine_d2',     label:'D2',     def:'Dopamine D2 receptor (DRD2) — antipsychotic efficacy, and EPS' },
-      { id:'dopamine_d3',     label:'D3',     def:'Dopamine D3 receptor (DRD3) — what distinguishes cariprazine' },
-      { id:'serotonin_5ht1a', label:'5-HT1A', def:'5-HT1A receptor — anxiolysis; buspirone, aripiprazole, vortioxetine' },
-      { id:'serotonin_5ht2a', label:'5-HT2A', def:'5-HT2A receptor — atypicality, and the psychedelic target' },
-      { id:'serotonin_5ht2c', label:'5-HT2C', def:'5-HT2C receptor — appetite and metabolic burden' },
-      { id:'alpha_1',         label:'α1',     def:'Alpha-1 adrenergic receptor — orthostasis' },
-      { id:'alpha_2',         label:'α2',     def:'Alpha-2 adrenergic receptor — guanfacine, clonidine, mirtazapine' },
+      { id:'dat',             label:'DAT',    def:'Dopamine transporter (SLC6A3): the stimulant target' },
+      { id:'dopamine_d2',     label:'D2',     def:'Dopamine D2 receptor (DRD2): antipsychotic efficacy, and EPS' },
+      { id:'dopamine_d3',     label:'D3',     def:'Dopamine D3 receptor (DRD3): what distinguishes cariprazine' },
+      { id:'serotonin_5ht1a', label:'5-HT1A', def:'5-HT1A receptor: anxiolysis; buspirone, aripiprazole, vortioxetine' },
+      { id:'serotonin_5ht2a', label:'5-HT2A', def:'5-HT2A receptor: atypicality, and the psychedelic target' },
+      { id:'serotonin_5ht2c', label:'5-HT2C', def:'5-HT2C receptor: appetite and metabolic burden' },
+      { id:'alpha_1',         label:'α1',     def:'Alpha-1 adrenergic receptor: orthostasis' },
+      { id:'alpha_2',         label:'α2',     def:'Alpha-2 adrenergic receptor: guanfacine, clonidine, mirtazapine' },
       // Kept for propranolol alone. Akathisia, performance anxiety and lithium tremor are
       // real prescriptions and beta-blockade is the whole reason for them, so without this
       // column the plate would misrepresent propranolol the way it once misrepresented
       // cocaine without DAT. The cardiology agents that also used it have been dropped.
-      { id:'beta_1',          label:'β1',     def:'Beta-1 adrenergic receptor — propranolol in akathisia and performance anxiety' },
-      { id:'histamine_h1',    label:'H1',     def:'Histamine H1 receptor (HRH1) — sedation and weight gain' },
-      { id:'muscarinic_m1',   label:'M1',     def:'Muscarinic M1 receptor (CHRM1, neuronal) — anticholinergic cognitive load' },
+      { id:'beta_1',          label:'β1',     def:'Beta-1 adrenergic receptor: propranolol in akathisia and performance anxiety' },
+      { id:'histamine_h1',    label:'H1',     def:'Histamine H1 receptor (HRH1): sedation and weight gain' },
+      { id:'muscarinic_m1',   label:'M1',     def:'Muscarinic M1 receptor (CHRM1, neuronal): anticholinergic cognitive load' },
       { id:'muscarinic_m3',   label:'M3',     def:'Muscarinic M3 receptor (CHRM3, smooth muscle & glands)' },
       { id:'gaba_a',          label:'GABA-A', def:'GABA-A benzodiazepine allosteric site (ionotropic Cl- channel)' },
       { id:'mu_opioid',       label:'μ-OR',   def:'μ-opioid receptor (OPRM1)' }
@@ -3324,7 +3326,7 @@
             ? `<span class="hint">solid petals are ${pins[0]} · hatched are ${pins[1]}</span>`
             : '')
         + (window.__pinEvicted
-            ? `<span class="hint" style="color:var(--vermilion)">${window.__pinEvicted} unpinned — two is the maximum</span>`
+            ? `<span class="hint" style="color:var(--vermilion)">${window.__pinEvicted} unpinned; two is the maximum</span>`
             : '');
       }
 

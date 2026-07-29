@@ -174,7 +174,7 @@
     text-align: left; font-weight: 400; padding: 0.85rem var(--space-md);
     border-bottom: 1px solid var(--brass-line); white-space: nowrap;
   }
-  .ledger thead th .th-sub { display: block; color: var(--bone-faint); font-size: 0.6rem; margin-top: 0.2rem; }
+  .ledger thead th .th-sub { display: block; color: var(--bone-faint); font-size: var(--lbl); margin-top: 0.2rem; }
   .th-over { color: var(--state-over) !important; }
   .th-under { color: var(--state-under) !important; }
   .col-no { width: 2.6rem; }
@@ -204,12 +204,12 @@
   .cell-no { font-family: var(--mono); font-size: 0.72rem; color: var(--bone-faint); font-variant-numeric: tabular-nums; }
   tr.rec-row:hover .cell-no, tr.rec-row.is-open .cell-no { color: var(--vermilion); }
   .rec-name { font-family: var(--display); font-size: 1.05rem; letter-spacing: 0.02em; color: var(--bone); line-height: 1.2; }
-  .rec-class { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--bone-faint); margin-top: 0.35rem; display: flex; align-items: center; gap: 0.4rem; }
+  .rec-class { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.08em; text-transform: uppercase; color: var(--bone-faint); margin-top: 0.35rem; display: flex; align-items: center; gap: 0.4rem; }
   .rec-class .chip { border: 1px solid var(--brass-faint); border-radius: 2px; padding: 0.05rem 0.35rem; }
   .rec-baseline { color: var(--bone-read); font-size: 0.82rem; line-height: 1.5; }
 
   .sx-cell { color: var(--bone-read); line-height: 1.55; }
-  .sx-cell .sx-lead { display: block; font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.35rem; }
+  .sx-cell .sx-lead { display: block; font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.35rem; }
   .sx-over .sx-lead { color: var(--state-over); }
   .sx-under .sx-lead { color: var(--state-under); }
   .sx-cell ul { list-style: none; display: flex; flex-direction: column; gap: 0.28rem; }
@@ -238,27 +238,30 @@
     border-top: 2px solid var(--st-accent, var(--brass));
   }
   .det-block h4 {
-    font-family: var(--mono); font-size: 0.625rem; letter-spacing: 0.14em;
+    font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.14em;
     text-transform: uppercase; color: var(--bone-faint); margin-bottom: 0.6rem;
     display: flex; align-items: center; gap: 0.4rem;
   }
   .det-block h4::before { content: "◆"; color: var(--brass); font-size: 0.55em; }
   .det-block p { color: var(--bone-read); font-size: 0.85rem; line-height: 1.6; }
   .mech-text { font-family: var(--mono); font-size: 0.78rem; line-height: 1.7; color: var(--bone-read); }
+  /* No side-stripe: DESIGN.md bans colored border-left/right above 1px. The vermilion
+     was marking this as a Stahl locus, but the .ref line inside is already vermilion
+     and says so in words, so the stripe was repeating a signal that already landed. */
   .stahl-note {
-    border: 1px solid var(--brass-faint); border-left: 2px solid var(--vermilion);
+    border: 1px solid var(--brass-faint);
     border-radius: 2px; padding: 0.8rem var(--space-md); background: oklch(0% 0 0 / 0.18);
   }
-  .stahl-note .ref { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--vermilion); display: block; margin-bottom: 0.45rem; }
+  .stahl-note .ref { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.1em; text-transform: uppercase; color: var(--vermilion); display: block; margin-bottom: 0.45rem; }
   .stahl-note p { font-size: 0.82rem; color: var(--bone-read); }
   .ledger-pointer { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.03em; line-height: 1.6; color: var(--bone-faint); margin: 0; }
   .ptr-link { font: inherit; color: var(--vermilion); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
   .ptr-link:hover { color: var(--bone-read); }
   .tag-wrap { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-  .tag { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.03em; padding: 0.28rem var(--space-xs); border-radius: 2px; border: 1px solid var(--brass-faint); color: var(--bone-dim); background: oklch(0% 0 0 / 0.12); }
+  .tag { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.03em; padding: 0.28rem var(--space-xs); border-radius: 2px; border: 1px solid var(--brass-faint); color: var(--bone-dim); background: oklch(0% 0 0 / 0.12); }
   .tag.ag { border-color: color-mix(in oklch, var(--action-agonist) 45%, transparent); color: var(--state-normal); }
   .tag.an { border-color: color-mix(in oklch, var(--action-antagonist) 45%, transparent); color: var(--state-over); }
-  .cite { font-family: var(--mono); font-size: 0.68rem; color: var(--bone-faint); line-height: 1.5; }
+  .cite { font-family: var(--mono); font-size: var(--lbl); color: var(--bone-faint); line-height: 1.5; }
   .cite a { color: var(--bone-dim); text-decoration: none; border-bottom: 1px solid var(--brass-faint); }
   .cite a:hover { color: var(--vermilion); border-color: var(--vermilion); }
 
@@ -287,7 +290,7 @@
   .colophon {
     margin-top: 2.4rem; padding-top: 1.2rem; border-top: 1px solid var(--brass-line);
     display: flex; flex-wrap: wrap; gap: 0.6rem 2rem; justify-content: space-between;
-    font-family: var(--mono); font-size: 0.68rem; color: var(--bone-faint); letter-spacing: 0.04em;
+    font-family: var(--mono); font-size: var(--lbl); color: var(--bone-faint); letter-spacing: 0.04em;
   }
   .colophon b { color: var(--bone-dim); font-weight: 400; }
   .disclaimer { max-width: 70ch; line-height: 1.6; }
@@ -314,24 +317,36 @@
   /* on a phone the drawer caps its height and scrolls internally, keeping the row in view */
   @media (max-width: 760px) { .detail-pad { max-height: 62vh; overflow-y: auto; } }
 
-  /* one-page printable cheat sheet: ink-economical light theme, chrome stripped */
+  /* one-page printable cheat sheet: ink-economical light theme, chrome stripped.
+     Paper is its own medium, so the screen palette does not apply: the wall tones
+     mean nothing on white and the tinted neutrals cost toner for no gain. What it
+     does inherit is the discipline. Four near-blacks and three grays were doing
+     three jobs between them, which is the same drift as three spellings of one
+     spacing step, so the roles are named here and used exactly. */
   @media print {
+    :root {
+      --p-ink: #1a1a1a;        /* every piece of primary text */
+      --p-ink-soft: #444;      /* secondary text: chips, annotations */
+      --p-rule: #bbb;          /* every hairline */
+      --p-fill: #eee;          /* every filled band: table head, group rows */
+      --p-paper: #fff;
+    }
     .masthead, .controls, .intro, .colophon, .print-btn, .expander, .seg-dot, .detail-row { display: none !important; }
-    body { background: #fff !important; color: #141414 !important; }
+    body { background: var(--p-paper) !important; color: var(--p-ink) !important; }
     main { padding: 0 !important; max-width: none !important; }
-    .ledger-wrap { border: 0 !important; background: #fff !important; }
+    .ledger-wrap { border: 0 !important; background: var(--p-paper) !important; }
     table.ledger { min-width: 0 !important; width: 100% !important; font-size: 8.5pt; }
     table.ledger .sx-cell { opacity: 1 !important; }
-    thead th { color: #000 !important; background: #eee !important; border-bottom: 1px solid #999 !important; position: static !important; }
-    tbody tr.rec-row td { color: #1a1a1a !important; padding: 4pt 6pt !important; border-bottom: 1px solid #ccc !important; vertical-align: top; }
-    .rec-name { color: #000 !important; }
-    .rec-class, .rec-baseline, .sx-cell, .sx-cell li { color: #1a1a1a !important; }
-    .chip { border-color: #aaa !important; color: #333 !important; }
-    .sx-over li::before { content: "▲ "; color: #000 !important; }
-    .sx-under li::before { content: "▼ "; color: #000 !important; }
-    .grp-row td { background: #f1f1f1 !important; color: #000 !important; border: 0 !important; }
+    thead th { color: var(--p-ink) !important; background: var(--p-fill) !important; border-bottom: 1px solid var(--p-rule) !important; position: static !important; }
+    tbody tr.rec-row td { color: var(--p-ink) !important; padding: 4pt 6pt !important; border-bottom: 1px solid var(--p-rule) !important; vertical-align: top; }
+    .rec-name { color: var(--p-ink) !important; font-weight: 600; }
+    .rec-class, .rec-baseline, .sx-cell, .sx-cell li { color: var(--p-ink) !important; }
+    .chip { border-color: var(--p-rule) !important; color: var(--p-ink-soft) !important; }
+    .sx-over li::before { content: "▲ "; color: var(--p-ink) !important; }
+    .sx-under li::before { content: "▼ "; color: var(--p-ink) !important; }
+    .grp-row td { background: var(--p-fill) !important; color: var(--p-ink) !important; border: 0 !important; }
     tr, td, th { break-inside: avoid; }
-    a { color: #000 !important; text-decoration: none; }
+    a { color: var(--p-ink) !important; text-decoration: none; }
   }
 </style>
 <script>
@@ -351,7 +366,7 @@
     <div class="masthead-in">
       <div class="brand">
         <a class="brand-mark" href="the-receptor-atlas.html" title="Return to the Atlas" aria-label="Return to the Atlas">
-          <svg viewBox="0 0 26 26" fill="none">
+          <svg aria-hidden="true" viewBox="0 0 26 26" fill="none">
             <circle class="bm-path bm-outer" pathLength="1" cx="13" cy="13" r="9" stroke="var(--brass)" stroke-width="1"/>
             <circle class="bm-path bm-inner" pathLength="1" cx="13" cy="13" r="3.2" stroke="var(--vermilion)" stroke-width="1"/>
             <path class="bm-path bm-cross" pathLength="1" d="M13 1.5v6M13 18.5v6M1.5 13h6M18.5 13h6" stroke="var(--brass)" stroke-width="1"/>

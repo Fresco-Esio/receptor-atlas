@@ -15,7 +15,7 @@
   --hue-amber: oklch(66% 0.185 38);
   --hue-blue:  oklch(72% 0.10 245);
 
-  /* ---- what a drug DOES at a receptor (Cabinet radar + matrix) ----------
+  /* ---- what a drug DOES at a receptor (Cabinet rose + matrix) ----------
      Search "agonist" and land here. These are the colours the affinity plate
      encodes actions with; ACTION_COLOR in the Cabinet points at exactly these. */
   --action-agonist:            var(--hue-green);
@@ -84,7 +84,11 @@
   --body:    "Schibsted Grotesk", system-ui, sans-serif;
   --mono:    "Fragment Mono", ui-monospace, monospace;
   --lbl:     0.6875rem;
-  --lbl-sm:  0.6rem;
+  /* Retired. DESIGN.md documents one label step and this was a second, undocumented
+     one at 9.6px, carrying real controls: a "Got it" button, "Return to the rotunda",
+     "Open the Archive". Aliased rather than deleted so the call sites keep working;
+     they can migrate to --lbl at leisure. Do not give it a smaller value again. */
+  --lbl-sm:  var(--lbl);
 
   /* ---- shared layout ----------------------------------------------------- */
   --rail-x: clamp(0.9rem, 2.5vw, 2.2rem);

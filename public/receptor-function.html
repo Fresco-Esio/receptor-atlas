@@ -191,7 +191,7 @@
     left: 50%;
     margin-left: -0.5px;
     font-family: var(--mono);
-    font-size: 0.68rem;
+    font-size: var(--lbl);
     letter-spacing: 0.3em;
     color: var(--bone-faint);
     text-transform: uppercase;
@@ -363,7 +363,7 @@
   .plate-fig figcaption {
     margin-top: 1.1rem;
     font-family: var(--mono);
-    font-size: 0.68rem;
+    font-size: var(--lbl);
     letter-spacing: 0.18em;
     color: var(--bone-faint);
     text-transform: uppercase;
@@ -426,14 +426,14 @@
   }
   .plate-tags span {
     font-family: var(--mono);
-    font-size: 0.68rem;
+    font-size: var(--lbl);
     letter-spacing: 0.16em;
     text-transform: uppercase;
     color: var(--bone-faint);
   }
   .plate-tags span::before {
     content: "◆ ";
-    font-size: 0.5rem;
+    font-size: var(--lbl);
     color: var(--brass);
     vertical-align: 0.12em;
   }
@@ -521,7 +521,7 @@
   }
   .drawer-row .cat {
     font-family: var(--mono);
-    font-size: 0.68rem;
+    font-size: var(--lbl);
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--bone-faint);
@@ -652,7 +652,7 @@
   .entry-fig figcaption {
     margin-top: 1.1rem;
     font-family: var(--mono);
-    font-size: 0.68rem;
+    font-size: var(--lbl);
     letter-spacing: 0.18em;
     color: var(--bone-faint);
     text-transform: uppercase;
@@ -716,7 +716,7 @@
   }
   .provenance dt {
     font-family: var(--mono);
-    font-size: 0.68rem;
+    font-size: var(--lbl);
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--bone-faint);
@@ -883,7 +883,7 @@
     top: 1.1rem;
     z-index: 61;
     font-family: var(--mono);
-    font-size: 0.62rem;
+    font-size: var(--lbl);
     letter-spacing: 0.24em;
     text-transform: uppercase;
     color: var(--bone);
@@ -959,7 +959,7 @@
   .wf-section-head {
     position: relative;
     font-family: var(--mono);
-    font-size: 0.65rem;
+    font-size: var(--lbl);
     letter-spacing: 0.2em;
     text-transform: uppercase;
     color: var(--bone-faint);
@@ -1041,7 +1041,7 @@
 
   .wf-item .wf-k {
     font-family: var(--mono);
-    font-size: 0.6rem;
+    font-size: var(--lbl);
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--bone-faint);
@@ -1060,7 +1060,7 @@
 
   .wf-hint {
     font-family: var(--mono);
-    font-size: 0.6rem;
+    font-size: var(--lbl);
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--bone-faint);
@@ -2018,7 +2018,7 @@
               </svg>
               <div class="fig-light"></div>
               <div class="loupe drawn" aria-hidden="true">
-                <svg viewBox="0 0 520 420">${exhibit.figureSvg}</svg>
+                <svg aria-hidden="true" viewBox="0 0 520 420">${exhibit.figureSvg}</svg>
               </div>
             </div>
             <figcaption>${exhibit.figureCaption}<span class="examine-hint"> · Hover to examine</span></figcaption>

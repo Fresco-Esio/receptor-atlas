@@ -13,8 +13,11 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:oklch(10% 0.008 75);color:var(--bone);font-family:var(--body);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:30px 16px;overflow-x:hidden;-webkit-font-smoothing:antialiased}
-.page-head{font-family:var(--mono);font-size:.66rem;letter-spacing:.24em;text-transform:uppercase;color:var(--bone-faint);text-align:center}
-.page-foot{font-family:var(--mono);font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:oklch(46% 0.01 75);text-align:center}
+.page-head{font-family:var(--mono);font-size:var(--lbl);letter-spacing:.24em;text-transform:uppercase;color:var(--bone-faint);text-align:center}
+/* Was .58rem at 46% lightness: 9.3px and 2.88:1, under both the label type floor
+   and WCAG AA. It is the one line telling the reader the tour is simulated, so it
+   has to be legible. */
+.page-foot{font-family:var(--mono);font-size:var(--lbl);letter-spacing:.18em;text-transform:uppercase;color:var(--bone-faint);text-align:center}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
 .rc-ic{width:1em;height:1em;display:inline-block;vertical-align:-.14em;flex:none}
 .rc-demo{max-width:720px;width:100%}
@@ -33,7 +36,7 @@ body{background:oklch(10% 0.008 75);color:var(--bone);font-family:var(--body);mi
 .rc-aperture{width:16px;height:16px;border:1px solid var(--brass);border-radius:50%;position:relative;flex:none}
 .rc-aperture::after{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--vermilion)}
 .rc-wordmark{font-family:var(--display);font-size:.82rem;letter-spacing:.16em;text-transform:uppercase;color:var(--bone)}
-.rc-crumb{font-family:var(--mono);font-size:.625rem;letter-spacing:.16em;text-transform:uppercase;color:var(--bone-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55%}
+.rc-crumb{font-family:var(--mono);font-size:var(--lbl);letter-spacing:.16em;text-transform:uppercase;color:var(--bone-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55%}
 .rc-stage{position:relative;height:352px;overflow:hidden}
 .rc-panel{position:absolute;inset:0;padding:20px 24px;opacity:0;visibility:hidden;transform:translateY(12px);transition:opacity .55s var(--ease),transform .55s var(--ease),visibility .55s}
 .rc-panel.is-active{opacity:1;visibility:visible;transform:none}
@@ -56,41 +59,41 @@ body{background:oklch(10% 0.008 75);color:var(--bone);font-family:var(--body);mi
 .rc-fig .mem{fill:none;stroke:var(--brass);stroke-width:1.4;opacity:.55;stroke-dasharray:1;stroke-dashoffset:0}
 .rc-fig .conn{fill:none;stroke:var(--bone-faint);stroke-width:1.2;stroke-dasharray:2 2}
 .rc-fig .lig{fill:var(--vermilion)}
-.rc-fig-cap{font-family:var(--mono);font-size:.625rem;letter-spacing:.14em;text-transform:uppercase;color:var(--bone-faint);margin-top:10px}
+.rc-fig-cap{font-family:var(--mono);font-size:var(--lbl);letter-spacing:.14em;text-transform:uppercase;color:var(--bone-faint);margin-top:10px}
 .rc-detail{min-width:0;display:flex;flex-direction:column}
 .rc-spec-title{font-family:var(--display);font-size:2.1rem;line-height:1;letter-spacing:.02em;color:var(--bone)}
 .rc-spec-sub{font-size:.85rem;color:var(--bone-dim);margin:4px 0 14px}
 .rc-prose{font-size:.86rem;line-height:1.5;color:var(--bone);margin:0 0 14px;max-width:60ch}
 .rc-prose sub{font-size:.7em}
 .rc-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px}
-.rc-chip{font-family:var(--mono);font-size:.625rem;letter-spacing:.08em;text-transform:uppercase;padding:5px 9px;border-radius:2px;background:var(--wall-recess);border:1px solid var(--brass-faint)}
+.rc-chip{font-family:var(--mono);font-size:var(--lbl);letter-spacing:.08em;text-transform:uppercase;padding:5px 9px;border-radius:2px;background:var(--wall-recess);border:1px solid var(--brass-faint)}
 .chip-ag{color:var(--action-agonist);border-color:color-mix(in oklch, var(--action-agonist) 40%, transparent)}
 .chip-an{color:var(--action-antagonist);border-color:color-mix(in oklch, var(--action-antagonist) 40%, transparent)}
 .rc-cite-row{display:flex;align-items:center;gap:10px;font-size:.82rem;color:var(--bone-dim);flex-wrap:wrap}
 .rc-cite-row b{color:var(--bone);font-weight:500}
-.rc-stat{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;padding:3px 7px;border-radius:2px}
+.rc-stat{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:var(--lbl);letter-spacing:.1em;text-transform:uppercase;padding:3px 7px;border-radius:2px}
 .rc-stat .rc-ic{width:12px;height:12px}
 .stat-verified{color:var(--action-agonist);border:1px solid color-mix(in oklch, var(--action-agonist) 40%, transparent)}
 .rc-desk{display:grid;grid-template-columns:1fr 1fr;gap:18px;height:100%}
 .rc-col{min-width:0;display:flex;flex-direction:column;gap:12px;transition:opacity .5s var(--ease)}
 .rc-col.rc-dimmed{opacity:.32}
 .rc-field{background:var(--wall-recess);border:1px solid var(--brass-faint);border-radius:3px;padding:11px 13px}
-.rc-field label{display:block;font-family:var(--mono);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--bone-faint);margin-bottom:6px}
+.rc-field label{display:block;font-family:var(--mono);font-size:var(--lbl);letter-spacing:.14em;text-transform:uppercase;color:var(--bone-faint);margin-bottom:6px}
 .rc-val{font-size:.86rem;line-height:1.5;color:var(--bone)}
 .rc-field.is-editing{border-color:var(--brass)}
 .rc-add{background:oklch(64% 0.19 35/.16);border-radius:2px;padding:0 2px}
 .rc-caret{display:inline-block;width:2px;height:1em;background:var(--vermilion);vertical-align:-2px;margin-left:1px}
-.rc-saved{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--action-agonist)}
+.rc-saved{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:var(--lbl);letter-spacing:.1em;text-transform:uppercase;color:var(--action-agonist)}
 .rc-saved .rc-ic{width:13px;height:13px}
 .rc-src{display:flex;align-items:center;gap:9px;background:var(--wall-recess);border:1px solid var(--brass-faint);border-radius:3px;padding:10px 12px;font-size:.82rem;color:var(--bone)}
 .rc-src b{font-weight:500}
 .rc-src.dim{color:var(--bone-dim);opacity:.7}
 .rc-src .rc-stat{margin-left:auto}
-.rc-kind{margin-left:auto;font-family:var(--mono);font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--bone-faint)}
+.rc-kind{margin-left:auto;font-family:var(--mono);font-size:var(--lbl);letter-spacing:.12em;text-transform:uppercase;color:var(--bone-faint)}
 .rc-star{color:var(--vermilion);display:inline-flex}
 .rc-star .rc-ic{width:15px;height:15px}
 .rc-track{display:flex;align-items:center;gap:8px;padding:4px 0}
-.rc-node{font-family:var(--mono);font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;padding:5px 8px;border-radius:2px;border:1px solid}
+.rc-node{font-family:var(--mono);font-size:var(--lbl);letter-spacing:.08em;text-transform:uppercase;padding:5px 8px;border-radius:2px;border:1px solid}
 .rc-node.n1{color:var(--bone-faint);border-color:var(--brass-faint)}
 .rc-node.n2{color:var(--brass);border-color:var(--brass-line)}
 .rc-node.n3{color:var(--action-agonist);border-color:color-mix(in oklch, var(--action-agonist) 50%, transparent);background:color-mix(in oklch, var(--action-agonist) 8%, transparent)}
@@ -99,7 +102,7 @@ body{background:oklch(10% 0.008 75);color:var(--bone);font-family:var(--body);mi
 .ck{display:flex;align-items:center;gap:9px;font-size:.9rem;color:var(--bone);background:var(--wall-recess);border:1px solid var(--brass-faint);border-radius:3px;padding:10px 12px}
 .ck .rc-ic{color:var(--action-agonist);width:15px;height:15px}
 .rc-mastery{margin-bottom:16px}
-.rc-mastery-head{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--bone-dim);margin-bottom:7px}
+.rc-mastery-head{display:flex;justify-content:space-between;font-family:var(--mono);font-size:var(--lbl);letter-spacing:.14em;text-transform:uppercase;color:var(--bone-dim);margin-bottom:7px}
 .rc-bar{height:5px;background:var(--wall-recess);border-radius:3px;overflow:hidden}
 .rc-bar-fill{height:100%;width:100%;background:var(--action-agonist);border-radius:3px;transform:scaleX(1);transform-origin:left}
 .rc-drift{display:flex;align-items:center;gap:10px;font-size:.82rem;color:var(--bone-dim)}
@@ -109,7 +112,7 @@ body{background:oklch(10% 0.008 75);color:var(--bone);font-family:var(--body);mi
 .rc-console{padding:14px 18px 16px;border-top:1px solid var(--brass-line);background:oklch(12% 0.011 75)}
 .rc-console-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
 .rc-meta{display:flex;align-items:baseline;gap:12px;min-width:0}
-.rc-counter{font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;color:var(--vermilion)}
+.rc-counter{font-family:var(--mono);font-size:var(--lbl);letter-spacing:.12em;color:var(--vermilion)}
 .rc-title{font-family:var(--display);font-size:1.02rem;letter-spacing:.03em;color:var(--bone);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rc-controls{display:flex;gap:8px;flex:none}
 .rc-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;background:var(--wall-recess);border:1px solid var(--brass-line);border-radius:2px;color:var(--bone);cursor:pointer;font-size:17px;transition:border-color .25s var(--ease),color .25s var(--ease),transform .1s}
@@ -209,7 +212,7 @@ body{background:oklch(10% 0.008 75);color:var(--bone);font-family:var(--body);mi
 <span class="rc-chip chip-ag" style="--d:1">Pilocarpine · agon</span>
 <span class="rc-chip chip-an" style="--d:2">Scopolamine · antag</span>
 </div>
-<div class="rc-cite-row"><b>Kruse AC et al.</b> 2014 · Nature<span class="rc-stat stat-verified"><svg class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10 -11"/></svg>verified</span></div>
+<div class="rc-cite-row"><b>Kruse AC et al.</b> 2014 · Nature<span class="rc-stat stat-verified"><svg aria-hidden="true" class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10 -11"/></svg>verified</span></div>
 </div>
 </div>
 </article>
@@ -223,7 +226,7 @@ body{background:oklch(10% 0.008 75);color:var(--bone);font-family:var(--body);mi
 </section>
 <section class="rc-col" style="--d:1">
 <div class="rc-eyebrow">Sources</div>
-<div class="rc-src"><span class="rc-star"><svg class="rc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2l2.6 5.5 6 .7 -4.4 4.1 1.2 5.9 -5.4 -3 -5.4 3 1.2 -5.9 -4.4 -4.1 6 -.7z"/></svg></span><b>Kruse 2014</b><span class="rc-stat stat-verified">verified</span></div>
+<div class="rc-src"><span class="rc-star"><svg aria-hidden="true" class="rc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2l2.6 5.5 6 .7 -4.4 4.1 1.2 5.9 -5.4 -3 -5.4 3 1.2 -5.9 -4.4 -4.1 6 -.7z"/></svg></span><b>Kruse 2014</b><span class="rc-stat stat-verified">verified</span></div>
 <div class="rc-src dim"><b>Stahl 5e · Ch 5</b><span class="rc-kind">book</span></div>
 </section>
 </div>
@@ -234,7 +237,7 @@ body{background:oklch(10% 0.008 75);color:var(--bone);font-family:var(--body);mi
 <section class="rc-col rc-focus" style="--d:0">
 <div class="rc-eyebrow">Content · M1 · editing</div>
 <div class="rc-field is-editing"><label>Baseline tone</label><div class="rc-val">Low tonic ACh; phasic bursts on attention<span class="rc-add">, closing M-currents</span><span class="rc-caret"></span></div></div>
-<div class="rc-saved"><svg class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10 -11"/></svg> Saved · clinical stamped 14:32</div>
+<div class="rc-saved"><svg aria-hidden="true" class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10 -11"/></svg> Saved · clinical stamped 14:32</div>
 </section>
 <section class="rc-col rc-dimmed" style="--d:1">
 <div class="rc-eyebrow">Sources</div>
@@ -251,12 +254,12 @@ body{background:oklch(10% 0.008 75);color:var(--bone);font-family:var(--body);mi
 </section>
 <section class="rc-col rc-focus" style="--d:1">
 <div class="rc-eyebrow">Sources · attach &amp; verify</div>
-<div class="rc-src rc-attaching"><span class="rc-star"><svg class="rc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2l2.6 5.5 6 .7 -4.4 4.1 1.2 5.9 -5.4 -3 -5.4 3 1.2 -5.9 -4.4 -4.1 6 -.7z"/></svg></span><b>Kruse AC et al. 2014</b></div>
+<div class="rc-src rc-attaching"><span class="rc-star"><svg aria-hidden="true" class="rc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2l2.6 5.5 6 .7 -4.4 4.1 1.2 5.9 -5.4 -3 -5.4 3 1.2 -5.9 -4.4 -4.1 6 -.7z"/></svg></span><b>Kruse AC et al. 2014</b></div>
 <div class="rc-track">
 <span class="rc-node n1" style="--d:0">needs source</span>
-<svg class="rc-ic rc-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6 -6 6"/></svg>
+<svg aria-hidden="true" class="rc-ic rc-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6 -6 6"/></svg>
 <span class="rc-node n2" style="--d:1">provided</span>
-<svg class="rc-ic rc-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6 -6 6"/></svg>
+<svg aria-hidden="true" class="rc-ic rc-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6 -6 6"/></svg>
 <span class="rc-node n3" style="--d:2">verified</span>
 </div>
 <div class="rc-src dim"><b>Stahl 5e · Ch 5</b><span class="rc-kind">book · non-primary</span></div>
@@ -267,16 +270,16 @@ body{background:oklch(10% 0.008 75);color:var(--bone);font-family:var(--body);mi
 <article class="rc-panel" data-panel="6">
 <div class="rc-eyebrow">Review · M1</div>
 <ul class="rc-checks">
-<li class="ck" style="--d:0"><svg class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10 -11"/></svg> Mechanism</li>
-<li class="ck" style="--d:1"><svg class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10 -11"/></svg> Affinity</li>
-<li class="ck" style="--d:2"><svg class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10 -11"/></svg> Clinical</li>
-<li class="ck" style="--d:3"><svg class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10 -11"/></svg> Citation</li>
+<li class="ck" style="--d:0"><svg aria-hidden="true" class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10 -11"/></svg> Mechanism</li>
+<li class="ck" style="--d:1"><svg aria-hidden="true" class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10 -11"/></svg> Affinity</li>
+<li class="ck" style="--d:2"><svg aria-hidden="true" class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10 -11"/></svg> Clinical</li>
+<li class="ck" style="--d:3"><svg aria-hidden="true" class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10 -11"/></svg> Citation</li>
 </ul>
 <div class="rc-mastery">
 <div class="rc-mastery-head"><span>Mastery</span><span>4 / 4 checks</span></div>
 <div class="rc-bar"><div class="rc-bar-fill"></div></div>
 </div>
-<div class="rc-drift"><span class="rc-drift-old">1 section drifted</span><svg class="rc-ic rc-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6 -6 6"/></svg><span class="rc-drift-new"><svg class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10 -11"/></svg> review current</span></div>
+<div class="rc-drift"><span class="rc-drift-old">1 section drifted</span><svg aria-hidden="true" class="rc-ic rc-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6 -6 6"/></svg><span class="rc-drift-new"><svg aria-hidden="true" class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10 -11"/></svg> review current</span></div>
 </article>
 
 </div>
@@ -285,9 +288,9 @@ body{background:oklch(10% 0.008 75);color:var(--bone);font-family:var(--body);mi
 <div class="rc-console-top">
 <div class="rc-meta"><span class="rc-counter">01 / 06</span><span class="rc-title">The Atlas</span></div>
 <div class="rc-controls">
-<button class="rc-btn rc-prev" aria-label="Previous step"><svg class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
-<button class="rc-btn rc-play" aria-label="Pause"><svg class="rc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h3v14h-3zM14 5h3v14h-3z"/></svg></button>
-<button class="rc-btn rc-next" aria-label="Next step"><svg class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6 -6 6"/></svg></button>
+<button class="rc-btn rc-prev" aria-label="Previous step"><svg aria-hidden="true" class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+<button class="rc-btn rc-play" aria-label="Pause"><svg aria-hidden="true" class="rc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h3v14h-3zM14 5h3v14h-3z"/></svg></button>
+<button class="rc-btn rc-next" aria-label="Next step"><svg aria-hidden="true" class="rc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6 -6 6"/></svg></button>
 </div>
 </div>
 <div class="rc-progress">
@@ -319,8 +322,8 @@ var playBtn=demo.querySelector('.rc-play');
 var N=panels.length;
 var reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
 var DUR=5400;
-var PLAY='<svg class="rc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13 -8z"/></svg>';
-var PAUSE='<svg class="rc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h3v14h-3zM14 5h3v14h-3z"/></svg>';
+var PLAY='<svg aria-hidden="true" class="rc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13 -8z"/></svg>';
+var PAUSE='<svg aria-hidden="true" class="rc-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h3v14h-3zM14 5h3v14h-3z"/></svg>';
 var STEPS=[
 {t:"The Atlas",crumb:"Atlas / the collection",c:"The browse is the exhibit. Every receptor is catalogued like a specimen, never a card in a grid."},
 {t:"The Specimen",crumb:"Atlas / M1",c:"One specimen, fully sourced: mechanism, binding fingerprint, clinical role, and citation in a single view."},
