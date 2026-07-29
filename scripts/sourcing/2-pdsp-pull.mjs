@@ -1,3 +1,13 @@
+// SUPERSEDED by 2-pdsp-import.py. Kept only as the record of how the data was first
+// obtained; do NOT run it — it writes the old cache shape, which 3-build.mjs no longer
+// understands, and it silently loses information.
+//
+// The results grid renders a censored screen (">10000") as a bare "10000", so this
+// scraper recorded 1028 "tested, nothing there" screens as measured values. The XLSX
+// export carries the ">" and contains zero genuinely measured Ki of 10000, which is what
+// proved the loss. The live database also adds and deletes rows under you, so a scrape is
+// not reproducible; the import pins a checksummed file instead.
+//
 // Step 2 — pull the PDSP Ki Database (the AFFINITY spine).
 //
 //   node scripts/sourcing/2-pdsp-pull.mjs

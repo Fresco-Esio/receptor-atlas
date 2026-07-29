@@ -17,8 +17,11 @@ test('migration seeds one PDSP source cited by every binding', () => {
                   WHERE bs.agent_name = bv.agent_name AND bs.target_alias = bv.target_alias)
   `).get().c;
   assert.equal(sources, 1, 'a single source spine');
-  assert.equal(total, 282, 'PDSP human coverage');
-  assert.equal(edges, 282, 'every binding cites it');
+  // Deliberately relational, not a magic number: the cell count changes every time the
+  // PDSP export is refreshed, and a test that has to be edited on every refresh stops
+  // being a check and becomes a chore. What must hold is one edge per binding.
+  assert.ok(total > 0, 'the matrix is not empty');
+  assert.equal(edges, total, 'every binding cites it');
   assert.equal(total - withEdge, 0, 'no needs-source gaps');
 });
 
@@ -32,7 +35,8 @@ test('the spine is the PDSP human Ki database', () => {
   assert.equal(src.authors, 'NIMH PDSP');
   assert.match(src.title, /PDSP/);
   const n = db.prepare('SELECT COUNT(*) c FROM binding_sources WHERE source_id = ?').get(tag.source_id).c;
-  assert.equal(n, 282, 'the whole matrix cites the one source');
+  const total = db.prepare('SELECT COUNT(*) c FROM binding_values').get().c;
+  assert.equal(n, total, 'the whole matrix cites the one source');
 });
 
 test('re-run is idempotent and preserves a curator-set status', () => {
@@ -42,7 +46,8 @@ test('re-run is idempotent and preserves a curator-set status', () => {
   db.prepare('UPDATE binding_sources SET status = ? WHERE agent_name = ? AND target_alias = ? AND source_id = ?')
     .run('verified', edge.agent_name, edge.target_alias, edge.source_id);
   migrate(db);   // restart
-  assert.equal(db.prepare('SELECT COUNT(*) c FROM binding_sources').get().c, 282);
+  assert.equal(db.prepare('SELECT COUNT(*) c FROM binding_sources').get().c,
+    db.prepare('SELECT COUNT(*) c FROM binding_values').get().c);
   assert.equal(db.prepare('SELECT COUNT(*) c FROM binding_source_tags').get().c, 1);
   const after = db.prepare('SELECT status FROM binding_sources WHERE agent_name = ? AND target_alias = ? AND source_id = ?')
     .get(edge.agent_name, edge.target_alias, edge.source_id).status;

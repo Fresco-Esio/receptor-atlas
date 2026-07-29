@@ -15,8 +15,10 @@ test('GET /api/atlas/cabinet/binding rebuilds the agent×target matrix', async (
   const diazepam = agents.find(a => a.name === 'Diazepam');
   assert.ok(diazepam, 'Diazepam present');
   // Values now come from the single PDSP spine (human, median), shown in the UI as pKi.
-  assert.equal(diazepam.b.gaba_a.ki, 16.2);
-  assert.equal(diazepam.b.gaba_a.kiText, 'median of 15 human values');
+  // 14 measured + 1 censored ">10000" screen: the screen is counted, never averaged, so
+  // it is named separately instead of dragging the median down as a Ki of 10000 would.
+  assert.equal(diazepam.b.gaba_a.ki, 15.5);
+  assert.equal(diazepam.b.gaba_a.kiText, 'median of 14 human values, plus 1 screen with no binding');
   assert.equal(diazepam.b.gaba_a.src, 'PDSP KiDB (human)');
 });
 

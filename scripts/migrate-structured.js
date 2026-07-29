@@ -88,8 +88,10 @@ export function migrateStructured(db) {
     db.prepare('SELECT receptor_id FROM receptor_aliases WHERE volume = ? AND alias = ?').get(volume, alias)?.receptor_id ?? null;
 
   const insBinding = db.prepare(`
-    INSERT INTO binding_values (receptor_id, target_alias, agent_name, agent_group, cid, ki, ki_text, act, act_full, src, note)
-    VALUES (@receptor_id, @target_alias, @agent_name, @agent_group, @cid, @ki, @ki_text, @act, @act_full, @src, @note)
+    INSERT INTO binding_values (receptor_id, target_alias, agent_name, agent_group, cid, ki, ki_text,
+                                act, act_full, src, note, n, lo, hi, sub, nc, weak, act_src)
+    VALUES (@receptor_id, @target_alias, @agent_name, @agent_group, @cid, @ki, @ki_text,
+            @act, @act_full, @src, @note, @n, @lo, @hi, @sub, @nc, @weak, @act_src)
   `);
   const insClinical = db.prepare(`
     INSERT OR REPLACE INTO clinical_rows (no, receptor_id, sys, name, cls, baseline, mech, over_json, under_json, stahl, agonists_json, antagonists_json)
@@ -115,6 +117,15 @@ export function migrateStructured(db) {
             act_full: v.actFull ?? null,
             src: v.src ?? null,
             note: v.note ?? null,
+            // The dispersion the median came from. Without these the page keeps only the
+            // point estimate, because the plate renders this table and not the snapshot.
+            n: typeof v.n === 'number' ? v.n : null,
+            lo: typeof v.lo === 'number' ? v.lo : null,
+            hi: typeof v.hi === 'number' ? v.hi : null,
+            sub: v.sub ?? null,
+            nc: typeof v.nc === 'number' ? v.nc : null,
+            weak: v.weak ? 1 : null,
+            act_src: v.actSrc ?? null,
           });
         }
       }

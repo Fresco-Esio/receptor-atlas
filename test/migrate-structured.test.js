@@ -29,7 +29,7 @@ test('binding_values resolve to canonical receptor_ids via the cabinet alias', (
     SELECT * FROM binding_values WHERE agent_name = 'Diazepam' AND target_alias = 'gaba_a'
   `).get();
   assert.equal(row.receptor_id, 'gabaa');
-  assert.equal(row.ki, 16.2);
+  assert.equal(row.ki, 15.5);
   assert.equal(row.src, 'PDSP KiDB (human)');
 });
 

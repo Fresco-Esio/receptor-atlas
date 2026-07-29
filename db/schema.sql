@@ -81,7 +81,18 @@ CREATE TABLE IF NOT EXISTS binding_values (
   act TEXT,                    -- action code: ag/an/pa/ri/…
   act_full TEXT,
   src TEXT,
-  note TEXT
+  note TEXT,
+  -- The evidence behind the single number. The plate replaces its embedded snapshot with
+  -- this table on load, so a field with no column here does not merely go unstored — it
+  -- disappears from the rendered page. A median with no dispersion is not a reportable
+  -- statistic, so n/lo/hi travel with it.
+  n INTEGER,                   -- measurements the median was taken over (0 = all censored)
+  lo REAL,                     -- lowest pKi among them
+  hi REAL,                     -- highest pKi among them
+  sub TEXT,                    -- subtype the value is reported at, e.g. 'Alpha2A'
+  nc INTEGER,                  -- censored '>10000' screens, counted but never averaged
+  weak INTEGER,                -- 1 when no subtype was replicated (low confidence)
+  act_src TEXT                 -- who curated the action, e.g. 'IUPHAR/BPS'
 );
 -- Binding-affinity provenance (binding-affinity provenance feature). Keyed on the
 -- STABLE (agent_name, target_alias) pair, NOT binding_values.id — that id only holds
