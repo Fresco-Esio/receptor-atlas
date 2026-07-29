@@ -732,6 +732,24 @@
     background: radial-gradient(circle, var(--bone-faint) 0 1.5px, transparent 1.6px);
     border: 1px solid var(--bone-faint);
   }
+  /* The pin interaction was invisible: nothing cued that a row was clickable, and the
+     result (petals changing) is far from the action (a click in the matrix). The cue
+     hangs off .lit rather than :hover because .row is display:contents and generates no
+     box of its own — .lit is what the row's own mouseenter/focus handlers already set. */
+  .agent-name::after {
+    content: "pin";
+    float: right;
+    font-family: var(--mono);
+    font-size: var(--lbl);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--brass);
+    opacity: 0;
+    transition: opacity 0.2s var(--ease);
+  }
+  .row.lit .agent-name::after, .agent-name:hover::after { opacity: 0.9; }
+  .row.pinned .agent-name::after { content: "unpin"; opacity: 0.9; }
+
   .row { display: contents; }
   .row.dim .agent-name, .row.dim .dot { opacity: 0.22; }
   .row.lit .agent-name { color: var(--bone); }
@@ -3218,10 +3236,15 @@
         }).join('')
         + (pins.length > 1
             ? `<span class="hint">solid petals are ${pins[0]} · hatched are ${pins[1]}</span>`
+            : '')
+        + (window.__pinEvicted
+            ? `<span class="hint" style="color:var(--vermilion)">${window.__pinEvicted} unpinned — two is the maximum</span>`
             : '');
       }
 
       function drawPolys(hoverName) {
+        // The eviction notice belongs to one selection only.
+        if (!hoverName) setTimeout(() => { window.__pinEvicted = null; }, 4000);
         const list = [];
         pins.forEach((nm, i) => { const s = seriesFor(nm, false, i); if (s) list.push(s); });
         if (hoverName && pins.indexOf(hoverName) === -1) {
@@ -3283,8 +3306,11 @@
           window.affinityPins.splice(idx, 1);
         } else {
           // Two is the ceiling: the rose distinguishes a pair by solid-vs-hatched
-          // fill, and there is no third fill that stays legible at petal size.
-          if (window.affinityPins.length >= 2) window.affinityPins.shift();
+          // fill, and there is no third fill that stays legible at petal size. Say so
+          // rather than dropping the oldest pin silently.
+          window.__pinEvicted = (window.affinityPins.length >= 2)
+            ? window.affinityPins.shift()
+            : null;
           window.affinityPins.push(nm);
         }
         syncPinned();
