@@ -4,9 +4,21 @@
  "activity": [
   {
    "receptor_id": "d2",
+   "volume": "archive",
+   "last_edited_at": null,
+   "last_reviewed_at": "2026-07-26T16:42:56.020Z"
+  },
+  {
+   "receptor_id": "d2",
    "volume": "cabinet",
-   "last_edited_at": "2026-07-30T22:02:32.572Z",
-   "last_reviewed_at": null
+   "last_edited_at": null,
+   "last_reviewed_at": "2026-07-26T16:42:56.020Z"
+  },
+  {
+   "receptor_id": "d2",
+   "volume": "ledger",
+   "last_edited_at": null,
+   "last_reviewed_at": "2026-07-26T16:42:56.020Z"
   }
  ],
  "bindingReview": [],
@@ -14,9 +26,7 @@
  "receptorSources": [],
  "bindingSources": [],
  "content": {
-  "claims": {
-   "d2": "burst 3 (final)"
-  },
+  "claims": {},
   "archive": {},
   "clinical": {},
   "bindings": []
