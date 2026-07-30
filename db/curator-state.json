@@ -23,7 +23,15 @@
  ],
  "bindingReview": [],
  "sources": [],
- "receptorSources": [],
+ "receptorSources": [
+  {
+   "receptor_id": "m1",
+   "source": "pmid:24903776",
+   "status": "verified",
+   "is_primary": 1,
+   "correction_note": "Atlas PMID 24445063 is wrong → corrected to 24903776. Fix it once in the Sources library and every citing specimen updates."
+  }
+ ],
  "bindingSources": [],
  "content": {
   "claims": {},
