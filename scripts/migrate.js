@@ -25,6 +25,7 @@ function bindingSourcesBestEffort(db) {
   catch (e) { return { sources: 0, edges: 0, needs: 0, error: e.message }; }
 }
 
+
 /**
  * Seed the cross-volume id aliases: pure reference data, so this runs
  * INSERT OR IGNORE every migrate — it adds aliases to an already-seeded DB without
@@ -59,6 +60,9 @@ export function seedAliases(db) {
  */
 export function migrate(db) {
   const existing = db.prepare('SELECT COUNT(*) c FROM receptors').get().c;
+  // Already seeded: the content steps are no-ops that only add missing aliases, and
+  // the curator overlay is deliberately NOT re-applied here. Re-applying it would
+  // undo edits made since the last dump every time the server restarts.
   if (existing > 0) { seedAliases(db); structuredBestEffort(db); bindingSourcesBestEffort(db); archiveBestEffort(db); return { skipped: true, receptors: existing }; }
 
   const tx = db.transaction(() => {
@@ -127,3 +131,13 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     ? `already seeded (${r.receptors} receptors); delete db/atlas.db to rebuild`
     : `migrated ${r.receptors} receptors`);
 }
+
+// The curator overlay is applied by a SEPARATE step, chained in the npm script:
+//
+//     "migrate": "node scripts/migrate.js && node scripts/curator-state.mjs import"
+//
+// It cannot be called from here. curator-state.mjs imports migrate() to build the
+// pristine baseline it diffs against, so importing it back — even dynamically, even
+// from inside this CLI block — is a cycle whose dynamic import can never settle:
+// it waits for this module to finish evaluating, and this module is waiting on it.
+// Node exits 13 with "unsettled top-level await". Two commands, no cycle.

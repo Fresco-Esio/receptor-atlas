@@ -33,6 +33,30 @@ reader who wrote a number down needs to know it moved.
 
 ## [Unreleased]
 
+### Added
+
+- **`db/curator-state.json`: the Desk's work now travels between machines.** The app was
+  always in git; the work done in it was not, because it lives in `db/atlas.db`, which is
+  untracked. That was worse than it sounds: the migrations re-seed content from the
+  committed HTML page literals, so a fresh clone did not show an obviously empty desk. It
+  showed a fully populated one carrying the *shipped* content, with every edit silently
+  replaced by the original.
+
+  The dump is a text file holding only the **difference** from a fresh seed: review
+  checks, mastery, notes, timestamps, sources you added or corrected, every citation
+  status, and content edited away from what the pages ship. A full dump would be a second
+  copy of the atlas whose diffs said nothing; restricted to the delta, `git diff` reads as
+  a sentence. Every source is referenced by natural key (PMID, then DOI, then URL, then
+  the citation itself) because `sources.id` is an autoincrement rowid that means nothing
+  on another machine.
+
+  It maintains itself: the server rewrites it after each save, on the same trigger that
+  refreshes `dist/` (`NO_CURATOR_DUMP=1` disables). `npm run migrate` applies it after
+  seeding. If the target database already holds work that differs from the dump, the
+  import **refuses** and prints how to resolve it in either direction rather than picking
+  a winner. Nothing here merges two divergent sets of edits, so the standing rule is pull
+  before you start and push when you stop.
+
 ### Changed
 
 - **The Conservator's Desk is rebuilt around the source connection.** The old desk opened

@@ -48,10 +48,42 @@ To stop it, close the black terminal window (or press `Ctrl+C` in it).
 | Command | What it does |
 |---|---|
 | `npm start` | Run the server on port 3000 (same as `start.bat`, without the browser/auto-setup). Override with `PORT`. |
-| `npm test` | Run the suite (`node --test`). 148 tests. |
-| `npm run migrate` | Build `db/atlas.db` from seed data. **Seed-only**: a no-op if the database already holds receptors. |
+| `npm test` | Run the suite (`node --test`). 161 tests. |
+| `npm run migrate` | Build `db/atlas.db` from seed data, then lay your saved work back over it. **Seed-only**: the seed is a no-op if the database already holds receptors. |
 | `npm run snapshot` | Export the static, backend-free site into `dist/`. |
 | `npm run preview` | Serve `dist/` to check the snapshot before publishing. |
+| `npm run curator:export` | Write `db/curator-state.json` from the database. Normally automatic. |
+| `npm run curator:import` | Lay `db/curator-state.json` back over the database. |
+
+### Working on more than one machine
+
+The app and all its content are in git; **your work in the Desk is not**, because it
+lives in `db/atlas.db`, which is not tracked. That matters more than it sounds: the
+migrations re-seed content from the committed HTML page literals, so a fresh clone does
+not give you an obviously empty desk. It gives you a fully populated one showing the
+*shipped* content, with your edits silently replaced.
+
+`db/curator-state.json` closes that gap. It is a text dump of everything in the database
+that did not come from the files in this repository: review checks, mastery and notes,
+the timestamps, any source you added or corrected, every citation status, and any content
+you edited away from what the pages ship. It holds only the difference from a fresh seed,
+so `git diff` reads as a sentence: *this source was attached, this claim changed, this
+pair was marked verified.*
+
+You do not have to maintain it. The server rewrites it after every save, on the same
+trigger that refreshes `dist/` (`NO_CURATOR_DUMP=1` turns that off). So the routine is:
+
+```bash
+git pull        # before you start work
+git push        # when you stop
+```
+
+On the other machine, `npm run migrate` applies it automatically after seeding. If the
+database there already holds work that differs from the dump, the import **refuses** and
+tells you how to resolve it in either direction, rather than picking a winner for you.
+
+The one rule: **do not edit on two machines without syncing in between.** Nothing here
+merges two divergent sets of edits. Pull first, push when you stop.
 
 ### Rebuilding the database
 

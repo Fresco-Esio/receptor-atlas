@@ -1,0 +1,24 @@
+{
+ "format": 1,
+ "review": {},
+ "activity": [
+  {
+   "receptor_id": "d2",
+   "volume": "cabinet",
+   "last_edited_at": "2026-07-30T12:05:06.700Z",
+   "last_reviewed_at": null
+  }
+ ],
+ "bindingReview": [],
+ "sources": [],
+ "receptorSources": [],
+ "bindingSources": [],
+ "content": {
+  "claims": {
+   "d2": "burst 3 (final)"
+  },
+  "archive": {},
+  "clinical": {},
+  "bindings": []
+ }
+}

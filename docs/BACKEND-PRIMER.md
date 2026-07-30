@@ -130,6 +130,36 @@ node scripts/preserve-activity.mjs restore
 **Stop the server first**, or the delete fails with "Device or resource busy" — a
 running server holds the file open.
 
+### Why your work survives that, and how it reaches another computer
+
+`db/atlas.db` is not in git. It is a binary file that changes on every keystroke, and
+git cannot merge two versions of it, so committing it would trade one problem for a
+worse one.
+
+Instead the app keeps **`db/curator-state.json`**: a plain-text copy of everything in the
+database that did not come out of the files in this project. Your review ticks, your
+notes, the papers you added, which citations you marked verified, and any wording you
+changed. The server rewrites it every time you save, so it is always current without you
+doing anything.
+
+That file *is* in git. So the sequence for a second computer is just:
+
+1. `git pull` there,
+2. `npm run migrate` (rebuilds the database from the project files, then lays your work
+   back on top),
+3. work,
+4. `git push` when you stop.
+
+The reason this matters more than it might seem: the rebuild fills the database from the
+web pages in `public/`. Without the JSON, a second computer would not show you an empty
+desk that obviously needed restoring. It would show a complete, normal-looking desk
+carrying the *original* text, with your edits quietly replaced. This file is what stops
+that.
+
+**One rule:** do not edit on two computers without syncing in between. Nothing can merge
+two different sets of edits to the same sentence. Pull before you start, push when you
+stop.
+
 ---
 
 ## 5. The dependency folder (`node_modules`) and `package.json`

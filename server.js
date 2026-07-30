@@ -26,7 +26,7 @@ function notFound(res) {
 // snapshot instead of one per request.
 const AUTO_PUBLISH_DEBOUNCE_MS = 400;
 
-export function createServer(dbPath, { seed = false, autoPublish = false, publishDir } = {}) {
+export function createServer(dbPath, { seed = false, autoPublish = false, publishDir, autoDump = autoPublish } = {}) {
   const db = openDb(dbPath);
   if (seed) migrate(db);
   const routes = apiRoutes(db);
@@ -35,14 +35,28 @@ export function createServer(dbPath, { seed = false, autoPublish = false, publis
   // Auto-publish: a Desk save (any non-GET route) schedules a snapshot refresh a
   // moment later, so dist/ always reflects the database without a manual step.
   // Failures are logged, never thrown — a bad publish must not break editing.
+  //
+  // The same trigger refreshes db/curator-state.json, the text dump that carries the
+  // curator's work between machines. It rides here rather than being a command to
+  // remember, because a sync file you have to maintain by hand is a sync file that
+  // is stale on the day you need it. The two run independently: a failed publish
+  // must not cost you the dump.
   let publishTimer = null;
   function schedulePublish() {
-    if (!autoPublish) return;
+    if (!autoPublish && !autoDump) return;
     clearTimeout(publishTimer);
-    publishTimer = setTimeout(() => {
-      publish(db, distDir)
-        .then(() => console.log(`auto-publish: dist/ refreshed (${new Date().toISOString()})`))
-        .catch(e => console.error('auto-publish failed:', e));
+    publishTimer = setTimeout(async () => {
+      if (autoDump) {
+        try {
+          const { writeState } = await import('./scripts/curator-state.mjs');
+          if (writeState(db).written) console.log('curator-state.json refreshed');
+        } catch (e) { console.error('curator-state dump failed:', e.message); }
+      }
+      if (autoPublish) {
+        publish(db, distDir)
+          .then(() => console.log(`auto-publish: dist/ refreshed (${new Date().toISOString()})`))
+          .catch(e => console.error('auto-publish failed:', e));
+      }
     }, AUTO_PUBLISH_DEBOUNCE_MS);
   }
 
@@ -106,8 +120,13 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   // current with no manual `npm run snapshot` step. Set NO_AUTO_PUBLISH=1 to
   // disable (e.g. if you only ever publish manually).
   const autoPublish = process.env.NO_AUTO_PUBLISH !== '1';
-  createServer(undefined, { autoPublish }).listen(PORT, HOST, () => {
+  // Independent of publishing on purpose: turning off the static snapshot is a
+  // deployment preference, but turning off the dump means your work stops
+  // travelling, and nobody would expect one switch to do both.
+  const autoDump = process.env.NO_CURATOR_DUMP !== '1';
+  createServer(undefined, { autoPublish, autoDump }).listen(PORT, HOST, () => {
     console.log(`Atlas app: http://localhost:${PORT}`);
     if (autoPublish) console.log('auto-publish: on (dist/ refreshes after each save; set NO_AUTO_PUBLISH=1 to disable)');
+    if (autoDump) console.log('curator-state: on (db/curator-state.json follows each save; set NO_CURATOR_DUMP=1 to disable)');
   });
 }
