@@ -71,16 +71,17 @@ so `git diff` reads as a sentence: *this source was attached, this claim changed
 pair was marked verified.*
 
 You do not have to maintain it. The server rewrites it after every save, on the same
-trigger that refreshes `dist/` (`NO_CURATOR_DUMP=1` turns that off). So the routine is:
+trigger that refreshes `dist/` (`NO_CURATOR_DUMP=1` turns that off).
 
-```bash
-git pull        # before you start work
-git push        # when you stop
-```
+**Ending a session: press Publish in the Desk.** It commits the dump, pushes it, and tells
+you what went out. That single action does both jobs, because pushing is also what
+triggers the site rebuild. It writes its own commit message from the diff, and stages only
+`db/curator-state.json` — anything else you have edited is listed and left for you.
 
-On the other machine, `npm run migrate` applies it automatically after seeding. If the
-database there already holds work that differs from the dump, the import **refuses** and
-tells you how to resolve it in either direction, rather than picking a winner for you.
+Starting on the other machine, `git pull` then `npm run migrate`, which applies the dump
+after seeding. If the database there already holds work that differs from the dump, the
+import **refuses** and tells you how to resolve it in either direction, rather than picking
+a winner for you.
 
 The one rule: **do not edit on two machines without syncing in between.** Nothing here
 merges two divergent sets of edits. Pull first, push when you stop.

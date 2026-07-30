@@ -35,6 +35,17 @@ reader who wrote a number down needs to know it moved.
 
 ### Added
 
+- **A Publish button in the Desk.** Ending a session meant a terminal trip to commit and
+  push, which is both a bad ending and the kind of step that quietly does not happen. It
+  commits `db/curator-state.json`, pushes it, and reports what went out and where to watch
+  the build. It writes its own commit message from the diff, so the history reads
+  `curate: 2 specimens reviewed, 1 citation verified` without anyone typing a summary.
+
+  It stages exactly one path. Code or docs edited in the same tree are listed so you know
+  they are there, and left for you to commit yourself rather than swept into a message
+  about receptors. Every git call passes an argument array rather than a shell string, and
+  the route accepts no request body, so nothing from the page can reach a shell.
+
 - **`db/curator-state.json`: the Desk's work now travels between machines.** The app was
   always in git; the work done in it was not, because it lives in `db/atlas.db`, which is
   untracked. That was worse than it sounds: the migrations re-seed content from the
