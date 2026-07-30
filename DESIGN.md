@@ -216,6 +216,20 @@ Pinning is capped at **two**, and the pair is told apart by fill: the first pin 
 
 **Screened-clean versus never-screened.** Four of five clinical reviewers could not tell a hollow ring from an empty cell at a glance, which collapses the single most important distinction on the plate. The inert dot carries a centre mark so it has presence, and the legend names the empty case in words: *never screened, not evidence of no binding*.
 
+### The Conservator's Desk (the working surface)
+
+The three volumes are read; the Desk is worked. It uses the same materials, at a tool's density rather than an exhibit's pacing: no scroll choreography, no reveal-on-enter, nothing that costs a curator a beat.
+
+**Vermilion means unsourced here.** The One Voice Rule says the accent marks the one thing that matters in a view, and in the Desk that is a claim with no paper behind it. Nothing else on that surface may take the accent, including the specimen index numbers that wear it in the Archive.
+
+**The ledger is the spine.** The database keys a source to a receptor or to a single binding, never to a field, so the receptor's ledger sits above all the content it backs and stays there while you edit, and each binding carries its own citation on its own row. The layout states the real relationship rather than implying a per-field model that does not exist.
+
+**A check states its own workload.** Review checkboxes report what is still outstanding ("4 of 5 not verified yet") rather than being a box you can tick having done nothing. A checklist that cannot see the work is an audit trail, not a guide.
+
+**Density has a floor.** Where one specimen carries 55 bindings, they are one scannable line each with the controls one click in. Fifty-five expanded cards is the banned card grid, and it answers none of the questions the list exists for.
+
+**Optimistic, but reversible.** Edits apply immediately and save on a debounce, and anything the atlas cannot regenerate rolls back if its save fails. Review state is the only data in the project that exists nowhere else.
+
 ## 6. Do's and Don'ts
 
 ### Do:

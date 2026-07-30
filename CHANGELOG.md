@@ -33,7 +33,42 @@ reader who wrote a number down needs to know it moved.
 
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+
+- **The Conservator's Desk is rebuilt around the source connection.** The old desk opened
+  on five screens of protocol and filed sources in three places away from the content
+  they support, so a curator could edit a claim without ever seeing whether a paper stood
+  behind it. The source ledger is now the spine: it sits above the content it backs and
+  stays there while you edit, and every binding carries its own citation on its own row.
+  A queue beside a workspace beside the review card replaces the long scroll of
+  expandable rows.
+- **Unsourced is now vermilion.** The atlas spends its ceremonial accent on the one thing
+  that matters in a view; in the Desk that is a claim with nothing behind it. It was
+  previously the blue "todo" token, the quietest mark on screen, for the single condition
+  the tool exists to eliminate.
+- **The review checks report their own outstanding work** ("4 of 5 not verified yet",
+  "12 of 55 have no source") instead of being a checklist you can tick having done none
+  of it.
+- **A specimen's 55 bindings are one scannable line each**, filterable by no-source,
+  conflicting, or unchecked, with the Ki editor and provenance one click in. They were 55
+  full cards and twelve thousand pixels.
+
+### Fixed
+
+- **A failed save could leave a ticked check over a database that disagreed.** Review
+  state was mutated before the request resolved and the only warning vanished after two
+  seconds, so a curator would have believed the work was recorded. Ticks, mastery and
+  notes now roll back if the save fails.
+- **Importing a review silently overwrote every specimen in the file.** It now names how
+  many specimens and which ones, and lets you refuse.
+- **Removing the last source left the citation check reporting on sources that were gone.**
+- **Filtering to Unsourced and then attaching a source made the row vanish mid-task**,
+  because you had just fixed the thing the filter selects for. The open specimen stays in
+  the queue, marked cleared.
+- Dialogs trap Tab and return focus to whatever opened them; the queue takes arrow keys;
+  `j` jumps to the next specimen with nothing behind it; a skip link steps over the rail.
+- The Desk joins the design-conformance sweep, and its type ramp collapses from ten
+  invented sizes to three steps with every adjacent ratio above 1.3.
 
 ## [1.0.0] - 2026-07-29
 
