@@ -33,6 +33,18 @@ reader who wrote a number down needs to know it moved.
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [1.1.0] - 2026-07-30
+
+The Conservator's Desk rebuilt around the source connection, and the curator's work
+made portable: it now travels with the repository and reaches the published site,
+neither of which it did before.
+
+MINOR rather than MAJOR because nothing here forces a database rebuild or moves a
+published URL. An existing `db/atlas.db` keeps working untouched; `db/curator-state.json`
+is written beside it and only read on a fresh seed.
+
 ### Added
 
 - **A Publish button in the Desk.** Ending a session meant a terminal trip to commit and
@@ -260,5 +272,6 @@ publicly readable since 0.5.0; this is the release that makes it defensible.
 The 0.x entries were reconstructed from git history after the fact and are **not tagged**,
 so they carry no compare links. Every release from 1.0.0 on is tagged as it ships.
 
-[Unreleased]: https://github.com/Fresco-Esio/receptor-atlas/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/Fresco-Esio/receptor-atlas/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/Fresco-Esio/receptor-atlas/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Fresco-Esio/receptor-atlas/releases/tag/v1.0.0
