@@ -70,6 +70,15 @@ reader who wrote a number down needs to know it moved.
 - The Desk joins the design-conformance sweep, and its type ramp collapses from ten
   invented sizes to three steps with every adjacent ratio above 1.3.
 
+### Removed
+
+- **The Threshold entrance experiment.** Six draft pages (`the-threshold*.html`,
+  `the-receptor-atlas-threshold.html`, and two `_affinity-*` form studies) and the design
+  brief that went with them. The Threshold was a proposed replacement for the rotunda
+  arrival; the rotunda stayed, so the drafts were describing a door that was never built.
+  The pages were never committed. The brief was, so it remains in git history if the idea
+  is ever revived.
+
 ## [1.0.0] - 2026-07-29
 
 The first version where every published page obeys the documented design system and
