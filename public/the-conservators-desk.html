@@ -148,6 +148,25 @@ body {
 .btn.quiet { border-color: transparent; background: transparent; }
 .btn.quiet:hover { border-color: var(--brass-line); }
 .btn.danger:hover { color: var(--vermilion); border-color: var(--vermilion); }
+/* The one action that leaves this machine, so it is the one button with a border
+   at rest. Not vermilion: the accent is spoken for by "unsourced", and publishing
+   is a good thing happening rather than a warning. */
+.btn.publish { color: var(--bone); border-color: var(--brass); }
+.btn.publish:hover { color: var(--wall-recess); background: var(--brass); }
+.btn.publish[disabled] { opacity: 0.55; cursor: progress; }
+
+/* The publish result: a short report, not a toast that vanishes before it is read.
+   It says what went out and stays until dismissed or superseded. */
+.pubout { display: none; align-items: flex-start; gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md); margin: 0 var(--space-lg) 0;
+  background: var(--wall-panel); border: 1px solid var(--brass-line); border-radius: 2px; }
+.pubout.show { display: flex; }
+.pubout.bad { border-color: var(--st-conflict); }
+.pubout p { font-size: var(--fs-text); color: var(--bone-read); }
+.pubout b { color: var(--bone); font-weight: 500; }
+.pubout .lbl { display: block; margin-bottom: var(--space-2xs); }
+.pubout a { color: var(--brass); }
+.pubout .close { margin-left: auto; }
 
 .bench { display: grid; grid-template-columns: var(--rail-w) minmax(0, 1fr); flex: 1 1 auto; min-height: 0; }
 
@@ -517,9 +536,12 @@ body {
     <button class="btn quiet" id="libBtn">Source library</button>
     <button class="btn quiet" id="exportBtn">Export</button>
     <button class="btn quiet" id="importBtn">Import</button>
+    <button class="btn publish" id="publishBtn">Publish</button>
     <input type="file" id="importFile" accept="application/json" class="hidden" aria-label="Import a review JSON file" />
   </div>
 </header>
+
+<div class="pubout" id="pubout" role="status" aria-live="polite"></div>
 
 <div class="bench">
   <aside class="queue" aria-label="Specimen queue">
@@ -1415,6 +1437,45 @@ document.getElementById('libList').addEventListener('click', async e => {
 });
 document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => closeVeil(b.dataset.close)));
 document.querySelectorAll('.veil').forEach(v => v.addEventListener('click', e => { if (e.target === v) closeVeil(v.id); }));
+/* ════════════════════ PUBLISH ════════════════════
+   The end of a session: commit the dump and push it, which is what carries the work
+   to the other machine and rebuilds the public site. The result is a small report
+   rather than a toast, because "did that go out?" is a question you should be able
+   to answer by looking, not by remembering a message that already faded. */
+function renderPublish(r, bad) {
+  const host = document.getElementById('pubout');
+  const parts = [];
+  if (bad || r.ok === false) {
+    parts.push(`<p><b>Could not publish.</b> ${esc(r.error || 'The server did not answer.')}</p>`);
+  } else if (!r.published) {
+    parts.push(`<p>${esc(r.reason || 'Nothing to publish.')}</p>`);
+  } else {
+    const what = (r.summary && r.summary.length) ? r.summary.join(', ') : 'this session';
+    parts.push(`<p><b>${esc(what)}.</b> ${r.pushed
+      ? `Pushed to main. The site rebuilds itself in a couple of minutes${r.build ? ` &middot; <a href="${esc(r.build)}" target="_blank" rel="noopener">watch the build</a>` : ''}.`
+      : esc(r.reason || 'Committed locally.')}</p>`);
+  }
+  if (r.otherChanges && r.otherChanges.length) {
+    parts.push(`<p class="fhint">Left alone, because a curation publish commits curation: ${
+      r.otherChanges.slice(0, 4).map(esc).join(', ')}${r.otherChanges.length > 4 ? `, and ${r.otherChanges.length - 4} more` : ''}.</p>`);
+  }
+  host.innerHTML = `<span class="lbl">Publish</span><div>${parts.join('')}</div>`
+    + `<button type="button" class="btn quiet close" data-pubclose>Dismiss</button>`;
+  host.classList.toggle('bad', !!(bad || r.ok === false));
+  host.classList.add('show');
+  host.querySelector('[data-pubclose]').addEventListener('click', () => host.classList.remove('show'));
+}
+document.getElementById('publishBtn').addEventListener('click', async e => {
+  const btn = e.currentTarget;
+  btn.disabled = true; btn.textContent = 'Publishing';
+  try {
+    const res = await fetch('/api/publish', { method: 'POST' });
+    renderPublish(await res.json(), !res.ok);
+  } catch (err) {
+    renderPublish({ ok: false, error: 'The app is not running, so there was nothing to publish through.' }, true);
+  } finally { btn.disabled = false; btn.textContent = 'Publish'; }
+});
+
 document.getElementById('exportBtn').addEventListener('click', exportReview);
 document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
 document.getElementById('importFile').addEventListener('change', e => { if (e.target.files[0]) importReview(e.target.files[0]); });
