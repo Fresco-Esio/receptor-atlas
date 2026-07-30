@@ -3,1392 +3,1436 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>The Conservator's Desk · Atlas Accuracy &amp; Mastery Review</title>
+<meta name="color-scheme" content="dark" />
+<title>The Conservator's Desk · Atlas Review</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Schibsted+Grotesk:wght@400;500;700&family=Fragment+Mono&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/base.css">
 <style>
-:root{
-  --mast-h: 70px;
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE CONSERVATOR'S DESK
+
+   A bench, not a document. The old desk opened on five screens of protocol and
+   filed sources in three places away from the content they support; you could
+   edit a claim for ten minutes without ever seeing whether a paper stood behind
+   it. This one is built around a single sentence: nothing goes on the wall
+   without a paper behind it.
+
+   That sentence decides the layout. The source ledger sits ABOVE the content it
+   backs and stays there while you edit, because the database keys sources to the
+   receptor and to each binding — not to individual fields — and an honest layout
+   says so rather than faking per-field citations.
+
+   It also decides the colour. Vermilion is the atlas's ceremonial accent, spent
+   on the one thing that matters in a view. Here that is a claim with nothing
+   behind it, so UNSOURCED is vermilion. It was previously the blue "todo" token,
+   the quietest signal on screen, which is backwards for the single condition
+   this tool exists to eliminate.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--wall-atrium);
+  color: var(--bone);
+  font-family: var(--body);
+  font-size: var(--fs-text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
 }
-*{box-sizing:border-box;}
-html{scroll-behavior:smooth;}
-body{
-  margin: 0; background:var(--wall-atrium); color:var(--bone);
-  font-family:"Schibsted Grotesk",sans-serif; font-size:16px; line-height:1.65;
-  -webkit-font-smoothing:antialiased;
+::selection { background: var(--vermilion); color: var(--wall-vault); }
+:focus-visible { outline: 1px solid var(--brass); outline-offset: 3px; }
+
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--brass-faint); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--brass-line); }
+
+/* ── the four states a claim can be in ────────────────────────────────────
+   One vocabulary, used identically in the queue, the specimen header, the
+   ledger and every binding. A reader learns it once. */
+:root {
+  --st-unsourced: var(--vermilion);       /* nothing behind it. the whole point. */
+  --st-conflict:  var(--status-conflict);
+  --st-provided:  var(--brass);
+  --st-verified:  var(--status-verified);
+  --rail-w: 19rem;
+  --aside-w: 17rem;
+
+  /* ── the type ramp, four steps and a label ────────────────────────────────
+     A first pass at this file drifted to ten intermediate sizes between 0.75
+     and 1.2rem, which is the same sprawl that had to be cleaned off the public
+     pages. DESIGN.md's four documented steps are built for editorial pages and
+     leave nothing between body and label, so a dense tool needs one more: a
+     single "dense" step that every compact string in the interface uses.
+     Five steps, each with one job, and no two adjacent steps closer than 1.27x. */
+  --fs-spec:  clamp(1.6rem, 3vw, 2.2rem);  /* the specimen name, once per screen */
+  --fs-title: 1.25rem;                     /* section and dialog titles */
+  --fs-text:  0.9375rem;                   /* everything else that is not a label */
+  /* --lbl (0.6875rem) comes from tokens.css and is the floor. */
+
+  /* One overlay shadow, the one DESIGN.md documents. Dropdowns and dialogs are
+     both true overlays and there is no reason for them to differ. */
+  --shadow-overlay: 0 24px 60px oklch(0% 0 0 / 0.5);
 }
-::selection{background:var(--vermilion); color:var(--wall-recess);}
-a{color:var(--bone-dim); text-decoration:none; border-bottom:1px solid var(--brass-line); transition:color .25s var(--ease), border-color .25s var(--ease);}
-a:hover{color:var(--vermilion); border-color:var(--vermilion);}
-.mono{font-family:"Fragment Mono",monospace; letter-spacing:.06em;}
-.eyebrow{font-family:"Fragment Mono",monospace; font-size:.6875rem; letter-spacing:.18em; text-transform:uppercase; color:var(--bone-faint);}
-h1,h2,h3{font-family:"Marcellus",serif; font-weight:400; letter-spacing:.03em; margin: 0;}
-/* This page predates the shared reset in base.css and leaned on the browser's
-   default margins for flowing text. Headings set their own margin above, so
-   only the text elements are reverted. */
-p, ul, ol { margin: revert; }
 
-/* ---------- Masthead ---------- */
-header.mast{
-  position:sticky; top:0; z-index:50; background:var(--wall-recess);
-  border-bottom:1px solid var(--brass-line);
-  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;
-  gap: .6rem 1.2rem; padding: .85rem clamp(1rem,3.5vw,2.4rem); transition:box-shadow .4s var(--ease);
+.lbl {
+  font-family: var(--mono);
+  font-size: var(--lbl);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bone-faint);
 }
-header.mast.is-scrolled{box-shadow:0 1px 0 var(--brass-faint),0 8px 28px oklch(0% 0 0 / 0.35);}
-.brand{display:flex; align-items:baseline; gap: .7rem; min-width:0; color:inherit; text-decoration:none; border-bottom:0;}
-.brand .tick{width:9px;height:9px;background:var(--vermilion);transform:rotate(45deg);flex:none;}
-.brand .wm{font-family:"Marcellus",serif; font-size:1.18rem; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap; transition:color .25s var(--ease);}
-.brand .sub{font-family:"Fragment Mono",monospace; font-size:.62rem; letter-spacing:.16em; text-transform:uppercase; color:var(--bone-faint); white-space:nowrap;}
-.brand:hover .wm{color:var(--vermilion);}
-html{scroll-behavior:smooth;}
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto;}}
-/* ---------- Section tabs (sticky under the masthead) ---------- */
-.desk-tabs{position:sticky; top:var(--mast-h); z-index:40; display:flex; flex-wrap:wrap; align-items:stretch;
-  background:var(--wall-atrium); border-bottom:1px solid var(--brass-line); padding: 0 clamp(1rem,3.5vw,2.4rem);}
-.desk-tabs a{font-family:"Fragment Mono",monospace; font-size:.66rem; letter-spacing:.12em; text-transform:uppercase;
-  color:var(--bone-faint); text-decoration:none; border-bottom:2px solid transparent; border-top:2px solid transparent;
-  padding: .8rem .2rem; margin-right: 1.3rem; transition:color .2s var(--ease), border-color .2s var(--ease); white-space:nowrap;}
-.desk-tabs a:hover{color:var(--bone-dim);}
-.desk-tabs a.active{color:var(--bone); border-bottom-color:var(--brass);}
-.desk-anchor{height:0; scroll-margin-top:calc(var(--mast-h) + 3.6rem);}
-#sourcesSection, #bindingSection{scroll-margin-top:calc(var(--mast-h) + 3.6rem);}
-/* both section filters are in-flow now; the sticky chrome is masthead + tabs only */
-#rail{position:static; z-index:auto;}
-.mast-tools{display:flex; align-items:center; gap: .45rem; flex-wrap:wrap;}
-button.ctrl{
-  font-family:"Fragment Mono",monospace; font-size:.64rem; letter-spacing:.12em; text-transform:uppercase;
-  color:var(--bone-faint); background:var(--wall-recess); border:1px solid var(--brass-line); border-radius:2px;
-  padding: var(--space-xs) .7rem; cursor:pointer; transition:color .25s var(--ease), border-color .25s var(--ease);
+
+/* ═══════════ shell: three columns, the window divided once ═══════════ */
+.mast {
+  display: flex; align-items: center; gap: var(--space-lg);
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--wall-recess);
+  border-bottom: 1px solid var(--brass-line);
+  flex: none;
 }
-button.ctrl:hover{color:var(--bone); border-color:var(--brass);}
-button.ctrl.accent:hover{color:var(--vermilion); border-color:var(--vermilion);}
+.brand { display: flex; align-items: baseline; gap: var(--space-sm); text-decoration: none; color: inherit; }
+.brand .tick { width: 7px; height: 7px; rotate: 45deg; background: var(--vermilion); flex: none; translate: 0 -2px; }
+.brand .wm { font-family: var(--display); font-size: var(--fs-title); letter-spacing: 0.09em; text-transform: uppercase; color: var(--bone); white-space: nowrap; }
+.brand:hover .wm { color: var(--vermilion); }
 
-/* ---------- Layout ---------- */
-main{max-width:1180px; margin: 0 auto; padding: clamp(1.4rem,4vw,3rem) clamp(1rem,3.5vw,2.4rem) 6rem;}
-section{margin-bottom: clamp(2.2rem,5vw,3.6rem);}
-.lead{max-width:70ch;}
-.lead h1{font-size:clamp(1.9rem,4.4vw,3rem); line-height:1.04; text-transform:uppercase; margin-bottom: .8rem;}
-.lead p{color:var(--bone-dim); margin: .4rem 0;}
-.rule{height:1px;background:var(--brass-line);border:0;margin: 1.6rem 0;}
+/* The standing tally. Not a hero metric: one sentence and a hairline, sized like
+   a caption, because it reports the state of the work rather than being it. */
+.tally { display: flex; align-items: center; gap: var(--space-sm); min-width: 0; }
+.tally-text { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.08em; color: var(--bone-dim); white-space: nowrap; }
+.tally-text b { color: var(--bone); font-weight: 400; }
+.tally-text .unsourced { color: var(--st-unsourced); }
+.tally-bar { width: clamp(5rem, 14vw, 13rem); height: 3px; background: var(--wall-vault); border: 1px solid var(--brass-faint); position: relative; overflow: hidden; }
+/* scaleX, not width: width is a layout property and animating it forces layout
+   on every frame. The bar is anchored left so the transform reads identically. */
+.tally-bar i { position: absolute; inset: 0 0 0 0; background: var(--st-verified);
+  transform-origin: left center; transform: scaleX(0); transition: transform 0.6s var(--ease); }
 
-/* ---------- Dashboard summary ---------- */
-.dash{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.4fr); gap: clamp(1rem,3vw,2.2rem); align-items:start;}
-@media(max-width:760px){.dash{grid-template-columns:1fr;}}
-.ring-wrap{display:flex; align-items:center; gap: 1.4rem;}
-.ring{position:relative; width:148px; height:148px; flex:none;}
-.ring svg{transform:rotate(-90deg);}
-.ring .pct{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
-.ring .pct b{font-family:"Marcellus",serif; font-size:2.1rem; line-height:1;}
-.ring .pct span{font-family:"Fragment Mono",monospace; font-size:.58rem; letter-spacing:.14em; text-transform:uppercase; color:var(--bone-faint); margin-top: var(--space-2xs);}
-.tallies{display:flex; flex-direction:column; gap: .55rem;}
-.tally{display:flex; align-items:baseline; gap: .55rem;}
-.tally b{font-family:"Marcellus",serif; font-size:1.45rem; min-width:2.4ch; text-align:right;}
-.tally span{font-family:"Fragment Mono",monospace; font-size:.64rem; letter-spacing:.1em; text-transform:uppercase; color:var(--bone-faint);}
+.pending { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.1em; text-transform: uppercase; color: var(--brass); }
+.pending::after { content: "\2026"; }
 
-/* status chips inline */
-.statline{display:flex; flex-wrap:wrap; gap: var(--space-xs); margin-top: var(--space-md);}
-.schip{font-family:"Fragment Mono",monospace; font-size:.6rem; letter-spacing:.08em; text-transform:uppercase; padding: .34rem .55rem; border-radius:2px; border:1px solid var(--brass-line); color:var(--bone-dim); display:flex; gap: .45rem; align-items:center;}
-.dot{width:8px;height:8px;border-radius:50%;flex:none;}
-.dot.good{background:var(--status-verified);} .dot.warn{background:var(--status-conflict);} .dot.info{background:var(--status-todo);} .dot.brass{background:var(--brass);} .dot.faint{background:var(--bone-faint);}
+/* Parked off-screen with translate, not top: top is a layout property and the
+   shared laws say not to animate those. It also arrives instantly rather than
+   easing in, because a keyboard user pressing Tab should not wait 200ms to find
+   out the link exists. */
+.skip { position: fixed; left: var(--space-xs); top: var(--space-xs); z-index: 90;
+  font-family: var(--mono); font-size: var(--lbl);
+  background: var(--wall-panel); color: var(--bone); border: 1px solid var(--brass);
+  border-radius: 2px; padding: var(--space-xs) var(--space-sm); text-decoration: none;
+  translate: 0 -300%; }
+.skip:focus { translate: 0 0; }
 
-/* per-hall progress in summary */
-.halls-prog{display:flex; flex-direction:column; gap: .9rem;}
-.hp-row{display:grid; grid-template-columns:1fr auto; gap: .3rem .8rem; align-items:center;}
-.hp-row .hp-name{font-family:"Fragment Mono",monospace; font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; color:var(--bone-dim);}
-.hp-row .hp-val{font-family:"Fragment Mono",monospace; font-size:.62rem; color:var(--bone-faint);}
-.bar{grid-column:1 / -1; height:5px; background:var(--wall-recess); border-radius:3px; overflow:hidden;}
-.bar > i{display:block; height:100%; width:0; background:var(--brass); border-radius:3px; transition:width .8s var(--ease);}
-.bar > i.full{background:var(--status-verified);}
+/* The key sits on the working screen, not only inside the help dialog. Four
+   colours carry every judgement in this tool, and making the reader open a modal
+   to decode them is asking them to hold the legend in their head instead. */
+.key { display: flex; flex-wrap: wrap; gap: var(--space-xs) var(--space-md); margin-top: var(--space-xs);
+  padding-top: var(--space-xs); border-top: 1px solid var(--brass-faint); }
+.key span { display: inline-flex; align-items: center; gap: var(--space-2xs);
+  font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.06em; text-transform: uppercase; color: var(--bone-faint); }
 
-/* ---------- Protocol cards ---------- */
-.proto{display:grid; grid-template-columns:repeat(auto-fit,minmax(225px,1fr)); gap: 1px; background:var(--brass-faint); border:1px solid var(--brass-line); border-radius:3px; overflow:hidden;}
-.proto .cell{background:var(--wall-panel); padding: 1.15rem 1.2rem;}
-.proto .cell .n{font-family:"Fragment Mono",monospace; font-size:.62rem; letter-spacing:.14em; color:var(--vermilion);}
-.proto .cell h3{font-size:1.12rem; margin: .35rem 0 .4rem;}
-.proto .cell p{font-size:.86rem; color:var(--bone-dim); margin: 0;}
+.mast-tools { margin-left: auto; display: flex; align-items: center; gap: var(--space-xs); }
+.btn {
+  appearance: none; cursor: pointer;
+  font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--bone-dim); background: var(--wall-recess);
+  border: 1px solid var(--brass-line); border-radius: 2px;
+  padding: var(--space-xs) var(--space-sm);
+  transition: color 0.25s var(--ease), border-color 0.25s var(--ease), background-color 0.25s var(--ease);
+  white-space: nowrap;
+}
+.btn:hover { color: var(--bone); border-color: var(--brass); }
+.btn[aria-pressed="true"], .btn.on { color: var(--wall-recess); background: var(--brass); border-color: var(--brass); }
+.btn.quiet { border-color: transparent; background: transparent; }
+.btn.quiet:hover { border-color: var(--brass-line); }
+.btn.danger:hover { color: var(--vermilion); border-color: var(--vermilion); }
 
-.callout{border:1px solid var(--brass-line); border-left:2px solid var(--vermilion); border-radius:3px; background:var(--wall-panel); padding: 1.1rem 1.3rem;}
-.callout h3{font-size:1.05rem; margin-bottom: var(--space-xs); letter-spacing:.04em;}
-.callout p{margin: .3rem 0; color:var(--bone-dim); font-size:.9rem;}
-.callout .find{display:flex; gap: .6rem; align-items:flex-start; margin: var(--space-xs) 0;}
-.callout .find .dot{margin-top: var(--space-xs);}
+.bench { display: grid; grid-template-columns: var(--rail-w) minmax(0, 1fr); flex: 1 1 auto; min-height: 0; }
 
-/* ---------- Filter rail ---------- */
-.rail{display:flex; flex-wrap:wrap; gap: .45rem; align-items:center; position:sticky; top:var(--mast-h); z-index:30; background:var(--wall-atrium); padding: .7rem 0; border-bottom:1px solid var(--brass-faint);}
-.rail .lab{font-family:"Fragment Mono",monospace; font-size:.6rem; letter-spacing:.14em; text-transform:uppercase; color:var(--bone-faint); margin-right: .2rem;}
-.seg{font-family:"Fragment Mono",monospace; font-size:.62rem; letter-spacing:.08em; text-transform:uppercase; color:var(--bone-faint); background:var(--wall-recess); border:1px solid var(--brass-line); border-radius:2px; padding: .42rem .6rem; cursor:pointer; transition:color .2s var(--ease), border-color .2s var(--ease);}
-.seg:hover{color:var(--bone-dim);}
-.seg.active{color:var(--wall-recess); background:var(--brass); border-color:var(--brass);}
-.rail .spacer{flex:1;}
-#nextBtn{font-family:"Fragment Mono",monospace; font-size:.62rem; letter-spacing:.1em; text-transform:uppercase; color:var(--vermilion); background:transparent; border:1px solid var(--vermilion); border-radius:2px; padding: .42rem .7rem; cursor:pointer;}
-#nextBtn:hover{background:var(--vermilion); color:var(--wall-recess);}
+/* ═══════════ the queue ═══════════ */
+.queue { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--brass-line); background: var(--wall-vault); }
+.queue-head { flex: none; padding: var(--space-md) var(--space-md) var(--space-sm); border-bottom: 1px solid var(--brass-faint); }
+.qsearch { width: 100%; font-family: var(--body); font-size: var(--fs-text); color: var(--bone);
+  background: var(--wall-recess); border: 1px solid var(--brass-line); border-radius: 2px; padding: var(--space-xs) var(--space-sm); }
+.qsearch:focus { outline: none; border-color: var(--brass); }
+.qsearch::placeholder { color: var(--bone-faint); }
 
-/* ---------- Hall + specimen rows ---------- */
-.hall{margin-top: 2.4rem;}
-.hall-head{display:flex; align-items:baseline; gap: var(--space-md); flex-wrap:wrap; padding-bottom: var(--space-xs); border-bottom:1px solid var(--brass-line);}
-.hall-head .hnum{font-family:"Fragment Mono",monospace; font-size:.66rem; letter-spacing:.16em; color:var(--vermilion);}
-.hall-head h2{font-size:clamp(1.4rem,3vw,1.9rem); text-transform:uppercase;}
-.hall-head .hmeta{font-family:"Fragment Mono",monospace; font-size:.62rem; color:var(--bone-faint); margin-left: auto;}
+.qfilters { display: flex; flex-wrap: wrap; gap: var(--space-2xs); margin-top: var(--space-sm); }
+.qf {
+  appearance: none; cursor: pointer;
+  font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--bone-faint); background: transparent;
+  border: 1px solid var(--brass-faint); border-radius: 2px; padding: var(--space-2xs) var(--space-xs);
+  transition: color 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+.qf:hover { color: var(--bone-dim); border-color: var(--brass-line); }
+.qf[aria-pressed="true"] { color: var(--bone); border-color: var(--brass); }
+.qf .n { color: var(--bone-faint); margin-left: var(--space-2xs); }
+.qf[data-f="unsourced"][aria-pressed="true"] { color: var(--st-unsourced); border-color: var(--st-unsourced); }
 
-.spec{border-bottom:1px solid var(--brass-faint); transition:opacity .3s var(--ease), transform .3s var(--ease);}
-.spec-head{display:grid; grid-template-columns:auto 1fr auto auto; gap: .7rem var(--space-md); align-items:center; padding: 1.05rem .3rem; cursor:pointer;}
-@media(max-width:680px){.spec-head{grid-template-columns:auto 1fr auto;}}
-.idx{font-family:"Fragment Mono",monospace; font-size:.64rem; color:var(--bone-faint); min-width:3ch;}
-.spec-id{display:flex; flex-direction:column; gap: .18rem; min-width:0;}
-.spec-id .nm{font-family:"Marcellus",serif; font-size:1.2rem; letter-spacing:.02em; color:var(--bone); transition:color .25s var(--ease);}
-.spec:hover .nm{color:var(--vermilion);}
-.spec-id .vols{display:flex; gap: .35rem; flex-wrap:wrap;}
-.vchip{font-family:"Fragment Mono",monospace; font-size:.54rem; letter-spacing:.06em; text-transform:uppercase; color:var(--bone-faint); border:1px solid var(--brass-faint); border-radius:2px; padding: .12rem .35rem;}
-/* mini check pips */
-.pips{display:flex; gap: .32rem; align-items:center;}
-.pip{width:13px;height:13px;border-radius:50%;border:1px solid var(--brass-line); position:relative; transition:background .25s var(--ease), border-color .25s var(--ease);}
-.pip.on{background:var(--status-verified); border-color:var(--status-verified);}
-.spec-stat{font-family:"Fragment Mono",monospace; font-size:.58rem; letter-spacing:.1em; text-transform:uppercase; text-align:right; min-width:8ch; color:var(--bone-faint);}
-.spec-stat.review{color:var(--brass);} .spec-stat.done{color:var(--status-verified);}
-.conf-mini{display:flex; gap: 2px; justify-content:flex-end; margin-top: .2rem;}
-.conf-mini i{width:6px;height:6px;border-radius:50%;background:var(--wall-recess);border:1px solid var(--brass-faint);}
-.conf-mini i.on{background:var(--vermilion);border-color:var(--vermilion);}
+.queue-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: var(--space-lg); }
+.qhall { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--brass); padding: var(--space-md) var(--space-md) var(--space-2xs);
+  position: sticky; top: 0; background: var(--wall-vault); z-index: 1; border-bottom: 1px solid var(--brass-faint); }
 
-/* expanded body */
-.spec-body{display:none; padding: .2rem .3rem 1.6rem; }
-.spec.open .spec-body{display:block; animation:reveal .34s var(--ease);}
-@keyframes reveal{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
-.body-grid{display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap: 1.4rem;}
-@media(max-width:760px){.body-grid{grid-template-columns:1fr;}}
+.qrow {
+  display: grid; grid-template-columns: 1.6rem 1fr auto; align-items: center; gap: var(--space-xs);
+  width: 100%; text-align: left; appearance: none; background: transparent; cursor: pointer;
+  border: 0; border-bottom: 1px solid var(--brass-faint);
+  padding: 0.55rem var(--space-md);
+  color: inherit; font: inherit;
+  transition: background-color 0.2s var(--ease);
+}
+.qrow:hover { background: oklch(93% 0.012 85 / 0.04); }
+.qrow[aria-current="true"] { background: var(--wall-panel); }
+/* The open specimen is marked by a vermilion tick in the index column, the same
+   mark the Archive uses for the selected plate. No side stripe. */
+.qrow[aria-current="true"] .qidx { color: var(--vermilion); }
+/* Retained past the filter because it is open. Dashed, so it reads as held rather
+   than as a match. */
+.qrow.is-passing { border-left: 0; background: var(--wall-panel); }
+.qrow.is-passing .qidx { color: var(--st-verified); }
+.qrow.is-passing::after { content: "cleared"; grid-column: 2 / -1; font-family: var(--mono);
+  font-size: var(--lbl); letter-spacing: 0.08em; text-transform: uppercase; color: var(--st-verified); }
+.qidx { font-family: var(--mono); font-size: var(--lbl); color: var(--bone-faint); }
+.qname { font-family: var(--display); font-size: var(--fs-text); letter-spacing: 0.02em; color: var(--bone-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qrow[aria-current="true"] .qname { color: var(--bone); }
+.qmeta { display: flex; align-items: center; gap: var(--space-xs); }
 
-.subchecks{display:flex; flex-direction:column; gap: var(--space-xs);}
-.check{display:grid; grid-template-columns:auto 1fr; gap: .7rem; align-items:start; padding: .6rem .7rem; background:var(--wall-recess); border:1px solid var(--brass-faint); border-radius:3px; cursor:pointer; transition:border-color .2s var(--ease);}
-.check:hover{border-color:var(--brass-line);}
-.box{width:18px;height:18px;border:1px solid var(--brass); border-radius:2px; margin-top: .15rem; position:relative; flex:none; transition:background .2s var(--ease);}
-.check.on .box{background:var(--status-verified); border-color:var(--status-verified);}
-.check.on .box::after{content:"";position:absolute;left:5px;top:1px;width:5px;height:10px;border:solid var(--wall-recess);border-width:0 2px 2px 0;transform:rotate(45deg);}
-.check .ctitle{font-family:"Fragment Mono",monospace; font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; color:var(--bone);}
-.check.on .ctitle{color:var(--bone-dim);}
-.check .chint{font-size:.82rem; color:var(--bone-faint); margin-top: .2rem; line-height:1.5;}
+/* Source state: a filled lozenge, not a dot. A dot at this size reads as dirt;
+   the lozenge has enough area to carry a colour honestly. */
+.sdot { width: 7px; height: 7px; border-radius: 2px; rotate: 45deg; flex: none; background: var(--st-provided); }
+.sdot[data-s="verified"] { background: var(--st-verified); }
+.sdot[data-s="conflicting"] { background: var(--st-conflict); }
+.sdot[data-s="needs-source"] { background: var(--st-unsourced); }
+.sdot[data-s="provided"] { background: var(--st-provided); }
 
-.claim{background:var(--wall-panel); border:1px solid var(--brass-faint); border-radius:3px; padding: .85rem var(--space-md); margin-top: .2rem;}
-.claim .ck{font-family:"Fragment Mono",monospace; font-size:.58rem; letter-spacing:.14em; text-transform:uppercase; color:var(--vermilion);}
-.claim p{margin: .35rem 0 0; font-size:.9rem; color:var(--bone-dim);}
+.qpips { display: flex; gap: 2px; }
+.qpip { width: 4px; height: 9px; background: var(--wall-recess); border: 1px solid var(--brass-faint); }
+.qpip.on { background: var(--st-verified); border-color: var(--st-verified); }
 
-/* side rail in body */
-.side{display:flex; flex-direction:column; gap: var(--space-md);}
-.panel{background:var(--wall-panel); border:1px solid var(--brass-faint); border-radius:3px; padding: .9rem var(--space-md);}
-.panel .pk{font-family:"Fragment Mono",monospace; font-size:.58rem; letter-spacing:.14em; text-transform:uppercase; color:var(--bone-faint); margin-bottom: var(--space-xs);}
-.srcline{font-size:.82rem; color:var(--bone-dim); margin: .3rem 0; line-height:1.5;}
-.srclink{display:inline-flex; gap: .35rem; align-items:center; font-family:"Fragment Mono",monospace; font-size:.62rem; letter-spacing:.06em; margin-right: .7rem;}
+.qempty { padding: var(--space-xl) var(--space-md); color: var(--bone-faint); font-size: var(--fs-text); text-align: center; }
 
-/* citation status segmented (per source row) */
-.citestat{display:flex; gap: .3rem; flex-wrap:wrap; margin-top: var(--space-xs);}
-.cs{font-family:"Fragment Mono",monospace; font-size:.55rem; letter-spacing:.06em; text-transform:uppercase; padding: .3rem .45rem; border-radius:2px; border:1px solid var(--brass-faint); color:var(--bone-faint); cursor:pointer; background:transparent; transition:all .2s var(--ease);}
-.cs[data-v="verified"].on{background:var(--status-verified);color:var(--wall-recess);border-color:var(--status-verified);}
-.cs[data-v="provided"].on{background:var(--brass);color:var(--wall-recess);border-color:var(--brass);}
-.cs[data-v="conflicting"].on{background:var(--status-conflict);color:var(--wall-recess);border-color:var(--status-conflict);}
+/* ═══════════ the work pane ═══════════ */
+.work { min-height: 0; overflow-y: auto; overscroll-behavior: contain; background: var(--wall-atrium); }
+.work-in { display: grid; grid-template-columns: minmax(0, 1fr) var(--aside-w); gap: var(--space-xl);
+  padding: var(--space-xl) clamp(var(--space-lg), 3vw, var(--space-2xl)) var(--space-2xl); align-items: start; }
+@media (max-width: 1400px) {
+  /* Below the split, the review card would otherwise land after every field in the
+     specimen, so the checks become something you discover last. But hoisting the
+     whole aside also overshot: it landed above the specimen name and the ledger,
+     so the first thing on screen was a checklist for a specimen you had not been
+     shown yet. `display: contents` dissolves the wrapper so the four parts become
+     siblings and can be ordered properly: name, then the papers, then what is left
+     to check, then the content those checks are about. */
+  .work-in { display: flex; flex-direction: column; }
+  .spec-main { display: contents; }
+  .spec-head { order: 1; }
+  .ledger { order: 2; }
+  .aside { order: 3; display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: var(--space-md); }
+  #content { order: 4; }
+}
 
-/* confidence picker */
-.confrow{display:flex; align-items:center; gap: .6rem; margin-top: .3rem;}
-.confdots{display:flex; gap: .4rem;}
-.cdot{width:16px;height:16px;border-radius:50%;background:var(--wall-recess);border:1px solid var(--brass-line);cursor:pointer;transition:background .2s var(--ease),transform .2s var(--ease);}
-.cdot:hover{transform:scale(1.15);}
-.cdot.on{background:var(--vermilion);border-color:var(--vermilion);}
-.conflabel{font-family:"Fragment Mono",monospace;font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;color:var(--bone-faint);}
+.spec-head { margin-bottom: var(--space-lg); }
+.spec-kicker { display: flex; align-items: baseline; gap: var(--space-sm); flex-wrap: wrap; }
+/* Deliberately NOT vermilion, though the Archive sets its plate numbers that way.
+   In this tool vermilion means "nothing behind it"; spending it on an index number
+   that appears on every screen would drain the one signal the desk exists to make
+   loud. The accent stays reserved for the unsourced state. */
+.spec-no { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.2em; color: var(--bone-faint); }
+.spec-vols { display: flex; gap: var(--space-2xs); }
+.vchip { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--bone-faint); border: 1px solid var(--brass-faint); border-radius: 2px; padding: var(--space-2xs) var(--space-2xs); }
+.spec-name { font-family: var(--display); font-size: var(--fs-spec); font-weight: 400;
+  letter-spacing: 0.04em; text-transform: uppercase; line-height: 1.1; margin-top: var(--space-xs); color: var(--bone); }
 
-/* notes + quiz */
-textarea.notes{width:100%; min-height:74px; resize:vertical; background:var(--wall-recess); border:1px solid var(--brass-line); border-radius:2px; color:var(--bone); font-family:"Schibsted Grotesk",sans-serif; font-size:.86rem; padding: .6rem .7rem; line-height:1.5;}
-textarea.notes:focus{outline:1px solid var(--brass); outline-offset:2px; border-color:var(--brass);}
-.quiz{margin-top: var(--space-xs);}
-.quiz button{font-family:"Fragment Mono",monospace; font-size:.6rem; letter-spacing:.1em; text-transform:uppercase; color:var(--bone-faint); background:transparent; border:1px dashed var(--brass-line); border-radius:2px; padding: .45rem .6rem; cursor:pointer; width:100%; text-align:left;}
-.quiz button:hover{color:var(--bone-dim); border-color:var(--brass);}
-.quiz .q{display:none; font-size:.86rem; color:var(--bone-dim); margin-top: var(--space-xs); padding-left: .6rem; border-left:1px solid var(--vermilion);}
-.quiz.show .q{display:block; animation:reveal .3s var(--ease);}
-.quiz.show button{color:var(--vermilion); border-style:solid; border-color:var(--vermilion);}
+/* ── the ledger: the spine of the whole tool ──────────────────────────────
+   Sticky, so it is still on screen when you are three fields deep in the
+   narrative below. Its heading states the relationship plainly rather than
+   leaving the reader to infer which content these papers cover. */
+.ledger {
+  position: sticky; top: 0; z-index: 3;
+  background: var(--wall-panel);
+  border: 1px solid var(--brass-line); border-radius: 3px;
+  padding: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+.ledger.is-unsourced { border-color: var(--st-unsourced); }
+.ledger-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-sm); flex-wrap: wrap; }
+.ledger-title { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.14em; text-transform: uppercase; color: var(--bone-dim); }
+.ledger-note { font-size: var(--fs-text); color: var(--bone-faint); margin-top: var(--space-2xs); max-width: 62ch; }
 
-footer{max-width:1180px; margin: 0 auto; padding: 2rem clamp(1rem,3.5vw,2.4rem) 4rem; border-top:1px solid var(--brass-faint); color:var(--bone-faint); font-size:.78rem;}
-footer .mono{font-size:.62rem; letter-spacing:.1em;}
+.naked {
+  display: flex; align-items: flex-start; gap: var(--space-sm);
+  margin-top: var(--space-sm); padding: var(--space-sm) var(--space-md);
+  background: oklch(62% 0.19 35 / 0.09);
+  border: 1px solid var(--st-unsourced); border-radius: 2px;
+}
+.naked b { color: var(--st-unsourced); font-weight: 500; }
+.naked p { font-size: var(--fs-text); color: var(--bone-read); }
 
-.hidden{display:none !important;}
-@media(prefers-reduced-motion:reduce){*{animation:none !important; transition:none !important;}}
-input[type=file]{display:none;}
+.srcs { display: flex; flex-direction: column; gap: var(--space-xs); margin-top: var(--space-sm); }
+.src {
+  display: grid; grid-template-columns: 1fr auto; gap: var(--space-sm) var(--space-md); align-items: start;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--wall-recess); border: 1px solid var(--brass-faint); border-radius: 2px;
+}
+.src[data-s="conflicting"] { border-color: var(--st-conflict); }
+.src-cite { font-size: var(--fs-text); line-height: 1.5; color: var(--bone-read); }
+.src-cite b { color: var(--bone); font-weight: 500; }
+.src-line2 { display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; margin-top: var(--space-2xs); }
+.src-kind { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.1em; text-transform: uppercase; color: var(--bone-faint); }
+.src-primary { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.1em; text-transform: uppercase; color: var(--vermilion); }
+.slink { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.06em; color: var(--brass); text-decoration: none; border-bottom: 1px solid var(--brass-faint); }
+.slink:hover { color: var(--vermilion); border-bottom-color: var(--vermilion); }
+.src-warn { font-size: var(--fs-text); color: var(--st-conflict); margin-top: var(--space-2xs); }
+.src-ctl { display: flex; flex-direction: column; gap: var(--space-2xs); align-items: stretch; }
+.statrow { display: flex; gap: var(--space-2xs); }
+.stat {
+  appearance: none; cursor: pointer; flex: 1 1 auto;
+  font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--bone-faint); background: transparent;
+  border: 1px solid var(--brass-faint); border-radius: 2px; padding: var(--space-2xs) var(--space-xs);
+  transition: color 0.2s var(--ease), border-color 0.2s var(--ease), background-color 0.2s var(--ease);
+}
+.stat:hover { color: var(--bone-dim); }
+.stat[aria-pressed="true"][data-v="verified"] { color: var(--wall-recess); background: var(--st-verified); border-color: var(--st-verified); }
+.stat[aria-pressed="true"][data-v="provided"] { color: var(--wall-recess); background: var(--st-provided); border-color: var(--st-provided); }
+.stat[aria-pressed="true"][data-v="conflicting"] { color: var(--wall-recess); background: var(--st-conflict); border-color: var(--st-conflict); }
+.src-more { display: flex; gap: var(--space-2xs); }
 
-/* ---------- Sources library ---------- */
-.src-head{display:flex; align-items:baseline; justify-content:space-between; gap: var(--space-md); flex-wrap:wrap;}
-#sourcesSection .srcrow{display:flex; gap: var(--space-md); align-items:flex-start; justify-content:space-between; padding: .7rem .85rem; background:var(--wall-panel); border:1px solid var(--brass-faint); border-radius:3px; margin-bottom: var(--space-xs);}
-.srcrow-cite{font-size:.86rem; color:var(--bone-dim); line-height:1.5;}
-.srcrow-ids{display:flex; gap: .7rem; flex-wrap:wrap; margin-top: .3rem; align-items:center;}
-.srcrow-cited{font-family:"Fragment Mono",monospace; font-size:.56rem; letter-spacing:.08em; text-transform:uppercase; color:var(--bone-faint);}
-.srcform{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap: .6rem; padding: .9rem var(--space-md); background:var(--wall-recess); border:1px solid var(--brass-line); border-radius:3px; margin-bottom: .6rem;}
-.srcfield{display:flex; flex-direction:column; gap: var(--space-2xs);}
-.srcfield.wide{grid-column:1 / -1;}
-.srcfield span{font-family:"Fragment Mono",monospace; font-size:.56rem; letter-spacing:.12em; text-transform:uppercase; color:var(--bone-faint);}
-.srcfield input{background:var(--wall-atrium); border:1px solid var(--brass-line); border-radius:2px; color:var(--bone); font-family:"Schibsted Grotesk",sans-serif; font-size:.84rem; padding: .45rem .55rem;}
-.srcfield input:focus{outline:1px solid var(--brass); outline-offset:1px; border-color:var(--brass);}
-.srcform-actions{grid-column:1 / -1; display:flex; gap: var(--space-xs);}
-.srcform select{background:var(--wall-atrium); border:1px solid var(--brass-line); border-radius:2px; color:var(--bone); font-family:"Schibsted Grotesk",sans-serif; font-size:.84rem; padding: .45rem .55rem;}
-.srcform select:focus{outline:1px solid var(--brass); outline-offset:1px; border-color:var(--brass);}
+/* the add-a-source combobox, used at receptor level and inside every binding */
+.combo { position: relative; margin-top: var(--space-sm); }
+.combo input {
+  width: 100%; font-family: var(--body); font-size: var(--fs-text); color: var(--bone);
+  background: var(--wall-recess); border: 1px dashed var(--brass-line); border-radius: 2px; padding: var(--space-xs) var(--space-sm);
+}
+.combo input:focus { outline: none; border-style: solid; border-color: var(--brass); }
+.combo input::placeholder { color: var(--bone-faint); }
+.menu {
+  position: absolute; left: 0; right: 0; top: calc(100% + 3px); z-index: 20;
+  background: var(--wall-panel); border: 1px solid var(--brass); border-radius: 2px;
+  max-height: 17rem; overflow-y: auto;
+  /* Scaled to a dropdown, not borrowed from the dialog. A 60px blur under a
+     200px menu is the thin-border-wide-shadow tell. */
+  box-shadow: 0 8px 20px oklch(0% 0 0 / 0.5);
+}
+.opt {
+  display: block; width: 100%; text-align: left; appearance: none; cursor: pointer;
+  background: transparent; border: 0; border-bottom: 1px solid var(--brass-faint);
+  padding: var(--space-xs) var(--space-sm); color: var(--bone-read); font-family: var(--body); font-size: var(--fs-text);
+}
+.opt:hover, .opt:focus-visible { background: oklch(93% 0.012 85 / 0.07); color: var(--bone); }
+.opt .src-kind { margin-right: var(--space-xs); }
+.opt.new { color: var(--brass); }
 
-/* ---------- Structured-data edit mode ---------- */
-.struct{margin-top: 1.2rem; border-top:1px solid var(--brass-faint); padding-top: var(--space-md); position:relative;}
-.struct-toggle{font-family:"Fragment Mono",monospace; font-size:.62rem; letter-spacing:.1em; text-transform:uppercase; color:var(--bone-faint); background:transparent; border:1px dashed var(--brass-line); border-radius:2px; padding: .45rem .7rem; cursor:pointer;}
-.struct-toggle:hover{color:var(--bone-dim); border-color:var(--brass);}
-.struct-body{margin-top: var(--space-md); display:flex; flex-direction:column; gap: 1.1rem;}
-.struct-sec .pk{font-family:"Fragment Mono",monospace; font-size:.58rem; letter-spacing:.14em; text-transform:uppercase; color:var(--vermilion); margin-bottom: var(--space-xs);}
-.struct-field{display:flex; flex-direction:column; gap: var(--space-2xs); margin-bottom: .6rem;}
-.struct-field > span{font-family:"Fragment Mono",monospace; font-size:.55rem; letter-spacing:.1em; text-transform:uppercase; color:var(--bone-faint);}
-.struct-field textarea, .struct-field input{width:100%; background:var(--wall-recess); border:1px solid var(--brass-line); border-radius:2px; color:var(--bone); font-family:"Schibsted Grotesk",sans-serif; font-size:.84rem; padding: var(--space-xs) .6rem; line-height:1.5; resize:vertical;}
-.struct-field textarea:focus, .struct-field input:focus{outline:1px solid var(--brass); border-color:var(--brass);}
-/* specimen binding rows: each Ki beside its source (receptor-first provenance) */
-.sbind-list{display:flex; flex-direction:column;}
-.sbind{padding: .7rem 0; border-bottom:1px solid var(--brass-faint);}
-.sbind:last-child{border-bottom:none; padding-bottom: .1rem;}
-.sbind-head{display:flex; align-items:center; gap: var(--space-xs); flex-wrap:wrap;}
-.sbind-head b{font-size:.86rem; color:var(--bone);}
-.sbind-act{font-size:.62rem; color:var(--bone-faint);}
-.sbind-in{display:inline-flex; align-items:center; gap: .35rem; font-family:"Fragment Mono",monospace; font-size:.55rem; letter-spacing:.06em; text-transform:uppercase; color:var(--bone-faint);}
-.sbind-in.wide{flex:1 1 12rem; min-width:8rem;}
-.sbind-in input{background:var(--wall-recess); border:1px solid var(--brass-line); border-radius:2px; color:var(--bone); font-family:"Fragment Mono",monospace; font-size:.72rem; padding: .28rem .4rem; width:4.5rem;}
-.sbind-in.wide input{width:100%; font-family:"Schibsted Grotesk",sans-serif; text-transform:none; letter-spacing:normal;}
-.sbind-in input:focus{outline:1px solid var(--brass); border-color:var(--brass);}
-.sbind-pki{font-family:"Fragment Mono",monospace; font-size:.72rem; color:var(--brass); letter-spacing:.03em;}
-.sbind-head .dot{align-self:center;}
-.sbind-prov{margin: var(--space-xs) 0 0 1.1rem; padding-left: .9rem; border-left:1px solid var(--brass-faint);}
-.sbind-sources{margin-bottom: .4rem;}
-.struct-saved{position:absolute; top:1rem; right:0; font-family:"Fragment Mono",monospace; font-size:.55rem; letter-spacing:.1em; text-transform:uppercase; color:var(--status-verified); opacity:0; transition:opacity .3s var(--ease);}
-.struct-saved.show{opacity:1;}
+.srcform { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-sm); margin-top: var(--space-sm);
+  padding: var(--space-md); background: var(--wall-recess); border: 1px solid var(--brass); border-radius: 2px; }
+.srcform .wide { grid-column: 1 / -1; }
+.ffield { display: flex; flex-direction: column; gap: var(--space-2xs); }
+.ffield > span { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.1em; text-transform: uppercase; color: var(--bone-faint); }
+.ffield input, .ffield select {
+  font-family: var(--body); font-size: var(--fs-text); color: var(--bone);
+  background: var(--wall-vault); border: 1px solid var(--brass-line); border-radius: 2px; padding: var(--space-xs) var(--space-xs);
+}
+.ffield input:focus, .ffield select:focus { outline: none; border-color: var(--brass); }
+.fact { grid-column: 1 / -1; display: flex; gap: var(--space-xs); }
 
-/* ---------- Sync & cross-reference panel ---------- */
-.datesline{display:flex; flex-direction:column; gap: .3rem; margin-bottom: .7rem;}
-.dl-row{display:flex; justify-content:space-between; gap: .7rem; font-family:"Fragment Mono",monospace; font-size:.62rem;}
-.dl-row > span{color:var(--bone-faint); letter-spacing:.1em; text-transform:uppercase;}
-.dl-row > b{color:var(--bone-dim); font-weight:400;}
-.drift-flag{font-family:"Fragment Mono",monospace; font-size:.58rem; letter-spacing:.08em; text-transform:uppercase; color:var(--status-conflict); margin-top: .2rem;}
-.deeplinks{display:flex; flex-wrap:wrap; gap: .4rem;}
-.deeplink{font-family:"Fragment Mono",monospace; font-size:.6rem; letter-spacing:.08em; text-transform:uppercase; color:var(--bone-faint); background:transparent; border:1px solid var(--brass-line); border-radius:2px; padding: .4rem .55rem; cursor:pointer; transition:color .2s var(--ease), border-color .2s var(--ease);}
-.deeplink:hover{color:var(--vermilion); border-color:var(--vermilion);}
+/* ═══════════ content sections ═══════════ */
+.sec { margin-bottom: var(--space-xl); }
+.sec-head { display: flex; align-items: baseline; gap: var(--space-sm); padding-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--brass-faint); margin-bottom: var(--space-md); }
+.sec-title { font-family: var(--display); font-size: var(--fs-title); letter-spacing: 0.06em; text-transform: uppercase; color: var(--bone); }
+.sec-vol { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.12em; text-transform: uppercase; color: var(--bone-faint); }
+.sec-saved { margin-left: auto; font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--st-verified); opacity: 0; transition: opacity 0.3s var(--ease); }
+.sec-saved.show { opacity: 1; }
 
-/* ---------- Expanded-row layout: clear tiers ---------- */
-/* PRIMARY: the examine task (claim + checks) leads, with breathing room. */
-.examine .subchecks{margin-top: var(--space-md);}
-/* EVIDENCE: one grouped panel; Stahl + source are sub-sections split by a hairline,
-   not two separate cards. */
-.panel .sub + .sub{margin-top: var(--space-md); padding-top: var(--space-md); border-top:1px solid var(--brass-faint);}
-.pk-sub{font-family:"Fragment Mono",monospace; font-size:.56rem; letter-spacing:.12em; text-transform:uppercase; color:var(--bone-faint); margin-bottom: .45rem;}
-.picklabel{font-family:"Fragment Mono",monospace; font-size:.58rem; letter-spacing:.08em; text-transform:uppercase; color:var(--bone-faint);}
-/* META: edited/reviewed dates + cross-volume links as a quiet full-width footer, not a
-   fourth equal-weight card. */
-.meta-strip{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap: .6rem 1.4rem; margin-top: 1.2rem; padding-top: .85rem; border-top:1px solid var(--brass-faint);}
-.meta-strip .datesline{flex-direction:row; flex-wrap:wrap; align-items:center; gap: .4rem 1.4rem; margin-bottom: 0;}
-.meta-strip .dl-row{justify-content:flex-start; gap: .45rem;}
-.meta-strip .drift-flag{margin-top: 0;}
-.meta-strip .deeplinks{margin-left: auto;}
+.field { margin-bottom: var(--space-md); }
+.field > label { display: block; font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--bone-faint); margin-bottom: var(--space-2xs); }
+.field textarea, .field input[type="text"] {
+  width: 100%; font-family: var(--body); font-size: var(--fs-text); line-height: 1.6; color: var(--bone-read);
+  background: var(--wall-recess); border: 1px solid var(--brass-faint); border-radius: 2px;
+  padding: var(--space-xs) var(--space-sm); resize: vertical;
+  transition: border-color 0.2s var(--ease), background-color 0.2s var(--ease);
+}
+.field textarea:hover, .field input[type="text"]:hover { border-color: var(--brass-line); }
+.field textarea:focus, .field input[type="text"]:focus { outline: none; border-color: var(--brass); background: var(--wall-vault); color: var(--bone); }
+.fhint { font-size: var(--fs-text); color: var(--bone-faint); margin-top: var(--space-2xs); }
 
-/* ---------- How-to guide + status legend ---------- */
-.howto{display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap: 1.4rem 2.2rem; align-items:start;}
-@media(max-width:760px){.howto{grid-template-columns:1fr;}}
-.steps{margin: 0; padding-left: 1.4rem; display:flex; flex-direction:column; gap: .65rem;}
-.steps li{color:var(--bone-dim); font-size:.9rem; line-height:1.55;}
-.steps li::marker{color:var(--vermilion); font-family:"Fragment Mono",monospace; font-size:.8em;}
-.steps b{color:var(--bone); font-weight:500;}
-.legend{background:var(--wall-panel); border:1px solid var(--brass-faint); border-radius:3px; padding: var(--space-md) 1.1rem;}
-.legend-grid{display:flex; flex-direction:column; gap: .55rem; margin-top: .7rem;}
-.legend-grid > div{font-size:.8rem; color:var(--bone-faint); line-height:1.45;}
-.legend-grid .schip{margin-right: var(--space-xs); vertical-align:middle;}
-/* Evidence annotations + citation-status caption */
-.forcheck{font-family:"Fragment Mono",monospace; font-size:.5rem; letter-spacing:.08em; text-transform:uppercase; color:var(--vermilion); border:1px solid var(--brass-faint); border-radius:2px; padding: .1rem .3rem; margin-left: .45rem; white-space:nowrap;}
-.cite-caption{font-size:.74rem; color:var(--bone-faint); line-height:1.45; margin: .7rem 0 .4rem;}
-/* Expand/collapse affordance: a caret after each specimen name */
-.spec-id .nm::after{content:"▾"; display:inline-block; margin-left: var(--space-xs); font-size:.6em; color:currentColor; opacity:.45; transition:transform .25s var(--ease), opacity .2s var(--ease);}
-.spec:hover .nm::after{opacity:.85;}
-.spec.open .nm::after{transform:rotate(180deg);}
+/* ── bindings ──────────────────────────────────────────────────────────────
+   D2 has 55 of these. Rendered as 55 full cards it came to twelve thousand
+   pixels of identical blocks: the exact "identical card grid" the design system
+   bans, and useless for the actual question, which is "which of these have no
+   paper behind them". So the default is one scannable line each, sorted by the
+   data, with the provenance controls one click away on the row that needs them. */
+.bindbar { display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap; margin-bottom: var(--space-sm); }
 
-/* ---------- Sources & citations = the unified action panel ---------- */
-/* Every cited source — peer-reviewed article or Stahl chapter alike — is one row
-   in this list; none gets a separate, more-important card (Citation/verification
-   redesign: Stahl is not emphasized over any other source). */
-.panel-sources{border-color:var(--brass-line); box-shadow:inset 0 1px 0 var(--brass-faint);}
-.panel-sources .cite-caption{margin-top: .2rem; color:var(--bone-dim);}
-.src-rows{display:flex; flex-direction:column; gap: .55rem; margin-top: .7rem;}
-.srow{display:flex; flex-direction:column; gap: var(--space-xs); padding: .7rem .8rem; background:var(--wall-recess); border:1px solid var(--brass-faint); border-radius:3px;}
-.srow-top{display:flex; align-items:center; gap: .4rem;}
-.srow-kind{font-family:"Fragment Mono",monospace; font-size:.54rem; letter-spacing:.1em; text-transform:uppercase; color:var(--bone-faint); border:1px solid var(--brass-line); border-radius:2px; padding: .12rem .35rem;}
-.srow-primary-badge{font-family:"Fragment Mono",monospace; font-size:.54rem; letter-spacing:.1em; text-transform:uppercase; color:var(--vermilion); border:1px solid var(--vermilion); border-radius:2px; padding: .12rem .35rem;}
-.srow-actions{display:flex; gap: .4rem; flex-wrap:wrap;}
-.srow-actions .ctrl{padding: .32rem .55rem; font-size:.56rem;}
-.src-add{margin-top: .8rem; padding-top: .7rem; border-top:1px solid var(--brass-faint);}
-.src-add-combo{position:relative;}
-.src-add-input{width:100%; background:var(--wall-recess); border:1px solid var(--brass-line); border-radius:2px; color:var(--bone); font-family:"Schibsted Grotesk",sans-serif; font-size:.84rem; padding: .55rem .65rem;}
-.src-add-input:focus{outline:1px solid var(--brass); border-color:var(--brass);}
-.src-add-menu{position:relative; margin-top: .35rem; display:flex; flex-direction:column; gap: var(--space-2xs); max-height:15rem; overflow-y:auto;}
-.src-add-opt{display:block; width:100%; text-align:left; background:var(--wall-recess); border:1px solid var(--brass-faint); border-radius:2px; color:var(--bone-dim); font-size:.8rem; padding: .45rem .6rem; cursor:pointer; transition:border-color .2s var(--ease), color .2s var(--ease);}
-.src-add-opt:hover{border-color:var(--brass); color:var(--bone);}
-.src-add-opt .srow-kind{margin-right: .4rem;}
-.src-add-opt.src-add-new{color:var(--vermilion); border-style:dashed; border-color:var(--brass-line);}
-.src-add-opt.src-add-new:hover{border-color:var(--vermilion);}
+.bind { border-bottom: 1px solid var(--brass-faint); background: transparent; }
+.bind:first-child { border-top: 1px solid var(--brass-faint); }
+.brow {
+  display: grid; grid-template-columns: 9px minmax(6rem, 1fr) auto auto 1.2rem;
+  align-items: center; gap: var(--space-sm);
+  width: 100%; text-align: left; appearance: none; background: transparent; border: 0; cursor: pointer;
+  padding: 0.5rem var(--space-xs); color: inherit; font: inherit;
+  transition: background-color 0.2s var(--ease);
+}
+.brow:hover { background: oklch(93% 0.012 85 / 0.04); }
+.bind.is-unsourced .brow { background: oklch(62% 0.19 35 / 0.07); }
+.bind-agent { font-family: var(--display); font-size: var(--fs-text); letter-spacing: 0.02em; color: var(--bone-dim);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bind.is-open .bind-agent, .brow:hover .bind-agent { color: var(--bone); }
+.bind-pki { font-family: var(--mono); font-size: var(--lbl); color: var(--brass); white-space: nowrap; }
+.bind-src { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.04em; color: var(--bone-faint);
+  max-width: 16rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bind.is-unsourced .bind-src { color: var(--st-unsourced); }
+.bchev { font-family: var(--mono); font-size: var(--lbl); color: var(--bone-faint); transition: rotate 0.25s var(--ease); }
+.bind.is-open .bchev { rotate: 90deg; }
 
-/* ---------- Binding affinities section ---------- */
-#bindingSection{margin-top: 2.5rem;}
-.bind-intro{font-size:.84rem;color:var(--bone-dim);line-height:1.6;max-width:70ch;margin: var(--space-xs) 0 1.1rem;}
-.bind-intro b{color:var(--bone);font-weight:400;}
-.bind-search{background:var(--wall-recess);border:1px solid var(--brass-line);border-radius:2px;color:var(--bone);font-family:"Fragment Mono",monospace;font-size:.64rem;letter-spacing:.04em;padding: .4rem .55rem;min-width:9rem;}
-.bind-search::placeholder{color:var(--bone-faint);text-transform:uppercase;letter-spacing:.08em;}
-.bind-search:focus{outline:1px solid var(--brass);border-color:var(--brass);}
-.struct-hint{font-size:.76rem;color:var(--bone-faint);line-height:1.5;margin: 0 0 .6rem;max-width:66ch;}
-.bind-summary{display:flex;gap: var(--space-xs);flex-wrap:wrap;margin: .8rem 0 1.4rem;}
-.bind-subhead{font-family:"Fragment Mono",monospace;font-size:.62rem;letter-spacing:.09em;text-transform:uppercase;color:var(--brass);margin: 1.4rem 0 var(--space-xs);}
-.bsrc-row{display:grid;grid-template-columns:1fr auto auto;gap: var(--space-md);align-items:center;padding: .6rem .1rem;border-bottom:1px solid var(--brass-faint);}
-.bsrc-cite{font-size:.86rem;color:var(--bone-dim);}
-.bsrc-count{font-family:"Fragment Mono",monospace;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--bone-faint);white-space:nowrap;}
-/* by-drug: expandable ledger rows, no side-stripe (tonal + hairline, per the Cabinet system) */
-#bindRail{margin: 1.4rem 0 .4rem;position:static;}
-.bdrug{border-bottom:1px solid var(--brass-faint);}
-.bdrug-head{display:flex;align-items:center;gap: .55rem;padding: .7rem .1rem;cursor:pointer;transition:background .2s var(--ease);}
-.bdrug-head:hover{background:var(--wall-panel);}
-.bdrug-head::before{content:"\203A";font-family:"Fragment Mono",monospace;color:var(--brass);font-size:.9rem;line-height:1;width:.7rem;text-align:center;transition:transform .2s var(--ease);}
-.bdrug.open .bdrug-head::before{transform:rotate(90deg);}
-.bdrug-head b{font-size:.95rem;color:var(--bone);letter-spacing:.01em;}
-.bdrug-n{font-family:"Fragment Mono",monospace;font-size:.6rem;letter-spacing:.06em;text-transform:uppercase;color:var(--bone-faint);margin-left: auto;}
-.bdrug-body{display:none;padding: .2rem .1rem .9rem 1.65rem;}
-.bdrug.open .bdrug-body{display:block;}
-.bbind{padding: .65rem 0;border-bottom:1px solid var(--brass-faint);}
-.bbind:last-child{border-bottom:none;padding-bottom: .2rem;}
-.bbind-head{display:flex;align-items:baseline;gap: .55rem;flex-wrap:wrap;}
-.bbind-head .dot{align-self:center;}
-.bbind-ki{font-family:"Fragment Mono",monospace;font-size:.72rem;color:var(--brass);}
-.bbind-act{font-size:.8rem;color:var(--bone-faint);}
-.bbind-sources{margin: .55rem 0;}
-.valctl{display:flex;gap: .3rem;margin-top: .55rem;align-items:center;flex-wrap:wrap;}
-.valctl-lab{font-family:"Fragment Mono",monospace;font-size:.55rem;letter-spacing:.08em;text-transform:uppercase;color:var(--bone-faint);margin-right: .15rem;}
-.cs[data-vact="confirmed"].on{background:var(--status-verified);color:var(--wall-recess);border-color:var(--status-verified);}
-.cs[data-vact="mismatch"].on{background:var(--status-conflict);color:var(--wall-recess);border-color:var(--status-conflict);}
-.cs[data-vact="unchecked"].on{background:var(--wall-recess);color:var(--bone-dim);border-color:var(--brass-line);}
+.bind-prov { padding: var(--space-sm) var(--space-xs) var(--space-md); border-top: 1px dashed var(--brass-faint); }
+.bind-edit { display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap; margin-bottom: var(--space-sm); }
+.bind-in { display: flex; align-items: center; gap: var(--space-xs); font-family: var(--mono); font-size: var(--lbl);
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--bone-faint); }
+.bind-in input { font-family: var(--mono); font-size: var(--fs-text); color: var(--bone); text-transform: none; letter-spacing: normal;
+  background: var(--wall-vault); border: 1px solid var(--brass-line); border-radius: 2px; padding: var(--space-2xs) var(--space-xs); width: 7rem; }
+.bind-in.wide { flex: 1 1 12rem; }
+.bind-in.wide input { width: 100%; }
+.bind-in input:focus { outline: none; border-color: var(--brass); }
+.bind-val { display: flex; align-items: center; gap: var(--space-xs); margin-top: var(--space-sm); flex-wrap: wrap; }
+.bind-val-lab { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.1em; text-transform: uppercase; color: var(--bone-faint); }
+
+/* ═══════════ the review aside ═══════════ */
+.aside { position: sticky; top: 0; display: flex; flex-direction: column; gap: var(--space-lg); }
+@media (max-width: 1400px) { .aside { position: static; } }
+@media (max-width: 620px) { .aside { grid-template-columns: 1fr; } }
+.card { background: var(--wall-panel); border: 1px solid var(--brass-line); border-radius: 3px; padding: var(--space-md); }
+.card > h3 { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--bone-dim); font-weight: 400; margin-bottom: var(--space-sm); }
+
+.check { display: grid; grid-template-columns: 1.1rem 1fr; gap: var(--space-xs); align-items: start;
+  width: 100%; text-align: left; appearance: none; background: transparent; border: 0; cursor: pointer;
+  padding: var(--space-xs) 0; color: inherit; font: inherit; border-bottom: 1px solid var(--brass-faint); }
+.check:last-of-type { border-bottom: 0; }
+.check .box { width: 1.1rem; height: 1.1rem; border: 1px solid var(--brass-line); border-radius: 2px;
+  display: grid; place-content: center; transition: background-color 0.2s var(--ease), border-color 0.2s var(--ease); }
+.check .box::after { content: "✓"; font-size: var(--fs-text); color: var(--wall-recess); opacity: 0; transition: opacity 0.2s var(--ease); }
+.check[aria-pressed="true"] .box { background: var(--st-verified); border-color: var(--st-verified); }
+.check[aria-pressed="true"] .box::after { opacity: 1; }
+.check-t { font-size: var(--fs-text); color: var(--bone-dim); }
+.check[aria-pressed="true"] .check-t { color: var(--bone); }
+.check-h { font-size: var(--fs-text); color: var(--bone-dim); line-height: 1.45; margin-top: var(--space-2xs); }
+.check-n { display: block; font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.06em;
+  color: var(--st-unsourced); margin-top: var(--space-2xs); }
+.check[aria-pressed="true"] .check-n { color: var(--bone-faint); }
+
+.mastery { display: flex; align-items: center; gap: var(--space-2xs); }
+.mdot { appearance: none; cursor: pointer; width: 1.4rem; height: 1.4rem; padding: 0;
+  background: transparent; border: 1px solid var(--brass-line); border-radius: 2px;
+  transition: background-color 0.2s var(--ease), border-color 0.2s var(--ease); }
+.mdot.on { background: var(--brass); border-color: var(--brass); }
+.mlabel { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.1em; text-transform: uppercase; color: var(--bone-faint); margin-left: var(--space-xs); }
+.notes { width: 100%; margin-top: var(--space-sm); font-family: var(--body); font-size: var(--fs-text); color: var(--bone-read);
+  background: var(--wall-recess); border: 1px solid var(--brass-faint); border-radius: 2px; padding: var(--space-xs) var(--space-sm); resize: vertical; }
+.notes:focus { outline: none; border-color: var(--brass); }
+
+.dates { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.06em; color: var(--bone-faint); line-height: 1.8; }
+.dates b { color: var(--bone-dim); font-weight: 400; }
+.drift { color: var(--st-conflict); }
+.golinks { display: flex; flex-direction: column; gap: var(--space-2xs); }
+
+/* ═══════════ sheets (library, help) ═══════════ */
+.veil { position: fixed; inset: 0; z-index: 60; background: oklch(10% 0.008 75 / 0.84); display: grid; place-items: center; padding: var(--space-lg); }
+.veil[hidden] { display: none; }
+.sheet { width: min(64rem, 100%); max-height: 86vh; display: flex; flex-direction: column;
+  background: var(--wall-panel); border: 1px solid var(--brass); border-radius: 3px; box-shadow: var(--shadow-overlay); }
+.sheet-head { flex: none; display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg); border-bottom: 1px solid var(--brass-line); background: oklch(0% 0 0 / 0.12); }
+.sheet-head h2 { font-family: var(--display); font-size: var(--fs-title); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 400; }
+.sheet-body { overflow-y: auto; padding: var(--space-lg); min-height: 0; }
+.sheet-body p { max-width: 68ch; color: var(--bone-read); margin-bottom: var(--space-sm); }
+.sheet-body h3 { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--brass); margin: var(--space-lg) 0 var(--space-xs); font-weight: 400; }
+.sheet-body ol, .sheet-body ul { margin: 0 0 var(--space-sm) 1.1rem; color: var(--bone-read); }
+.sheet-body li { margin-bottom: var(--space-xs); max-width: 66ch; }
+.keyrow { display: flex; align-items: baseline; gap: var(--space-sm); margin-bottom: var(--space-xs); }
+.keyrow .sdot { translate: 0 -1px; }
+.keyrow span:last-child { font-size: var(--fs-text); color: var(--bone-read); }
+
+.libitem { border-bottom: 1px solid var(--brass-faint); padding: var(--space-sm) 0; }
+.libitem:last-child { border-bottom: 0; }
+.libgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: var(--space-sm); margin-top: var(--space-xs); }
+.libuse { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.08em; color: var(--bone-faint); }
+
+.toast { position: fixed; left: 50%; bottom: var(--space-lg); translate: -50% 0; z-index: 80;
+  font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.1em; text-transform: uppercase;
+  background: var(--wall-panel); color: var(--bone); border: 1px solid var(--brass); border-radius: 2px;
+  padding: var(--space-xs) var(--space-md); opacity: 0; pointer-events: none; transition: opacity 0.3s var(--ease), translate 0.3s var(--ease); }
+.toast.show { opacity: 1; translate: -50% -6px; }
+.toast.bad { border-color: var(--st-conflict); color: var(--st-conflict); }
+
+.hidden { display: none !important; }
+
+/* ═══════════ viewport-fit shell ═══════════
+   Same contract as the Cabinet: above the stacking breakpoint the document does
+   not scroll, the queue and the work pane each scroll in their own box, and
+   below it the lock lifts so a phone gets one honest page scroll. */
+@media (min-width: 941px) {
+  body { height: 100svh; display: flex; flex-direction: column; overflow: hidden; }
+}
+@media (max-width: 940px) {
+  .bench { grid-template-columns: 1fr; }
+  .queue { border-right: 0; border-bottom: 1px solid var(--brass-line); max-height: 44svh; }
+  .work-in { grid-template-columns: minmax(0, 1fr); padding: var(--space-lg) var(--space-md); }
+  .ledger { position: static; }
+  .mast { flex-wrap: wrap; }
+  .tally { order: 3; width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.001s !important; animation-duration: 0.001s !important; }
+}
 </style>
 </head>
 <body>
 
-<header class="mast" id="mast">
-  <a class="brand" href="the-receptor-atlas.html" title="Return to the Atlas">
-    <span class="tick"></span>
+<a class="skip" href="#work">Skip the queue, go to the specimen</a>
+
+<header class="mast">
+  <a class="brand" href="the-receptor-atlas.html" title="Back to the Atlas">
+    <span class="tick" aria-hidden="true"></span>
     <span class="wm">The Conservator&rsquo;s Desk</span>
-    <span class="sub">Atlas Review &middot; Accuracy &amp; Mastery</span>
   </a>
+
+  <div class="tally">
+    <div class="tally-bar" role="img" aria-label="Share of specimens with at least one source"><i id="tallyBar"></i></div>
+    <span class="tally-text" id="tallyText">loading&hellip;</span>
+    <span class="pending" id="pending" hidden>saving</span>
+  </div>
+
   <div class="mast-tools">
-    <button class="ctrl" id="expandAll">Expand all</button>
-    <button class="ctrl" id="collapseAll">Collapse all</button>
-    <button class="ctrl" id="exportBtn">Export ⤓</button>
-    <button class="ctrl" id="importBtn">Import ⤒</button>
-    <input type="file" id="importFile" accept="application/json" aria-label="Import JSON file" />
-    <button class="ctrl accent" id="resetBtn">Reset</button>
+    <button class="btn quiet" id="helpBtn">How this works</button>
+    <button class="btn quiet" id="libBtn">Source library</button>
+    <button class="btn quiet" id="exportBtn">Export</button>
+    <button class="btn quiet" id="importBtn">Import</button>
+    <input type="file" id="importFile" accept="application/json" class="hidden" aria-label="Import a review JSON file" />
   </div>
 </header>
 
-<nav class="desk-tabs" id="deskTabs" aria-label="Desk sections">
-  <a href="#sec-overview" data-tab="sec-overview" class="active">Overview</a>
-  <a href="#sec-specimens" data-tab="sec-specimens">Specimens</a>
-  <a href="#sourcesSection" data-tab="sourcesSection">Sources</a>
-  <a href="#bindingSection" data-tab="bindingSection">Binding affinities</a>
-</nav>
-
-<main>
-  <div class="desk-anchor" id="sec-overview"></div>
-  <section class="lead">
-    <span class="eyebrow">A working protocol for verifying The Receptor Atlas</span>
-    <h1>Authenticate every specimen<br/>before it goes on the wall</h1>
-    <p>This desk holds the accuracy review for the three volumes of the Atlas &mdash; <i>The Receptor Cabinet</i>, <i>The Clinical Ledger</i>, and <i>The Receptor Archive</i>. Each of the <b id="rcount">24</b> receptor specimens is examined against four checks, cross-referenced to a specific locus in <i>Stahl&rsquo;s Essential Psychopharmacology</i> (5th ed., 2021) and a peer-reviewed source, and rated for your own command of the material.</p>
-    <p style="color:var(--bone-faint); font-size:.86rem;">Work the halls in order &mdash; dopamine first, then serotonin, noradrenaline, glutamate &amp; GABA, and the neuromodulators. The sequence builds the conceptual scaffolding the way the systems build on one another. Every change you make is saved to the shared atlas database instantly &mdash; the atlas volumes read from the same record.</p>
-  </section>
-
-  <!-- DASHBOARD -->
-  <section>
-    <div class="dash">
-      <div>
-        <span class="eyebrow">Overall completion</span>
-        <div class="ring-wrap" style="margin-top:.8rem;">
-          <div class="ring">
-            <svg width="148" height="148" viewBox="0 0 148 148">
-              <circle cx="74" cy="74" r="64" fill="none" stroke="var(--wall-recess)" stroke-width="10"/>
-              <circle id="ringArc" cx="74" cy="74" r="64" fill="none" stroke="var(--vermilion)" stroke-width="10" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/>
-            </svg>
-            <div class="pct"><b id="ringPct">0%</b><span>reviewed</span></div>
-          </div>
-          <div class="tallies">
-            <div class="tally"><b id="tSpec">0</b><span>of 24 specimens cleared</span></div>
-            <div class="tally"><b id="tCheck">0</b><span>of 96 checks done</span></div>
-            <div class="tally"><b id="tConf">0.0</b><span>mean mastery / 5</span></div>
-          </div>
-        </div>
-        <div class="statline" id="citeTally"></div>
-      </div>
-      <div>
-        <span class="eyebrow">Progress by neurotransmitter system</span>
-        <div class="halls-prog" id="hallsProg" style="margin-top:.9rem;"></div>
-      </div>
+<div class="bench">
+  <aside class="queue" aria-label="Specimen queue">
+    <div class="queue-head">
+      <input type="search" id="qsearch" class="qsearch" placeholder="Find a receptor" aria-label="Find a receptor by name" autocomplete="off" />
+      <div class="qfilters" id="qfilters" role="group" aria-label="Filter the queue"></div>
     </div>
-  </section>
+    <div class="queue-list" id="queueList"></div>
+  </aside>
 
-  <!-- PROTOCOL -->
-  <section>
-    <span class="eyebrow">The review protocol &mdash; what each pass examines</span>
-    <div class="proto" style="margin-top:.9rem;">
-      <div class="cell"><div class="n">CHECK 01</div><h3>Mechanism</h3><p>Is the molecular story right? Ionotropic vs metabotropic, the G-protein (Gi / Gs / Gq) or channel, location (pre- vs post-synaptic, auto- vs heteroreceptor), and direction of effect.</p></div>
-      <div class="cell"><div class="n">CHECK 02</div><h3>Affinity / pKi data</h3><p>Do the binding values and the agonist / antagonist / partial labels in the affinity plate match a real source? Confirm relative potencies and that the rose / matrix encodes them correctly.</p></div>
-      <div class="cell"><div class="n">CHECK 03</div><h3>Clinical claim</h3><p>Does receptor &rarr; action &rarr; presentation hold? Cross-check the mapping against Stahl Table 2-4 (receptors) / 2-5 (transporters) and the clinical chapters.</p></div>
-      <div class="cell"><div class="n">CHECK 04</div><h3>Citation</h3><p>Does each cited source actually support the claim? Set every source&rsquo;s status &mdash; verified, provided, or conflicting. A receptor with no sources attached yet reads as needs-source.</p></div>
+  <main class="work" id="work" tabindex="-1">
+    <div class="work-in" id="workIn">
+      <div class="qempty">Loading the collection&hellip;</div>
     </div>
-  </section>
+  </main>
+</div>
 
-  <!-- HOW TO USE -->
-  <section>
-    <span class="eyebrow">How to work a specimen</span>
-    <div class="howto" style="margin-top:.9rem;">
-      <ol class="steps">
-        <li><b>Open a specimen.</b> Click any row in the halls below; it expands to reveal the review controls.</li>
-        <li><b>Work the four checks.</b> Tick <i>Mechanism</i>, <i>Affinity</i>, <i>Clinical claim</i>, and <i>Citation</i> as you confirm each. The <b>Sources &amp; citations</b> panel in the open row lists every source attached to this receptor &mdash; articles and Stahl chapters alike &mdash; for the Citation check.</li>
-        <li><b>Settle the sources.</b> Add a source by typing into the box &mdash; pick a match from the library or create a new one inline &mdash; then set each source&rsquo;s <b>status</b> (key below). One source can be marked <i>primary</i>; that&rsquo;s the citation the atlas volumes display.</li>
-        <li><b>Rate &amp; note.</b> Set your mastery (1&ndash;5) and record any discrepancy. Use the filters above the halls to jump to what&rsquo;s <i>flagged</i> or <i>changed</i>.</li>
+<div class="veil" id="helpVeil" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="sheet-head">
+      <h2 id="helpTitle">How this works</h2>
+      <button class="btn quiet" data-close="helpVeil">Close</button>
+    </div>
+    <div class="sheet-body">
+      <p><b>Nothing goes on the wall without a paper behind it.</b> That is the whole job. Every specimen in the atlas should rest on at least one source you have actually read, and this desk exists to get each one there and keep it there.</p>
+
+      <h3>The loop</h3>
+      <ol>
+        <li><b>Pick a specimen</b> from the queue. Filter to <i>Unsourced</i> to see the ones with nothing behind them at all; those are the real backlog.</li>
+        <li><b>Read the ledger</b> at the top of the specimen. Those papers back the claim, the narrative, and the clinical row below them. If it is empty the specimen says so in vermilion, and there is a PubMed search seeded with the receptor's own terms.</li>
+        <li><b>Attach a source.</b> Type an author, a title, or a PMID: matches from the shared library appear as you type, or create a new record inline. Edit a paper once in the library and every specimen citing it updates.</li>
+        <li><b>Set each source's status</b> as you check it. Then work the content below, edit anything that is wrong, and tick the four checks in the review card.</li>
       </ol>
-      <div class="legend">
-        <span class="eyebrow">Citation status &mdash; what each means</span>
-        <div class="legend-grid">
-          <div><span class="schip"><span class="dot good"></span>verified</span> You confirmed the source supports the claim and its identifier resolves.</div>
-          <div><span class="schip"><span class="dot brass"></span>provided</span> Carried from the atlas, not yet independently re-checked.</div>
-          <div><span class="schip"><span class="dot warn"></span>conflicting</span> A source is wrong or disputed &mdash; any one conflicting source flags the whole receptor.</div>
-          <div><span class="schip"><span class="dot info"></span>needs-source</span> The receptor has no sources attached at all yet &mdash; a receptor-level state, not a per-source one.</div>
-        </div>
-      </div>
-    </div>
-  </section>
+      <p>Every edit saves to the atlas database as you type, and the three volumes read from that same record. There is no publish step.</p>
 
-  <!-- SEED FINDINGS -->
-  <section>
-    <div class="callout">
-      <h3>Conservator&rsquo;s opening findings</h3>
-      <p>Two issues were already surfaced while assembling this desk &mdash; treat them as the first entries on your fix-list:</p>
-      <div class="find"><span class="dot warn"></span><p><b>Muscarinic M1 &amp; M3 citation &mdash; wrong PMID.</b> The atlas cites PMID 24445063 for Kruse et al. (2014) <i>Muscarinic acetylcholine receptors</i>. That PMID resolves to an unrelated geriatrics paper. The correct identifier for that DOI (10.1038/nrd4295) is <b>PMID 24903776</b>. Both rows have their primary source pre-flagged <span class="mono" style="color:var(--status-conflict)">conflicting</span>.</p></div>
-      <div class="find"><span class="dot info"></span><p><b>Three specimens have no peer-reviewed article yet.</b> D3, DAT, and 5-HT3 appear in the Archive carrying only their Stahl chapters &mdash; no dedicated journal article is attached as a primary source. Each has a one-click PubMed search in its Sources panel to start from.</p></div>
-      <p style="font-size:.82rem; color:var(--bone-faint); margin-top: .7rem;">Most Cabinet citations are marked <span class="mono" style="color:var(--brass)">provided</span> &mdash; present in the atlas but not yet independently re-verified here. Several were confirmed against PubMed and are marked <span class="mono" style="color:var(--status-verified)">verified</span>.</p>
-    </div>
-  </section>
+      <h3>What the marks mean</h3>
+      <div class="keyrow"><span class="sdot" data-s="needs-source"></span><span><b>Unsourced.</b> Nothing is attached at all. This is the one state the desk exists to eliminate, so it carries the accent colour.</span></div>
+      <div class="keyrow"><span class="sdot" data-s="provided"></span><span><b>Provided.</b> Carried in from the atlas, not yet re-checked by you.</span></div>
+      <div class="keyrow"><span class="sdot" data-s="verified"></span><span><b>Verified.</b> You opened the source, it supports the claim, and its identifier resolves.</span></div>
+      <div class="keyrow"><span class="sdot" data-s="conflicting"></span><span><b>Conflicting.</b> A source is wrong or disputed. One of these flags the whole specimen.</span></div>
 
-  <!-- SPECIMENS (the per-receptor review — the main workspace) -->
-  <div class="desk-anchor" id="sec-specimens"></div>
-  <!-- FILTER RAIL -->
-  <div class="rail" id="rail">
-    <span class="lab">Show</span>
-    <button class="seg active" data-filter="all">All</button>
-    <button class="seg" data-filter="todo">Not started</button>
-    <button class="seg" data-filter="review">In review</button>
-    <button class="seg" data-filter="done">Cleared</button>
-    <button class="seg" data-filter="flag">Flagged</button>
-    <button class="seg" data-filter="lowconf">Low mastery</button>
-    <button class="seg" data-filter="changed">Changed</button>
-    <span class="spacer"></span>
-    <button id="nextBtn">Next up &rarr;</button>
+      <h3>Two levels of source</h3>
+      <p>The database keys a source either to the <b>specimen</b> or to a single <b>binding</b>, so the desk shows them in those two places and nowhere else. The ledger at the top backs the specimen's claim, narrative and clinical row. A binding's Ki carries its own citation on its own card, because a number needs the paper that measured <i>that number</i>.</p>
+
+      <h3>Sourcing the binding numbers in bulk</h3>
+      <p>Most affinities come from one database, so verifying that record once in the <b>Source library</b> clears every binding citing it. Open the library, find the source, and set its status there.</p>
+    </div>
   </div>
+</div>
 
-  <div id="halls"></div>
+<div class="veil" id="libVeil" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="libTitle">
+    <div class="sheet-head">
+      <h2 id="libTitle">Source library</h2>
+      <button class="btn quiet" data-close="libVeil">Close</button>
+    </div>
+    <div class="sheet-body">
+      <p>Every paper, chapter and database the atlas cites. Correct one here and every specimen citing it updates at once. The count shows how many bindings rest on each.</p>
+      <input type="search" id="libSearch" class="qsearch" placeholder="Search the library" aria-label="Search the source library" style="margin:var(--space-md) 0;" autocomplete="off" />
+      <div id="libList"></div>
+    </div>
+  </div>
+</div>
 
-  <!-- SOURCES LIBRARY -->
-  <section id="sourcesSection">
-    <div class="src-head">
-      <span class="eyebrow">Sources library &mdash; edit a paper once, every citing specimen updates</span>
-      <button class="ctrl" id="srcToggle">Show library &#9662;</button>
-    </div>
-    <div id="srcLibrary" class="hidden" style="margin-top:1rem;">
-      <div id="srcList"></div>
-      <div style="margin-top:1rem;">
-        <span class="eyebrow">Add a source</span>
-        <div id="srcAddForm" style="margin-top:.6rem;"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- BINDING AFFINITIES (drug-first provenance review) -->
-  <section id="bindingSection">
-    <div class="src-head">
-      <span class="eyebrow">Binding affinities &mdash; authenticate every Ki against its source</span>
-    </div>
-    <p class="bind-intro">Two lenses on the same numbers. Start <b>by source</b>: verify a database or paper once and every Ki that cites it clears together. Then work <b>by drug</b> to inspect or cite each binding individually. (The same numbers are also editable per receptor, under each specimen&rsquo;s <i>Edit structured data &amp; bindings</i>.)</p>
-    <div id="bindSummary" class="bind-summary"></div>
-    <div id="bindBySource"></div>
-    <div class="rail" id="bindRail">
-      <span class="lab">Show</span>
-      <button class="seg active" data-bfilter="all">All</button>
-      <button class="seg" data-bfilter="needs">Needs source</button>
-      <button class="seg" data-bfilter="unverified">Unverified</button>
-      <button class="seg" data-bfilter="unconfirmed">Unconfirmed</button>
-      <button class="seg" data-bfilter="mismatch">Has mismatch</button>
-      <button class="seg" data-bfilter="cleared">Cleared</button>
-      <span class="spacer"></span>
-      <input type="text" id="bindSearch" class="bind-search" aria-label="Filter bindings by drug or target" placeholder="Find a drug…" autocomplete="off" />
-    </div>
-    <div id="bindByDrug"></div>
-  </section>
-</main>
-
-<footer>
-  <p class="mono">THE CONSERVATOR&rsquo;S DESK &middot; companion to THE RECEPTOR ATLAS</p>
-  <p>Stahl loci reference <i>Stahl&rsquo;s Essential Psychopharmacology: Neuroscientific Basis and Practical Applications</i>, 5th ed. (Cambridge University Press, 2021); chapter / page ranges link to the publisher. Peer-reviewed sources retrieved from PubMed; each links to its PMID and DOI. Citation statuses and notes are your own working judgments, stored locally in this browser. Export regularly &mdash; clearing site data erases unsaved progress.</p>
-</footer>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
-const HALLS={
- dopamine:{n:"I",t:"The Dopamine System"},
- serotonin:{n:"II",t:"The Serotonin System"},
- noradrenergic:{n:"III",t:"The Noradrenergic System"},
- glutamate_gaba:{n:"IV",t:"Glutamate & GABA"},
- neuromod:{n:"V",t:"Neuromodulators & Other Gates"}
+/* ════════════════════════════════════════════════════════════════════════
+   DATA LAYER — every call goes to the same API the old desk used. No server
+   change was needed for this redesign; the shape of the work changed, not the
+   contract underneath it.
+   ════════════════════════════════════════════════════════════════════════ */
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const pm = id => "https://pubmed.ncbi.nlm.nih.gov/" + id + "/";
+const doiU = d => "https://doi.org/" + d;
+const pmSearch = q => "https://pubmed.ncbi.nlm.nih.gov/?term=" + encodeURIComponent(q);
+
+const HALLS = {
+  dopamine: { n: "I", t: "Dopamine" }, serotonin: { n: "II", t: "Serotonin" },
+  noradrenergic: { n: "III", t: "Noradrenergic" }, glutamate_gaba: { n: "IV", t: "Glutamate & GABA" },
+  neuromod: { n: "V", t: "Neuromodulators" },
 };
-function pm(id){return "https://pubmed.ncbi.nlm.nih.gov/"+id+"/";}
-function doiU(d){return "https://doi.org/"+d;}
-function pmSearch(q){return "https://pubmed.ncbi.nlm.nih.gov/?term="+encodeURIComponent(q);}
+const CHECK_KEYS = ["mechanism", "affinity", "clinical", "citation"];
+const CHECK_LABEL = { mechanism: "Mechanism", affinity: "Affinity / pKi", clinical: "Clinical claim", citation: "Citation" };
+const CHECK_HINT = {
+  mechanism: "Receptor family, transduction (Gi/Gs/Gq or channel), location, and the direction of effect.",
+  affinity: "Do the agonist / antagonist labels and the relative affinities match a real source?",
+  clinical: "Receptor to action to presentation, against Stahl Table 2-4 / 2-5 and the clinical chapters.",
+  citation: "Open each source. Does it support the claim, and does its identifier resolve?",
+};
+const CITATION_STATUSES = ["verified", "provided", "conflicting"];
+const VALUE_STATES = ["confirmed", "mismatch", "unchecked"];
+const VALUE_HELP = { confirmed: "Our Ki matches the cited source.", mismatch: "Our Ki disagrees with the source.", unchecked: "Not compared yet." };
+const NAV_CANON = { gabaa:'gaba_a', nmda:'nmda', d2:'d2', d1:'d1', dat:'dat', ht2a:'5ht2a', ht1a:'5ht1a', ht2c:'5ht2c', sert:'sert', b1:'beta1', a1:'alpha1', a2:'alpha2', net:'net', m1:'m1', h1:'h1', mor:'mu', m3:'m3' };
+const ATLAS_VOL_ID = { Cabinet: 'cabinet', Ledger: 'ledger', Archive: 'archive' };
 
-function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
+let RX = [], SOURCES = [], STATE = {}, BINDING_USAGE = [];
+/* The structured payload per receptor, kept so the review checks can report what
+   is still outstanding without re-fetching on every repaint. */
+const LOADED = {};
+let openId = null, filter = 'all', query = '';
+const DRIFT = new Set();
 
-/* ============ RECEPTOR DATA ============ */
-let RX=[], SOURCES=[];
-function rxFromDetail(d){
-  const VOL = {archive:'Archive', cabinet:'Cabinet', ledger:'Ledger'};
-  return {
-    id:d.id, nm:d.label, hall:d.hall,
-    vols:(d.volumes||[]).map(v=>VOL[v]||v),
-    claim:d.claim,
-    sources:d.sources||[], status:d.status,
-    search:d.search, quiz:d.quiz,
-  };
+const jget = async url => (await fetch(url)).json();
+async function jsend(method, url, body) {
+  try {
+    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
+    return res.ok ? (res.status === 204 ? true : await res.json().catch(() => true)) : null;
+  } catch (e) { return null; }
 }
-async function loadSources(){ SOURCES = await (await fetch('/api/sources')).json(); }
-let AGENTS=[], BINDING_USAGE=[];
-async function loadAgents(){ AGENTS = await (await fetch('/api/agents/binding')).json(); }
-async function loadBindingUsage(){ BINDING_USAGE = await (await fetch('/api/sources/binding-usage')).json(); }
-// Cross-volume "canonical" subject id each volume's nav bridge understands (Task 18
-// deep links). Shared by the Cabinet and Ledger bridges; the Archive navigates by
-// hall instead. DB id → canon.
-const NAV_CANON={gabaa:'gaba_a',nmda:'nmda',d2:'d2',d1:'d1',dat:'dat',ht2a:'5ht2a',ht1a:'5ht1a',ht2c:'5ht2c',sert:'sert',b1:'beta1',a1:'alpha1',a2:'alpha2',net:'net',m1:'m1',h1:'h1',mor:'mu',m3:'m3'};
-async function loadRX(){
-  const list = await (await fetch('/api/receptors')).json();
-  const dates = {}; list.forEach(x => { dates[x.id] = { editedAt: x.edited_at, reviewedAt: x.reviewed_at }; });
-  const details = await Promise.all(list.map(r => fetch('/api/receptors/'+r.id).then(x=>x.json())));
+
+function rxFromDetail(d) {
+  const VOL = { archive: 'Archive', cabinet: 'Cabinet', ledger: 'Ledger' };
+  return { id: d.id, nm: d.label, hall: d.hall, vols: (d.volumes || []).map(v => VOL[v] || v),
+    claim: d.claim, sources: d.sources || [], status: d.status, search: d.search, quiz: d.quiz };
+}
+
+async function loadAll() {
+  const list = await jget('/api/receptors');
+  const details = await Promise.all(list.map(r => jget('/api/receptors/' + r.id)));
   RX = details.map(rxFromDetail);
-  RX.forEach(r => { const d = dates[r.id] || {}; r.editedAt = d.editedAt || null; r.reviewedAt = d.reviewedAt || null; });
-  // Review state now lives in the DB — seed STATE from each detail's `review` object.
-  STATE={};
-  details.forEach(d=>{
-    const rv=d.review||{};
-    STATE[d.id]={
-      mechanism:!!rv.mechanism, affinity:!!rv.affinity, clinical:!!rv.clinical, citation:!!rv.citation,
-      conf:rv.mastery||0, note:rv.note||"",
-    };
+  const dates = {}; list.forEach(x => dates[x.id] = x);
+  RX.forEach(r => { const d = dates[r.id] || {}; r.editedAt = d.edited_at || null; r.reviewedAt = d.reviewed_at || null; });
+  STATE = {};
+  details.forEach(d => {
+    const rv = d.review || {};
+    STATE[d.id] = { mechanism: !!rv.mechanism, affinity: !!rv.affinity, clinical: !!rv.clinical, citation: !!rv.citation,
+      conf: rv.mastery || 0, note: rv.note || "" };
   });
+  SOURCES = await jget('/api/sources');
+  try { BINDING_USAGE = await jget('/api/sources/binding-usage'); } catch (e) { BINDING_USAGE = []; }
+  try { (await jget('/api/review/drift')).forEach(x => DRIFT.add(x.receptor_id)); } catch (e) {}
 }
-const CHECK_KEYS=["mechanism","affinity","clinical","citation"];
-const CHECK_LABEL={mechanism:"Mechanism",affinity:"Affinity / pKi",clinical:"Clinical claim",citation:"Citation"};
-const CITATION_STATUSES=["verified","provided","conflicting"];
-const CS_HELP={
-  "verified":"You confirmed the source supports the claim and its identifier resolves.",
-  "provided":"Carried from the atlas, not yet independently re-checked.",
-  "conflicting":"This source is wrong or disputed — fix it.",
-};
 
-/* ============ STATE PERSISTENCE (DB-backed) ============ */
-let STATE={};
-function reviewBody(id){const s=STATE[id];return {mechanism:s.mechanism?1:0,affinity:s.affinity?1:0,clinical:s.clinical?1:0,citation:s.citation?1:0,mastery:s.conf,note:s.note};}
-async function persistReview(id){try{await fetch('/api/receptors/'+id+'/review',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(reviewBody(id))});}catch(e){}}
-const noteTimers={};
-function persistReviewDebounced(id){clearTimeout(noteTimers[id]);noteTimers[id]=setTimeout(()=>persistReview(id),400);}
-// Citation/verification redesign: attach/update/unlink one source on a receptor's
-// source list (a receptor cites a list of sources, not a single one).
-async function attachSource(id,body){
-  try{const res=await fetch('/api/receptors/'+id+'/sources',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return res.ok?await res.json():null;}catch(e){return null;}
+/* Edits save on a debounce, so between the last keystroke and the request there
+   is a window where the work exists only in the browser. Closing the tab in that
+   window loses it silently, so the window is made visible instead of assumed away. */
+let pendingN = 0;
+function markPending(on) {
+  pendingN = Math.max(0, pendingN + (on ? 1 : -1));
+  const el = document.getElementById('pending');
+  if (el) el.hidden = pendingN === 0;
 }
-async function updateSourceEdge(id,sid,body){
-  try{const res=await fetch(`/api/receptors/${id}/sources/${sid}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return res.ok?await res.json():null;}catch(e){return null;}
+window.addEventListener('beforeunload', e => { if (pendingN > 0) { e.preventDefault(); e.returnValue = ''; } });
+
+/* ── toast: the one place the tool speaks back ── */
+let toastT;
+function toast(msg, bad) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.toggle('bad', !!bad); el.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 2600);
 }
-async function unlinkSource(id,sid){
-  try{const res=await fetch(`/api/receptors/${id}/sources/${sid}`,{method:'DELETE'});return res.ok;}catch(e){return false;}
-}
-// Re-fetch one receptor's detail and repaint its sources panel (used after an
-// attach/status/primary/unlink change OR a shared-source library edit, so the
-// corrected paper shows at once).
-async function refreshReceptor(r){
-  const d=await (await fetch('/api/receptors/'+r.id)).json();
-  r.sources=d.sources||[]; r.status=d.status; r.search=d.search;
-  const el=document.getElementById('spec-'+r.id);
-  if(el){
-    const panel=el.querySelector('.panel-sources'); if(panel) renderSourcesPanel(r,panel);
-    paintRow(r,el);
+
+/* ════════════════════ QUEUE ════════════════════ */
+const FILTERS = [
+  { k: 'all', label: 'All' },
+  { k: 'unsourced', label: 'Unsourced' },
+  { k: 'conflicting', label: 'Conflicting' },
+  { k: 'review', label: 'In review' },
+  { k: 'cleared', label: 'Cleared' },
+];
+function checksDone(id) { return CHECK_KEYS.filter(k => STATE[id][k]).length; }
+function matchFilter(r) {
+  if (query && !r.nm.toLowerCase().includes(query)) return false;
+  const n = checksDone(r.id);
+  switch (filter) {
+    case 'unsourced': return r.status === 'needs-source';
+    case 'conflicting': return r.status === 'conflicting';
+    case 'review': return n > 0 && n < 4;
+    case 'cleared': return n === 4;
+    default: return true;
   }
 }
-
-/* ============ SYNC UI — dates, drift, deep links (Task 18) ============ */
-const DRIFT=new Set();
-async function loadDrift(){
-  try{ const d=await (await fetch('/api/review/drift')).json(); DRIFT.clear(); d.forEach(x=>DRIFT.add(x.receptor_id)); }catch(e){}
+function filterCount(k) {
+  const save = filter; filter = k;
+  const n = RX.filter(matchFilter).length; filter = save; return n;
 }
-function fmtStamp(s){ if(!s) return '—'; const d=new Date(s); if(isNaN(d)) return '—';
-  return d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+' · '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'}); }
-// Deep links route through the Atlas shell (not the standalone volume files
-// directly) so the visitor lands inside the shell's persistent nav — which now
-// carries a link straight back to this Desk — instead of a bare page with no
-// way back. The shell reads the volume + specimen straight off the URL hash
-// on load (#vol/<volume>/<canon>), the same scheme its own search uses.
-const ATLAS_VOL_ID={Cabinet:'cabinet',Ledger:'ledger',Archive:'archive'};
-function deepLinks(r){
-  const canon=NAV_CANON[r.id];
-  return (r.vols||[]).map(v=>{
-    const volId=ATLAS_VOL_ID[v]; if(!volId) return '';
-    const hash=canon?`#vol/${volId}/${canon}`:`#vol/${volId}`;
-    return `<a class="deeplink" href="the-receptor-atlas.html${hash}" target="_blank" rel="noopener">Open in ${v} ↗</a>`;
+function renderFilters() {
+  document.getElementById('qfilters').innerHTML = FILTERS.map(f =>
+    `<button type="button" class="qf" data-f="${f.k}" aria-pressed="${filter === f.k}">${f.label}<span class="n">${filterCount(f.k)}</span></button>`
+  ).join('');
+}
+function renderQueue() {
+  const host = document.getElementById('queueList');
+  /* The open specimen always stays in the queue, even once it stops matching the
+     filter. Found by walking the tool: filter to Unsourced, attach a source, and
+     the row you are standing on disappears from under you, because you just fixed
+     the thing the filter selects for. Succeeding at the task should not feel like
+     losing your place. It stays, marked as cleared, until you move on. */
+  const shown = RX.filter(r => matchFilter(r) || r.id === openId);
+  if (!shown.length) { host.innerHTML = '<div class="qempty">Nothing matches that filter.</div>'; renderFilters(); return; }
+  let html = '';
+  for (const hk of Object.keys(HALLS)) {
+    const rows = shown.filter(r => r.hall === hk);
+    if (!rows.length) continue;
+    html += `<div class="qhall">${HALLS[hk].t}</div>`;
+    for (const r of rows) {
+      const done = checksDone(r.id);
+      const passing = r.id === openId && !matchFilter(r);
+      html += `<button type="button" class="qrow${passing ? ' is-passing' : ''}" data-id="${r.id}" aria-current="${r.id === openId}"${passing ? ' title="No longer matches the filter. Kept here while you are working on it."' : ''}>
+        <span class="qidx">${String(RX.indexOf(r) + 1).padStart(2, '0')}</span>
+        <span class="qname">${esc(r.nm)}</span>
+        <span class="qmeta">
+          <span class="qpips" aria-hidden="true">${CHECK_KEYS.map(k => `<span class="qpip${STATE[r.id][k] ? ' on' : ''}"></span>`).join('')}</span>
+          <span class="sdot" data-s="${r.status}" title="${r.status}"></span>
+        </span>
+      </button>`;
+    }
+  }
+  host.innerHTML = html;
+  renderFilters();
+}
+function renderTally() {
+  const total = RX.length;
+  const sourced = RX.filter(r => r.status !== 'needs-source').length;
+  const unsourced = total - sourced;
+  const cleared = RX.filter(r => checksDone(r.id) === 4).length;
+  document.getElementById('tallyBar').style.transform = `scaleX(${total ? sourced / total : 0})`;
+  document.getElementById('tallyText').innerHTML =
+    `<b>${sourced}</b>/${total} sourced · <b>${cleared}</b> cleared`
+    + (unsourced ? ` · <span class="unsourced">${unsourced} still bare</span>` : ` · <span style="color:var(--st-verified)">none bare</span>`);
+}
+
+/* ════════════════════ SOURCE ROWS (shared by ledger + bindings) ════════════════════ */
+const kindLabel = s => s.kind === 'book' ? 'Book' : s.kind === 'database' ? 'Database' : 'Article';
+/* Missing values are named, not marked with a dash. A bare glyph in a column of
+   real values reads as a value, and the reader has to learn what it means. */
+const srcLabel = s => { const t = s.title || s.pmid || 'untitled'; return `${s.authors || 'Unknown author'} (${s.year || 'n.d.'}) ${t.length > 60 ? t.slice(0, 60) + '…' : t}`; };
+const matchesQuery = (s, q) => [s.authors, s.title, s.journal, s.pmid, s.doi].some(v => v && String(v).toLowerCase().includes(q));
+
+function srcRowHtml(s, scope) {
+  return `<div class="src" data-sid="${s.id}" data-s="${s.status}">
+    <div>
+      <div class="src-cite"><b>${esc(s.authors) || 'Unknown author'}</b> (${esc(s.year) || 'n.d.'}). ${esc(s.title) || 'untitled'}${s.journal ? ' · ' + esc(s.journal) : ''}</div>
+      <div class="src-line2">
+        <span class="src-kind">${kindLabel(s)}</span>
+        ${s.is_primary ? '<span class="src-primary">primary</span>' : ''}
+        ${s.pmid ? `<a class="slink" href="${pm(s.pmid)}" target="_blank" rel="noopener">PMID ${esc(s.pmid)}</a>` : ''}
+        ${s.doi ? `<a class="slink" href="${doiU(s.doi)}" target="_blank" rel="noopener">DOI</a>` : ''}
+        ${(!s.pmid && !s.doi && s.url) ? `<a class="slink" href="${esc(s.url)}" target="_blank" rel="noopener">Open</a>` : ''}
+      </div>
+      ${s.correction_note ? `<div class="src-warn">${esc(s.correction_note)}</div>` : ''}
+    </div>
+    <div class="src-ctl">
+      <div class="statrow" role="group" aria-label="Status for ${esc(s.authors || 'this source')}">
+        ${CITATION_STATUSES.map(v => `<button type="button" class="stat" data-act="status" data-v="${v}" aria-pressed="${s.status === v}">${v}</button>`).join('')}
+      </div>
+      <div class="src-more">
+        ${scope === 'receptor' && !s.is_primary ? '<button type="button" class="btn quiet" data-act="primary">Make primary</button>' : ''}
+        <button type="button" class="btn quiet danger" data-act="unlink">Remove</button>
+      </div>
+    </div>
+  </div>`;
+}
+function comboHtml(placeholder) {
+  return `<div class="combo">
+    <input type="text" class="combo-in" placeholder="${placeholder}" aria-label="${placeholder}" autocomplete="off" />
+    <div class="menu hidden" role="listbox"></div>
+  </div><div class="combo-form"></div>`;
+}
+function newSourceFormHtml(prefill) {
+  const f = (k, label, wide) => `<label class="ffield${wide ? ' wide' : ''}"><span>${label}</span><input data-k="${k}" ${k === 'title' ? `value="${esc(prefill || '')}"` : ''} /></label>`;
+  return `<div class="srcform">
+    <label class="ffield"><span>Kind</span><select data-k="kind"><option value="article">Article</option><option value="book">Book</option><option value="database">Database</option></select></label>
+    ${f('authors', 'Authors')}${f('year', 'Year')}${f('title', 'Title', true)}${f('journal', 'Journal')}
+    ${f('pmid', 'PMID')}${f('doi', 'DOI')}${f('url', 'URL', true)}
+    <div class="fact"><button type="button" class="btn on" data-act="save">Add and cite</button><button type="button" class="btn quiet" data-act="cancel">Cancel</button></div>
+  </div>`;
+}
+function readForm(root) {
+  const out = {};
+  root.querySelectorAll('[data-k]').forEach(el => { const v = el.value.trim(); if (v) out[el.dataset.k] = v; });
+  if (!out.kind) out.kind = 'article';
+  return out;
+}
+/* One combobox implementation, wired wherever a source can be attached. onPick
+   receives either {source_id} for an existing record or {source} for a new one,
+   which is exactly the shape both attach endpoints take. */
+function wireCombo(root, onPick) {
+  const input = root.querySelector('.combo-in');
+  const menu = root.querySelector('.menu');
+  const formWrap = root.querySelector('.combo-form');
+  const close = () => { menu.classList.add('hidden'); menu.innerHTML = ''; };
+  const open = () => {
+    const q = input.value.trim().toLowerCase();
+    if (!q) return close();
+    const hits = SOURCES.filter(s => matchesQuery(s, q)).slice(0, 8);
+    menu.innerHTML = hits.map(s => `<button type="button" class="opt" data-sid="${s.id}"><span class="src-kind">${kindLabel(s)}</span>${esc(srcLabel(s))}</button>`).join('')
+      + `<button type="button" class="opt new" data-new="1">Create a new source for “${esc(input.value.trim())}”</button>`;
+    menu.classList.remove('hidden');
+  };
+  input.addEventListener('input', open);
+  input.addEventListener('focus', () => { if (input.value.trim()) open(); });
+  input.addEventListener('keydown', e => { if (e.key === 'Escape') { close(); input.blur(); } });
+  document.addEventListener('click', e => { if (!root.contains(e.target)) close(); });
+
+  menu.addEventListener('click', async e => {
+    const opt = e.target.closest('.opt'); if (!opt) return;
+    if (opt.dataset.sid) { close(); input.value = ''; await onPick({ source_id: Number(opt.dataset.sid), status: 'provided' }); return; }
+    const prefill = input.value.trim();
+    close();
+    formWrap.innerHTML = newSourceFormHtml(prefill);
+    formWrap.querySelector('[data-act="cancel"]').addEventListener('click', () => { formWrap.innerHTML = ''; input.value = ''; });
+    formWrap.querySelector('[data-act="save"]').addEventListener('click', async () => {
+      const body = readForm(formWrap.querySelector('.srcform'));
+      if (!body.authors && !body.title) { toast('Give it at least an author or a title', true); return; }
+      formWrap.innerHTML = ''; input.value = '';
+      await onPick({ source: body, status: 'provided' });
+      SOURCES = await jget('/api/sources');
+    });
+  });
+}
+
+/* ════════════════════ THE WORK PANE ════════════════════ */
+function deepLinksHtml(r) {
+  const canon = NAV_CANON[r.id];
+  return (r.vols || []).map(v => {
+    const volId = ATLAS_VOL_ID[v]; if (!volId) return '';
+    const hash = volId === 'archive' ? `#vol/archive` : (canon ? `#vol/${volId}/${canon}` : `#vol/${volId}`);
+    return `<a class="slink" href="the-receptor-atlas.html${hash}" target="_blank" rel="noopener">Open in the ${v}</a>`;
   }).join('');
 }
-function renderDates(r,el){
-  el=el||document.querySelector('#spec-'+r.id+' [data-dates]'); if(!el) return;
-  el.innerHTML=`<div class="dl-row"><span>edited</span><b>${fmtStamp(r.editedAt)}</b></div>
-    <div class="dl-row"><span>reviewed</span><b>${fmtStamp(r.reviewedAt)}</b></div>
-    ${DRIFT.has(r.id)?'<div class="drift-flag">⚠ changed since last review</div>':''}`;
+function fmtStamp(s) {
+  if (!s) return 'never';
+  const d = new Date(s); if (isNaN(d)) return 'never';
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' · ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
-function markEdited(id){ const r=RX.find(x=>x.id===id); if(!r)return; r.editedAt=new Date().toISOString(); DRIFT.add(id); renderDates(r); }
-function markReviewed(id){ const r=RX.find(x=>x.id===id); if(!r)return; r.reviewedAt=new Date().toISOString(); DRIFT.delete(id); renderDates(r); }
 
-/* ============ STRUCTURED-DATA EDIT MODE (Task 17) ============ */
-async function patchStructured(id,body){
-  try{const r=await fetch('/api/receptors/'+id+'/structured',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return r.ok;}catch(e){return false;}
-}
-const structTimers={};
-function patchStructuredDebounced(id,key,body,flashEl){
-  clearTimeout(structTimers[key]);
-  structTimers[key]=setTimeout(async()=>{const ok=await patchStructured(id,body);if(ok){markEdited(id);if(flashEl){const f=flashEl.querySelector('.struct-saved');if(f){f.classList.add('show');clearTimeout(f._t);f._t=setTimeout(()=>f.classList.remove('show'),1200);}}}},450);
-}
-async function loadStructEditor(r,bodyEl){
-  let data;
-  try{ data=await (await fetch('/api/receptors/'+r.id+'/structured')).json(); }
-  catch(e){ bodyEl.innerHTML='<div class="srcline" style="color:var(--bone-faint)">Couldn’t load structured data.</div>'; return; }
-  bodyEl.innerHTML=structEditorHtml(data);
-  wireStructEditor(r,bodyEl);
-}
-/* One binding inside the specimen editor: the Ki (editable) sits beside its cited
-   source + status + value_status — provenance where the number is (receptor-first). */
-// Affinity is stored as Ki (nM, PDSP-native) and shown as pKi, the field standard.
-function pKiOf(b){ return (b && b.ki>0) ? (9-Math.log10(b.ki)).toFixed(2) : null; }
-function structBindingDot(b){
-  if(b.citation_status==='needs-source') return 'info';
-  if(b.value_status==='mismatch'||b.citation_status==='conflicting') return 'warn';
-  if(b.citation_status==='verified'&&b.value_status==='confirmed') return 'good';
-  return 'brass';
-}
-function structBindingHtml(b){
-  const srcHtml = (b.sources&&b.sources.length)
-    ? b.sources.map(s=>bindSrowHtml(b.agent_name,b.target_alias,s)).join('')
-    : `<div class="srcline" style="color:var(--bone-faint)">No source cited yet &middot; imported label: <i>${esc(b.src)||'—'}</i></div>`;
-  return `<div class="sbind" data-target="${esc(b.target_alias)}" data-agent="${esc(b.agent_name)}">
-    <div class="sbind-head">
-      <span class="dot ${structBindingDot(b)}"></span>
-      <b>${esc(b.agent_name)}</b>${b.act?` <span class="mono sbind-act">${esc(b.act)}</span>`:''}
-      <span class="sbind-pki">pKi ${pKiOf(b)||'—'}</span>
-      <label class="sbind-in">Ki <input data-bk="ki" data-bid="${b.id}" value="${b.ki==null?'':b.ki}" /> nM</label>
-      <label class="sbind-in wide">note <input data-bk="note" data-bid="${b.id}" value="${esc(b.note||'')}" /></label>
+function ledgerHtml(r) {
+  const bare = !r.sources.length;
+  return `<section class="ledger${bare ? ' is-unsourced' : ''}" id="ledger" aria-labelledby="ledgerTitle">
+    <div class="ledger-head">
+      <h2 class="ledger-title" id="ledgerTitle">Sources for this specimen</h2>
+      <span class="lbl">${r.sources.length || 'none'} attached</span>
     </div>
-    <div class="sbind-prov">
-      <div class="sbind-sources">${srcHtml}</div>
-      <div class="src-add-combo"><input type="text" class="src-add-input" aria-label="Cite a source — search author, title, or PMID" placeholder="Cite a source — search author, title, or PMID…" autocomplete="off"/><div class="src-add-menu hidden"></div></div>
-      <div class="valctl"><span class="valctl-lab">Our Ki vs source</span>${VALUE_STATES.map(v=>`<button type="button" class="cs${b.value_status===v?' on':''}" data-vact="${v}" title="${VALUE_LABEL[v]}">${v}</button>`).join('')}</div>
+    <p class="ledger-note">These papers back the claim, the narrative and the clinical row below. A binding's Ki carries its own citation on its own card.</p>
+    ${bare ? `<div class="naked">
+        <span class="sdot" data-s="needs-source" aria-hidden="true" style="margin-top:.45rem"></span>
+        <p><b>Nothing stands behind this specimen yet.</b> Everything below is currently unsupported. Attach at least one source before clearing any check.
+        ${r.search ? ` <a class="slink" href="${pmSearch(r.search)}" target="_blank" rel="noopener">Search PubMed for “${esc(r.search)}”</a>` : ''}</p>
+      </div>` : ''}
+    <div class="srcs" id="ledgerRows">${r.sources.map(s => srcRowHtml(s, 'receptor')).join('')}</div>
+    ${comboHtml('Attach a source: author, title, or PMID')}
+    <div class="key" aria-label="What the marks mean">
+      <span><span class="sdot" data-s="needs-source"></span>unsourced</span>
+      <span><span class="sdot" data-s="provided"></span>provided, not re-checked</span>
+      <span><span class="sdot" data-s="verified"></span>verified by you</span>
+      <span><span class="sdot" data-s="conflicting"></span>conflicting</span>
+    </div>
+  </section>`;
+}
+
+function fieldHtml(key, label, value, rows, hint) {
+  const v = esc(value == null ? '' : value);
+  return `<div class="field">
+    <label for="f-${key}">${label}</label>
+    ${rows ? `<textarea id="f-${key}" data-f="${key}" rows="${rows}">${v}</textarea>`
+           : `<input type="text" id="f-${key}" data-f="${key}" value="${v}" />`}
+    ${hint ? `<div class="fhint">${hint}</div>` : ''}
+  </div>`;
+}
+const pKiOf = b => (b && b.ki > 0) ? (9 - Math.log10(b.ki)).toFixed(2) : null;
+
+/* A binding's one-line summary. The source column answers the only question the
+   list is for, so it names the paper rather than showing an abstract status chip. */
+function bindSummary(b) {
+  if (!b.sources || !b.sources.length) return 'no source';
+  const s = b.sources[0];
+  const who = s.authors ? String(s.authors).split(/[,;]| and /)[0] : (s.title || 'source');
+  const more = b.sources.length > 1 ? ` +${b.sources.length - 1}` : '';
+  return `${who}${s.year ? ' ' + s.year : ''}${more}`;
+}
+function bindHtml(b) {
+  const bare = !b.sources || !b.sources.length;
+  const state = bare ? 'needs-source' : (b.citation_status || 'provided');
+  return `<div class="bind${bare ? ' is-unsourced' : ''}" data-agent="${esc(b.agent_name)}" data-target="${esc(b.target_alias)}" data-state="${state}" data-val="${esc(b.value_status || 'unchecked')}">
+    <button type="button" class="brow" aria-expanded="false">
+      <span class="sdot" data-s="${state}" aria-hidden="true"></span>
+      <span class="bind-agent">${esc(b.agent_name)}</span>
+      <span class="bind-pki${pKiOf(b) ? '' : ' bind-none'}">${pKiOf(b) ? 'pKi ' + pKiOf(b) : 'no Ki'}</span>
+      <span class="bind-src">${esc(bindSummary(b))}</span>
+      <span class="bchev" aria-hidden="true">&rsaquo;</span>
+    </button>
+    <div class="bind-prov hidden">
+      <div class="bind-edit">
+        <label class="bind-in">Ki nM <input data-bk="ki" data-bid="${b.id}" value="${b.ki == null ? '' : b.ki}" /></label>
+        <label class="bind-in wide">note <input data-bk="note" data-bid="${b.id}" value="${esc(b.note || '')}" /></label>
+      </div>
+      <div class="srcs">${bare
+        ? `<p class="fhint" style="color:var(--st-unsourced)">No paper behind this number yet. Imported label: <i>${esc(b.src) || 'none'}</i></p>`
+        : b.sources.map(s => srcRowHtml(s, 'binding')).join('')}</div>
+      ${comboHtml('Cite the paper this Ki came from')}
+      <div class="bind-val">
+        <span class="bind-val-lab">Our Ki against the source</span>
+        ${VALUE_STATES.map(v => `<button type="button" class="stat" data-vact="${v}" aria-pressed="${b.value_status === v}" title="${VALUE_HELP[v]}">${v}</button>`).join('')}
+      </div>
     </div>
   </div>`;
 }
-function structEditorHtml(data){
-  let html='<div class="struct-saved">saved ✓</div>';
-  html+=`<div class="struct-sec"><div class="pk">Claim under review (Archive)</div>
-    <div class="struct-field"><span>claim</span><textarea data-sk="claim" aria-label="Claim under review" rows="2">${esc(data.claim||'')}</textarea></div></div>`;
-  if(data.clinical){
-    const c=data.clinical;
-    html+=`<div class="struct-sec"><div class="pk">Clinical row (Ledger)</div>
-      <div class="struct-field"><span>baseline role</span><textarea data-ck="baseline" aria-label="Baseline role" rows="2">${esc(c.baseline||'')}</textarea></div>
-      <div class="struct-field"><span>mechanism</span><textarea data-ck="mech" aria-label="Mechanism" rows="3">${esc(c.mech||'')}</textarea></div>
-      <div class="struct-field"><span>overstimulated (one per line)</span><textarea data-ck="over" aria-label="Overstimulated effects" rows="3">${esc((c.over||[]).join('\n'))}</textarea></div>
-      <div class="struct-field"><span>understimulated (one per line)</span><textarea data-ck="under" aria-label="Understimulated effects" rows="3">${esc((c.under||[]).join('\n'))}</textarea></div></div>`;
+
+/* What each check still has outstanding, counted from the live data rather than
+   left to the curator's memory. Without this the checklist is an audit trail: you
+   can tick "Affinity" having looked at none of the numbers. With it, the check
+   states its own workload and the box becomes the last step rather than the only
+   one. Returns null where there is nothing countable to say. */
+function checkOutstanding(k, r, data) {
+  if (k === 'citation') {
+    if (!r.sources.length) return 'no source attached';
+    const n = r.sources.filter(s => s.status !== 'verified').length;
+    return n ? `${n} of ${r.sources.length} not verified yet` : null;
   }
-  if(data.binding&&data.binding.length){
-    html+=`<div class="struct-sec"><div class="pk">Binding affinities (Cabinet) &mdash; each Ki beside its source</div>
-      <div class="struct-hint">These sources back the Ki value only. General citations for the receptor&rsquo;s claim and mechanism live in the <i>Sources &amp; citations</i> panel above.</div>
-      <div class="sbind-list">${data.binding.map(structBindingHtml).join('')}</div></div>`;
+  if (k === 'affinity') {
+    const b = (data && data.binding) || [];
+    if (!b.length) return null;
+    const bare = b.filter(x => !x.sources || !x.sources.length).length;
+    const unchecked = b.filter(x => (x.value_status || 'unchecked') === 'unchecked').length;
+    if (bare) return `${bare} of ${b.length} have no source`;
+    if (unchecked) return `${unchecked} of ${b.length} not compared to source`;
+    return null;
   }
-  if(data.narrative){
-    const nv=data.narrative;
-    html+=`<div class="struct-sec"><div class="pk">Archive narrative</div>
-      <div class="struct-field"><span>abstract</span><textarea data-nk="abstract" aria-label="Abstract" rows="3">${esc(nv.abstract||'')}</textarea></div>
-      <div class="struct-field"><span>body (one paragraph per blank-line block)</span><textarea data-nk="body" aria-label="Body text" rows="6">${esc((nv.body||[]).join('\n\n'))}</textarea></div>
-      <div class="struct-field"><span>presentation</span><textarea data-nk="presentation" aria-label="Presentation" rows="2">${esc(nv.presentation||'')}</textarea></div>
-      <div class="struct-field"><span>effect</span><input data-nk="effect" aria-label="Effect" value="${esc(nv.effect||'')}" /></div>
-      <div class="struct-field"><span>receptor class</span><input data-nk="receptor_class" aria-label="Receptor class" value="${esc(nv.receptor_class||'')}" /></div>
-      <div class="struct-field"><span>ligand</span><input data-nk="ligand" aria-label="Ligand" value="${esc(nv.ligand||'')}" /></div>
-      <div class="struct-field"><span>tags (one per line)</span><textarea data-nk="tags" aria-label="Tags" rows="3">${esc((nv.tags||[]).join('\n'))}</textarea></div>
-      <div class="struct-field"><span>figure caption</span><input data-nk="figure_caption" aria-label="Figure caption" value="${esc(nv.figure_caption||'')}" /></div></div>`;
-  }
-  return html;
+  return null;
 }
-function wireStructEditor(r,bodyEl){
-  const claimTa=bodyEl.querySelector('[data-sk="claim"]');
-  if(claimTa)claimTa.addEventListener('input',()=>{
-    patchStructuredDebounced(r.id,r.id+':claim',{volume:'archive',claim:claimTa.value},bodyEl);
-    const cp=document.querySelector('#spec-'+r.id+' .claim p'); if(cp) cp.textContent=claimTa.value; r.claim=claimTa.value;
-  });
-  bodyEl.querySelectorAll('[data-ck]').forEach(f=>f.addEventListener('input',()=>{
-    const k=f.dataset.ck;
-    const val=(k==='over'||k==='under')?f.value.split('\n').map(s=>s.trim()).filter(Boolean):f.value;
-    patchStructuredDebounced(r.id,r.id+':c:'+k,{volume:'ledger',clinical:{[k]:val}},bodyEl);
-  }));
-  const slist=bodyEl.querySelector('.sbind-list');
-  if(slist){ wireBindKiNote(r,bodyEl,slist); wireSpecimenProvenance(r,bodyEl,slist); }
-  bodyEl.querySelectorAll('[data-nk]').forEach(f=>f.addEventListener('input',()=>{
-    const k=f.dataset.nk;
-    let val=f.value;
-    if(k==='body')val=f.value.split(/\n\s*\n/).map(s=>s.trim()).filter(Boolean);   // blank-line split
-    else if(k==='tags')val=f.value.split('\n').map(s=>s.trim()).filter(Boolean);
-    patchStructuredDebounced(r.id,r.id+':n:'+k,{volume:'archive',narrative:{[k]:val}},bodyEl);
-  }));
+function renderChecks(r) {
+  const s = STATE[r.id];
+  return CHECK_KEYS.map(k => {
+    const out = checkOutstanding(k, r, LOADED[r.id]);
+    return `<button type="button" class="check" data-check="${k}" aria-pressed="${!!s[k]}">
+      <span class="box" aria-hidden="true"></span>
+      <span><span class="check-t">${CHECK_LABEL[k]}</span>${out ? `<span class="check-n">${esc(out)}</span>` : ''}<span class="check-h">${CHECK_HINT[k]}</span></span>
+    </button>`;
+  }).join('');
+}
+function asideHtml(r) {
+  const s = STATE[r.id];
+  return `<aside class="aside">
+    <div class="card">
+      <h3>Review</h3>
+      <div id="checkList">${renderChecks(r)}</div>
+    </div>
+    <div class="card">
+      <h3>Your mastery</h3>
+      <div class="mastery">
+        ${[1,2,3,4,5].map(n => `<button type="button" class="mdot${n <= s.conf ? ' on' : ''}" data-m="${n}" aria-label="Rate mastery ${n} of 5"></button>`).join('')}
+        <span class="mlabel">${s.conf ? s.conf + '/5' : 'unrated'}</span>
+      </div>
+      <textarea class="notes" id="noteBox" rows="4" placeholder="Correction, discrepancy, or learning note" aria-label="Note">${esc(s.note)}</textarea>
+    </div>
+    <div class="card">
+      <h3>Record</h3>
+      <div class="dates">
+        <div>edited <b>${fmtStamp(r.editedAt)}</b></div>
+        <div class="${DRIFT.has(r.id) ? 'drift' : ''}">reviewed <b>${fmtStamp(r.reviewedAt)}</b>${DRIFT.has(r.id) ? ' · changed since' : ''}</div>
+      </div>
+      <div class="golinks" style="margin-top:var(--space-sm)">${deepLinksHtml(r)}</div>
+    </div>
+  </aside>`;
 }
 
-// Wire the editable Ki/note inputs inside a specimen's binding list (re-called after a
-// provenance change re-renders the list).
-function wireBindKiNote(r,bodyEl,container){
-  container.querySelectorAll('[data-bk]').forEach(inp=>inp.addEventListener('input',()=>{
-    const id=Number(inp.dataset.bid),k=inp.dataset.bk;
-    const val=(k==='ki')?(inp.value.trim()===''?null:Number(inp.value)):inp.value;
-    patchStructuredDebounced(r.id,r.id+':b'+id+':'+k,{volume:'cabinet',binding:{id,[k]:val}},bodyEl);
-  }));
+async function openSpecimen(id) {
+  openId = id;
+  const r = RX.find(x => x.id === id);
+  if (!r) return;
+  renderQueue();
+  const host = document.getElementById('workIn');
+  host.innerHTML = `<div class="spec-main"><div class="spec-head">
+      <div class="spec-kicker">
+        <span class="spec-no">No. ${String(RX.indexOf(r) + 1).padStart(2, '0')}</span>
+        <span class="spec-vols">${r.vols.map(v => `<span class="vchip">${esc(v)}</span>`).join('')}</span>
+      </div>
+      <h1 class="spec-name">${esc(r.nm)}</h1>
+    </div>
+    ${ledgerHtml(r)}
+    <div id="content"><div class="qempty">Loading the content&hellip;</div></div>
+  </div>${asideHtml(r)}`;
+
+  document.getElementById('work').scrollTop = 0;
+  wireLedger(r);
+  wireAside(r);
+  await loadContent(r);
 }
-// Delegated (attached once) source + value_status controls for a specimen's bindings.
-// Reuses the same binding routes as the drug-first section; a change re-renders this
-// list and keeps the drug-first panels + summary in sync.
-function wireSpecimenProvenance(r,bodyEl,slist){
-  async function reloadBindings(){
-    const data=await (await fetch('/api/receptors/'+r.id+'/structured')).json();
-    slist.innerHTML=(data.binding||[]).map(structBindingHtml).join('');
-    wireBindKiNote(r,bodyEl,slist);
-    await Promise.all([loadAgents(),loadBindingUsage()]);
-    renderBindSummary(); renderBindBySource(); renderBindByDrug();
-  }
-  slist.addEventListener('click', async e=>{
-    const block=e.target.closest('.sbind'); if(!block) return;
-    const agent=block.dataset.agent, target=block.dataset.target;
-    const statusBtn=e.target.closest('button[data-bact="status"]');
-    if(statusBtn){ if(await bindEdge(agent,target,Number(statusBtn.dataset.sid),statusBtn.dataset.v)) reloadBindings(); return; }
-    const unlinkBtn=e.target.closest('button[data-bact="unlink"]');
-    if(unlinkBtn){ if(!confirm('Remove this source from the binding? The shared library record is kept.'))return;
-      if(await bindUnlink(agent,target,Number(unlinkBtn.dataset.sid))) reloadBindings(); return; }
-    const valBtn=e.target.closest('button[data-vact]');
-    if(valBtn){ if(await bindReview(agent,target,valBtn.dataset.vact)) reloadBindings(); return; }
-    const opt=e.target.closest('.src-add-opt');
-    if(opt){ const menu=opt.closest('.src-add-menu');
-      if(opt.dataset.sid){ if(await bindAttach(agent,target,{source_id:Number(opt.dataset.sid),status:'provided'})) reloadBindings(); }
-      else if(opt.dataset.act==='newform'){ const title=menu.dataset.q||''; if(await bindAttach(agent,target,{source:{kind:'article',title},status:'provided'})) reloadBindings(); }
-      return;
+
+function wireLedger(r) {
+  const ledger = document.getElementById('ledger');
+  ledger.querySelector('#ledgerRows').addEventListener('click', async e => {
+    const btn = e.target.closest('button[data-act]'); if (!btn) return;
+    const sid = Number(btn.closest('.src').dataset.sid);
+    const act = btn.dataset.act;
+    if (act === 'status') { if (await jsend('PATCH', `/api/receptors/${r.id}/sources/${sid}`, { status: btn.dataset.v })) { await reloadReceptor(r); toast('status saved'); } }
+    else if (act === 'primary') { if (await jsend('PATCH', `/api/receptors/${r.id}/sources/${sid}`, { is_primary: true })) { await reloadReceptor(r); toast('primary set'); } }
+    else if (act === 'unlink') {
+      if (!confirm('Remove this source from the specimen? The shared library record is kept.')) return;
+      if (await jsend('DELETE', `/api/receptors/${r.id}/sources/${sid}`)) { await reloadReceptor(r); toast('source removed'); }
     }
   });
-  slist.addEventListener('input', e=>{
-    const input=e.target.closest('.src-add-input'); if(!input) return;
-    const menu=input.parentElement.querySelector('.src-add-menu');
-    const q=input.value.trim().toLowerCase();
-    if(!q){ menu.classList.add('hidden'); menu.innerHTML=''; return; }
-    menu.dataset.q=input.value.trim();
-    const matches=SOURCES.filter(s=>matchesSourceQuery(s,q)).slice(0,8);
-    menu.innerHTML=matches.map(s=>`<button type="button" class="src-add-opt" data-sid="${s.id}" title="${esc((s.authors||'—')+' ('+(s.year||'n.d.')+') '+(s.title||s.pmid||'untitled'))}"><span class="srow-kind">${kindLabel(s)}</span>${esc(srcLabel(s))}</button>`).join('')
-      + `<button type="button" class="src-add-opt src-add-new" data-act="newform">+ Create a new source for &ldquo;${esc(input.value.trim())}&rdquo;</button>`;
-    menu.classList.remove('hidden');
+  wireCombo(ledger, async payload => {
+    const body = { ...payload, is_primary: r.sources.length === 0 };
+    if (await jsend('POST', `/api/receptors/${r.id}/sources`, body)) { await reloadReceptor(r); toast('source attached'); }
+    else toast('could not attach that source', true);
   });
 }
 
-/* ============ RENDER ============ */
-const hallsEl=document.getElementById("halls");
-function specStatus(id){const s=STATE[id];const n=CHECK_KEYS.filter(k=>s[k]).length;return n===4?"done":n>0?"review":"todo";}
-function build(){
-  hallsEl.innerHTML="";
-  Object.keys(HALLS).forEach(hk=>{
-    const meta=HALLS[hk];const list=RX.filter(r=>r.hall===hk);
-    const hall=document.createElement("div");hall.className="hall";hall.dataset.hall=hk;
-    hall.innerHTML=`<div class="hall-head"><span class="hnum">HALL ${meta.n}</span><h2>${meta.t}</h2><span class="hmeta" id="hm-${hk}"></span></div>`;
-    list.forEach(r=>hall.appendChild(specRow(r)));
-    hallsEl.appendChild(hall);
-  });
-  refresh();
-  wireBindBySource();
-  wireBindByDrug();
-  wireBindRail();
-}
-function volChips(v){return v.map(x=>`<span class="vchip">${x}</span>`).join("");}
-function srcLabel(s){const t=(s.title||s.pmid||'untitled');return `${s.authors||'—'} (${s.year||'n.d.'}) — ${t.length>56?t.slice(0,56)+'…':t}`;}
-function kindLabel(s){return s.kind==='book'?'Book':s.kind==='database'?'Database':'Article';}
-
-/* ============ SOURCES & CITATIONS PANEL (one list, not a single ref + a separate
-   Stahl block — Citation/verification redesign: Stahl is an ordinary source) ============ */
-function srowHtml(s){
-  return `<div class="srow" data-sid="${s.id}">
-    <div class="srow-top">
-      <span class="srow-kind">${kindLabel(s)}</span>
-      ${s.is_primary?'<span class="srow-primary-badge">primary</span>':''}
-    </div>
-    <div class="srow-cite">${esc(s.authors)||'—'} (${s.year||'n.d.'}). <i>${esc(s.title)||'untitled'}</i>${s.journal?' · '+esc(s.journal):''}</div>
-    <div class="srow-ids">
-      ${s.pmid?`<a class="srclink" href="${pm(s.pmid)}" target="_blank" rel="noopener">PMID ${esc(s.pmid)} ↗</a>`:''}
-      ${s.doi?`<a class="srclink" href="${doiU(s.doi)}" target="_blank" rel="noopener">DOI ↗</a>`:''}
-      ${(!s.pmid&&!s.doi&&s.url)?`<a class="srclink" href="${esc(s.url)}" target="_blank" rel="noopener">Open ↗</a>`:''}
-    </div>
-    ${s.correction_note?`<div class="srcline" style="color:var(--status-conflict);font-size:.76rem;">⚠ ${esc(s.correction_note)}</div>`:''}
-    <div class="citestat">${CITATION_STATUSES.map(v=>`<button type="button" class="cs${s.status===v?' on':''}" data-act="status" data-sid="${s.id}" data-v="${v}" title="${CS_HELP[v]}">${v}</button>`).join("")}</div>
-    <div class="srow-actions">
-      ${s.is_primary?'':`<button type="button" class="ctrl" data-act="primary" data-sid="${s.id}">Make primary</button>`}
-      <button type="button" class="ctrl" data-act="unlink" data-sid="${s.id}">Remove</button>
-    </div>
-  </div>`;
-}
-function emptySourcesHtml(r){
-  return `<div class="srcline" style="color:var(--bone-faint)">No sources cited yet.</div>`
-    + (r.search?`<div><a class="srclink" href="${pmSearch(r.search)}" target="_blank" rel="noopener">Search PubMed ↗</a></div>`:'');
-}
-function renderSourcesPanel(r,panelEl){
-  panelEl.querySelector('.src-rows').innerHTML = r.sources.length ? r.sources.map(srowHtml).join('') : emptySourcesHtml(r);
-}
-function matchesSourceQuery(s,q){
-  return [s.authors,s.title,s.journal,s.pmid,s.doi].some(v=>v && String(v).toLowerCase().includes(q));
-}
-function newSourceFormHtml(prefillTitle){
-  return `<div class="srcform" data-newsource="1">
-    <label class="srcfield"><span>Kind</span><select data-k="kind"><option value="article">Article</option><option value="book">Book</option><option value="database">Database</option></select></label>
-    <label class="srcfield"><span>Authors</span><input data-k="authors" /></label>
-    <label class="srcfield"><span>Year</span><input data-k="year" /></label>
-    <label class="srcfield wide"><span>Title</span><input data-k="title" value="${esc(prefillTitle||'')}" /></label>
-    <label class="srcfield"><span>Journal</span><input data-k="journal" /></label>
-    <label class="srcfield"><span>PMID</span><input data-k="pmid" /></label>
-    <label class="srcfield"><span>DOI</span><input data-k="doi" /></label>
-    <label class="srcfield wide"><span>URL</span><input data-k="url" /></label>
-    <label class="srcfield wide"><span>Notes</span><input data-k="notes" /></label>
-    <div class="srcform-actions">
-      <button type="button" class="ctrl accent" data-act="save">Add &amp; cite</button>
-      <button type="button" class="ctrl" data-act="cancel">Cancel</button>
-    </div>
-  </div>`;
-}
-// Wired once per row (delegated listeners survive the repeated innerHTML swaps
-// that renderSourcesPanel() and the combobox/create-form toggle do).
-function wireSourcesPanel(r,panelEl){
-  panelEl.querySelector('.src-rows').addEventListener('click', async e=>{
-    const btn=e.target.closest('button[data-act]'); if(!btn) return;
-    const sid=Number(btn.dataset.sid), act=btn.dataset.act;
-    if(act==='status'){
-      if(await updateSourceEdge(r.id,sid,{status:btn.dataset.v})){await refreshReceptor(r);refresh();}
-    } else if(act==='primary'){
-      if(await updateSourceEdge(r.id,sid,{is_primary:true})){await refreshReceptor(r);refresh();}
-    } else if(act==='unlink'){
-      if(!confirm('Remove this source from the citation list? The shared source record is kept in the library.'))return;
-      if(await unlinkSource(r.id,sid)){await refreshReceptor(r);refresh();}
-    }
-  });
-
-  const combo=panelEl.querySelector('.src-add-combo'), formWrap=panelEl.querySelector('.src-add-form');
-  const input=combo.querySelector('.src-add-input'), menu=combo.querySelector('.src-add-menu');
-  function closeMenu(){menu.classList.add('hidden');menu.innerHTML='';}
-  function openMenu(query){
-    const q=query.trim().toLowerCase();
-    if(!q){closeMenu();return;}
-    const matches=SOURCES.filter(s=>!r.sources.some(rs=>rs.id===s.id)&&matchesSourceQuery(s,q)).slice(0,8);
-    menu.innerHTML = matches.map(s=>`<button type="button" class="src-add-opt" data-sid="${s.id}" title="${esc((s.authors||'—')+' ('+(s.year||'n.d.')+') '+(s.title||s.pmid||'untitled'))}"><span class="srow-kind">${kindLabel(s)}</span>${esc(srcLabel(s))}</button>`).join('')
-      + `<button type="button" class="src-add-opt src-add-new" data-act="newform">+ Create a new source for &ldquo;${esc(query.trim())}&rdquo;</button>`;
-    menu.classList.remove('hidden');
+async function reloadReceptor(r) {
+  const d = await jget('/api/receptors/' + r.id);
+  r.sources = d.sources || []; r.status = d.status; r.search = d.search;
+  const ledger = document.getElementById('ledger');
+  if (ledger) {
+    ledger.outerHTML = ledgerHtml(r);
+    wireLedger(r);
   }
-  function showCreateForm(prefill){
-    combo.classList.add('hidden'); closeMenu();
-    formWrap.innerHTML=newSourceFormHtml(prefill); formWrap.classList.remove('hidden');
-    formWrap.querySelector('[data-act="cancel"]').addEventListener('click',resetAddControl);
-    formWrap.querySelector('[data-act="save"]').addEventListener('click', async ()=>{
-      const body=readForm(formWrap.querySelector('.srcform'));
-      if(!body.authors && !body.title){alert('Give the source at least an author or a title.');return;}
-      const created=await attachSource(r.id,{source:body,status:'provided',is_primary:r.sources.length===0});
-      // A newly-created source isn't in the cached SOURCES list yet — reload it
-      // so other receptors' combobox searches can find and reuse it right away,
-      // instead of the user being forced to re-create a duplicate row.
-      if(created){await loadSources();resetAddControl();await refreshReceptor(r);refresh();}
-      else alert('Could not save the source.');
+  // The checks count against the ledger, so they are stale the moment it changes.
+  // Removing the last source left the citation check still reporting "2 of 2 not
+  // verified" over an empty ledger, which is exactly the kind of confident wrong
+  // number this whole tool exists to stop.
+  refreshChecks(r);
+  renderQueue(); renderTally();
+}
+
+/* Review state is the one thing here that exists ONLY in this tool: a tick is a
+   curator asserting they checked something, and it is not recoverable from the
+   atlas if it is lost. So the change is applied optimistically for responsiveness
+   but ROLLED BACK if the save fails. The earlier version mutated state and fired
+   the request without looking at the answer, which meant a failed save left a
+   ticked box over a database that disagreed, and the only warning vanished after
+   two seconds. A curator would have believed the work was recorded. */
+async function commitReview(r, mutate, repaint) {
+  const before = { ...STATE[r.id] };
+  mutate(); repaint();
+  const ok = await persistReview(r.id);
+  if (!ok) { STATE[r.id] = before; repaint(); renderQueue(); renderTally(); return false; }
+  renderQueue(); renderTally();
+  return true;
+}
+function paintMastery(host, r) {
+  host.querySelectorAll('[data-m]').forEach(b => {
+    const on = Number(b.dataset.m) <= STATE[r.id].conf;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-checked', String(Number(b.dataset.m) === STATE[r.id].conf));
+  });
+  host.querySelector('.mlabel').textContent = STATE[r.id].conf ? STATE[r.id].conf + '/5' : 'unrated';
+}
+function wireAside(r) {
+  const host = document.querySelector('.aside');
+  host.addEventListener('click', e => {
+    const btn = e.target.closest('[data-check]');
+    if (!btn) return;
+    const k = btn.dataset.check;
+    commitReview(r, () => { STATE[r.id][k] = !STATE[r.id][k]; },
+      () => host.querySelector(`[data-check="${k}"]`).setAttribute('aria-pressed', String(STATE[r.id][k])));
+  });
+
+  const setMastery = n => commitReview(r, () => { STATE[r.id].conf = STATE[r.id].conf === n ? 0 : n; }, () => paintMastery(host, r));
+  host.querySelectorAll('[data-m]').forEach(btn => {
+    btn.addEventListener('click', () => setMastery(Number(btn.dataset.m)));
+    // Arrow keys walk the scale and 1-5 jump straight to a rating, so a rating is
+    // one keystroke rather than a hunt for the right dot.
+    btn.addEventListener('keydown', e => {
+      const cur = Number(btn.dataset.m);
+      if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); host.querySelector(`[data-m="${Math.min(5, cur + 1)}"]`)?.focus(); }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault(); host.querySelector(`[data-m="${Math.max(1, cur - 1)}"]`)?.focus(); }
+      if (/^[1-5]$/.test(e.key)) { e.preventDefault(); setMastery(Number(e.key)); host.querySelector(`[data-m="${e.key}"]`)?.focus(); }
     });
-  }
-  function resetAddControl(){
-    formWrap.classList.add('hidden'); formWrap.innerHTML='';
-    combo.classList.remove('hidden'); input.value=''; closeMenu();
-  }
-  input.addEventListener('input',()=>openMenu(input.value));
-  input.addEventListener('focus',()=>{if(input.value.trim())openMenu(input.value);});
-  input.addEventListener('blur',()=>setTimeout(closeMenu,150));
-  menu.addEventListener('mousedown', async e=>{
-    const opt=e.target.closest('.src-add-opt'); if(!opt)return;
-    e.preventDefault();
-    if(opt.dataset.act==='newform'){showCreateForm(input.value.trim());return;}
-    const sid=Number(opt.dataset.sid);
-    const created=await attachSource(r.id,{source_id:sid,status:'provided',is_primary:r.sources.length===0});
-    closeMenu(); input.value='';
-    if(created){await refreshReceptor(r);refresh();}
   });
+
+  const note = host.querySelector('#noteBox');
+  note.addEventListener('input', () => { STATE[r.id].note = note.value; markPending(true); persistReviewDebounced(r.id); });
 }
-function specRow(r){
-  const el=document.createElement("div");el.className="spec";el.dataset.id=r.id;el.id="spec-"+r.id;
-  el.innerHTML=`
-   <div class="spec-head">
-     <span class="idx">${String(RX.indexOf(r)+1).padStart(2,"0")}</span>
-     <div class="spec-id"><span class="nm">${r.nm}</span><div class="vols">${volChips(r.vols)}</div></div>
-     <div class="pips" aria-hidden="true">${CHECK_KEYS.map(k=>`<span class="pip" data-k="${k}"></span>`).join("")}</div>
-     <div><div class="spec-stat"></div><div class="conf-mini">${[1,2,3,4,5].map(()=>'<i></i>').join("")}</div></div>
-   </div>
-   <div class="spec-body">
-     <div class="body-grid">
-       <div class="examine">
-         <div class="claim"><span class="ck">Claim under review</span><p>${r.claim}</p></div>
-         <div class="subchecks">
-           ${CHECK_KEYS.map(k=>`<div class="check" data-k="${k}"><div class="box"></div><div><div class="ctitle">${CHECK_LABEL[k]}</div><div class="chint">${hint(k)}</div></div></div>`).join("")}
-         </div>
-       </div>
-       <div class="side">
-         <div class="panel panel-sources">
-            <div class="pk">Sources &amp; citations <span class="forcheck">Citation check</span></div>
-            <div class="cite-caption">Every source cited for this specimen &mdash; articles and Stahl chapters alike. Set each one&rsquo;s status as you verify it; one is marked primary (the atlas volumes display that one).</div>
-            <div class="src-rows"></div>
-            <div class="src-add">
-              <div class="src-add-combo">
-                <input type="text" class="src-add-input" aria-label="Add a source" placeholder="Add a source — search by author, title, or PMID…" autocomplete="off" />
-                <div class="src-add-menu hidden"></div>
-              </div>
-              <div class="src-add-form hidden"></div>
-            </div>
-         </div>
-         <div class="panel">
-           <div class="pk">Your mastery &amp; notes</div>
-           <div class="confrow"><div class="confdots">${[1,2,3,4,5].map(n=>`<span class="cdot" data-n="${n}"></span>`).join("")}</div><span class="conflabel"></span></div>
-           <div class="quiz"><button type="button">Self-quiz ▸</button><div class="q">${r.quiz}</div></div>
-           <textarea class="notes" aria-label="Correction or learning note" placeholder="Correction, discrepancy, or learning note…"></textarea>
-         </div>
-       </div>
-     </div>
-     <div class="meta-strip">
-       <div class="datesline" data-dates></div>
-       <div class="deeplinks">${deepLinks(r)}</div>
-     </div>
-     <div class="struct" data-loaded="0">
-       <button type="button" class="struct-toggle">Edit structured data &amp; bindings &#9662;</button>
-       <div class="struct-body hidden"></div>
-     </div>
-   </div>`;
-  // header toggle
-  el.querySelector(".spec-head").addEventListener("click",e=>{if(e.target.closest("a"))return;el.classList.toggle("open");});
-  // subchecks → persist review
-  el.querySelectorAll(".check").forEach(c=>{c.addEventListener("click",()=>{const k=c.dataset.k;STATE[r.id][k]=!STATE[r.id][k];paintRow(r);refresh();persistReview(r.id);markReviewed(r.id);});});
-  // sources & citations panel — render the attached list, wire status/primary/
-  // unlink controls and the inline add-a-source combobox
-  const sourcesPanel=el.querySelector(".panel-sources");
-  renderSourcesPanel(r,sourcesPanel);
-  wireSourcesPanel(r,sourcesPanel);
-  // confidence (mastery) → persist review
-  el.querySelectorAll(".cdot").forEach(d=>{d.addEventListener("click",()=>{const n=+d.dataset.n;STATE[r.id].conf=(STATE[r.id].conf===n?0:n);paintRow(r);refresh();persistReview(r.id);markReviewed(r.id);});});
-  // quiz
-  const qz=el.querySelector(".quiz");qz.querySelector("button").addEventListener("click",()=>qz.classList.toggle("show"));
-  // notes → debounced persist
-  const ta=el.querySelector(".notes");ta.addEventListener("input",()=>{STATE[r.id].note=ta.value;persistReviewDebounced(r.id);});
-  // structured-data edit mode (lazy-loaded on first open)
-  const struct=el.querySelector(".struct");
-  const structToggle=struct.querySelector(".struct-toggle");
-  structToggle.addEventListener("click",async()=>{
-    const sbody=struct.querySelector(".struct-body");
-    if(struct.dataset.loaded==="0"){
-      struct.dataset.loaded="1";
-      structToggle.innerHTML='Loading data &amp; bindings…';
-      await loadStructEditor(r,sbody);
+function refreshChecks(r) {
+  const host = document.getElementById('checkList');
+  if (host) { host.innerHTML = renderChecks(r); }
+}
+
+const reviewTimers = {};
+function reviewBody(id) { const s = STATE[id]; return { mechanism: s.mechanism ? 1 : 0, affinity: s.affinity ? 1 : 0, clinical: s.clinical ? 1 : 0, citation: s.citation ? 1 : 0, mastery: s.conf, note: s.note }; }
+async function persistReview(id) {
+  const ok = await jsend('PATCH', `/api/receptors/${id}/review`, reviewBody(id));
+  markPending(false);
+  if (!ok) { toast('could not save that, so it has been put back', true); return false; }
+  const r = RX.find(x => x.id === id); if (r) { r.reviewedAt = new Date().toISOString(); DRIFT.delete(id); }
+  return true;
+}
+function persistReviewDebounced(id) { clearTimeout(reviewTimers[id]); reviewTimers[id] = setTimeout(() => persistReview(id), 500); }
+
+/* ── content: claim, narrative, clinical, bindings ── */
+async function loadContent(r) {
+  let data;
+  try { data = await jget('/api/receptors/' + r.id + '/structured'); }
+  catch (e) { document.getElementById('content').innerHTML = '<div class="qempty">Could not load the content for this specimen.</div>'; return; }
+
+  let html = `<section class="sec"><div class="sec-head"><h2 class="sec-title">Claim under review</h2><span class="sec-vol">Archive</span><span class="sec-saved" data-saved></span></div>
+    ${fieldHtml('claim', 'The one sentence this specimen asserts', data.claim, 3, 'Backed by the sources in the ledger above.')}</section>`;
+
+  if (data.narrative) {
+    const n = data.narrative;
+    html += `<section class="sec"><div class="sec-head"><h2 class="sec-title">Narrative</h2><span class="sec-vol">Archive</span><span class="sec-saved" data-saved></span></div>
+      ${fieldHtml('n:abstract', 'Abstract', n.abstract, 3)}
+      ${fieldHtml('n:body', 'Body', (n.body || []).join('\n\n'), 8, 'One paragraph per blank line.')}
+      ${fieldHtml('n:presentation', 'Presentation', n.presentation, 2)}
+      ${fieldHtml('n:effect', 'Effect', n.effect)}
+      ${fieldHtml('n:receptor_class', 'Receptor class', n.receptor_class)}
+      ${fieldHtml('n:ligand', 'Ligand', n.ligand)}
+      ${fieldHtml('n:figure_caption', 'Figure caption', n.figure_caption)}
+      ${fieldHtml('n:tags', 'Tags', (n.tags || []).join('\n'), 3, 'One per line.')}</section>`;
+  }
+  if (data.clinical) {
+    const c = data.clinical;
+    html += `<section class="sec"><div class="sec-head"><h2 class="sec-title">Clinical row</h2><span class="sec-vol">Ledger</span><span class="sec-saved" data-saved></span></div>
+      ${fieldHtml('c:baseline', 'Baseline role', c.baseline, 2)}
+      ${fieldHtml('c:mech', 'Mechanism', c.mech, 3)}
+      ${fieldHtml('c:over', 'Overstimulated', (c.over || []).join('\n'), 4, 'One per line.')}
+      ${fieldHtml('c:under', 'Understimulated', (c.under || []).join('\n'), 4, 'One per line.')}</section>`;
+  }
+  if (data.binding && data.binding.length) {
+    const all = data.binding;
+    const bare = all.filter(b => !b.sources || !b.sources.length).length;
+    const conf = all.filter(b => b.citation_status === 'conflicting').length;
+    const unchecked = all.filter(b => (b.value_status || 'unchecked') === 'unchecked').length;
+    const chip = (k, label, n) => `<button type="button" class="qf" data-bf="${k}" aria-pressed="${k === 'all'}">${label}<span class="n">${n}</span></button>`;
+    html += `<section class="sec" id="bindSec"><div class="sec-head"><h2 class="sec-title">Binding affinities</h2><span class="sec-vol">Cabinet</span>
+        <span class="sec-saved" data-saved></span></div>
+      <p class="fhint" style="margin:calc(-1 * var(--space-xs)) 0 var(--space-md)">Every number carries the paper that measured it. Open a row to edit the Ki or cite it.
+        Most come from one database, so verifying that record once in the source library clears them together.</p>
+      <div class="bindbar" role="group" aria-label="Filter bindings">
+        ${chip('all', 'All', all.length)}${chip('bare', 'No source', bare)}${chip('conflicting', 'Conflicting', conf)}${chip('unchecked', 'Ki unchecked', unchecked)}
+      </div>
+      <div id="bindList">${all.map(bindHtml).join('')}</div>
+      <p class="fhint" id="bindEmpty" hidden>Nothing in this specimen matches that filter.</p></section>`;
+  }
+  document.getElementById('content').innerHTML = html;
+  LOADED[r.id] = data;
+  refreshChecks(r);
+  wireContent(r);
+}
+
+const patchTimers = {};
+function flashSaved(el) {
+  const sec = el.closest('.sec'); if (!sec) return;
+  const tag = sec.querySelector('[data-saved]'); if (!tag) return;
+  tag.textContent = 'saved'; tag.classList.add('show');
+  setTimeout(() => tag.classList.remove('show'), 1400);
+}
+async function patchStructured(id, body, el) {
+  const ok = await jsend('PATCH', `/api/receptors/${id}/structured`, body);
+  if (ok) { flashSaved(el); const r = RX.find(x => x.id === id); if (r) r.editedAt = new Date().toISOString(); }
+  else toast('could not save that edit', true);
+}
+function patchDebounced(id, key, body, el) {
+  if (!patchTimers[key]) markPending(true);
+  clearTimeout(patchTimers[key]);
+  patchTimers[key] = setTimeout(async () => {
+    delete patchTimers[key];
+    await patchStructured(id, body, el);
+    markPending(false);
+  }, 550);
+}
+
+function wireContent(r) {
+  const root = document.getElementById('content');
+  root.querySelectorAll('[data-f]').forEach(el => el.addEventListener('input', () => {
+    const f = el.dataset.f;
+    if (f === 'claim') return patchDebounced(r.id, r.id + ':claim', { volume: 'archive', claim: el.value }, el);
+    const [scope, key] = f.split(':');
+    if (scope === 'n') {
+      let v = el.value;
+      if (key === 'body') v = el.value.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean);
+      else if (key === 'tags') v = el.value.split('\n').map(s => s.trim()).filter(Boolean);
+      patchDebounced(r.id, f, { volume: 'archive', narrative: { [key]: v } }, el);
+    } else if (scope === 'c') {
+      const v = (key === 'over' || key === 'under') ? el.value.split('\n').map(s => s.trim()).filter(Boolean) : el.value;
+      patchDebounced(r.id, f, { volume: 'ledger', clinical: { [key]: v } }, el);
     }
-    const hidden=sbody.classList.toggle("hidden");
-    structToggle.innerHTML=hidden?'Edit structured data &amp; bindings &#9662;':'Edit structured data &amp; bindings &#9652;';
-  });
-  paintRow(r,el);
-  return el;
-}
-function hint(k){return{
- mechanism:"Confirm receptor family, transduction (Gi/Gs/Gq or channel), location, and the direction of the effect described.",
- affinity:"Check the agonist / antagonist / partial labels and relative affinities in the plate against a real source.",
- clinical:"Verify receptor → action → presentation against Stahl Table 2-4 / 2-5 and the clinical chapters.",
- citation:"Open the source — does it support the claim, and does the PMID resolve to that paper?"
-}[k];}
-function paintRow(r,el){
-  el=el||document.getElementById("spec-"+r.id);if(!el)return;const s=STATE[r.id];
-  CHECK_KEYS.forEach(k=>{
-    el.querySelector(`.pip[data-k="${k}"]`).classList.toggle("on",!!s[k]);
-    el.querySelector(`.check[data-k="${k}"]`).classList.toggle("on",!!s[k]);
-  });
-  const st=specStatus(r.id);const lab=el.querySelector(".spec-stat");
-  lab.textContent=st==="done"?"cleared":st==="review"?"in review":"not started";
-  lab.className="spec-stat "+(st==="done"?"done":st==="review"?"review":"");
-  el.querySelectorAll(".conf-mini i").forEach((i,ix)=>i.classList.toggle("on",ix<s.conf));
-  el.querySelectorAll(".cdot").forEach(d=>d.classList.toggle("on",+d.dataset.n<=s.conf));
-  el.querySelector(".conflabel").textContent=s.conf?`mastery ${s.conf}/5`:"unrated";
-  el.querySelector(".notes").value=s.note||"";
-  const de=el.querySelector("[data-dates]");if(de)renderDates(r,de);
-  applyFilter(el,r);
-}
-/* ============ SUMMARY ============ */
-function refresh(){
-  let done=0,checks=0,confSum=0,confN=0;const csCount={verified:0,provided:0,conflicting:0,"needs-source":0};
-  RX.forEach(r=>{const s=STATE[r.id];const n=CHECK_KEYS.filter(k=>s[k]).length;checks+=n;if(n===4)done++;if(s.conf){confSum+=s.conf;confN++;}csCount[r.status]=(csCount[r.status]||0)+1;});
-  const totalChecks=RX.length*4;const pct=Math.round(checks/totalChecks*100);
-  document.getElementById("ringPct").textContent=pct+"%";
-  document.getElementById("ringArc").style.strokeDashoffset=(402*(1-checks/totalChecks)).toFixed(1);
-  document.getElementById("tSpec").textContent=done;
-  document.getElementById("tCheck").textContent=checks;
-  document.getElementById("tConf").textContent=(confN?confSum/confN:0).toFixed(1);
-  // cite tally
-  document.getElementById("citeTally").innerHTML=
-    `<span class="schip"><span class="dot good"></span>${csCount.verified} verified</span>
-     <span class="schip"><span class="dot brass"></span>${csCount.provided} provided</span>
-     <span class="schip"><span class="dot warn"></span>${csCount.conflicting} conflicting</span>
-     <span class="schip"><span class="dot info"></span>${csCount["needs-source"]} needs-source</span>`;
-  // halls
-  const hp=document.getElementById("hallsProg");hp.innerHTML="";
-  Object.keys(HALLS).forEach(hk=>{
-    const list=RX.filter(r=>r.hall===hk);let c=0;list.forEach(r=>c+=CHECK_KEYS.filter(k=>STATE[r.id][k]).length);
-    const tot=list.length*4;const p=Math.round(c/tot*100);
-    const row=document.createElement("div");row.className="hp-row";
-    row.innerHTML=`<span class="hp-name">${HALLS[hk].t}</span><span class="hp-val">${c}/${tot} &middot; ${p}%</span><div class="bar"><i class="${p===100?'full':''}" style="width:${p}%"></i></div>`;
-    hp.appendChild(row);
-    const hm=document.getElementById("hm-"+hk);if(hm)hm.textContent=`${list.length} specimens · ${p}%`;
-  });
-  renderBindSummary();
-  renderBindBySource();
-  renderBindByDrug();
-}
-function renderBindSummary(){
-  const bs=document.getElementById('bindSummary'); if(!bs) return;
-  let total=0, confirmed=0, needs=0;
-  for(const a of AGENTS) for(const b of a.bindings){
-    total++;
-    if(b.value_status==='confirmed') confirmed++;
-    if(b.status==='needs-source') needs++;
-  }
-  const srcTotal=BINDING_USAGE.length;
-  const srcVerified=BINDING_USAGE.filter(u=>u.status==='verified').length;
-  bs.innerHTML=`
-    <span class="schip"><span class="dot good"></span>${confirmed} / ${total} numbers confirmed</span>
-    <span class="schip"><span class="dot good"></span>${srcVerified} / ${srcTotal} sources verified</span>
-    <span class="schip"><span class="dot info"></span>${needs} need a source</span>`;
+  }));
+
+  const list = document.getElementById('bindList');
+  if (list) { wireBindings(r, list); wireBindFilter(); }
 }
 
-/* ============ BINDING AFFINITIES — BY SOURCE (bulk verify) ============ */
-const BIND_STATUSES=["verified","provided","conflicting"];
-function renderBindBySource(){
-  const host=document.getElementById('bindBySource'); if(!host) return;
-  if(!BINDING_USAGE.length){ host.innerHTML=''; return; }
-  const sorted=[...BINDING_USAGE].sort((a,b)=>b.count-a.count);
-  host.innerHTML=`<div class="bind-subhead">By source &mdash; verify a source to clear every Ki that cites it</div>`
-    + sorted.map(u=>`
-      <div class="bsrc-row" data-id="${u.id}">
-        <div class="bsrc-cite"><span class="srow-kind">${kindLabel(u)}</span>
-          ${esc(u.authors)||'—'}${u.year?' ('+u.year+')':''} &middot; <i>${esc(u.title)||esc(u.journal)||'untitled'}</i></div>
-        <div class="bsrc-count">${u.count} binding${u.count===1?'':'s'}</div>
-        <div class="citestat">${BIND_STATUSES.map(v=>`<button type="button" class="cs${u.status===v?' on':''}" data-act="bulk" data-id="${u.id}" data-v="${v}">${v}</button>`).join('')}</div>
-      </div>`).join('');
+/* The filter hides rows rather than re-rendering them, so a row you have open
+   and half-edited is still open when you come back to it. */
+function wireBindFilter() {
+  const bar = document.querySelector('.bindbar'); if (!bar) return;
+  bar.addEventListener('click', e => {
+    const b = e.target.closest('[data-bf]'); if (!b) return;
+    bar.querySelectorAll('[data-bf]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    const f = b.dataset.bf;
+    let shown = 0;
+    document.querySelectorAll('#bindList .bind').forEach(card => {
+      const hit = f === 'all'
+        || (f === 'bare' && card.dataset.state === 'needs-source')
+        || (f === 'conflicting' && card.dataset.state === 'conflicting')
+        || (f === 'unchecked' && card.dataset.val === 'unchecked');
+      card.classList.toggle('hidden', !hit);
+      if (hit) shown++;
+    });
+    document.getElementById('bindEmpty').hidden = shown > 0;
+  });
 }
-async function bulkSourceStatus(id,status){
-  const r=await fetch('/api/sources/'+id+'/binding-status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});
-  return r.ok;
-}
-function wireBindBySource(){
-  const host=document.getElementById('bindBySource'); if(!host) return;
-  host.addEventListener('click', async e=>{
-    const btn=e.target.closest('button[data-act="bulk"]'); if(!btn) return;
-    if(await bulkSourceStatus(Number(btn.dataset.id), btn.dataset.v)){
-      await Promise.all([loadAgents(), loadBindingUsage()]);
-      renderBindSummary(); renderBindBySource(); renderBindByDrug();
+
+function wireBindings(r, list) {
+  list.querySelectorAll('[data-bk]').forEach(inp => inp.addEventListener('input', () => {
+    const id = Number(inp.dataset.bid), k = inp.dataset.bk;
+    const v = k === 'ki' ? (inp.value.trim() === '' ? null : Number(inp.value)) : inp.value;
+    patchDebounced(r.id, r.id + ':b' + id + ':' + k, { volume: 'cabinet', binding: { id, [k]: v } }, inp);
+    if (k === 'ki') {
+      const pki = inp.closest('.bind').querySelector('.bind-pki');
+      const n = Number(inp.value);
+      pki.textContent = n > 0 ? 'pKi ' + (9 - Math.log10(n)).toFixed(2) : 'no Ki';
+      pki.classList.toggle('bind-none', !(n > 0));
     }
-  });
-}
-/* ============ BINDING AFFINITIES — BY DRUG (per-binding citations + value_status) ============ */
-const VALUE_LABEL={unchecked:"Number unchecked",confirmed:"Number confirmed",mismatch:"Number ≠ source"};
-const VALUE_STATES=["confirmed","mismatch","unchecked"];
-let BIND_FILTER='all', BIND_SEARCH='';
+  }));
 
-function bindSrowHtml(agent,target,s){
-  return `<div class="srow" data-sid="${s.id}">
-    <div class="srow-top"><span class="srow-kind">${kindLabel(s)}</span></div>
-    <div class="srow-cite">${esc(s.authors)||'—'} (${s.year||'n.d.'}). <i>${esc(s.title)||esc(s.journal)||'untitled'}</i>${s.journal&&s.title?' &middot; '+esc(s.journal):''}</div>
-    <div class="srow-ids">
-      ${s.pmid?`<a class="srclink" href="${pm(s.pmid)}" target="_blank" rel="noopener">PMID ${esc(s.pmid)} ↗</a>`:''}
-      ${s.doi?`<a class="srclink" href="${doiU(s.doi)}" target="_blank" rel="noopener">DOI ↗</a>`:''}
-      ${(!s.pmid&&!s.doi&&s.url)?`<a class="srclink" href="${esc(s.url)}" target="_blank" rel="noopener">Open ↗</a>`:''}
-    </div>
-    <div class="citestat">${CITATION_STATUSES.map(v=>`<button type="button" class="cs${s.status===v?' on':''}" data-bact="status" data-sid="${s.id}" data-v="${v}" title="${CS_HELP[v]}">${v}</button>`).join('')}</div>
-    <div class="srow-actions"><button type="button" class="ctrl" data-bact="unlink" data-sid="${s.id}">Remove</button></div>
-  </div>`;
-}
+  async function reload() {
+    const data = await jget('/api/receptors/' + r.id + '/structured');
+    list.innerHTML = (data.binding || []).map(bindHtml).join('');
+    wireBindings(r, list);
+    try { BINDING_USAGE = await jget('/api/sources/binding-usage'); } catch (e) {}
+  }
 
-async function bindAttach(agent,target,body){
-  const r=await fetch(`/api/bindings/${encodeURIComponent(agent)}/${encodeURIComponent(target)}/sources`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  return r.ok;
-}
-async function bindEdge(agent,target,sid,status){
-  const r=await fetch(`/api/bindings/${encodeURIComponent(agent)}/${encodeURIComponent(target)}/sources/${sid}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});
-  return r.ok;
-}
-async function bindUnlink(agent,target,sid){
-  const r=await fetch(`/api/bindings/${encodeURIComponent(agent)}/${encodeURIComponent(target)}/sources/${sid}`,{method:'DELETE'});
-  return r.ok;
-}
-async function bindReview(agent,target,value_status){
-  const r=await fetch(`/api/bindings/${encodeURIComponent(agent)}/${encodeURIComponent(target)}/review`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({value_status})});
-  return r.ok;
-}
+  list.addEventListener('click', async e => {
+    const card = e.target.closest('.bind'); if (!card) return;
+    const agent = card.dataset.agent, target = card.dataset.target;
+    const base = `/api/bindings/${encodeURIComponent(agent)}/${encodeURIComponent(target)}`;
 
-function targetLabel(b){ const r=RX.find(x=>x.id===b.receptor_id); return r?r.nm:b.target_alias; }
-function bindStatusDot(b){
-  if(b.status==='needs-source') return 'info';
-  if(b.value_status==='mismatch'||b.status==='conflicting') return 'warn';
-  if(b.status==='verified'&&b.value_status==='confirmed') return 'good';
-  return 'brass';
-}
-function agentPasses(a){
-  if(BIND_FILTER==='all') return true;
-  return a.bindings.some(b=>{
-    if(BIND_FILTER==='needs') return b.status==='needs-source';
-    if(BIND_FILTER==='unverified') return b.status!=='verified';
-    if(BIND_FILTER==='unconfirmed') return b.value_status!=='confirmed';
-    if(BIND_FILTER==='mismatch') return b.value_status==='mismatch';
-    if(BIND_FILTER==='cleared') return b.status==='verified'&&b.value_status==='confirmed';
-    return true;
-  });
-}
-function bindingBlockHtml(agent,b){
-  const srcHtml = b.sources.length ? b.sources.map(s=>bindSrowHtml(agent,b.target_alias,s)).join('')
-    : `<div class="srcline" style="color:var(--bone-faint)">No source cited yet &middot; imported label: <i>${esc(b.src)||'—'}</i></div>`;
-  return `<div class="bbind" data-target="${esc(b.target_alias)}">
-    <div class="bbind-head">
-      <span class="dot ${bindStatusDot(b)}"></span>
-      <b>${esc(targetLabel(b))}</b>
-      <span class="bbind-ki">pKi ${pKiOf(b)||'—'}</span>
-      <span class="bbind-act">${esc(b.ki_text)||''}</span>
-      <span class="bbind-act">${esc(b.act_full)||''}</span>
-    </div>
-    <div class="bbind-sources">${srcHtml}</div>
-    <div class="src-add-combo"><input type="text" class="src-add-input" aria-label="Add a source" placeholder="Add a source — search by author, title, or PMID…" autocomplete="off"/><div class="src-add-menu hidden"></div></div>
-    <div class="valctl"><span class="valctl-lab">Our Ki vs source</span>${VALUE_STATES.map(v=>`<button type="button" class="cs${b.value_status===v?' on':''}" data-vact="${v}" title="${VALUE_LABEL[v]}">${v}</button>`).join('')}</div>
-  </div>`;
-}
-function renderBindByDrug(){
-  const host=document.getElementById('bindByDrug'); if(!host) return;
-  // Preserve which drawers are open across a re-render, so editing a binding in
-  // place doesn't collapse the drug the curator is working in.
-  const openAgents=new Set([...host.querySelectorAll('.bdrug.open')].map(d=>d.dataset.agent));
-  const q=(BIND_SEARCH||'').trim().toLowerCase();
-  const agents=[...AGENTS].sort((a,b)=>a.name.localeCompare(b.name))
-    .filter(agentPasses).filter(a=>!q||a.name.toLowerCase().includes(q));
-  host.innerHTML=`<div class="bind-subhead">By drug &mdash; ${agents.length} shown${q?` &middot; &ldquo;${esc(BIND_SEARCH.trim())}&rdquo;`:''}</div>`
-    + agents.map(a=>{
-        const worst=a.bindings.some(b=>b.status==='needs-source')?'info'
-          :a.bindings.some(b=>b.value_status==='mismatch'||b.status==='conflicting')?'warn'
-          :a.bindings.every(b=>b.status==='verified'&&b.value_status==='confirmed')?'good':'brass';
-        return `<div class="bdrug${openAgents.has(a.name)?' open':''}" data-agent="${esc(a.name)}">
-          <div class="bdrug-head"><span class="dot ${worst}"></span><b>${esc(a.name)}</b>
-            <span class="bdrug-n">${a.bindings.length} binding${a.bindings.length===1?'':'s'}</span></div>
-          <div class="bdrug-body">${a.bindings.map(b=>bindingBlockHtml(a.name,b)).join('')}</div>
-        </div>`;
-      }).join('');
-}
-function wireBindByDrug(){
-  const host=document.getElementById('bindByDrug'); if(!host) return;
-  async function reloadAll(){ await Promise.all([loadAgents(),loadBindingUsage()]); renderBindSummary(); renderBindBySource(); renderBindByDrug(); }
-  host.addEventListener('click', async e=>{
-    const head=e.target.closest('.bdrug-head');
-    if(head){ head.parentElement.classList.toggle('open'); return; }
-    const bind=e.target.closest('.bbind'); if(!bind) return;
-    const agent=e.target.closest('.bdrug').dataset.agent, target=bind.dataset.target;
-    const statusBtn=e.target.closest('button[data-bact="status"]');
-    if(statusBtn){ if(await bindEdge(agent,target,Number(statusBtn.dataset.sid),statusBtn.dataset.v)) reloadAll(); return; }
-    const unlinkBtn=e.target.closest('button[data-bact="unlink"]');
-    if(unlinkBtn){ if(!confirm('Remove this source from the binding? The shared library record is kept.'))return;
-      if(await bindUnlink(agent,target,Number(unlinkBtn.dataset.sid))) reloadAll(); return; }
-    const valBtn=e.target.closest('button[data-vact]');
-    if(valBtn){ if(await bindReview(agent,target,valBtn.dataset.vact)) reloadAll(); return; }
-    const opt=e.target.closest('.src-add-opt');
-    if(opt){
-      const menu=opt.closest('.src-add-menu');
-      if(opt.dataset.sid){ if(await bindAttach(agent,target,{source_id:Number(opt.dataset.sid),status:'provided'})) reloadAll(); }
-      else if(opt.dataset.act==='newform'){
-        const title=menu.dataset.q||'';
-        if(await bindAttach(agent,target,{source:{kind:'article',title},status:'provided'})) reloadAll();
+    // Row disclosure. The combobox inside is wired on first open rather than for
+    // all 55 rows up front, which keeps a document-level listener off every row
+    // the curator never touches.
+    const row = e.target.closest('.brow');
+    if (row) {
+      const prov = card.querySelector('.bind-prov');
+      const open = prov.classList.toggle('hidden') === false;
+      row.setAttribute('aria-expanded', String(open));
+      card.classList.toggle('is-open', open);
+      if (open && !card.dataset.wired) {
+        card.dataset.wired = '1';
+        wireCombo(card, async payload => {
+          if (await jsend('POST', `${base}/sources`, payload)) { toast('source attached'); reload(); }
+          else toast('could not attach that source', true);
+        });
       }
       return;
     }
+
+    const stat = e.target.closest('button[data-act="status"]');
+    if (stat) { const sid = Number(stat.closest('.src').dataset.sid);
+      if (await jsend('PATCH', `${base}/sources/${sid}`, { status: stat.dataset.v })) { toast('status saved'); reload(); } return; }
+    const un = e.target.closest('button[data-act="unlink"]');
+    if (un) { const sid = Number(un.closest('.src').dataset.sid);
+      if (!confirm('Remove this source from the binding? The shared library record is kept.')) return;
+      if (await jsend('DELETE', `${base}/sources/${sid}`)) { toast('source removed'); reload(); } return; }
+    const val = e.target.closest('button[data-vact]');
+    if (val) { if (await jsend('PATCH', `${base}/review`, { value_status: val.dataset.vact })) { toast('recorded'); reload(); } return; }
   });
-  host.addEventListener('input', e=>{
-    const input=e.target.closest('.src-add-input'); if(!input) return;
-    const menu=input.parentElement.querySelector('.src-add-menu');
-    const q=input.value.trim().toLowerCase();
-    if(!q){ menu.classList.add('hidden'); menu.innerHTML=''; return; }
-    menu.dataset.q=input.value.trim();
-    const matches=SOURCES.filter(s=>matchesSourceQuery(s,q)).slice(0,8);
-    menu.innerHTML=matches.map(s=>`<button type="button" class="src-add-opt" data-sid="${s.id}" title="${esc((s.authors||'—')+' ('+(s.year||'n.d.')+') '+(s.title||s.pmid||'untitled'))}"><span class="srow-kind">${kindLabel(s)}</span>${esc(srcLabel(s))}</button>`).join('')
-      + `<button type="button" class="src-add-opt src-add-new" data-act="newform">+ Create a new source for &ldquo;${esc(input.value.trim())}&rdquo;</button>`;
-    menu.classList.remove('hidden');
-  });
-}
-function wireBindRail(){
-  const rail=document.getElementById('bindRail'); if(!rail) return;
-  rail.addEventListener('click',e=>{
-    const seg=e.target.closest('.seg'); if(!seg) return;
-    rail.querySelectorAll('.seg').forEach(s=>s.classList.remove('active')); seg.classList.add('active');
-    BIND_FILTER=seg.dataset.bfilter;
-    renderBindByDrug();
-  });
-  const search=document.getElementById('bindSearch');
-  if(search) search.addEventListener('input',()=>{ BIND_SEARCH=search.value; renderBindByDrug(); });
+
 }
 
-/* ============ FILTER ============ */
-let FILTER="all";
-function applyFilter(el,r){
-  const s=STATE[r.id];const st=specStatus(r.id);let show=true;
-  if(FILTER==="todo")show=st==="todo";
-  else if(FILTER==="review")show=st==="review";
-  else if(FILTER==="done")show=st==="done";
-  else if(FILTER==="flag")show=(r.status==="conflicting"||r.status==="needs-source");
-  else if(FILTER==="lowconf")show=(s.conf>0&&s.conf<3);
-  else if(FILTER==="changed")show=DRIFT.has(r.id);
-  el.classList.toggle("hidden",!show);
+/* ════════════════════ SHEETS ════════════════════ */
+/* Dialogs remember who opened them and hand focus back on close, so a keyboard
+   user is returned to where they were instead of being dropped on <body>. */
+let veilOpener = null;
+function openVeil(id) {
+  veilOpener = document.activeElement;
+  const v = document.getElementById(id);
+  v.hidden = false;
+  (v.querySelector('input, .btn') || v.querySelector('.btn')).focus();
+  document.addEventListener('keydown', veilKeys);
 }
-function runFilter(){RX.forEach(r=>applyFilter(document.getElementById("spec-"+r.id),r));
-  // hide empty halls
-  Object.keys(HALLS).forEach(hk=>{const h=document.querySelector(`.hall[data-hall="${hk}"]`);const any=[...h.querySelectorAll(".spec")].some(s=>!s.classList.contains("hidden"));h.classList.toggle("hidden",!any);});}
-document.getElementById("rail").addEventListener("click",async e=>{const b=e.target.closest(".seg");if(!b)return;document.querySelectorAll(".rail .seg").forEach(x=>x.classList.remove("active"));b.classList.add("active");FILTER=b.dataset.filter;
-  if(FILTER==="changed"){await loadDrift();RX.forEach(r=>renderDates(r));}
-  runFilter();});
-document.getElementById("nextBtn").addEventListener("click",()=>{const r=RX.find(r=>specStatus(r.id)!=="done");if(!r){alert("Every specimen is cleared. Fine work.");return;}const el=document.getElementById("spec-"+r.id);el.classList.remove("hidden");el.classList.add("open");el.scrollIntoView({behavior:"smooth",block:"center"});});
+function closeVeil(id) {
+  document.getElementById(id).hidden = true;
+  document.removeEventListener('keydown', veilKeys);
+  if (veilOpener && document.contains(veilOpener)) veilOpener.focus();
+  veilOpener = null;
+}
+function veilKeys(e) {
+  const v = document.querySelector('.veil:not([hidden])'); if (!v) return;
+  if (e.key === 'Escape') { closeVeil(v.id); return; }
+  if (e.key !== 'Tab') return;
+  // Keep Tab inside the dialog. Without this the focus ring walks out into the
+  // page behind the veil, where nothing is clickable and nothing is visible.
+  const f = [...v.querySelectorAll('a[href], button, input, select, textarea')].filter(el => !el.disabled && el.offsetParent !== null);
+  if (!f.length) return;
+  const first = f[0], last = f[f.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+}
 
-/* ============ TOOLBAR ============ */
-document.getElementById("expandAll").addEventListener("click",()=>document.querySelectorAll(".spec").forEach(s=>s.classList.add("open")));
-document.getElementById("collapseAll").addEventListener("click",()=>document.querySelectorAll(".spec").forEach(s=>s.classList.remove("open")));
-document.getElementById("resetBtn").addEventListener("click",async()=>{
-  if(!confirm("Reset every specimen's checks, mastery ratings, and notes to blank? Citation links are kept. This writes to the database and cannot be undone unless you exported a copy."))return;
-  RX.forEach(r=>{const s=STATE[r.id];s.mechanism=s.affinity=s.clinical=s.citation=false;s.conf=0;s.note="";});
-  await Promise.all(RX.map(r=>persistReview(r.id)));
-  build();
-});
-document.getElementById("exportBtn").addEventListener("click",()=>{
-  const blob=new Blob([JSON.stringify({app:"conservators-desk",date:new Date().toISOString(),state:STATE},null,2)],{type:"application/json"});
-  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="atlas-review-progress-"+new Date().toISOString().slice(0,10)+".json";a.click();
-});
-document.getElementById("importBtn").addEventListener("click",()=>document.getElementById("importFile").click());
-document.getElementById("importFile").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=async()=>{try{const j=JSON.parse(rd.result);const src=j.state||j;
-  RX.forEach(r=>{const s=src[r.id];if(!s)return;const t=STATE[r.id];
-    if('mechanism'in s)t.mechanism=!!s.mechanism; if('affinity'in s)t.affinity=!!s.affinity;
-    if('clinical'in s)t.clinical=!!s.clinical; if('citation'in s)t.citation=!!s.citation;
-    if('conf'in s)t.conf=s.conf||0; if('note'in s)t.note=s.note||"";});
-  await Promise.all(RX.map(r=>persistReview(r.id)));build();alert("Progress imported.");
-}catch(err){alert("Could not read that file.");}};rd.readAsText(f);});
-
-/* ============ SOURCES LIBRARY ============ */
-const SRC_FIELDS=[['authors','Authors'],['year','Year'],['title','Title','wide'],['journal','Journal'],['pmid','PMID'],['doi','DOI'],['url','URL','wide'],['notes','Notes','wide']];
-function citedCount(id){return RX.filter(r=>r.sources.some(s=>s.id===id)).length;}
-function sourceCard(s){
-  return `<div class="srcrow" data-sid="${s.id}">
-    <div class="srcrow-main">
-      <div class="srcrow-cite"><span class="srow-kind">${kindLabel(s)}</span> ${esc(s.authors)||'—'} (${s.year||'n.d.'}). <i>${esc(s.title)||'untitled'}</i>${s.journal?' · '+esc(s.journal):''}</div>
-      <div class="srcrow-ids">
-        ${s.pmid?`<a class="srclink" href="${pm(s.pmid)}" target="_blank" rel="noopener">PMID ${esc(s.pmid)} ↗</a>`:''}
-        ${s.doi?`<a class="srclink" href="${doiU(s.doi)}" target="_blank" rel="noopener">DOI ↗</a>`:''}
-        <span class="srcrow-cited">#${s.id} · cited by ${citedCount(s.id)}</span>
+function renderLibrary() {
+  const q = (document.getElementById('libSearch').value || '').trim().toLowerCase();
+  const rows = SOURCES.filter(s => !q || matchesQuery(s, q));
+  const useOf = id => (BINDING_USAGE.find(u => u.id === id) || {}).count || 0;
+  document.getElementById('libList').innerHTML = rows.length ? rows.map(s => {
+    const n = useOf(s.id);
+    return `<div class="libitem" data-sid="${s.id}">
+      <div class="src-cite"><b>${esc(s.authors) || 'Unknown author'}</b> (${esc(s.year) || 'n.d.'}). ${esc(s.title) || 'untitled'}${s.journal ? ' · ' + esc(s.journal) : ''}</div>
+      <div class="src-line2">
+        <span class="src-kind">${kindLabel(s)}</span>
+        ${s.pmid ? `<a class="slink" href="${pm(s.pmid)}" target="_blank" rel="noopener">PMID ${esc(s.pmid)}</a>` : ''}
+        ${s.doi ? `<a class="slink" href="${doiU(s.doi)}" target="_blank" rel="noopener">DOI</a>` : ''}
+        ${n ? `<span class="libuse">${n} binding${n === 1 ? '' : 's'} rest on this</span>` : ''}
       </div>
-    </div>
-    <button class="ctrl srcedit" data-sid="${s.id}">Edit</button>
-  </div>`;
-}
-function sourceForm(s){
-  return `<div class="srcform" data-sid="${s?s.id:''}">
-    <label class="srcfield"><span>Kind</span><select data-k="kind">
-      <option value="article"${(!s||s.kind!=='book')?' selected':''}>Article</option>
-      <option value="book"${(s&&s.kind==='book')?' selected':''}>Book</option>
-    </select></label>
-    ${SRC_FIELDS.map(([k,lab,wide])=>`<label class="srcfield${wide?' wide':''}"><span>${lab}</span><input data-k="${k}" value="${s?esc(s[k]):''}" /></label>`).join('')}
-    <div class="srcform-actions">
-      <button class="ctrl accent" data-act="save">${s?'Save changes':'Add source'}</button>
-      ${s?'<button class="ctrl" data-act="cancel">Cancel</button>':''}
-    </div>
-  </div>`;
-}
-function readForm(formEl){const o={};formEl.querySelectorAll('input[data-k],select[data-k]').forEach(i=>{const v=i.value.trim();o[i.dataset.k]=v===''?null:(i.dataset.k==='year'?(isNaN(Number(v))?v:Number(v)):v);});return o;}
-function renderLibrary(){
-  document.getElementById('srcList').innerHTML=SOURCES.length?SOURCES.map(sourceCard).join(''):'<p class="srcline" style="color:var(--bone-faint)">No sources yet.</p>';
-  document.getElementById('srcAddForm').innerHTML=sourceForm(null);
-}
-// After a paper is added/edited: reload the library, re-render every specimen's
-// sources panel that cites the edited paper (so a one-time PMID fix shows
-// everywhere at once — a citing receptor may hold it as primary or not).
-async function afterSourceChange(editedId){
-  await loadSources();
-  if(editedId!=null)for(const r of RX.filter(x=>x.sources.some(s=>s.id===editedId)))await refreshReceptor(r);
-  renderLibrary();refresh();
-}
-function setupLibrary(){
-  renderLibrary();
-  const lib=document.getElementById('srcLibrary'),toggle=document.getElementById('srcToggle');
-  toggle.addEventListener('click',()=>{const hidden=lib.classList.toggle('hidden');toggle.innerHTML=hidden?'Show library &#9662;':'Hide library &#9652;';});
-  lib.addEventListener('click',async e=>{
-    const editBtn=e.target.closest('.srcedit');
-    if(editBtn){const sid=Number(editBtn.dataset.sid);const s=SOURCES.find(x=>x.id===sid);const row=lib.querySelector(`.srcrow[data-sid="${sid}"]`);if(row&&s)row.outerHTML=sourceForm(s);return;}
-    const saveBtn=e.target.closest('[data-act="save"]');
-    if(saveBtn){const form=saveBtn.closest('.srcform');const sid=form.dataset.sid;const body=readForm(form);
-      try{
-        if(sid){await fetch('/api/sources/'+sid,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});await afterSourceChange(Number(sid));}
-        else{await fetch('/api/sources',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});await afterSourceChange(null);}
-      }catch(err){alert('Could not save the source.');}
-      return;}
-    if(e.target.closest('[data-act="cancel"]')){renderLibrary();return;}
-  });
+      ${n ? `<div class="statrow" style="margin-top:var(--space-xs);max-width:22rem">
+        ${CITATION_STATUSES.map(v => `<button type="button" class="stat" data-libstat="${v}" data-sid="${s.id}">set all ${v}</button>`).join('')}
+      </div>` : ''}
+    </div>`;
+  }).join('') : '<div class="qempty">No source matches that.</div>';
 }
 
-/* ============ MAST SHADOW ============ */
-const mast=document.getElementById("mast");
-addEventListener("scroll",()=>mast.classList.toggle("is-scrolled",scrollY>8));
-
-/* ============ PAGE-LOAD REVEAL ============ */
-/* Sticky section tabs: click to jump (scroll-margin handles the sticky offset),
-   scroll-spy highlights the section you're in. */
-function wireDeskTabs(){
-  const nav=document.getElementById('deskTabs'); if(!nav) return;
-  const tabs=[...nav.querySelectorAll('a[data-tab]')];
-  const targets=tabs.map(a=>({tab:a, el:document.getElementById(a.dataset.tab)})).filter(t=>t.el);
-  // Jump is the native anchor (href="#id") + CSS scroll-behavior + scroll-margin-top,
-  // which is more robust than a JS scroll. This function only drives the scroll-spy.
-  const offset=()=>{ const m=document.getElementById('mast'); return (m?m.offsetHeight:70)+(nav.offsetHeight||44)+10; };
-  let ticking=false;
-  function spy(){
-    ticking=false;
-    const y=offset();
-    let active=targets[0];
-    for(const t of targets){ if(t.el.getBoundingClientRect().top<=y) active=t; }
-    tabs.forEach(a=>a.classList.toggle('active', !!active && a===active.tab));
-  }
-  window.addEventListener('scroll',()=>{ if(!ticking){ ticking=true; requestAnimationFrame(spy); } }, {passive:true});
-  spy();
+/* ════════════════════ EXPORT / IMPORT ════════════════════ */
+function exportReview() {
+  const payload = { exported: new Date().toISOString(), review: STATE };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'conservators-desk-review.json';
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('review exported');
+}
+async function importReview(file) {
+  try {
+    const payload = JSON.parse(await file.text());
+    const incoming = payload.review || payload;
+    // Importing rewrites review state for every specimen in the file, and review
+    // state is the one thing here the atlas cannot regenerate. Say how much is
+    // about to change and let the curator refuse.
+    const changing = Object.keys(incoming).filter(id => STATE[id] &&
+      JSON.stringify({ ...STATE[id], ...incoming[id] }) !== JSON.stringify(STATE[id]));
+    if (!changing.length) { toast('that file matches what is already here'); return; }
+    const when = payload.exported ? new Date(payload.exported).toLocaleString() : 'an unknown date';
+    const names = changing.slice(0, 6).map(id => (RX.find(x => x.id === id) || {}).nm || id);
+    const ask = [
+      `Import the review saved on ${when}?`,
+      '',
+      `This replaces checks, mastery and notes for ${changing.length} specimen${changing.length === 1 ? '' : 's'}:`,
+      names.join(', ') + (changing.length > 6 ? `, and ${changing.length - 6} more` : ''),
+      '',
+      'It cannot be undone. Export first if you want a copy of what is here now.',
+    ].join('\n');
+    if (!confirm(ask)) { toast('import cancelled'); return; }
+    let n = 0;
+    for (const id of Object.keys(incoming)) {
+      if (!STATE[id]) continue;
+      STATE[id] = { ...STATE[id], ...incoming[id] };
+      await persistReview(id); n++;
+    }
+    renderQueue(); renderTally();
+    if (openId) openSpecimen(openId);
+    toast(`imported ${n} specimen${n === 1 ? '' : 's'}`);
+  } catch (e) { toast('that file could not be read', true); }
 }
 
-async function init(){
-  try{
-    await Promise.all([loadRX(), loadSources(), loadDrift(), loadAgents(), loadBindingUsage()]);   // RX + STATE (review) + SOURCES + drift + AGENTS + BINDING_USAGE set
-  }catch(e){
-    hallsEl.innerHTML='<div class="hall"><div class="hall-head"><h2>Couldn’t reach the Atlas API</h2></div><p style="padding:0 18px 18px;line-height:1.5;">This page now reads its receptor data from the running server. Start the app with <b>start.bat</b> and open <a href="http://localhost:3000/the-conservators-desk.html">http://localhost:3000/the-conservators-desk.html</a>.</p></div>';
+/* ════════════════════ BOOT ════════════════════ */
+document.getElementById('qsearch').addEventListener('input', e => { query = e.target.value.trim().toLowerCase(); renderQueue(); });
+document.getElementById('qfilters').addEventListener('click', e => {
+  const b = e.target.closest('.qf'); if (!b) return;
+  filter = b.dataset.f; renderQueue();
+});
+document.getElementById('queueList').addEventListener('click', e => {
+  const row = e.target.closest('.qrow'); if (!row) return;
+  openSpecimen(row.dataset.id);
+});
+/* Arrow keys walk the queue, Enter opens. Tabbing through two dozen rows to
+   reach the work pane is not navigation, it is a toll, and the skip link in the
+   markup lets a keyboard user step over the whole rail in one press. */
+document.getElementById('queueList').addEventListener('keydown', e => {
+  const row = e.target.closest('.qrow'); if (!row) return;
+  const rows = [...document.querySelectorAll('.qrow')];
+  const i = rows.indexOf(row);
+  if (e.key === 'ArrowDown') { e.preventDefault(); rows[Math.min(rows.length - 1, i + 1)]?.focus(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); rows[Math.max(0, i - 1)]?.focus(); }
+  else if (e.key === 'Home') { e.preventDefault(); rows[0]?.focus(); }
+  else if (e.key === 'End') { e.preventDefault(); rows[rows.length - 1]?.focus(); }
+});
+/* One shortcut, for the move a curator makes most: the next specimen that still
+   has nothing behind it. Not a whole keymap nobody will learn. */
+document.addEventListener('keydown', e => {
+  if (e.key !== 'j' || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
+  if (document.querySelector('.veil:not([hidden])')) return;
+  const bare = RX.filter(r => r.status === 'needs-source');
+  const pool = bare.length ? bare : RX;
+  const at = pool.findIndex(r => r.id === openId);
+  const next = pool[(at + 1) % pool.length];
+  if (next) { openSpecimen(next.id); toast('next: ' + next.nm); }
+});
+document.getElementById('helpBtn').addEventListener('click', () => openVeil('helpVeil'));
+document.getElementById('libBtn').addEventListener('click', () => { renderLibrary(); openVeil('libVeil'); });
+document.getElementById('libSearch').addEventListener('input', renderLibrary);
+document.getElementById('libList').addEventListener('click', async e => {
+  const b = e.target.closest('[data-libstat]'); if (!b) return;
+  if (await jsend('PATCH', `/api/sources/${b.dataset.sid}/binding-status`, { status: b.dataset.libstat })) {
+    toast('every binding on that source updated');
+    BINDING_USAGE = await jget('/api/sources/binding-usage');
+    if (openId) openSpecimen(openId);
+  } else toast('could not update those bindings', true);
+});
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => closeVeil(b.dataset.close)));
+document.querySelectorAll('.veil').forEach(v => v.addEventListener('click', e => { if (e.target === v) closeVeil(v.id); }));
+document.getElementById('exportBtn').addEventListener('click', exportReview);
+document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+document.getElementById('importFile').addEventListener('change', e => { if (e.target.files[0]) importReview(e.target.files[0]); });
+
+(async function boot() {
+  try { await loadAll(); }
+  catch (e) {
+    document.getElementById('workIn').innerHTML =
+      '<div class="qempty">Could not reach the Atlas API. Start the app with <b>start.bat</b> and open this page from the running server.</div>';
     return;
   }
-  build();                // STATE was populated inside loadRX(); SOURCES feed the pick lists
-  setupLibrary();
-  wireDeskTabs();
-  document.getElementById("rcount").textContent=RX.length;
-  if(window.matchMedia && !matchMedia("(prefers-reduced-motion: reduce)").matches){
-    const rows=[...document.querySelectorAll(".spec")];
-    rows.forEach((s,i)=>{s.style.opacity="0";s.style.transform="translateY(8px)";
-      setTimeout(()=>{s.style.opacity="";s.style.transform="";},80+i*22);});
-  }
-}
-init();
+  renderQueue(); renderTally();
+  /* Open the first specimen that still has nothing behind it. The tool should
+     arrive on the work rather than on a welcome screen, and the most useful
+     place to land is the backlog it exists to clear. */
+  const firstBare = RX.find(r => r.status === 'needs-source') || RX[0];
+  if (firstBare) openSpecimen(firstBare.id);
+})();
 </script>
 </body>
 </html>

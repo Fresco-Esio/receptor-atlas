@@ -15,6 +15,10 @@ const PUBLISHED = [
   'neuroreceptor_pharmacology_explorer_dashboard.html', // Cabinet
   'neuroreceptor_clinical_table.html',    // Ledger
   'receptor-atlas-demo.html',             // standalone walkthrough
+  // The Desk is not published to the web, but it is the surface the curator spends
+  // the most hours in, and it is where the type floor drifted furthest before the
+  // redesign. Holding it to the same three rules is the point of having them.
+  'the-conservators-desk.html',
 ];
 
 const read = page => readFileSync(new URL(`../public/${page}`, import.meta.url), 'utf8');
