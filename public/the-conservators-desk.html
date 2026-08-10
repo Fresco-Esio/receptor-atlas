@@ -20,10 +20,14 @@
    it. This one is built around a single sentence: nothing goes on the wall
    without a paper behind it.
 
-   That sentence decides the layout. The source ledger sits ABOVE the content it
-   backs and stays there while you edit, because the database keys sources to the
-   receptor and to each binding — not to individual fields — and an honest layout
-   says so rather than faking per-field citations.
+   That sentence decides the layout. The source ledger is docked in an evidence
+   rail BESIDE the content it backs and never scrolls away, because the database
+   keys sources to the receptor and to each binding (not to individual fields)
+   and an honest layout says so rather than faking per-field citations. An
+   earlier pass stacked the ledger above the content instead; it said the same
+   true thing about the schema but made every verification a vertical round
+   trip between a field and the papers behind it. Reading a claim against its
+   evidence should be a glance to the side, the way the eye already travels.
 
    It also decides the colour. Vermilion is the atlas's ceremonial accent, spent
    on the one thing that matters in a view. Here that is a claim with nothing
@@ -59,7 +63,7 @@ body {
   --st-provided:  var(--brass);
   --st-verified:  var(--status-verified);
   --rail-w: 19rem;
-  --aside-w: 17rem;
+  --side-w: clamp(19rem, 24vw, 24rem);
 
   /* ── the type ramp, four steps and a label ────────────────────────────────
      A first pass at this file drifted to ten intermediate sizes between 0.75
@@ -236,23 +240,9 @@ body {
 
 /* ═══════════ the work pane ═══════════ */
 .work { min-height: 0; overflow-y: auto; overscroll-behavior: contain; background: var(--wall-atrium); }
-.work-in { display: grid; grid-template-columns: minmax(0, 1fr) var(--aside-w); gap: var(--space-xl);
-  padding: var(--space-xl) clamp(var(--space-lg), 3vw, var(--space-2xl)) var(--space-2xl); align-items: start; }
-@media (max-width: 1400px) {
-  /* Below the split, the review card would otherwise land after every field in the
-     specimen, so the checks become something you discover last. But hoisting the
-     whole aside also overshot: it landed above the specimen name and the ledger,
-     so the first thing on screen was a checklist for a specimen you had not been
-     shown yet. `display: contents` dissolves the wrapper so the four parts become
-     siblings and can be ordered properly: name, then the papers, then what is left
-     to check, then the content those checks are about. */
-  .work-in { display: flex; flex-direction: column; }
-  .spec-main { display: contents; }
-  .spec-head { order: 1; }
-  .ledger { order: 2; }
-  .aside { order: 3; display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: var(--space-md); }
-  #content { order: 4; }
-}
+/* The split itself (content column | evidence rail) is part of the viewport-fit
+   shell and lives with it at the END of the stylesheet, per the Override-Layer
+   Rule: it overrides component decisions declared later than this section. */
 
 .spec-head { margin-bottom: var(--space-lg); }
 .spec-kicker { display: flex; align-items: baseline; gap: var(--space-sm); flex-wrap: wrap; }
@@ -268,15 +258,13 @@ body {
   letter-spacing: 0.04em; text-transform: uppercase; line-height: 1.1; margin-top: var(--space-xs); color: var(--bone); }
 
 /* ── the ledger: the spine of the whole tool ──────────────────────────────
-   Sticky, so it is still on screen when you are three fields deep in the
-   narrative below. Its heading states the relationship plainly rather than
-   leaving the reader to infer which content these papers cover. */
+   First object in the evidence rail, so it is on screen no matter how deep the
+   content column is scrolled. Its heading states the relationship plainly
+   rather than leaving the reader to infer which content these papers cover. */
 .ledger {
-  position: sticky; top: 0; z-index: 3;
   background: var(--wall-panel);
   border: 1px solid var(--brass-line); border-radius: 3px;
   padding: var(--space-md);
-  margin-bottom: var(--space-lg);
 }
 .ledger.is-unsourced { border-color: var(--st-unsourced); }
 .ledger-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-sm); flex-wrap: wrap; }
@@ -292,11 +280,17 @@ body {
 .naked b { color: var(--st-unsourced); font-weight: 500; }
 .naked p { font-size: var(--fs-text); color: var(--bone-read); }
 
-.srcs { display: flex; flex-direction: column; gap: var(--space-xs); margin-top: var(--space-sm); }
+.srcs { display: flex; flex-direction: column; gap: var(--space-xs); margin-top: var(--space-sm); container-type: inline-size; }
 .src {
   display: grid; grid-template-columns: 1fr auto; gap: var(--space-sm) var(--space-md); align-items: start;
   padding: var(--space-sm) var(--space-md);
   background: var(--wall-recess); border: 1px solid var(--brass-faint); border-radius: 2px;
+}
+/* Queried off the list's own width, not the viewport: the same rows render
+   narrow in the rail and wide inside a binding. Too narrow for a side-by-side
+   cite and controls, and the controls drop below the citation. */
+@container (max-width: 27rem) {
+  .src { grid-template-columns: 1fr; }
 }
 .src[data-s="conflicting"] { border-color: var(--st-conflict); }
 .src-cite { font-size: var(--fs-text); line-height: 1.5; color: var(--bone-read); }
@@ -308,7 +302,7 @@ body {
 .slink:hover { color: var(--vermilion); border-bottom-color: var(--vermilion); }
 .src-warn { font-size: var(--fs-text); color: var(--st-conflict); margin-top: var(--space-2xs); }
 .src-ctl { display: flex; flex-direction: column; gap: var(--space-2xs); align-items: stretch; }
-.statrow { display: flex; gap: var(--space-2xs); }
+.statrow { display: flex; flex-wrap: wrap; gap: var(--space-2xs); }
 .stat {
   appearance: none; cursor: pointer; flex: 1 1 auto;
   font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.05em; text-transform: uppercase;
@@ -424,9 +418,7 @@ body {
 .bind-val-lab { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.1em; text-transform: uppercase; color: var(--bone-faint); }
 
 /* ═══════════ the review aside ═══════════ */
-.aside { position: sticky; top: 0; display: flex; flex-direction: column; gap: var(--space-lg); }
-@media (max-width: 1400px) { .aside { position: static; } }
-@media (max-width: 620px) { .aside { grid-template-columns: 1fr; } }
+.aside { display: flex; flex-direction: column; gap: var(--space-lg); }
 .card { background: var(--wall-panel); border: 1px solid var(--brass-line); border-radius: 3px; padding: var(--space-md); }
 .card > h3 { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.14em; text-transform: uppercase;
   color: var(--bone-dim); font-weight: 400; margin-bottom: var(--space-sm); }
@@ -497,17 +489,65 @@ body {
 /* ═══════════ viewport-fit shell ═══════════
    Same contract as the Cabinet: above the stacking breakpoint the document does
    not scroll, the queue and the work pane each scroll in their own box, and
-   below it the lock lifts so a phone gets one honest page scroll. */
+   below it the lock lifts so a phone gets one honest page scroll. This layer
+   deliberately sits at the end of the stylesheet (the Override-Layer Rule): it
+   overrides component decisions declared above it on source order alone. */
 @media (min-width: 941px) {
   body { height: 100svh; display: flex; flex-direction: column; overflow: hidden; }
 }
+
+/* Above the split the work pane divides once more: the specimen's content on
+   the left, the evidence rail (the ledger, then the review cards) on the right,
+   each scrolling in its own box. The first build stacked the ledger above the
+   content in one shared scroll, which read correctly (the papers do back
+   everything below) but worked badly: checking any field against its evidence
+   was a vertical round trip, repeated for every field. Work on the left,
+   evidence on the right is the direction eyes already travel, and two scroll
+   boxes mean neither column ever drags the other out of view. Same contract as
+   the Cabinet's rail and plate. */
+@media (min-width: 1160px) {
+  .work { overflow: hidden; }
+  .work-in { display: grid; grid-template-columns: minmax(0, 1fr) var(--side-w); height: 100%; }
+  .work-in > .qempty { grid-column: 1 / -1; align-self: center; }
+  .main-col { min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+    padding: var(--space-xl) clamp(var(--space-lg), 3vw, var(--space-2xl)) var(--space-2xl); }
+  /* A cap for ultrawide windows only: an uncapped textarea at 2560px runs past
+     130ch and the cursor gets lost mid-line. Tool density, not prose measure,
+     so it sits above the 75ch reading cap on purpose. */
+  .main-col > .spec-head, .main-col > #content { max-width: 56rem; }
+  .side { min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+    display: flex; flex-direction: column; gap: var(--space-lg);
+    padding: var(--space-xl) var(--space-md) var(--space-2xl);
+    background: var(--wall-vault); border-left: 1px solid var(--brass-line); }
+}
+
+/* Below the split there is no second column to dock the rail in, so the pane
+   scrolls as one page in reading order: name, then the papers, then what is
+   left to check, then the content those checks are about. Hoisting the whole
+   rail above the name was tried and overshot: the first thing on screen was a
+   checklist for a specimen you had not been shown yet. `display: contents`
+   dissolves the two column wrappers so the four parts become siblings and can
+   be ordered properly. */
+@media (max-width: 1159.98px) {
+  .work-in { display: flex; flex-direction: column; gap: var(--space-lg);
+    padding: var(--space-xl) clamp(var(--space-lg), 3vw, var(--space-2xl)) var(--space-2xl); }
+  .main-col, .side { display: contents; }
+  .spec-head { order: 1; margin-bottom: 0; }
+  .ledger { order: 2; }
+  .aside { order: 3; display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: var(--space-md); }
+  #content { order: 4; }
+}
+
 @media (max-width: 940px) {
   .bench { grid-template-columns: 1fr; }
   .queue { border-right: 0; border-bottom: 1px solid var(--brass-line); max-height: 44svh; }
-  .work-in { grid-template-columns: minmax(0, 1fr); padding: var(--space-lg) var(--space-md); }
-  .ledger { position: static; }
+  .work-in { padding: var(--space-lg) var(--space-md) var(--space-2xl); }
   .mast { flex-wrap: wrap; }
   .tally { order: 3; width: 100%; }
+}
+
+@media (max-width: 620px) {
+  .aside { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -571,7 +611,7 @@ body {
       <h3>The loop</h3>
       <ol>
         <li><b>Pick a specimen</b> from the queue. Filter to <i>Unsourced</i> to see the ones with nothing behind them at all; those are the real backlog.</li>
-        <li><b>Read the ledger</b> at the top of the specimen. Those papers back the claim, the narrative, and the clinical row below them. If it is empty the specimen says so in vermilion, and there is a PubMed search seeded with the receptor's own terms.</li>
+        <li><b>Read the ledger</b> in the rail beside the content. Those papers back the claim, the narrative, and the clinical row. If it is empty the specimen says so in vermilion, and there is a PubMed search seeded with the receptor's own terms.</li>
         <li><b>Attach a source.</b> Type an author, a title, or a PMID: matches from the shared library appear as you type, or create a new record inline. Edit a paper once in the library and every specimen citing it updates.</li>
         <li><b>Set each source's status</b> as you check it. Then work the content below, edit anything that is wrong, and tick the four checks in the review card.</li>
       </ol>
@@ -584,7 +624,7 @@ body {
       <div class="keyrow"><span class="sdot" data-s="conflicting"></span><span><b>Conflicting.</b> A source is wrong or disputed. One of these flags the whole specimen.</span></div>
 
       <h3>Two levels of source</h3>
-      <p>The database keys a source either to the <b>specimen</b> or to a single <b>binding</b>, so the desk shows them in those two places and nowhere else. The ledger at the top backs the specimen's claim, narrative and clinical row. A binding's Ki carries its own citation on its own card, because a number needs the paper that measured <i>that number</i>.</p>
+      <p>The database keys a source either to the <b>specimen</b> or to a single <b>binding</b>, so the desk shows them in those two places and nowhere else. The ledger in the rail backs the specimen's claim, narrative and clinical row. A binding's Ki carries its own citation on its own row, because a number needs the paper that measured <i>that number</i>.</p>
 
       <h3>Sourcing the binding numbers in bulk</h3>
       <p>Most affinities come from one database, so verifying that record once in the <b>Source library</b> clears every binding citing it. Open the library, find the source, and set its status there.</p>
@@ -877,7 +917,7 @@ function ledgerHtml(r) {
       <h2 class="ledger-title" id="ledgerTitle">Sources for this specimen</h2>
       <span class="lbl">${r.sources.length || 'none'} attached</span>
     </div>
-    <p class="ledger-note">These papers back the claim, the narrative and the clinical row below. A binding's Ki carries its own citation on its own card.</p>
+    <p class="ledger-note">These papers back the specimen's claim, narrative and clinical row. A binding's Ki carries its own citation on its own row.</p>
     ${bare ? `<div class="naked">
         <span class="sdot" data-s="needs-source" aria-hidden="true" style="margin-top:.45rem"></span>
         <p><b>Nothing stands behind this specimen yet.</b> Everything below is currently unsupported. Attach at least one source before clearing any check.
@@ -1006,18 +1046,22 @@ async function openSpecimen(id) {
   if (!r) return;
   renderQueue();
   const host = document.getElementById('workIn');
-  host.innerHTML = `<div class="spec-main"><div class="spec-head">
+  host.innerHTML = `<div class="main-col"><div class="spec-head">
       <div class="spec-kicker">
         <span class="spec-no">No. ${String(RX.indexOf(r) + 1).padStart(2, '0')}</span>
         <span class="spec-vols">${r.vols.map(v => `<span class="vchip">${esc(v)}</span>`).join('')}</span>
       </div>
       <h1 class="spec-name">${esc(r.nm)}</h1>
     </div>
-    ${ledgerHtml(r)}
     <div id="content"><div class="qempty">Loading the content&hellip;</div></div>
-  </div>${asideHtml(r)}`;
+  </div>
+  <div class="side">
+    ${ledgerHtml(r)}
+    ${asideHtml(r)}
+  </div>`;
 
   document.getElementById('work').scrollTop = 0;
+  host.querySelectorAll('.main-col, .side').forEach(el => { el.scrollTop = 0; });
   wireLedger(r);
   wireAside(r);
   await loadContent(r);
@@ -1131,7 +1175,7 @@ async function loadContent(r) {
   catch (e) { document.getElementById('content').innerHTML = '<div class="qempty">Could not load the content for this specimen.</div>'; return; }
 
   let html = `<section class="sec"><div class="sec-head"><h2 class="sec-title">Claim under review</h2><span class="sec-vol">Archive</span><span class="sec-saved" data-saved></span></div>
-    ${fieldHtml('claim', 'The one sentence this specimen asserts', data.claim, 3, 'Backed by the sources in the ledger above.')}</section>`;
+    ${fieldHtml('claim', 'The one sentence this specimen asserts', data.claim, 3, 'Backed by the sources in the specimen&rsquo;s ledger.')}</section>`;
 
   if (data.narrative) {
     const n = data.narrative;
