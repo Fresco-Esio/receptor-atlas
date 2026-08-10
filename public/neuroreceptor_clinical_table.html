@@ -348,6 +348,83 @@
     tr, td, th { break-inside: avoid; }
     a { color: var(--p-ink) !important; text-decoration: none; }
   }
+
+  /* ── toxidrome drawer ──────────────────────────────────────────────────
+     Carried over from the Cabinet, whose plate no longer holds clinical
+     presentation. These five are the syndromes a reader of the Excess and
+     Deficit columns needs spelled out, so they belong to this volume. */
+  .term-link {
+    appearance: none; background: none; padding: 0; border: 0;
+    font: inherit;
+    color: var(--vermilion);
+    border-bottom: 1px dotted var(--brass);
+    cursor: pointer;
+    transition: border-color 0.3s var(--ease);
+  }
+  .term-link:hover { border-color: var(--vermilion); }
+  .dialog-veil {
+    position: fixed; inset: 0; z-index: 60;
+    background: oklch(10% 0.008 75 / 0.84);
+    display: grid; place-content: center;
+    padding: var(--space-lg);
+  }
+  .dialog-veil.hidden { display: none; }
+  .dialog {
+    width: min(34rem, 92vw);
+    background: var(--wall-panel);
+    border: 1px solid var(--brass-line);
+    border-radius: 3px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px oklch(0% 0 0 / 0.5);
+    animation: dialog-in 0.5s var(--ease);
+  }
+  @keyframes dialog-in { from { opacity: 0; translate: 0 14px; } to { opacity: 1; translate: 0 0; } }
+  .dialog-head {
+    padding: 1.3rem var(--space-lg);
+    border-bottom: 1px solid var(--brass-line);
+    background: oklch(0% 0 0 / 0.16);
+    display: flex; align-items: center; justify-content: space-between; gap: var(--space-md);
+  }
+  .dialog-head .dno { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.16em; color: var(--vermilion); text-transform: uppercase; display: block; margin-bottom: 0.4rem; }
+  .dialog-head h4 { font-family: var(--display); font-weight: 400; font-size: 1.25rem; letter-spacing: 0.03em; text-transform: uppercase; line-height: 1.15; }
+  .dialog-close {
+    appearance: none; flex: none;
+    width: 30px; height: 30px;
+    border: 1px solid var(--brass-line); border-radius: 2px;
+    background: transparent; color: var(--bone-dim);
+    cursor: pointer; font-family: var(--mono);
+    transition: color 0.3s var(--ease), border-color 0.3s var(--ease);
+  }
+  .dialog-close:hover { color: var(--vermilion); border-color: var(--vermilion); }
+  .dialog-body { padding: var(--space-lg); }
+  .dialog-body > p { font-size: 0.9375rem; color: var(--bone-dim); line-height: 1.65; }
+  .dialog-ledger {
+    margin-top: 1.3rem;
+    border: 1px solid var(--brass-faint);
+    border-radius: 2px;
+    padding: 1.1rem 1.3rem;
+    background: oklch(0% 0 0 / 0.16);
+  }
+  .dialog-ledger h5 { font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--bone-faint); margin-bottom: 0.7rem; }
+  .dialog-ledger ul { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; }
+  .dialog-ledger li { display: grid; grid-template-columns: auto 1fr; gap: 0.7rem; font-size: 0.875rem; color: var(--bone-dim); line-height: 1.5; }
+  .dialog-ledger li::before { content: "◆"; color: var(--vermilion); font-size: 0.5em; line-height: 2; }
+  .dialog-foot { padding: 1.1rem var(--space-lg); border-top: 1px solid var(--brass-line); display: flex; justify-content: flex-end; background: oklch(0% 0 0 / 0.12); }
+  .btn-ack {
+    appearance: none; cursor: pointer;
+    background: transparent;
+    border: 1px solid var(--brass-line); border-radius: 2px;
+    color: var(--bone);
+    font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 0.6rem 1.1rem;
+    transition: color 0.3s var(--ease), border-color 0.3s var(--ease);
+  }
+  .btn-ack:hover { color: var(--vermilion); border-color: var(--vermilion); }
+
+  @media print {
+    .dialog-veil { display: none !important; }
+    .term-link { border-bottom: 0; color: inherit !important; }
+  }
 </style>
 <script>
   (function () {
@@ -701,7 +778,7 @@
     return el;
   }
   function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  function li(arr){ return '<ul>' + arr.map(x => '<li><span>'+esc(x)+'</span></li>').join('') + '</ul>'; }
+  function li(arr){ return '<ul>' + arr.map(x => '<li><span>'+linkDiagnosticTerms(esc(x))+'</span></li>').join('') + '</ul>'; }
   function tags(arr, c){ return '<div class="tag-wrap">' + arr.map(t => '<span class="tag '+c+'">'+esc(t)+'</span>').join('') + '</div>'; }
 
   // Drawer pointer: mechanism now lives in the Archive, modulators/drugs in the
@@ -892,6 +969,137 @@
     } catch (e) { /* offline / file://: keep the embedded DATA */ }
   }
 
+  const diagnosticDB = {
+    opioid_triad: {
+      title: 'The Opioid Overdose Triad',
+      desc: 'The classic clinical pathognomonic presentation indicating toxic opioid ingestion. Direct binding of potent mu agonists down-regulates respiratory cycle pacemakers in the brainstem, which can quickly lead to fatal asphyxia if not reversed.',
+      symptoms: [
+        'Pinpoint Pupils (Miosis) - mediated via disinhibition of parasympathetic oculomotor pathways.',
+        'Respiratory Depression - severe drop in respiratory rate (often below 8 breaths per minute).',
+        'Altered Mental Status - lethargy, stupor, progressing to complete comatose state.'
+      ]
+    },
+    excitotoxicity: {
+      title: 'Glutamate-Mediated Excitotoxicity',
+      desc: 'A pathologic mechanism in which excessive exposure to glutamate or hyperstimulation of NMDA receptors causes neuronal injury or cell death. Under continuous synaptic glutamate loading, the receptor stays active, allowing unregulated ionic currents to enter.',
+      symptoms: [
+        'Intracellular Calcium Overload - hyper-activation of calpains, caspases, and endonucleases.',
+        'Mitochondrial Failure - loss of proton gradient, leading to cyt C release and immediate cell necrosis.',
+        'Free Radical Outburst - high production of Reactive Oxygen Species (ROS) destroying structural lipids.'
+      ]
+    },
+    delirium_tremens: {
+      title: 'Delirium Tremens (GABA Withdrawal)',
+      desc: 'A severe, life-threatening manifestation of alcohol or benzodiazepine withdrawal, caused by sudden removal of chronic positive allosteric enhancement from down-regulated GABA-A receptors.',
+      symptoms: [
+        'Extreme Autonomic Hyperactivity - severe sinus tachycardia, diaphoresis, hyperthermia.',
+        'Cerebral Hallucinations - terrifying microzoopsic (small crawling animals) visual hallucinations.',
+        'Uncontrolled Psychomotor Agitation - continuous visual tremors, pacing, extreme panic.'
+      ]
+    },
+    serotonin_syndrome: {
+      title: 'Serotonin Syndrome Profile',
+      desc: 'A life-threatening drug-induced clinical triad of neuromuscular excitation, autonomic dysfunction, and altered mental status. It is driven by hyperstimulation of 5-HT1A and particularly 5-HT2A receptors.',
+      symptoms: [
+        'Neuromuscular Hyperreactivity - spontaneous clonus, hyperreflexia, lower-extremity rigidity.',
+        'Autonomic Instability - extreme hyperthermia, tachycardia, profuse diaphoresis, dilated pupils.',
+        'Mental Status Alteration - agitation, delirium, severe confusion, flight response.'
+      ]
+    },
+    nms: {
+      title: 'Neuroleptic Malignant Syndrome (NMS)',
+      desc: 'A rare, life-threatening idiosyncratic reaction to dopamine D2 receptor antagonists (typically first-generation antipsychotics). Severe central D2 blockade in the striatum and hypothalamus disrupts motor control and thermoregulation.',
+      symptoms: [
+        'Lead-Pipe Rigidity - severe generalized skeletal muscle stiffness and resistance.',
+        'Severe Hyperthermia - core temperatures exceeding 40°C (104°F).',
+        'Autonomic Instability - fluctuating blood pressure, tachycardia, dysrhythmias, diaphoresis.'
+      ]
+    }
+  };
+
+  const DRAWER_KICKERS = {
+    opioid_triad:      'Toxicology Syndrome',
+    excitotoxicity:    'Pathophysiology',
+    delirium_tremens:  'Withdrawal Syndrome',
+    serotonin_syndrome:'Toxidrome',
+    nms:               'Idiosyncratic Reaction'
+  };
+
+  /* Ordered phrase -> drawer; the first phrase found in a bullet becomes the
+     link. Matched case-insensitively, because this volume writes "(serotonin
+     syndrome)" inside a sentence where the Cabinet wrote it capitalised. */
+  const TERM_LINKS = [
+    ['opioid_triad', ['Opioid Overdose Triad', 'pinpoint pupils']],
+    ['excitotoxicity', ['excitotoxic', 'calcium overload', 'Neuronal cell death']],
+    ['delirium_tremens', ['Delirium Tremens']],
+    ['serotonin_syndrome', ['Serotonin Syndrome', 'spontaneous clonus']],
+    ['nms', ['Neuroleptic Malignant Syndrome', 'Lead-pipe muscular rigidity', '(NMS)']]
+  ];
+
+  /* Takes already-escaped text. The link is a real button so it is reachable by
+     keyboard, and it stops both events: the row around it opens the detail
+     drawer on click and on Enter, and a term is not a request for that. */
+  function linkDiagnosticTerms(escaped) {
+    const hay = escaped.toLowerCase();
+    for (const [key, phrases] of TERM_LINKS) {
+      for (const phrase of phrases) {
+        const at = hay.indexOf(phrase.toLowerCase());
+        if (at === -1) continue;
+        return escaped.slice(0, at)
+          + '<button type="button" class="term-link" aria-haspopup="dialog"'
+          + ' onclick="event.stopPropagation();openDiagnosticDrawer(\'' + key + '\')"'
+          + ' onkeydown="event.stopPropagation()">'
+          + escaped.slice(at, at + phrase.length)
+          + '</button>'
+          + escaped.slice(at + phrase.length);
+      }
+    }
+    return escaped;
+  }
+
+  let drawerReturnFocus = null;
+
+  function openDiagnosticDrawer(key) {
+    const data = diagnosticDB[key];
+    if (!data) return;
+    drawerReturnFocus = document.activeElement;
+    const kicker = document.getElementById('drawer-kicker');
+    if (kicker) kicker.textContent = DRAWER_KICKERS[key] || 'Clinical Reference';
+    document.getElementById('drawer-title').textContent = data.title;
+    document.getElementById('drawer-desc').textContent = data.desc;
+    const symp = document.getElementById('drawer-symptoms');
+    symp.innerHTML = '';
+    data.symptoms.forEach(t => {
+      const item = document.createElement('li');
+      item.textContent = t;
+      symp.appendChild(item);
+    });
+    document.getElementById('info-drawer').classList.remove('hidden');
+    document.querySelector('#info-drawer .dialog-close').focus();
+  }
+  window.openDiagnosticDrawer = openDiagnosticDrawer;
+
+  function closeInfoDrawer() {
+    document.getElementById('info-drawer').classList.add('hidden');
+    if (drawerReturnFocus && typeof drawerReturnFocus.focus === 'function') drawerReturnFocus.focus();
+    drawerReturnFocus = null;
+  }
+  window.closeInfoDrawer = closeInfoDrawer;
+
+  // keep keyboard focus inside the open dialog; Escape closes it
+  document.addEventListener('keydown', e => {
+    const veil = document.getElementById('info-drawer');
+    if (!veil || veil.classList.contains('hidden')) return;
+    if (e.key === 'Escape') { closeInfoDrawer(); return; }
+    if (e.key === 'Tab') {
+      const f = veil.querySelectorAll('button');
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  });
+
   // sticky-header offset = masthead height
   const masthead = document.querySelector('.masthead');
   const setMastH = () => document.documentElement.style.setProperty('--mast-h', masthead.offsetHeight + 'px');
@@ -950,5 +1158,27 @@
     });
   })();
   </script>
+  <!-- ====================== diagnostic dialog ====================== -->
+  <div id="info-drawer" class="dialog-veil hidden" onclick="if(event.target===this)closeInfoDrawer()">
+    <div class="dialog" role="dialog" aria-modal="true">
+      <div class="dialog-head">
+        <div>
+          <span class="dno" id="drawer-kicker">Clinical Reference</span>
+          <h4 id="drawer-title"></h4>
+        </div>
+        <button class="dialog-close" onclick="closeInfoDrawer()" aria-label="Close">✕</button>
+      </div>
+      <div class="dialog-body">
+        <p id="drawer-desc"></p>
+        <div class="dialog-ledger">
+          <h5>Clinical Manifestations</h5>
+          <ul id="drawer-symptoms"></ul>
+        </div>
+      </div>
+      <div class="dialog-foot">
+        <button class="btn-ack" onclick="closeInfoDrawer()">Acknowledged</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

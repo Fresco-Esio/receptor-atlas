@@ -52,7 +52,7 @@
   .masthead-in {
     max-width: 108rem;
     margin-inline: auto;
-    padding: 1.15rem clamp(1.2rem, 5vw, 3.5rem);
+    padding: 0.85rem clamp(1.2rem, 5vw, 3.5rem);
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -80,7 +80,7 @@
   .brand h1 {
     font-family: var(--display);
     font-weight: 400;
-    font-size: clamp(1.15rem, 2.4vw, 1.7rem);
+    font-size: clamp(1rem, 1.4vw, 1.2rem);
     letter-spacing: 0.07em;
     text-transform: uppercase;
     line-height: 1.1;
@@ -191,8 +191,8 @@
     /* a fixed-measure card-catalog rail beside a fluid exhibit plate: the index
        stops widening past ~21rem so short specimen names don't strand in dead
        space on large monitors, and the plate takes all remaining room. */
-    grid-template-columns: minmax(15rem, 21rem) minmax(0, 1fr);
-    gap: clamp(1.5rem, 3vw, 3rem);
+    grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr);
+    gap: clamp(1.2rem, 2vw, 2rem);
     align-items: stretch;
   }
   @media (max-width: 940px) { .explorer { grid-template-columns: 1fr; } }
@@ -206,17 +206,6 @@
   }
   .index-col { display: flex; flex-direction: column; }
   .index-list { display: flex; flex-direction: column; flex: 1; }
-  .index-foot {
-    margin-top: 1.1rem;
-    padding-top: 0.85rem;
-    border-top: 1px solid var(--brass-line);
-    display: flex; justify-content: space-between;
-    font-family: var(--mono);
-    font-size: var(--lbl);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--bone-faint);
-  }
   /* The rail used to be sticky so it survived a long page scroll. There is no page
      scroll to survive any more — see the viewport-fit shell above, where the rail is
      a full-height column and only its list moves. */
@@ -230,7 +219,7 @@
     color: inherit;
     border: 0;
     border-bottom: 1px solid var(--brass-faint);
-    padding: 1.15rem 0.4rem 1.15rem 0;
+    padding: 0.62rem 0.4rem 0.62rem 0;
     display: block;
     position: relative;
     transition: background-color 0.5s var(--ease);
@@ -242,15 +231,14 @@
   @keyframes row-in { to { opacity: 1; translate: 0 0; } }
   .specimen-inner {
     display: grid;
-    grid-template-columns: 2.8rem 1fr auto;
-    gap: 0.4rem var(--space-md);
+    grid-template-columns: 2.4rem minmax(0, 1fr);
+    gap: 0.85rem;
     align-items: baseline;
     transition: translate 0.5s var(--ease);
   }
   .specimen-row:hover .specimen-inner { translate: 0.5rem 0; }
   .specimen-row:hover { background: oklch(93% 0.012 85 / 0.035); }
   .specimen-no {
-    grid-row: span 2;
     font-family: var(--mono);
     font-size: 0.75rem;
     font-variant-numeric: tabular-nums;
@@ -263,47 +251,19 @@
   .specimen-row.is-selected .specimen-no { color: var(--vermilion); }
   .specimen-name {
     font-family: var(--display);
-    font-size: 1.125rem;
-    letter-spacing: 0.03em;
+    font-size: 1rem;
+    letter-spacing: 0.02em;
     color: var(--bone-dim);
     transition: color 0.4s var(--ease);
   }
   .specimen-row:hover .specimen-name,
   .specimen-row.is-selected .specimen-name { color: var(--bone); }
-  .specimen-class {
-    grid-column: 2;
-    font-size: 0.875rem;
-    color: var(--bone-faint);
-    line-height: 1.45;
-  }
-  .specimen-kind {
-    grid-row: span 2;
-    align-self: center;
-    font-family: var(--mono);
-    font-size: var(--lbl);
-    letter-spacing: 0.12em;
-    color: var(--bone-faint);
-    text-transform: uppercase;
-    text-align: right;
-  }
   /* lit ledger tick for the selected specimen */
   .specimen-row.is-selected {
     background: oklch(62% 0.19 35 / 0.08);
     outline: 1px solid oklch(62% 0.19 35 / 0.28);
     outline-offset: -1px;
   }
-  .specimen-tags {
-    grid-column: 2;
-    margin-top: var(--space-xs);
-    display: flex; gap: var(--space-md);
-    font-family: var(--mono);
-    font-size: 0.6875rem;
-    letter-spacing: 0.1em;
-    color: var(--bone-faint);
-    text-transform: uppercase;
-  }
-  .specimen-tags span::before { content: "◆ "; color: var(--brass); font-size: 0.5em; vertical-align: 0.2em; }
-
   .index-empty {
     padding: 2.5rem var(--space-md);
     text-align: center;
@@ -328,12 +288,19 @@
   .plate[data-state="overstimulated"]   { background: var(--wall-over);   --st: var(--state-over); }
   .plate[data-state="understimulated"]  { background: var(--wall-under);  --st: var(--state-under); }
 
+  /* A metadata rail over the name: class left, dial right, title beneath at full
+     width. Laying the dial beside the title made the head wrap to two rows and
+     cost 255px of a 542px plate; this composition holds at one height whatever
+     the specimen is called. */
   .plate-head {
-    padding: clamp(1.4rem, 3vw, 2rem) clamp(1.4rem, 3vw, 2.2rem);
+    padding: clamp(0.9rem, 1.8vw, 1.3rem) clamp(1.3rem, 2.4vw, 1.9rem);
     border-bottom: 1px solid var(--brass-line);
-    display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between;
-    gap: clamp(0.8rem, 2vw, 1.6rem);
     background: oklch(0% 0 0 / 0.12);
+  }
+  .plate-meta {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: 0.6rem var(--space-md);
+    margin-bottom: 0.55rem;
   }
   .plate-kicker {
     font-family: var(--mono);
@@ -342,28 +309,18 @@
     text-transform: uppercase;
     color: var(--bone-faint);
     display: flex; flex-wrap: wrap; gap: var(--space-xs) 0.9rem;
-    margin-bottom: 0.7rem;
   }
   .plate-kicker .k-class { color: var(--st, var(--brass)); }
-  .plate-kicker .k-sub { text-transform: none; letter-spacing: 0.01em; color: var(--bone-faint); }
   .plate-title {
     font-family: var(--display);
     font-weight: 400;
-    font-size: clamp(1.7rem, 3.6vw, 2.6rem);
+    font-size: clamp(1.5rem, 2.6vw, 2.1rem);
     letter-spacing: 0.04em;
     text-transform: uppercase;
     line-height: 1.05;
   }
 
   /* state simulator, brass dial */
-  .sim-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem; }
-  .sim-axis-label {
-    font-family: var(--mono);
-    font-size: var(--lbl);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--bone-faint);
-  }
   .sim {
     display: inline-flex;
     border: 1px solid var(--brass-line);
@@ -390,31 +347,51 @@
   .sim button.is-active.s-over   { background: var(--state-over); }
   .sim button.is-active.s-under  { background: var(--state-under); }
 
-  .plate-body { padding: clamp(1.6rem, 3.5vw, 2.4rem); }
+  .plate-body { padding: clamp(1.2rem, 2.2vw, 1.7rem) clamp(1.3rem, 2.4vw, 1.9rem); }
 
+  /* One reading column beside one specimen case. Stacking the agent lists
+     across the full width under both columns cost the plate 146px and left the
+     prose column ending 150px short of the engraving; putting them in the
+     reading column instead lets the case run the full height of the stage, so
+     the space beneath the engraving belongs to the caption rather than being a
+     hole down the left of every plate. */
   .stage {
     display: grid;
-    grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
-    gap: clamp(1.5rem, 3vw, 2.4rem);
+    grid-template-columns: minmax(0, 13.5rem) minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    gap: clamp(1rem, 1.8vw, 1.5rem) clamp(1.4rem, 2.6vw, 2.2rem);
     align-items: start;
   }
-  @media (max-width: 720px) { .stage { grid-template-columns: 1fr; } }
+  .breakdown { grid-column: 2; }
+  /* The binding list runs under both columns. Kept in the reading column it made
+     the case beside it stretch to ~700px around a 170px engraving, and squeezed
+     each row to 310px so every curated label truncated mid-parenthesis. */
+  .agents { grid-column: 1 / -1; }
 
-  /* specimen monitor / avatar */
+  /* The specimen and its catalogue caption. It was centred while every block
+     beside it was left-aligned, and it carried three labels for one fact:
+     "Pharmacologic Mode" restated the dial two inches above, and the boxed tag
+     restated the status line directly over it. The subtype spec moves here from
+     the head, because the engraving is what it describes. */
   .monitor {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: stretch;
+    display: grid;
+    grid-template-rows: 1fr auto;
     border: 1px solid var(--brass-faint);
     border-radius: 2px;
     background: oklch(0% 0 0 / 0.18);
-    padding: clamp(1.4rem, 3vw, 2rem) clamp(1rem, 2vw, 1.6rem);
-    text-align: center;
-    display: flex; flex-direction: column; align-items: center;
+    padding: clamp(1rem, 2vw, 1.4rem);
+    margin: 0;
   }
   /* ── archival receptor engraving system ── */
   .engraving {
     width: 100%;
-    max-width: 188px;
+    max-width: 170px;
     aspect-ratio: 1;
-    margin: 0 auto 1.6rem;
+    align-self: center;
+    margin: 0 auto 1.1rem;
   }
   .engraving svg { width: 100%; height: 100%; overflow: visible; }
   .e-line {
@@ -450,31 +427,38 @@
     fill: var(--bone-faint);
     letter-spacing: 0.04em;
   }
-  .monitor-label {
-    font-family: var(--mono);
-    font-size: 0.6875rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--bone-faint);
-    margin-bottom: 0.7rem;
+  .monitor-cap {
+    border-top: 1px solid var(--brass-faint);
+    padding-top: 0.8rem;
   }
   .monitor-status {
     font-family: var(--display);
-    font-size: 1.125rem;
+    font-size: 1.0625rem;
     letter-spacing: 0.03em;
     color: var(--st, var(--bone));
     line-height: 1.25;
   }
-  .monitor-sub {
-    margin-top: 0.7rem;
+  .plate-spec {
+    margin-top: 0.45rem;
     font-family: var(--mono);
     font-size: var(--lbl);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    line-height: 1.5;
     color: var(--bone-faint);
-    border: 1px solid var(--brass-faint);
-    padding: 0.22rem 0.55rem;
-    border-radius: 2px;
+    max-width: 100ch;
+  }
+
+  /* Below the two-column stage. This sits after .monitor and .engraving rather
+     than beside .stage, because it overrides both and would otherwise lose on
+     source order without changing specificity. */
+  @media (max-width: 1024px) {
+    .stage { grid-template-columns: 1fr; }
+    .monitor, .breakdown, .agents { grid-column: 1; grid-row: auto; }
+    /* Laid on its side, the case keeps the engraving beside its caption rather
+       than centring a small figure over a wide, mostly empty box. */
+    .monitor { align-self: start; display: flex; align-items: center; gap: 1.1rem; }
+    .engraving { flex: none; width: 108px; margin: 0; }
+    .monitor-cap { border-top: 0; border-left: 1px solid var(--brass-faint); padding: 0.2rem 0 0.2rem 1.1rem; }
   }
 
   .breakdown { display: flex; flex-direction: column; gap: clamp(1.6rem, 2.5vw, 2.4rem); }
@@ -484,20 +468,18 @@
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--bone-faint);
-    margin-bottom: 0.7rem;
-    display: flex; align-items: center; gap: var(--space-xs);
+    margin-bottom: 0.65rem;
   }
-  .field-head::before { content: "◆"; color: var(--st, var(--brass)); font-size: 0.5em; }
 
+  /* Was a filled, bordered well, which set its text 1.2rem in from the block
+     edge while the paragraph below started flush. Flat now, keeping the state
+     hairline as the cue, so the two share a left edge. */
   .mechanism {
-    background: oklch(0% 0 0 / 0.18);
-    border: 1px solid var(--brass-faint);
-    border-top: 2px solid var(--st, var(--brass));
-    border-radius: 2px;
-    padding: var(--space-md) 1.2rem;
+    border-top: 1px solid var(--st, var(--brass));
+    padding-top: 0.8rem;
     font-family: var(--mono);
-    font-size: 0.875rem;
-    line-height: 1.65;
+    font-size: 0.8125rem;
+    line-height: 1.6;
     color: var(--bone-dim);
     max-width: 70ch;
   }
@@ -540,7 +522,7 @@
     color: var(--st, var(--bone));
   }
   .plaque-text { font-size: 0.9375rem; color: var(--bone-read); line-height: 1.65; max-width: 70ch; }
-  .plaque.hidden { display: none; }
+  .plaque.is-off, .clinical.is-off, .mech-block.is-off { display: none; }
 
   .present-list { list-style: none; display: flex; flex-direction: column; gap: 0.55rem; max-width: 70ch; }
   .present-list li {
@@ -557,27 +539,72 @@
     font-size: 0.55em;
     line-height: 1.9;
   }
-  .term-link {
-    color: var(--vermilion);
-    text-decoration: none;
-    border-bottom: 1px dotted var(--brass);
-    cursor: pointer;
-    transition: border-color 0.3s var(--ease);
+  .agents {
+    padding-top: clamp(0.9rem, 1.8vw, 1.3rem);
+    border-top: 1px solid var(--brass-line);
   }
-  .term-link:hover { border-color: var(--vermilion); }
 
-  .rule { height: 1px; background: var(--brass-line); margin: 2.8rem 0 1.4rem; border: 0; }
-
-  .agents-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: clamp(1.2rem, 2.5vw, 2rem);
+  /* A ledger line per agent, two columns of them. Rows rather than chips because
+     a row can carry a number: the chips this replaced were names alone, and a
+     value with no measurement count behind it is not something this atlas ships. */
+  /* Two columns only where a full agent label fits one. The longest here,
+     "Phenobarbital (Luminal - barbiturate site)", needs about 24rem beside its
+     value; at a fixed two columns it clipped 7 of 12 rows on an 820px window. */
+  .binder-list {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr));
+    gap: 0 clamp(1rem, 2vw, 1.8rem);
+    align-content: start;
   }
-  @media (max-width: 620px) { .agents-grid { grid-template-columns: 1fr; } }
+  .binder {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 0.55rem;
+    padding: 0.24rem 0;
+    border-bottom: 1px solid var(--brass-faint);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    line-height: 1.45;
+  }
+  .binder-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    align-self: center;
+    background: var(--bd, var(--action-partial));
+  }
+  /* Screened and found not to bind keeps a ring; never screened keeps nothing.
+     The distinction is the plate's, and it means the same thing here. */
+  .binder.is-inert .binder-dot { background: transparent; box-shadow: inset 0 0 0 1px var(--bone-faint); }
+  .binder.is-unscreened .binder-dot { background: transparent; box-shadow: inset 0 0 0 1px var(--brass-faint); }
+  .binder-name { color: var(--bone-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .binder-name .bd-sub { color: var(--bone-faint); }
+  .binder-val { color: var(--bone); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .binder-val .bd-n { color: var(--bone-faint); }
+  .binder.is-inert .binder-val, .binder.is-unscreened .binder-val { color: var(--bone-faint); }
+
+  .binder-note {
+    margin-top: 0.7rem;
+    font-family: var(--mono);
+    font-size: var(--lbl);
+    line-height: 1.55;
+    letter-spacing: 0.02em;
+    color: var(--bone-faint);
+  }
+  .binder-note .ptr-link {
+    appearance: none; background: none; border: 0; padding: 0;
+    font: inherit; color: var(--bone); cursor: pointer;
+    border-bottom: 1px solid var(--brass-line);
+    transition: color 0.3s var(--ease), border-color 0.3s var(--ease);
+  }
+  .binder-note .ptr-link:hover { color: var(--vermilion); border-color: var(--vermilion); }
   .tag-wrap { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
   .tag {
     font-family: var(--mono);
     font-size: 0.75rem;
-    letter-spacing: 0.04em;
-    padding: 0.32rem 0.6rem;
+    letter-spacing: 0.02em;
+    line-height: 1.35;
+    padding: 0.3rem 0.5rem;
     border-radius: 2px;
     border: 1px solid var(--brass-faint);
     color: var(--bone-dim);
@@ -586,20 +613,34 @@
   .tag.agonist { border-color: color-mix(in oklch, var(--action-agonist) 45%, transparent); color: var(--action-agonist); }
   .tag.antagonist { border-color: color-mix(in oklch, var(--action-antagonist) 45%, transparent); color: var(--action-antagonist); }
 
-  /* provenance footer */
-  .provenance {
-    padding: 1.1rem clamp(1.4rem, 3vw, 2.2rem);
+  /* Provenance and the cross-volume rail, paired on one bar. Each was a
+     full-width block at the bottom of the plate's scroll box, which left the
+     citation behind every number on the plate 845px below the fold. The shell
+     pins this bar outside the scrolling region. */
+  .plate-foot {
     border-top: 1px solid var(--brass-line);
     background: oklch(0% 0 0 / 0.16);
-    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-    gap: 0.7rem var(--space-lg);
+    padding: 0.85rem clamp(1.3rem, 2.4vw, 1.9rem);
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 0.6rem clamp(1.4rem, 3vw, 2.4rem);
+  }
+  .plate-foot .provenance { flex: 3 1 24rem; }
+  .plate-foot #facetRail { flex: 2 1 22rem; }
+  /* Inside the plate the rail is a bar, not a section: it needs no rule of its
+     own above it, and its lead line only repeats the plate title. */
+  .plate-foot .facet-rail { margin-top: 0; padding-top: 0; border-top: 0; }
+  .plate-foot .facet-rail-lead { display: none; }
+
+  .provenance {
+    display: flex; flex-wrap: wrap; align-items: baseline;
+    gap: 0.3rem var(--space-md);
     font-family: var(--mono);
-    font-size: 0.75rem;
+    font-size: 0.72rem;
   }
   .prov-cite { color: var(--bone-dim); }
   .prov-cite b { color: var(--bone-faint); font-weight: 400; letter-spacing: 0.16em; text-transform: uppercase; margin-right: var(--space-xs); }
   .prov-cite i { font-style: italic; }
-  .prov-links { display: flex; align-items: center; gap: 1.2rem; color: var(--bone-faint); letter-spacing: 0.1em; }
+  .prov-links { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem 0.9rem; color: var(--bone-faint); letter-spacing: 0.1em; }
   .prov-links a {
     color: var(--bone);
     text-decoration: none;
@@ -883,64 +924,19 @@
   .ref-list a:hover { color: var(--vermilion); border-color: var(--vermilion); }
 
   /* ====================== dialog ====================== */
-  .dialog-veil {
-    position: fixed; inset: 0; z-index: 60;
-    background: oklch(10% 0.008 75 / 0.84);
-    display: grid; place-content: center;
-    padding: var(--space-lg);
+  .page-note {
+    max-width: 112rem;
+    margin-inline: auto;
+    padding: 1.6rem clamp(1.2rem, 5vw, 3.5rem) 3rem;
+    border-top: 1px solid var(--brass-line);
+    font-family: var(--body);
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--bone-faint);
   }
-  .dialog-veil.hidden { display: none; }
-  .dialog {
-    width: min(34rem, 92vw);
-    background: var(--wall-panel);
-    border: 1px solid var(--brass-line);
-    border-radius: 3px;
-    overflow: hidden;
-    box-shadow: 0 24px 60px oklch(0% 0 0 / 0.5);
-    animation: dialog-in 0.5s var(--ease);
-  }
-  @keyframes dialog-in { from { opacity: 0; translate: 0 14px; } to { opacity: 1; translate: 0 0; } }
-  .dialog-head {
-    padding: 1.3rem var(--space-lg);
-    border-bottom: 1px solid var(--brass-line);
-    background: oklch(0% 0 0 / 0.16);
-    display: flex; align-items: center; justify-content: space-between; gap: var(--space-md);
-  }
-  .dialog-head .dno { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.16em; color: var(--vermilion); text-transform: uppercase; display: block; margin-bottom: 0.4rem; }
-  .dialog-head h4 { font-family: var(--display); font-weight: 400; font-size: 1.25rem; letter-spacing: 0.03em; text-transform: uppercase; line-height: 1.15; }
-  .dialog-close {
-    appearance: none; flex: none;
-    width: 30px; height: 30px;
-    border: 1px solid var(--brass-line); border-radius: 2px;
-    background: transparent; color: var(--bone-dim);
-    cursor: pointer; font-family: var(--mono);
-    transition: color 0.3s var(--ease), border-color 0.3s var(--ease);
-  }
-  .dialog-close:hover { color: var(--vermilion); border-color: var(--vermilion); }
-  .dialog-body { padding: var(--space-lg); }
-  .dialog-body > p { font-size: 0.9375rem; color: var(--bone-dim); line-height: 1.65; }
-  .dialog-ledger {
-    margin-top: 1.3rem;
-    border: 1px solid var(--brass-faint);
-    border-radius: 2px;
-    padding: 1.1rem 1.3rem;
-    background: oklch(0% 0 0 / 0.16);
-  }
-  .dialog-ledger h5 { font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--bone-faint); margin-bottom: 0.7rem; }
-  .dialog-ledger ul { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; }
-  .dialog-ledger li { display: grid; grid-template-columns: auto 1fr; gap: 0.7rem; font-size: 0.875rem; color: var(--bone-dim); line-height: 1.5; }
-  .dialog-ledger li::before { content: "◆"; color: var(--vermilion); font-size: 0.5em; line-height: 2; }
-  .dialog-foot { padding: 1.1rem var(--space-lg); border-top: 1px solid var(--brass-line); display: flex; justify-content: flex-end; background: oklch(0% 0 0 / 0.12); }
-  .btn-ack {
-    appearance: none; cursor: pointer;
-    background: transparent;
-    border: 1px solid var(--brass-line); border-radius: 2px;
-    color: var(--bone);
-    font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.14em; text-transform: uppercase;
-    padding: 0.6rem 1.1rem;
-    transition: color 0.3s var(--ease), border-color 0.3s var(--ease);
-  }
-  .btn-ack:hover { color: var(--vermilion); border-color: var(--vermilion); }
+
+  /* The pooling note explains a number that only the Catalogue puts on screen. */
+  body:not([data-view="matrix"]) .note-binding { display: none; }
 
   /* ── facet rail: one receptor, three volumes (shared verbatim across all volumes) ── */
   .facet-rail { margin-top: 2.2rem; padding-top: 1.4rem; border-top: 1px solid var(--brass-line); }
@@ -1059,12 +1055,15 @@
      lifts there and the document flows again. */
   @media (min-width: 941px) {
     body { height: 100svh; display: flex; flex-direction: column; overflow: hidden; }
-    body > footer { flex: none; padding-block: var(--space-md); }
+    /* Beats .page-note on specificity; as `body > footer` it did not, and the
+       disclaimer kept a 3rem bottom edge inside a locked window. */
+    body > footer.page-note { flex: none; padding-block: var(--space-md); }
     main {
       flex: 1 1 auto;
       min-height: 0;
       display: flex;
       flex-direction: column;
+      padding-top: var(--space-lg);
       padding-bottom: var(--space-lg);
     }
     main > section { flex: 1 1 auto; min-height: 0; }
@@ -1075,19 +1074,19 @@
     .index-list { overflow-y: auto; overscroll-behavior: contain; }
     .plate-col { display: flex; flex-direction: column; }
 
-    /* The card scrolls as one. Scrolling only .plate-body would leave the three
-       blocks under it — provenance, the cross-volume bridge — to absorb the
-       shortfall by shrinking, clipping their text with no way to reach it. */
-    .plate { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
-    .plate-head {
-      position: sticky;
-      top: 0;
-      z-index: 2;
-      /* The head is a 12% black wash over the plate's state tint. Sticky needs
-         that to be opaque or the body shows through it, so the wash becomes an
-         image and the tint is inherited from .plate as the colour beneath. */
-      background-color: inherit;
-      background-image: linear-gradient(oklch(0% 0 0 / 0.12) 0 100%);
+    /* Only the body scrolls; the head and the foot are fixed rows of the card.
+       Scrolling the plate as one had put the provenance line 845px below the
+       fold, and a reference work cannot bury the citation its numbers are read
+       against. The earlier attempt at this failed because those rows shrank to
+       absorb the shortfall and clipped their own text with no way to reach it,
+       so both are flex: none and cannot. */
+    .plate { min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+    .plate-head, .plate-foot { flex: none; }
+    .plate-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
     }
 
     /* Catalogue and Primer are single panes: the section becomes the column and
@@ -1170,10 +1169,6 @@
           <span id="receptor-count-badge" class="count-badge">13 Specimens</span>
         </div>
         <div class="index-list" id="explorer-list-container"></div>
-        <div class="index-foot">
-          <span>Catalogue · Ref II</span>
-          <span>Est. MMXXV</span>
-        </div>
       </div>
 
       <!-- right: exhibit plate -->
@@ -1181,38 +1176,36 @@
         <article class="plate" id="main-display-card" data-state="normal">
 
           <div class="plate-head">
-            <div>
+            <div class="plate-meta">
               <div class="plate-kicker">
                 <span class="k-class" id="display-class">Ligand-Gated Ion Channel</span>
-                <span class="k-sub" id="display-mechanism-badge"></span>
               </div>
-              <h2 class="plate-title" id="display-title">GABA-A Receptor</h2>
-            </div>
-
-            <div class="sim-wrap">
-              <div class="sim-axis-label">Pharmacologic action ◂ blockade · tone · activation ▸</div>
               <div class="sim" role="group" aria-label="Select pharmacologic action at this target">
                 <button type="button" onclick="setSimulationState('understimulated')" id="sim-under" class="s-under" aria-pressed="false">Antagonism</button>
                 <button type="button" onclick="setSimulationState('normal')" id="sim-normal" class="s-normal is-active" aria-pressed="true">Physiologic Tone</button>
                 <button type="button" onclick="setSimulationState('overstimulated')" id="sim-over" class="s-over" aria-pressed="false">Agonism</button>
               </div>
             </div>
+            <h2 class="plate-title" id="display-title">GABA-A Receptor</h2>
+            <p class="plate-spec" id="display-mechanism-badge"></p>
           </div>
 
           <div class="plate-body">
             <div class="stage">
 
-              <!-- specimen monitor -->
-              <div class="monitor">
+              <!-- the specimen itself, with the caption that describes it -->
+              <figure class="monitor">
                 <div class="engraving" id="avatar-engraving"></div>
-                <div class="monitor-label">Pharmacologic Mode</div>
-                <p class="monitor-status" id="state-status-label">Normal Physiological Baseline</p>
-                <span class="monitor-sub" id="avatar-sub-indicator">Tonic Regulation</span>
-              </div>
+                <figcaption class="monitor-cap">
+                  <p class="monitor-status" id="state-status-label">Normal Physiological Baseline</p>
+                </figcaption>
+              </figure>
 
-              <!-- breakdown -->
               <div class="breakdown">
-                <div class="rv rv-1">
+                <!-- Transduction at the target. The Archive's prose covers what the
+                     receptor does in the brain, which is a different question: you
+                     cannot read agonism or antagonism below without this. -->
+                <div class="mech-block rv rv-1" id="mechanism-block">
                   <div class="field-head">Mechanism of Action</div>
                   <div class="mechanism" id="display-mechanism-text"></div>
                 </div>
@@ -1225,43 +1218,43 @@
                   </div>
                 </div>
 
-                <aside class="plaque hidden rv rv-3" id="warning-notice-block" role="note">
+                <!-- Clinical material shows only for specimens the Ledger does not
+                     carry, so nothing is stranded and nothing is said twice. -->
+                <aside class="plaque is-off rv rv-3" id="warning-notice-block" role="note">
                   <div class="plaque-mark" id="warning-icon">◆</div>
                   <div class="plaque-title" id="warning-title">Clinical Emergency</div>
                   <p class="plaque-text" id="warning-text" style="grid-column:2"></p>
                 </aside>
 
-                <div class="rv rv-4">
+                <div class="clinical is-off rv rv-4" id="clinical-block">
                   <div class="field-head">Clinical Presentation</div>
                   <ul class="present-list" id="display-presentation-list"></ul>
                 </div>
               </div>
-            </div>
 
-            <hr class="rule">
-
-            <div class="agents-grid rv rv-4">
-              <div>
-                <div class="field-head" id="agents-head-agonists">Agonists &amp; Positive Modulators</div>
-                <div class="tag-wrap" id="display-agonists-tags"></div>
-              </div>
-              <div>
-                <div class="field-head" id="agents-head-antagonists">Antagonists, Blockers &amp; Inverse Agonists</div>
-                <div class="tag-wrap" id="display-antagonists-tags"></div>
+              <!-- What binds it: this volume's own question, answered with the
+                   affinity set the Catalogue holds. Two lists of bare drug names
+                   stood here, at most ten of them, while the page carried up to 48
+                   measured values for the same target one tab away. -->
+              <div class="agents rv rv-4">
+                <div class="field-head" id="binding-head">Binding at This Target</div>
+                <ol class="binder-list" id="binder-list"></ol>
+                <p class="binder-note" id="binder-note"></p>
               </div>
             </div>
           </div>
 
-          <div class="provenance">
-            <div class="prov-cite"><b>Provenance</b><i id="display-citation-title">Ghit et al. (2021)</i></div>
-            <div class="prov-links">
-              <span id="display-citation-pmid">PMID: 34417930</span>
-              <a id="display-citation-doi" target="_blank" rel="noopener" href="#">DOI ↗</a>
-              <a id="display-citation-link" target="_blank" rel="noopener" href="#">PubMed ↗</a>
+          <div class="plate-foot">
+            <div class="provenance">
+              <div class="prov-cite"><b>Provenance</b><i id="display-citation-title">Ghit et al. (2021)</i></div>
+              <div class="prov-links">
+                <span id="display-citation-pmid">PMID: 34417930</span>
+                <a id="display-citation-doi" target="_blank" rel="noopener" href="#">DOI ↗</a>
+                <a id="display-citation-link" target="_blank" rel="noopener" href="#">PubMed ↗</a>
+              </div>
             </div>
+            <div id="facetRail"></div>
           </div>
-
-          <div id="facetRail"></div>
 
         </article>
       </div>
@@ -1408,37 +1401,20 @@
     </section>
   </main>
 
-  <footer style="max-width:112rem;margin-inline: auto;padding: 1.6rem clamp(1.2rem,5vw,3.5rem) 3rem;border-top:1px solid var(--brass-line);font-family:var(--body);font-size:0.82rem;line-height:1.6;color:var(--bone-faint);">
-    An educational reference for clinicians and trainees, not a dosing or treatment guide. Each value is the median of the human pKi values PDSP holds for that pair, pooled across radioligands and assay conditions without weighting; the tooltip gives the range and how many measurements sit behind it. Confirm specific figures against primary literature before any high-stakes use.
+  <footer class="page-note">
+    An educational reference for clinicians and trainees, not a dosing or treatment guide. <span class="note-binding">Each value is the median of the human pKi values PDSP holds for that pair, pooled across radioligands and assay conditions without weighting; the tooltip gives the range and how many measurements sit behind it.</span> Confirm specific figures against primary literature before any high-stakes use.
   </footer>
-
-  <!-- ====================== diagnostic dialog ====================== -->
-  <div id="info-drawer" class="dialog-veil hidden" onclick="if(event.target===this)closeInfoDrawer()">
-    <div class="dialog" role="dialog" aria-modal="true">
-      <div class="dialog-head">
-        <div>
-          <span class="dno" id="drawer-kicker">Clinical Reference</span>
-          <h4 id="drawer-title"></h4>
-        </div>
-        <button class="dialog-close" onclick="closeInfoDrawer()" aria-label="Close">✕</button>
-      </div>
-      <div class="dialog-body">
-        <p id="drawer-desc"></p>
-        <div class="dialog-ledger">
-          <h5>Clinical Manifestations</h5>
-          <ul id="drawer-symptoms"></ul>
-        </div>
-      </div>
-      <div class="dialog-foot">
-        <button class="btn-ack" onclick="closeInfoDrawer()">Acknowledged</button>
-      </div>
-    </div>
-  </div>
 
   <!-- ====================== engine ====================== -->
   <script>
     // ---- Roman numeral helper for catalogue index numbers ----
-    const ROMAN = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+    function roman(n) {
+      const table = [[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],
+                     [50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];
+      let out = '';
+      for (const [v, sym] of table) while (n >= v) { out += sym; n -= v; }
+      return out;
+    }
 
     // ---- archival engraving illustrations per receptor class ----
     const ILLUSTRATIONS = (() => {
@@ -2411,10 +2387,8 @@
     function simLabels(rec) {
       const isTransporter = rec.id === 'sert' || rec.id === 'net';
       return isTransporter
-        ? { under: '↓ Synaptic Tone', normal: 'Tonic Clearance', over: 'Reuptake Inhibition',
-            axis: 'Synaptic effect ◂ clearance · tone · inhibition ▸' }
-        : { under: 'Antagonism', normal: 'Physiologic Tone', over: 'Agonism',
-            axis: 'Pharmacologic action ◂ blockade · tone · activation ▸' };
+        ? { under: '↓ Synaptic Tone', normal: 'Tonic Clearance', over: 'Reuptake Inhibition' }
+        : { under: 'Antagonism', normal: 'Physiologic Tone', over: 'Agonism' };
     }
 
     // ===== VERIFIED REFERENCES (PubMed; DOI-linked) =====
@@ -2525,15 +2499,10 @@
       return rec.id === 'gaba_a' || rec.id === 'nmda_glutamate';
     }
 
-    function receptorKind(rec) {
-      if (rec.id === 'gaba_a' || rec.id === 'nmda_glutamate') return 'Ionotropic';
-      if (rec.id === 'sert' || rec.id === 'net') return 'Transporter';
-      return 'GPCR';
-    }
-
     // View Mode Switcher
     function setViewMode(mode) {
       currentViewMode = mode;
+      document.body.dataset.view = mode;
       const exView = document.getElementById('view-explorer');
       const mxView = document.getElementById('view-matrix');
       const prView = document.getElementById('view-primer');
@@ -2602,14 +2571,8 @@
         btn.setAttribute('onclick', `selectReceptor('${rec.id}')`);
         btn.innerHTML = `
           <div class="specimen-inner">
-            <span class="specimen-no">№ ${ROMAN[idx]}</span>
+            <span class="specimen-no">№ ${roman(idx + 1)}</span>
             <span class="specimen-name">${rec.name}</span>
-            <span class="specimen-kind">${receptorKind(rec)}</span>
-            <span class="specimen-class">${rec.class}</span>
-            <div class="specimen-tags">
-              <span>${rec.agents.agonists_pam.length} Agonists</span>
-              <span>${rec.agents.antagonists_block.length} Blockers</span>
-            </div>
           </div>`;
         container.appendChild(btn);
       });
@@ -2619,6 +2582,170 @@
       selectedReceptorId = id;
       renderExplorerList();
       renderSelectedReceptor();
+    }
+
+    /* ── What binds this target ──────────────────────────────────────────────
+       One ranked list, built from two sources that each know something the other
+       does not. The affinity set carries the measurement: a median pKi, how many
+       human values sit behind it, and the spread. The Cabinet's own curated lists
+       carry agents the affinity set has never held at all — the channel-pore
+       blockers, the co-agonists, the reference antagonists — which is why they
+       cannot simply be dropped in favour of the numbers.
+
+       Three states, and the difference between the last two is the one clinical
+       readers get wrong: measured, screened and found not to bind, and never
+       screened. A row with no number must never read as a row with a zero. */
+    const BINDER_CAP = 12;
+
+    function normAgent(label) {
+      return label.replace(/\s*[\(\[].*$/, '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+    }
+
+    function renderBinders(receptor) {
+      const list = document.getElementById('binder-list');
+      const note = document.getElementById('binder-note');
+      const head = document.getElementById('binding-head');
+      if (!list) return;
+      list.innerHTML = '';
+
+      const tid = receptor.id;
+      const hasTarget = AFF_TARGETS.some(t => t.id === tid);
+      const isTransporter = tid === 'sert' || tid === 'net';
+      head.textContent = isTransporter ? 'What Acts at This Transporter' : 'Binding at This Target';
+
+      // the atlas's own curation, keyed for lookup and kept whole for display
+      const curated = new Map();
+      receptor.agents.agonists_pam.forEach(l => curated.set(normAgent(l), { label: l, act: 'ag' }));
+      receptor.agents.antagonists_block.forEach(l => {
+        const k = normAgent(l);
+        if (!curated.has(k)) curated.set(k, { label: l, act: 'an' });
+      });
+
+      // every agent the affinity set has looked at for this target
+      const screened = hasTarget
+        ? AFF_AGENTS.filter(a => a.b && a.b[tid]).map(a => ({ agent: a, bind: a.b[tid] }))
+        : [];
+      const measured = screened.filter(x => x.bind.n > 0)
+        .sort((a, b) => (getPKi(b.bind) || 0) - (getPKi(a.bind) || 0));
+      const inert = screened.filter(x => !(x.bind.n > 0));
+
+      const mk = (kind, x) => {
+        const k = normAgent(x.agent.name);
+        const c = curated.get(k);
+        return { kind, key: k, isCurated: !!c, name: c ? c.label : x.agent.name, bind: x.bind, curatedAct: c && c.act };
+      };
+      const measuredRows = measured.map(x => mk('measured', x));
+      const inertRows = inert.map(x => mk('inert', x));
+      const taken = new Set([...measuredRows, ...inertRows].map(r => r.key));
+      // anything this atlas names that the affinity set has never held for this target
+      const unscreenedRows = [];
+      curated.forEach((c, k) => {
+        if (!taken.has(k)) unscreenedRows.push({ kind: 'unscreened', key: k, isCurated: true, name: c.label, curatedAct: c.act });
+      });
+
+      /* The cap never falls on a curated agent. Those are the ones this atlas
+         names on purpose and the binding set does not hold — the channel-pore
+         blockers, the co-agonists, the reference antagonists — so a cap that
+         could drop them would undo the reason the two lists were merged. It
+         falls on the ranked tail and on the screened-inert rows instead, and
+         the note says so. */
+      const keep = new Set();
+      measuredRows.forEach(r => { if (r.isCurated) keep.add(r); });
+      inertRows.forEach(r => { if (r.isCurated) keep.add(r); });
+      unscreenedRows.forEach(r => keep.add(r));
+
+      let budget = Math.max(0, BINDER_CAP - keep.size);
+      const filled = new Set(keep);
+      for (const r of measuredRows) { if (!filled.has(r) && budget > 0) { filled.add(r); budget--; } }
+      for (const r of inertRows) { if (!filled.has(r) && budget > 0) { filled.add(r); budget--; } }
+
+      // display order: tightest binders first, then what is named but unmeasured,
+      // then what was screened and found not to bind
+      const shown = [
+        ...measuredRows.filter(r => filled.has(r)),
+        ...unscreenedRows.filter(r => filled.has(r)),
+        ...inertRows.filter(r => filled.has(r))
+      ];
+
+      shown.forEach(r => {
+        const li = document.createElement('li');
+        li.className = 'binder' + (r.kind === 'inert' ? ' is-inert' : r.kind === 'unscreened' ? ' is-unscreened' : '');
+
+        // Action comes from IUPHAR where IUPHAR has curated it, and otherwise from
+        // this atlas's own agonist/antagonist lists, which is the same assertion the
+        // green and red chips here used to make. Which of the two is saying it goes
+        // in the row's title rather than being blurred into one colour.
+        const act = (r.bind && r.bind.act) || r.curatedAct || null;
+        const dot = document.createElement('span');
+        dot.className = 'binder-dot';
+        if (act) dot.style.setProperty('--bd', ACTION_COLOR[act] || ACTION_COLOR_UNCURATED);
+        else dot.style.setProperty('--bd', ACTION_COLOR_UNCURATED);
+
+        const split = r.name.match(/^([^(\[]+)(.*)$/);
+        const nameEl = document.createElement('span');
+        nameEl.className = 'binder-name';
+        nameEl.textContent = split ? split[1].trim() : r.name;
+        if (split && split[2]) {
+          const sub = document.createElement('span');
+          sub.className = 'bd-sub';
+          sub.textContent = ' ' + split[2].trim();
+          nameEl.appendChild(sub);
+        }
+
+        const val = document.createElement('span');
+        val.className = 'binder-val';
+        if (r.kind === 'measured') {
+          const p = getPKi(r.bind);
+          val.textContent = (p === null ? 'no value' : p.toFixed(1));
+          const n = document.createElement('span');
+          n.className = 'bd-n';
+          n.textContent = ' n=' + r.bind.n;
+          val.appendChild(n);
+        } else if (r.kind === 'inert') {
+          val.textContent = 'no binding';
+        } else {
+          val.textContent = 'not screened';
+        }
+
+        // provenance on the row, per the rule that every value carries its source,
+        // its spread and how many measurements sit behind it
+        const bits = [];
+        if (r.bind && r.bind.kiText) bits.push(r.bind.kiText);
+        if (r.bind && typeof r.bind.lo === 'number' && typeof r.bind.hi === 'number' && r.bind.hi > r.bind.lo) {
+          bits.push('pKi ' + r.bind.lo + ' to ' + r.bind.hi);
+        }
+        if (r.bind && r.bind.src) bits.push(r.bind.src);
+        if (r.kind === 'unscreened') bits.push('named by this atlas; the binding set has no screen for it here');
+        if (r.bind && r.bind.act) bits.push('action per ' + (r.bind.actSrc || 'IUPHAR/BPS'));
+        else if (r.curatedAct) bits.push('action per this atlas');
+        li.title = r.name + (bits.length ? ': ' + bits.join(' · ') : '');
+
+        li.append(dot, nameEl, val);
+        list.appendChild(li);
+      });
+
+      const nMeas = shown.filter(r => r.kind === 'measured').length;
+      const nInert = shown.filter(r => r.kind === 'inert').length;
+      const nUns = shown.filter(r => r.kind === 'unscreened').length;
+      const parts = [];
+      if (measured.length) {
+        parts.push('Ranked by pKi, tightest first. ' +
+          (nMeas < measured.length ? nMeas + ' of ' + measured.length + ' measured here'
+                                   : measured.length + ' measured here'));
+      } else if (hasTarget) {
+        parts.push('Nothing in the binding set has a measured value at this target.');
+      } else {
+        parts.push('The binding set holds no human values for this target, so these are this atlas\'s curation alone.');
+      }
+      if (inert.length && nInert) {
+        parts.push((nInert < inert.length ? nInert + ' of ' + inert.length : String(inert.length)) +
+          ' screened with none detected');
+      } else if (inert.length) {
+        parts.push(inert.length + ' screened here with none detected, below the cut');
+      }
+      if (nUns) parts.push(nUns + ' named here that the set has never screened');
+      note.innerHTML = parts.join(' · ') + ' · ' +
+        '<button type="button" class="ptr-link" onclick="setViewMode(\'matrix\')">all 92 agents in the Catalogue</button>';
     }
 
     // State Simulator
@@ -2719,8 +2846,6 @@
         document.getElementById('sim-under').textContent = lbl.under;
         document.getElementById('sim-normal').textContent = lbl.normal;
         document.getElementById('sim-over').textContent = lbl.over;
-        const axisEl = document.querySelector('.sim-axis-label');
-        if (axisEl) axisEl.textContent = lbl.axis;
 
         // pharmacologic action descriptor + concept tags
         const stateKey = simulationState === 'normal' ? 'normal'
@@ -2754,55 +2879,39 @@
         drawEngraving(receptor.id, simulationState);
 
         document.getElementById('state-status-label').textContent = stateConfig.title;
-        document.getElementById('avatar-sub-indicator').textContent = stateConfig.status;
 
-        // clinical plaque
+        // What a state looks like at the bedside is the Ledger's column, and it
+        // said the same four things there: this volume answers what binds the
+        // target. The blocks stay in the markup because one specimen, muscarinic
+        // M3, is catalogued here and nowhere else, so dropping them outright would
+        // have deleted the only record of its two toxidromes. Every other reader
+        // is carried across by the rail on the plate's foot.
+        const canonId = LOCAL2CANON[receptor.id];
+        const faces = ATLAS_FACES[canonId] || [];
+        const inLedger = faces.indexOf('ledger') !== -1;
         const plaque = document.getElementById('warning-notice-block');
-        if (stateConfig.warning) {
-          plaque.classList.remove('hidden');
-          document.getElementById('warning-icon').textContent = stateConfig.warning.type === 'danger' ? '⚠' : '◆';
-          document.getElementById('warning-title').textContent = stateConfig.warning.title;
-          document.getElementById('warning-text').textContent = stateConfig.warning.text;
-        } else {
-          plaque.classList.add('hidden');
+        const clinical = document.getElementById('clinical-block');
+        const list = document.getElementById('display-presentation-list');
+
+        clinical.classList.toggle('is-off', inLedger);
+        plaque.classList.toggle('is-off', inLedger || !stateConfig.warning);
+
+        if (!inLedger) {
+          if (stateConfig.warning) {
+            document.getElementById('warning-icon').textContent = stateConfig.warning.type === 'danger' ? '⚠' : '◆';
+            document.getElementById('warning-title').textContent = stateConfig.warning.title;
+            document.getElementById('warning-text').textContent = stateConfig.warning.text;
+          }
+          list.innerHTML = '';
+          stateConfig.presentation.forEach(bullet => {
+            const li = document.createElement('li');
+            li.innerHTML = '<span></span>';
+            li.firstChild.textContent = bullet;
+            list.appendChild(li);
+          });
         }
 
-        // presentation, wrap the first diagnostic phrase found in each bullet so
-        // every diagnostic drawer is reachable from the relevant clinical state
-        const list = document.getElementById('display-presentation-list');
-        list.innerHTML = '';
-        stateConfig.presentation.forEach(bullet => {
-          const li = document.createElement('li');
-          li.innerHTML = `<span>${linkDiagnosticTerms(bullet)}</span>`;
-          list.appendChild(li);
-        });
-
-        // agents
-        const ag = document.getElementById('display-agonists-tags');
-        ag.innerHTML = '';
-        receptor.agents.agonists_pam.forEach((d, i) => {
-          const s = document.createElement('span');
-          s.className = 'tag agonist';
-          s.style.setProperty('--ti', i);
-          s.textContent = d;
-          ag.appendChild(s);
-        });
-        const an = document.getElementById('display-antagonists-tags');
-        an.innerHTML = '';
-        receptor.agents.antagonists_block.forEach((d, i) => {
-          const s = document.createElement('span');
-          s.className = 'tag antagonist';
-          s.style.setProperty('--ti', i);
-          s.textContent = d;
-          an.appendChild(s);
-        });
-
-        // agent field head labels, transporters use different terminology
-        const isTransporter = receptor.id === 'sert' || receptor.id === 'net';
-        const agHead = document.getElementById('agents-head-agonists');
-        const anHead = document.getElementById('agents-head-antagonists');
-        if (agHead) agHead.textContent = isTransporter ? 'Reuptake Inhibitors' : 'Agonists & Positive Modulators';
-        if (anHead) anHead.textContent = isTransporter ? 'Reuptake Enhancers & Others' : 'Antagonists, Blockers & Inverse Agonists';
+        renderBinders(receptor);
 
         // provenance
         document.getElementById('display-citation-title').textContent = receptor.citation.title;
@@ -2818,9 +2927,8 @@
         }
 
         // render facet rail
-        var _c = LOCAL2CANON[receptor.id];
         var _fr = document.getElementById('facetRail');
-        if (_fr) _fr.innerHTML = facetRailHTML(_c, receptor.name, 'cabinet');
+        if (_fr) _fr.innerHTML = facetRailHTML(canonId, receptor.name, 'cabinet');
 
         plateBody.classList.remove('is-out');
         replayReveal(card);
@@ -3541,124 +3649,7 @@
       renderExplorerList();
     }
 
-    // Diagnostic dialog content
-    const diagnosticDB = {
-      opioid_triad: {
-        title: 'The Opioid Overdose Triad',
-        desc: 'The classic clinical pathognomonic presentation indicating toxic opioid ingestion. Direct binding of potent mu agonists down-regulates respiratory cycle pacemakers in the brainstem, which can quickly lead to fatal asphyxia if not reversed.',
-        symptoms: [
-          'Pinpoint Pupils (Miosis) - mediated via disinhibition of parasympathetic oculomotor pathways.',
-          'Respiratory Depression - severe drop in respiratory rate (often below 8 breaths per minute).',
-          'Altered Mental Status - lethargy, stupor, progressing to complete comatose state.'
-        ]
-      },
-      excitotoxicity: {
-        title: 'Glutamate-Mediated Excitotoxicity',
-        desc: 'A pathologic mechanism in which excessive exposure to glutamate or hyperstimulation of NMDA receptors causes neuronal injury or cell death. Under continuous synaptic glutamate loading, the receptor stays active, allowing unregulated ionic currents to enter.',
-        symptoms: [
-          'Intracellular Calcium Overload - hyper-activation of calpains, caspases, and endonucleases.',
-          'Mitochondrial Failure - loss of proton gradient, leading to cyt C release and immediate cell necrosis.',
-          'Free Radical Outburst - high production of Reactive Oxygen Species (ROS) destroying structural lipids.'
-        ]
-      },
-      delirium_tremens: {
-        title: 'Delirium Tremens (GABA Withdrawal)',
-        desc: 'A severe, life-threatening manifestation of alcohol or benzodiazepine withdrawal, caused by sudden removal of chronic positive allosteric enhancement from down-regulated GABA-A receptors.',
-        symptoms: [
-          'Extreme Autonomic Hyperactivity - severe sinus tachycardia, diaphoresis, hyperthermia.',
-          'Cerebral Hallucinations - terrifying microzoopsic (small crawling animals) visual hallucinations.',
-          'Uncontrolled Psychomotor Agitation - continuous visual tremors, pacing, extreme panic.'
-        ]
-      },
-      serotonin_syndrome: {
-        title: 'Serotonin Syndrome Profile',
-        desc: 'A life-threatening drug-induced clinical triad of neuromuscular excitation, autonomic dysfunction, and altered mental status. It is driven by hyperstimulation of 5-HT1A and particularly 5-HT2A receptors.',
-        symptoms: [
-          'Neuromuscular Hyperreactivity - spontaneous clonus, hyperreflexia, lower-extremity rigidity.',
-          'Autonomic Instability - extreme hyperthermia, tachycardia, profuse diaphoresis, dilated pupils.',
-          'Mental Status Alteration - agitation, delirium, severe confusion, flight response.'
-        ]
-      },
-      nms: {
-        title: 'Neuroleptic Malignant Syndrome (NMS)',
-        desc: 'A rare, life-threatening idiosyncratic reaction to dopamine D2 receptor antagonists (typically first-generation antipsychotics). Severe central D2 blockade in the striatum and hypothalamus disrupts motor control and thermoregulation.',
-        symptoms: [
-          'Lead-Pipe Rigidity - severe generalized skeletal muscle stiffness and resistance.',
-          'Severe Hyperthermia - core temperatures exceeding 40°C (104°F).',
-          'Autonomic Instability - fluctuating blood pressure, tachycardia, dysrhythmias, diaphoresis.'
-        ]
-      }
-    };
 
-    // ordered phrase -> drawer map; first phrase present in a bullet becomes the link
-    const TERM_LINKS = [
-      ['opioid_triad', ['Opioid Overdose Triad', 'pinpoint pupils']],
-      ['excitotoxicity', ['excitotoxic', 'calcium overload', 'Neuronal cell death']],
-      ['delirium_tremens', ['Delirium Tremens']],
-      ['serotonin_syndrome', ['Serotonin Syndrome', 'spontaneous clonus']],
-      ['nms', ['Neuroleptic Malignant Syndrome', 'Lead-pipe muscular rigidity', '(NMS)']]
-    ];
-    function linkDiagnosticTerms(bullet) {
-      for (const [key, phrases] of TERM_LINKS) {
-        for (const phrase of phrases) {
-          if (bullet.includes(phrase)) {
-            return bullet.replace(phrase,
-              `<span onclick="openDiagnosticDrawer('${key}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDiagnosticDrawer('${key}');}" class="term-link" role="button" tabindex="0" aria-haspopup="dialog">${phrase}</span>`);
-          }
-        }
-      }
-      return bullet;
-    }
-
-    let drawerReturnFocus = null;
-    const DRAWER_KICKERS = {
-      opioid_triad:      'Toxicology Syndrome',
-      excitotoxicity:    'Pathophysiology',
-      delirium_tremens:  'Withdrawal Syndrome',
-      serotonin_syndrome:'Toxidrome',
-      nms:               'Idiosyncratic Reaction'
-    };
-
-    function openDiagnosticDrawer(key) {
-      const data = diagnosticDB[key];
-      if (!data) return;
-      drawerReturnFocus = document.activeElement;
-      const kicker = document.getElementById('drawer-kicker');
-      if (kicker) kicker.textContent = DRAWER_KICKERS[key] || 'Clinical Reference';
-      document.getElementById('drawer-title').textContent = data.title;
-      document.getElementById('drawer-desc').textContent = data.desc;
-      const symp = document.getElementById('drawer-symptoms');
-      symp.innerHTML = '';
-      data.symptoms.forEach(s => {
-        const li = document.createElement('li');
-        li.textContent = s;
-        symp.appendChild(li);
-      });
-      document.getElementById('info-drawer').classList.remove('hidden');
-      document.querySelector('#info-drawer .dialog-close').focus();
-    }
-
-    function closeInfoDrawer() {
-      document.getElementById('info-drawer').classList.add('hidden');
-      if (drawerReturnFocus && typeof drawerReturnFocus.focus === 'function') {
-        drawerReturnFocus.focus();
-      }
-      drawerReturnFocus = null;
-    }
-
-    // keep keyboard focus inside the open dialog; Escape closes it
-    document.addEventListener('keydown', e => {
-      const drawer = document.getElementById('info-drawer');
-      if (drawer.classList.contains('hidden')) return;
-      if (e.key === 'Escape') { closeInfoDrawer(); return; }
-      if (e.key === 'Tab') {
-        const f = drawer.querySelectorAll('button');
-        if (!f.length) return;
-        const first = f[0], last = f[f.length - 1];
-        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-      }
-    });
   </script>
 
   <script>

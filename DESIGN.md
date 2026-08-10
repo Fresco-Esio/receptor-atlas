@@ -70,18 +70,18 @@ components:
     textColor: "{colors.state-baseline}"
     typography: "{typography.label}"
     rounded: "{rounded.sm}"
-    padding: "0.32rem 0.6rem"
+    padding: "0.3rem 0.5rem"
   tag-antagonist:
     backgroundColor: "{colors.wall-recess}"
     textColor: "{colors.state-over}"
     typography: "{typography.label}"
     rounded: "{rounded.sm}"
-    padding: "0.32rem 0.6rem"
+    padding: "0.3rem 0.5rem"
   specimen-row:
     backgroundColor: "{colors.wall-atrium}"
     textColor: "{colors.bone-dim}"
     typography: "{typography.title}"
-    padding: "1.15rem 0.4rem"
+    padding: "0.62rem 0.4rem"
 ---
 
 # Design System: The Receptor Cabinet
@@ -196,9 +196,13 @@ The system is flat by default and conveys depth through tonal layering, not shad
 
 Above 941px the document does not scroll. The window is divided once — masthead, view, disclaimer — and each panel inside a view scrolls in its own box. `body` is the flex column that does the dividing, so no rule has to know the masthead's height or the footer's; the middle row takes what is left. That also keeps the medical disclaimer on screen, which a bare `overflow: hidden` on a `100svh` body would have clipped away unreachably.
 
-- **Cabinet:** the specimen rail and the exhibit plate scroll independently, so reading a long plate never drags the index out from under the cursor. The plate scrolls as one with its head pinned; scrolling only the body would leave provenance and the cross-volume bridge to absorb the shortfall by shrinking and clipping.
+- **Cabinet:** the specimen rail and the exhibit plate scroll independently, so reading a long plate never drags the index out from under the cursor. Inside the plate, the head and the foot are fixed rows and only the body scrolls. The plate used to scroll as one, which put the provenance line 845px below the fold on a 900px window, and a reference work cannot bury the citation its numbers are read against. That arrangement was tried once before and abandoned because the two rows shrank to absorb the shortfall and clipped their own text with no way to reach it; both carry `flex: none` now, so they cannot.
 - **Catalogue / Primer:** single panes that take the height, the matrix keeping its column headers pinned.
 - **Below 941px** the columns stack and the lock lifts. A pile of short scroll boxes on a phone reads worse than one honest page scroll.
+
+**The Volume-Boundary Rule.** A volume shows what it is for and points at the rest. Clinical presentation belongs to the Ledger, so the Cabinet's plate does not carry the presentation bullets or the emergency plaque: they restated the Ledger's Excess and Deficit columns almost word for word. Those blocks are still in the markup and still render, gated on `ATLAS_FACES`, for any specimen the Ledger does not hold. Exactly one qualifies: muscarinic M3 is catalogued here and nowhere else, and dropping the blocks outright would have deleted the atlas's only record of its two toxidromes. The cross-volume rail on the plate's foot carries every other reader across.
+
+**Overlapping facts are not redundancy.** Mechanism was cut from the Cabinet under this rule once and put straight back. The Archive describes what a receptor does in the brain; the Cabinet describes transduction at the target, which is the context that makes agonism and antagonism readable at all. The two say related things because they are about the same protein, not because one is repeating the other. The test is whether the block still does work where it stands, not whether a sibling volume mentions the same subject.
 
 **The Override-Layer Rule.** The shell lives at the end of the stylesheet, not in the layout section. It overrides settled component decisions (`.plate`'s `overflow: hidden`, the catalogue's own svh arithmetic) which are declared later than the layout section, so an override placed up there loses on source order without changing specificity. Read it as a layer, not as a stray.
 
@@ -216,13 +220,27 @@ Pinning is capped at **two**, and the pair is told apart by fill: the first pin 
 
 **Screened-clean versus never-screened.** Four of five clinical reviewers could not tell a hollow ring from an empty cell at a glance, which collapses the single most important distinction on the plate. The inert dot carries a centre mark so it has presence, and the legend names the empty case in words: *never screened, not evidence of no binding*.
 
+### Binding at This Target (the Cabinet's answer)
+
+The Catalogue reads agent-first: 92 rows against 16 target columns, which answers what a given drug hits. The Cabinet's plate reads receptor-first, and until this block existed it answered its own question with two lists of bare drug names, at most ten of them, no numbers on any. The page was holding up to 48 measured values for the same target one tab away.
+
+It is one ranked list built from two sources, because each holds something the other does not. The affinity set carries the measurement: a median pKi, the count of human values behind it, the spread, the source. The Cabinet's curated lists carry agents the affinity set has never held at all, the channel-pore blockers and co-agonists and reference antagonists, which is why the numbers cannot simply replace them.
+
+**Three states, and the last two are the ones that get confused.** Measured shows its pKi and n. Screened and found not to bind shows `no binding` against a hollow ring. Never screened shows `not screened` against a ring in brass, and must never read as a zero. This is the same distinction the affinity rose makes between a stub at the floor ring and an empty slot, and it means the same thing here.
+
+**The cap never falls on a curated agent.** Twelve rows fit the plate; a rich target has 48 measured. The cap takes the ranked tail and the screened-inert rows, never the agents this atlas names on purpose, since dropping those would undo the reason the two lists were merged. The note beneath states every count it trimmed and links to the Catalogue.
+
+**Action colour has two possible sources and says which.** IUPHAR's curation where it exists, this atlas's own agonist/antagonist lists otherwise, which is the same assertion the green and red chips used to make. Which one is speaking goes in the row's title rather than being blurred into one colour.
+
+NMDA has no affinity column at all (PDSP holds human values for a single agent there), so its list is curation alone and the note says so rather than leaving the target looking unscreened by accident.
+
 ### The Conservator's Desk (the working surface)
 
 The three volumes are read; the Desk is worked. It uses the same materials, at a tool's density rather than an exhibit's pacing: no scroll choreography, no reveal-on-enter, nothing that costs a curator a beat.
 
 **Vermilion means unsourced here.** The One Voice Rule says the accent marks the one thing that matters in a view, and in the Desk that is a claim with no paper behind it. Nothing else on that surface may take the accent, including the specimen index numbers that wear it in the Archive.
 
-**The ledger is the spine.** The database keys a source to a receptor or to a single binding, never to a field, so the receptor's ledger sits above all the content it backs and stays there while you edit, and each binding carries its own citation on its own row. The layout states the real relationship rather than implying a per-field model that does not exist.
+**The ledger is the spine.** The database keys a source to a receptor or to a single binding, never to a field, so the receptor's ledger heads an evidence rail beside the content it backs, with the review checks under it, and each binding carries its own citation on its own row. The layout states the real relationship rather than implying a per-field model that does not exist. The content column and the rail scroll independently, so checking a field against its papers is a glance across, never a scroll away: the ledger's first placement, stacked above the content in one shared scroll, said the same true thing about the schema but made every verification a vertical round trip. Below the split the rail has no column to dock in, and the pane returns to one page scroll in reading order: name, papers, checks, content.
 
 **A check states its own workload.** Review checkboxes report what is still outstanding ("4 of 5 not verified yet") rather than being a box you can tick having done nothing. A checklist that cannot see the work is an audit trail, not a guide.
 
