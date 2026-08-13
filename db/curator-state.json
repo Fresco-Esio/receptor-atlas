@@ -5,7 +5,7 @@
   {
    "receptor_id": "d2",
    "volume": "archive",
-   "last_edited_at": "2026-08-13T23:55:04.249Z",
+   "last_edited_at": "2026-08-13T23:58:15.732Z",
    "last_reviewed_at": "2026-07-26T16:42:56.020Z"
   },
   {
@@ -29,7 +29,7 @@
   "claims": {},
   "archive": {
    "d2": {
-    "abstract": "D2 receptors are distributed across limbic, motor, and neuroendocrine circuits. In the limbic striatum, elevated D2 tone amplifies salience. In the motor striatum, D2 activity supports smooth movement. In the pituitary, D2 suppresses prolactin release; blockade raises prolactin levels."
+    "abstract": "D2 receptors are distributed across limbic, motor, and neuroendocrine circuits. "
    }
   },
   "clinical": {},
