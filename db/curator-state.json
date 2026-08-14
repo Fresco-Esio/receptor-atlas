@@ -5,7 +5,7 @@
   {
    "receptor_id": "d2",
    "volume": "archive",
-   "last_edited_at": "2026-08-13T23:58:15.732Z",
+   "last_edited_at": "2026-08-14T02:03:24.096Z",
    "last_reviewed_at": "2026-07-26T16:42:56.020Z"
   },
   {
@@ -22,14 +22,44 @@
   }
  ],
  "bindingReview": [],
- "sources": [],
- "receptorSources": [],
+ "sources": [
+  {
+   "key": "doi:10.1146/annurev.neuro.28.061604.135722",
+   "kind": "article",
+   "authors": "Schultz",
+   "year": 2007,
+   "title": "Multiple Dopamine Functions at Different Time Courses",
+   "journal": "Annu. Rev. Neurosci.",
+   "pmid": null,
+   "doi": "10.1146/annurev.neuro.28.061604.135722",
+   "url": null,
+   "notes": null
+  }
+ ],
+ "receptorSources": [
+  {
+   "receptor_id": "d2",
+   "source": "pmid:24463000",
+   "status": "verified",
+   "is_primary": 1,
+   "correction_note": null
+  },
+  {
+   "receptor_id": "d2",
+   "source": "doi:10.1146/annurev.neuro.28.061604.135722",
+   "status": "provided",
+   "is_primary": 0,
+   "correction_note": null
+  }
+ ],
  "bindingSources": [],
  "content": {
   "claims": {},
   "archive": {
    "d2": {
-    "abstract": "D2 receptors are distributed across limbic, motor, and neuroendocrine circuits. "
+    "abstract": "Dopamine D2 receptors are inhibitory receptors that regulate dopaminergic activity in the brain. They help regulate locomotor activity, cognition, and motivation through their wide distribution on neurons as autoreceptors of dopamine. ",
+    "body_json": "[\"D2 receptors describe a class of dopamine receptors with inhibitory activty. They are located presynaptically on dopaminegic neurons where they are the primary regulators of dopamine release through negative feedback. D2 receptors can also be found on postsynaptically on non-dopamine neurons, thought to function as regulators of neuronal activity in other neutrotransmitter pathways. The regulating activity of D2 receptors controls dopamine release in the mesocorticolimbic and striatonigral systems. Striatal Dopamine D2 receptors regulate reward and salience signals D2 receptor activity in the mesolimbic pathway plays imporatn role in emotionally-motivated behaviors such as motivation, reward, and pleasure.\"]",
+    "tags_json": "[]"
    }
   },
   "clinical": {},
