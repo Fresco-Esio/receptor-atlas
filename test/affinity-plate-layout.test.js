@@ -51,3 +51,28 @@ test('no binding exceeds the petal ceiling it would be clamped to', () => {
     `PETAL_MAX is ${max}; these are drawn clamped to it, understating how tightly they `
     + `bind. Raise PETAL_MAX to the new maximum: ${over.join(', ')}`);
 });
+
+// The rose tweens between selections by interpolating a frame per animation step. That
+// interpolated frame is a UNION of the outgoing and incoming selections: an agent that
+// was just unpinned survives in it with every cell at v=0. paint() skips zero-value
+// petals, but it still counts that series when it divides a slot's arc between pinned
+// agents, so a frame carrying a departed agent draws every remaining petal at half
+// width, offset to one side.
+//
+// That is harmless while the tween runs. It is a bug at the end of it: unpinning one of
+// two agents left the rose holding a gap for the agent that had gone, until some later
+// redraw happened to clear it. So the final act of the tween must be to paint the real
+// target frame, never the last interpolated one.
+test('the rose paints its target frame when the tween finishes, not the interpolated one', () => {
+  const step = html.match(/const step = now => \{[\s\S]*?\n\s*\};/);
+  assert.ok(step, 'the tween step function should be findable in the Cabinet page');
+
+  // The branch taken on the final frame, where e has reached 1.
+  const done = step[0].match(/else \{([\s\S]*?)\}/);
+  assert.ok(done, 'step() should have a completion branch for e >= 1');
+
+  assert.match(done[1], /paint\(\s*next\s*\)/,
+    'the completion branch assigns liveFrame = next but must also paint(next): leaving '
+    + 'the interpolated frame on screen keeps a slot divided for an agent that is no '
+    + 'longer pinned, so the rose holds a gap until an unrelated redraw clears it');
+});

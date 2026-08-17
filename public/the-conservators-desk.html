@@ -968,6 +968,10 @@ function bindHtml(b) {
     <div class="bind-prov hidden">
       <div class="bind-edit">
         <label class="bind-in">Ki nM <input data-bk="ki" data-bid="${b.id}" value="${b.ki == null ? '' : b.ki}" /></label>
+        <label class="bind-in wide">reported as <input data-bk="ki_text" data-bid="${b.id}" value="${esc(b.ki_text || '')}" placeholder="median of 62 human values" /></label>
+        <label class="bind-in">action <input data-bk="act" data-bid="${b.id}" value="${esc(b.act || '')}" placeholder="ag / pa / an / ri" /></label>
+        <label class="bind-in wide">action, in full <input data-bk="act_full" data-bid="${b.id}" value="${esc(b.act_full || '')}" placeholder="Antagonist" /></label>
+        <label class="bind-in wide">source label <input data-bk="src" data-bid="${b.id}" value="${esc(b.src || '')}" placeholder="PDSP KiDB (human)" /></label>
         <label class="bind-in wide">note <input data-bk="note" data-bid="${b.id}" value="${esc(b.note || '')}" /></label>
       </div>
       <div class="srcs">${bare
@@ -1174,8 +1178,11 @@ async function loadContent(r) {
   try { data = await jget('/api/receptors/' + r.id + '/structured'); }
   catch (e) { document.getElementById('content').innerHTML = '<div class="qempty">Could not load the content for this specimen.</div>'; return; }
 
+  // The quiz prompt was already being loaded and carried on the record; it simply had
+  // no control, so it could be read by the code and by nobody else.
   let html = `<section class="sec"><div class="sec-head"><h2 class="sec-title">Claim under review</h2><span class="sec-vol">Archive</span><span class="sec-saved" data-saved></span></div>
-    ${fieldHtml('claim', 'The one sentence this specimen asserts', data.claim, 3, 'Backed by the sources in the specimen&rsquo;s ledger.')}</section>`;
+    ${fieldHtml('claim', 'The one sentence this specimen asserts', data.claim, 3, 'Backed by the sources in the specimen&rsquo;s ledger.')}
+    ${fieldHtml('quiz', 'The question this specimen should be able to answer', r.quiz, 2, 'Used to check the claim holds up when it is asked back.')}</section>`;
 
   if (data.narrative) {
     const n = data.narrative;
@@ -1191,11 +1198,26 @@ async function loadContent(r) {
   }
   if (data.clinical) {
     const c = data.clinical;
+    // The Ledger in full. Four of these columns — onset, course, risk, monitoring —
+    // are what make Vol III syndromic rather than a second symptom list, and none of
+    // them were reachable here: the row existed in the table, the API dropped it, and
+    // the Desk never drew it. Ordered as the Ledger reads a case: what it does at rest,
+    // how it fails, when that failure arrives, who it happens to, and what to watch.
     html += `<section class="sec"><div class="sec-head"><h2 class="sec-title">Clinical row</h2><span class="sec-vol">Ledger</span><span class="sec-saved" data-saved></span></div>
       ${fieldHtml('c:baseline', 'Baseline role', c.baseline, 2)}
       ${fieldHtml('c:mech', 'Mechanism', c.mech, 3)}
       ${fieldHtml('c:over', 'Overstimulated', (c.over || []).join('\n'), 4, 'One per line.')}
-      ${fieldHtml('c:under', 'Understimulated', (c.under || []).join('\n'), 4, 'One per line.')}</section>`;
+      ${fieldHtml('c:under', 'Understimulated', (c.under || []).join('\n'), 4, 'One per line.')}
+      ${fieldHtml('c:onset', 'Onset', c.onset, 4, 'When each syndrome arrives after starting or raising the drug. The interval is usually the most useful single clue to which one is in front of you.')}
+      ${fieldHtml('c:time_course', 'Time course', c.time_course, 4, 'What happens next: what recedes with occupancy, what persists after the drug stops.')}
+      ${fieldHtml('c:risk_factors', 'Risk factors', (c.risk_factors || []).join('\n'), 4, 'One per line. Who this happens to.')}
+      ${fieldHtml('c:monitoring', 'Monitoring', (c.monitoring || []).join('\n'), 4, 'One per line. What to examine, ask, or measure, and why.')}
+      ${fieldHtml('c:stahl', 'Stahl note', c.stahl, 3, 'The reading this row is checked against.')}
+      ${fieldHtml('c:agonists', 'Agonists', (c.agonists || []).join('\n'), 3, 'One per line. Names only; the measured affinities live in the Cabinet.')}
+      ${fieldHtml('c:antagonists', 'Antagonists', (c.antagonists || []).join('\n'), 3, 'One per line.')}
+      ${fieldHtml('c:name', 'Row name', c.name)}
+      ${fieldHtml('c:cls', 'Class', c.cls)}
+      ${fieldHtml('c:sys', 'System key', c.sys, 1, 'The Ledger groups its rows by this key. Changing it moves the row to another system.')}</section>`;
   }
   if (data.binding && data.binding.length) {
     const all = data.binding;
@@ -1246,6 +1268,7 @@ function wireContent(r) {
   root.querySelectorAll('[data-f]').forEach(el => el.addEventListener('input', () => {
     const f = el.dataset.f;
     if (f === 'claim') return patchDebounced(r.id, r.id + ':claim', { volume: 'archive', claim: el.value }, el);
+    if (f === 'quiz') return patchDebounced(r.id, r.id + ':quiz', { volume: 'archive', quiz: el.value }, el);
     const [scope, key] = f.split(':');
     if (scope === 'n') {
       let v = el.value;
@@ -1253,7 +1276,11 @@ function wireContent(r) {
       else if (key === 'tags') v = el.value.split('\n').map(s => s.trim()).filter(Boolean);
       patchDebounced(r.id, f, { volume: 'archive', narrative: { [key]: v } }, el);
     } else if (scope === 'c') {
-      const v = (key === 'over' || key === 'under') ? el.value.split('\n').map(s => s.trim()).filter(Boolean) : el.value;
+      // The list-valued clinical columns, named once. Adding a column to CLINICAL_LIST
+      // in the router without adding it here would save a JSON string into a JSON
+      // column and the Ledger would render one long bullet.
+      const LISTS = ['over', 'under', 'agonists', 'antagonists', 'risk_factors', 'monitoring'];
+      const v = LISTS.includes(key) ? el.value.split('\n').map(s => s.trim()).filter(Boolean) : el.value;
       patchDebounced(r.id, f, { volume: 'ledger', clinical: { [key]: v } }, el);
     }
   }));

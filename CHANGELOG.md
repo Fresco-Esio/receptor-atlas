@@ -33,7 +33,112 @@ reader who wrote a number down needs to know it moved.
 
 ## [Unreleased]
 
-Nothing yet.
+The Cabinet learns to answer "compared to what?", and the Desk gains the Ledger columns
+it could never reach. No displayed value moved: every number here was already in the
+database, and what changed is which of them the pages show and which the curator can edit.
+
+### Added
+
+- **An anchor in the Catalogue.** Click any target's column header and that target becomes
+  the reference the whole plate is read against. Click another to move it, click the same
+  one again to release it. The anchored header is vermilion over a rule; agents never
+  screened at the anchor stay dimmed for as long as it stands.
+- **A selectivity line in every affinity tooltip.** With D2 anchored, hovering clozapine's
+  H1 cell reads `Δ vs D2: +1.89 · 77× toward H1`. Where the anchor was screened and showed
+  no meaningful binding the figure is given as a bound rather than a point value, and where
+  the anchor was never screened at all the tooltip says so instead of computing anything.
+- **An anchored readout under the affinity rose.** For each pinned agent it lists the
+  targets that agent engages *harder* than the anchor, worst first, each with its fold
+  difference and the clinical axis that target carries. Two pinned agents at an anchored D2
+  is the typical/atypical contrast in six lines.
+- **Row re-ranking at the anchor.** Anchoring re-sorts the matrix inside each drug class by
+  affinity at that target, tightest first, with screened-but-not-binding agents below the
+  binders and never-screened agents last. Class grouping never breaks. Clearing the anchor
+  restores the shipped order exactly.
+- **`#anchor=<target>` in the URL,** so an anchored plate survives a reload and can be
+  linked to. Tracing a receptor into the Catalogue from another volume anchors the plate
+  on it.
+- **A clinical axis on every target** (`AFF_TARGETS[].axis`): the side-effect or effect
+  domain a target carries, such as `sedation, weight gain` for H1 and `orthostasis, falls`
+  for α1. The anchored readout uses it to name what an off-target number costs, rather
+  than only how large it is.
+- **The Cabinet plate now states its own evidence base.** Each specimen's binding list is
+  headed by a census — how many agents were screened at this target, how many bind, how
+  many actions are curated, and how many measurements sit behind them.
+- **Spread, drawn, on every binder row.** A bar shows the lo-to-hi range the median was
+  taken over on a fixed pKi 5 to 10.5 scale, so haloperidol's 62 measurements spanning five
+  log units no longer look identical to a single unreplicated value.
+- **An off-target column on every binder row.** What that molecule binds harder than the
+  specimen on the plate, with the fold difference: at D2, perphenazine reads `4.0× D3` and
+  haloperidol reads `none`.
+- **The Conservator's Desk reaches the Ledger's syndromic columns.** Onset, time course,
+  risk factors and monitoring existed in the table and were unreachable at every layer
+  above it: the API did not return them, neither write whitelist accepted them, and the
+  Desk drew no control for them. All four are now editable, along with the Stahl note,
+  the agonist and antagonist lists, and the row's name, class and system key. The
+  clinical section goes from four fields to fourteen, ordered the way the Ledger reads a
+  case: what the receptor does at rest, how it fails, when that failure arrives, who it
+  happens to, and what to watch.
+- **The quiz prompt is editable.** It was queryable and carried on the Desk's record but
+  had no write path at all, so it could be read by the code and by nobody else.
+- **Binding rows expose the four fields the API already accepted:** the reported-as text,
+  the action code, the action in full, and the source label. Only the Ki and a note were
+  reachable before.
+- **Concept tags now link to the concept.** Each tag under Pharmacologic Action was a
+  button that opened the Primer at its top, so every one of the 31 led to the same place
+  and none led to a definition. The 14 that name a concept the Primer defines now scroll
+  to it and light it; the other 17 are drawn as labels, because a label that cannot be
+  followed should not look like a control.
+
+### Changed
+
+- The affinity rose's pinned-agent legend drops its top-three-target tail while an anchor
+  is set, because the anchored readout below states the same thing organised around the
+  anchor. The how-to-read paragraph gives way to the readout for the same reason: a reader
+  who has anchored a target has demonstrated they know how to read the plate.
+- **The plate figure is drawn at plate size.** The case column was 1009px wide holding
+  prose capped at 70ch, so roughly 273px sat as a void down the right of every plate
+  while the engraving was a 170px thumbnail. The figure takes that width instead and is
+  now 327px, and the prose measure is unchanged. It is sized against height as well as
+  width, because a square figure's width is also its vertical cost.
+- **The exhibit plate fills its column.** It hugged its content and stopped 183px above
+  the foot of a viewport-fit column, and spent another 57px on a grid row that held
+  nothing. Both are reclaimed by the binding register, which now lists 16 agents rather
+  than 12.
+- **The specimen rail is ruled to its foot.** Thirteen entries end 45% of the way down a
+  full-height rail; the hairlines continue at the row pitch below them, so the remainder
+  reads as a catalogue with room left in it rather than a list that was cut off. No
+  invented entries, only the ruling.
+
+### Fixed
+
+- **The affinity rose kept a gap for an agent that had gone.** Unpinning one of two
+  pinned agents left every remaining petal drawn at half width, offset to one side, until
+  some later redraw cleared it. The tween interpolates a frame that is a union of the
+  outgoing and incoming selections, so the departed agent survived in it at zero and was
+  still counted when each slot's arc was divided; the tween ended by assigning the real
+  target frame without ever painting it. Covered by a regression test.
+- **Catalogue numerals no longer wrap.** Five of the thirteen (`№ VIII`, `№ XIII` and
+  their kin) overflowed a fixed 2.4rem column and broke onto a second line, standing those
+  rows 8px taller than their neighbours and putting every specimen name on a different
+  baseline. The column is measured from the widest numeral and shared by all rows.
+- **The page no longer scrolls sideways on a phone.** The widest unbreakable element in
+  the explorer was the segmented Antagonism / Physiologic Tone / Agonism control at 364px,
+  which set the floor for the whole single-column grid and dragged 447px of layout into a
+  375px screen. That control wraps at narrow widths, the binding list may fall below its
+  24rem track, and the binder row sheds its two comparative columns, which need
+  neighbouring rows in view to mean anything.
+
+### Known gaps
+
+- The anchor and the axis field are Cabinet-page literals. `AFF_TARGETS`, `AFF_GROUPS` and
+  `PHARM_ACTIONS` are not stored in the database and not editable in the Desk; they are
+  committed page literals, which is where this project keeps that class of content, but it
+  does mean the axis phrasing can only be corrected by editing the page.
+- Affinity ordering is not occupancy. The plate can say which target a molecule reaches
+  first as concentration rises; it cannot say what fraction of a receptor is occupied at a
+  given dose. The drawers for dissociation kinetics, occupancy-against-dose and PK remain
+  empty because the atlas holds no such data.
 
 ## [1.1.0] - 2026-07-30
 

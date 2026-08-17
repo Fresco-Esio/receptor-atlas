@@ -13,9 +13,17 @@ colors:
   bone-faint: "oklch(63% 0.013 85)"
   vermilion: "oklch(62% 0.19 35)"
   brass: "oklch(70% 0.055 80)"
-  state-baseline: "oklch(78% 0.085 158)"
+  state-normal: "oklch(78% 0.085 158)"
   state-over: "oklch(66% 0.185 38)"
   state-under: "oklch(72% 0.10 245)"
+  bone-read: "oklch(86% 0.013 85)"
+  brass-line: "oklch(70% 0.055 80 / 0.28)"
+  brass-faint: "oklch(70% 0.055 80 / 0.14)"
+  wall-vault: "oklch(14% 0.01 75)"
+  action-agonist: "{colors.state-normal}"
+  action-partial: "{colors.brass}"
+  action-antagonist: "{colors.state-over}"
+  action-reuptake-inhibitor: "{colors.state-under}"
 typography:
   display:
     fontFamily: "Marcellus, serif"
@@ -45,10 +53,13 @@ rounded:
   sm: "2px"
   md: "3px"
 spacing:
-  xs: "0.4rem"
-  sm: "0.7rem"
-  md: "1.2rem"
-  lg: "2rem"
+  2xs: "0.25rem"
+  xs: "0.5rem"
+  sm: "0.75rem"
+  md: "1rem"
+  lg: "1.5rem"
+  xl: "2rem"
+  2xl: "3rem"
 components:
   button-segmented:
     backgroundColor: "{colors.wall-recess}"
@@ -60,14 +71,14 @@ components:
     backgroundColor: "{colors.wall-recess}"
     textColor: "{colors.bone}"
   sim-button-active:
-    backgroundColor: "{colors.state-baseline}"
+    backgroundColor: "{colors.state-normal}"
     textColor: "{colors.wall-recess}"
     typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "0.62rem 0.95rem"
   tag-agonist:
     backgroundColor: "{colors.wall-recess}"
-    textColor: "{colors.state-baseline}"
+    textColor: "{colors.state-normal}"
     typography: "{typography.label}"
     rounded: "{rounded.sm}"
     padding: "0.3rem 0.5rem"
@@ -110,7 +121,7 @@ A near-black warm-neutral field, one ceremonial accent, and a three-color diagno
 
 ### Secondary (the diagnostic / data-viz palette)
 These three are functional, never decorative. They name receptor state in the Cabinet and binding action in the Affinity Plate.
-- **State Baseline / Activates** (oklch(78% 0.085 158), green): normal physiological state; agonist action.
+- **State Normal / Activates** (oklch(78% 0.085 158), green): normal physiological state; agonist action.
 - **State Over / Inhibits** (oklch(66% 0.185 38), red-orange): overstimulated state; antagonist / blocker / inverse-agonist action.
 - **State Under / Reuptake** (oklch(72% 0.10 245), blue): understimulated state; reuptake-transporter inhibition.
 
@@ -175,7 +186,7 @@ The system is flat by default and conveys depth through tonal layering, not shad
 
 ### Chips (drug tags)
 - **Style:** `wall-recess` ground, brass-faint border, Fragment Mono, `rounded.sm`.
-- **Variants:** agonist tints border + text toward state-baseline (green); antagonist toward state-over (red). They stagger in on render.
+- **Variants:** agonist tints border + text toward state-normal (green); antagonist toward state-over (red). They stagger in on render.
 
 ### Cards / Containers (Plates)
 - **Corner Style:** `rounded.md` (3px).
@@ -220,6 +231,22 @@ Pinning is capped at **two**, and the pair is told apart by fill: the first pin 
 
 **Screened-clean versus never-screened.** Four of five clinical reviewers could not tell a hollow ring from an empty cell at a glance, which collapses the single most important distinction on the plate. The inert dot carries a centre mark so it has presence, and the legend names the empty case in words: *never screened, not evidence of no binding*.
 
+### The Anchor (Catalogue)
+
+A binding table exists to answer *compared to what?*, and until the anchor the Catalogue could not: 729 cells each stood alone. Clicking a target column head fixes that target as the reference the whole plate is read against. Clicking another moves it; clicking the same one again releases it. It persists as `#anchor=<target_alias>` so an anchored plate survives a reload and can be linked to, and tracing a receptor in from another volume anchors the plate on it.
+
+**The anchored head is vermilion text over a vermilion rule, and deliberately not a diamond.** The pinned-row grammar uses a `◆` glyph, but these tracks are `minmax(56px, 1fr)`: a glyph widens whichever column carries it, so the whole matrix shifts sideways every time the anchor moves. The rule is drawn as an inset shadow rather than a thicker border for the same reason, since neither can change the box. Hover stays vermilion text with no rule, so the held state and the momentary preview never look alike.
+
+**Four things change, and they escalate.** The head lights; every tooltip gains a delta line against the anchor; agents never screened there hold the same `.dim` the column hover already used, now held rather than momentary; and rows re-rank by affinity at the anchor *inside* their drug class. Class grouping never breaks, because an antipsychotic does not stop being one because the anchor moved. Screened-but-not-binding agents sort below the binders and never-screened agents last, and clearing the anchor restores the shipped order exactly. Rows are **moved** rather than re-rendered, so pins, filters and listeners survive the reorder.
+
+**A delta is only a point figure when both values are measured.** Against a target screened and found clean the tooltip gives a bound (`>= 3.45 toward SERT`), and against one never screened it says so rather than computing anything. This is the same rule the rest of the plate follows: a number the data cannot support does not get printed.
+
+**The readout answers a prescriber, not the dataset.** It sits in the sticky rose column and, for each *pinned* agent, names the targets that agent engages harder than the anchor, worst first, with the fold difference and that target's clinical axis. An earlier version ranked all 92 agents for extremes and surfaced doxepin as "least selective at D2" — true of the spreadsheet, useless to a clinician looking at antipsychotics. Nothing appears in the readout that the reader did not pin.
+
+**It costs no page height.** The readout replaces the how-to-read paragraph rather than stacking under it: that copy teaches the plate's grammar to someone who has not read it yet, and a reader who has anchored a target has demonstrated they have. On a short screen the target description drops too, since the column head still carries it as a title. Each off-target line is clipped to one line rather than wrapped, so the block's height is a function of how many targets outrank the anchor (at most three) and never of how a phrase was worded.
+
+**Every target carries a clinical axis.** `AFF_TARGETS[].axis` names the effect domain a target is associated with — `sedation, weight gain` for H1, `orthostasis, falls` for α1 — so an off-target number can say what it costs and not only how large it is. It is phrased as the axis the target is *associated with*, never as a prediction for a specific drug: the action direction is curated for only a minority of pairs, and what engaging a receptor does depends on whether the drug blocks or activates it.
+
 ### Binding at This Target (the Cabinet's answer)
 
 The Catalogue reads agent-first: 92 rows against 16 target columns, which answers what a given drug hits. The Cabinet's plate reads receptor-first, and until this block existed it answered its own question with two lists of bare drug names, at most ten of them, no numbers on any. The page was holding up to 48 measured values for the same target one tab away.
@@ -231,6 +258,12 @@ It is one ranked list built from two sources, because each holds something the o
 **The cap never falls on a curated agent.** Twelve rows fit the plate; a rich target has 48 measured. The cap takes the ranked tail and the screened-inert rows, never the agents this atlas names on purpose, since dropping those would undo the reason the two lists were merged. The note beneath states every count it trimmed and links to the Catalogue.
 
 **Action colour has two possible sources and says which.** IUPHAR's curation where it exists, this atlas's own agonist/antagonist lists otherwise, which is the same assertion the green and red chips used to make. Which one is speaking goes in the row's title rather than being blurred into one colour.
+
+**The plate is an anchored view whose anchor cannot move.** The specimen on the wall is the reference, so each binder row is read against it exactly as the Catalogue reads rows against a chosen target. The list is headed by a census — agents screened here, how many bind, how many actions are curated, and how many measurements sit behind them — so the plate states its evidence base instead of implying one.
+
+**Spread is drawn, not written.** A bar per row shows the lo-to-hi range the median was taken over, on a fixed pKi 5 to 10.5 scale so bar lengths are comparable across every row and every specimen. A median resting on 62 measurements that span five log units is a different object from one resting on two that agree, and no number of decimal places on the median says so.
+
+**Each row names what the molecule reaches first.** A final column gives the single target that agent binds harder than the specimen, with the fold difference: at D2, perphenazine reads `4.0x D3` and haloperidol reads `none`. That is the clinically load-bearing fact a binding list can carry — dose a drug far enough to engage this target and you have already saturated whatever it binds tighter — and it is the same reading the Catalogue's anchored readout gives, applied per row.
 
 NMDA has no affinity column at all (PDSP holds human values for a single agent there), so its list is curation alone and the note says so rather than leaving the target looking unscreened by accident.
 

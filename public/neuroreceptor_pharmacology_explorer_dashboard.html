@@ -196,6 +196,24 @@
     align-items: stretch;
   }
   @media (max-width: 940px) { .explorer { grid-template-columns: 1fr; } }
+  /* On a phone the binder row drops its two widest fixed tracks. The spread bar and the
+     off-target figure are comparative reading, which needs the neighbouring rows in view
+     to mean anything, and their 3.6rem + 5rem floors were the last thing forcing the
+     explorer column wider than the screen. The value and its n stay; the full spread and
+     the off-target target stay reachable in the row's title. */
+  @media (max-width: 620px) {
+    .binder { grid-template-columns: auto minmax(0, 1fr) auto; }
+    .bd-spread, .bd-over { display: none; }
+    /* "Receptors & Transporters" beside its count badge is 366px of unbreakable line, and
+       a flex row that cannot wrap reports that as its minimum width. It was the last
+       thing holding the explorer column wider than a phone screen. */
+    .index-head { flex-wrap: wrap; gap: var(--space-2xs) var(--space-xs); }
+    /* Measured, after two wrong guesses: the widest min-content in the explorer was the
+       plate head at 364px, because "Antagonism / Physiologic Tone / Agonism" is a segmented
+       row that cannot break. It sets the floor for the whole single-column grid, so the
+       rail was being dragged wide by the plate beside it. */
+    .sim { flex-wrap: wrap; }
+  }
 
   /* ---------- catalog index (left) ---------- */
   .index-head {
@@ -205,7 +223,30 @@
     margin-bottom: 0.4rem;
   }
   .index-col { display: flex; flex-direction: column; }
+  /* Thirteen specimens end 45% of the way down a full-height rail. The remainder is not
+     filled with anything, because there is nothing true to put there, but a ruled ledger
+     page does not stop having rules where its entries stop. The hairlines continue at the
+     row pitch to the foot of the column, so the void reads as a catalogue with room left
+     in it rather than as a list that got cut off. --row-pitch is measured from a real row
+     (sizeSpecimenNumerals) so the rules land exactly where the next entries would.
+     Pure structure, no invented content. */
   .index-list { display: flex; flex-direction: column; flex: 1; }
+  /* The ruling is a flex child that takes exactly what the entries left, so it starts at
+     its own top and cannot drift or draw over them. Painting it on the list itself and
+     offsetting by the last row's bottom looked equivalent and was not: repeat-y tiles
+     upward as well as down, so it re-ruled every row it had been positioned past, at a
+     pitch that no longer matched them once one long name wrapped to two lines. */
+  .index-list::after {
+    content: "";
+    flex: 1 1 auto;
+    min-height: 0;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent calc(var(--row-pitch, 44px) - 1px),
+      var(--brass-faint) calc(var(--row-pitch, 44px) - 1px),
+      var(--brass-faint) var(--row-pitch, 44px));
+  }
   /* The rail used to be sticky so it survived a long page scroll. There is no page
      scroll to survive any more — see the viewport-fit shell above, where the rail is
      a full-height column and only its list moves. */
@@ -229,9 +270,12 @@
     animation-delay: calc(var(--i, 0) * var(--row-stagger));
   }
   @keyframes row-in { to { opacity: 1; translate: 0 0; } }
+  /* --no-col is measured from the widest rendered numeral (sizeSpecimenNumerals) and set
+     on the list, so every row shares one numeral column and every name starts on the
+     same left edge. The fallback only has to hold until that runs. */
   .specimen-inner {
     display: grid;
-    grid-template-columns: 2.4rem minmax(0, 1fr);
+    grid-template-columns: var(--no-col, 3.4rem) minmax(0, 1fr);
     gap: 0.85rem;
     align-items: baseline;
     transition: translate 0.5s var(--ease);
@@ -245,6 +289,10 @@
     letter-spacing: 0.08em;
     color: var(--bone-faint);
     align-self: center;
+    /* A catalogue numeral is one token. Breaking "№ VIII" across two lines was what
+       made the rail ragged; nowrap means an under-measured column overflows its gutter
+       rather than changing the height of the row it sits in. */
+    white-space: nowrap;
     transition: color 0.4s var(--ease);
   }
   .specimen-row:hover .specimen-no,
@@ -254,6 +302,11 @@
     font-size: 1rem;
     letter-spacing: 0.02em;
     color: var(--bone-dim);
+    /* The rail is capped at 20rem, so the longest specimen name ("NET (Norepinephrine
+       Transporter)") can still need two lines. It is not truncated: this is a catalogue
+       index and a clipped specimen name is worse than an uneven row. Balancing the break
+       makes the two lines read as one deliberate stack rather than a line plus an orphan. */
+    text-wrap: balance;
     transition: color 0.4s var(--ease);
   }
   .specimen-row:hover .specimen-name,
@@ -355,11 +408,24 @@
      reading column instead lets the case run the full height of the stage, so
      the space beneath the engraving belongs to the caption rather than being a
      hole down the left of every plate. */
+  /* The plate figure takes the surplus, because it is the only thing here without a
+     readability ceiling. The prose is capped at 70ch and the case column was 1009px
+     wide to hold 736px of text, so ~273px sat as a ragged void down the right of every
+     plate while the engraving was a 170px thumbnail. Widening the figure column spends
+     that width on the signature instead of leaving it empty, and costs the prose
+     nothing: the reading measure was never using it.
+     Row gap is deliberately larger than the column gap. Inside a row the figure and the
+     case are one exhibit read together; between the case above and the binding register
+     below is a change of subject, and the space should say so. */
   .stage {
     display: grid;
-    grid-template-columns: minmax(0, 13.5rem) minmax(0, 1fr);
+    /* Sized against height as well as width. The figure is square, so its column width
+       IS its vertical cost: on a wide, short laptop screen a width-only clamp spent 331px
+       of a 700px plate body on the figure and pushed the binding register further under
+       the fold. min() lets whichever axis is scarcer decide. */
+    grid-template-columns: minmax(0, clamp(13.5rem, min(23vw, 30vh), 23rem)) minmax(0, 1fr);
     grid-template-rows: auto auto;
-    gap: clamp(1rem, 1.8vw, 1.5rem) clamp(1.4rem, 2.6vw, 2.2rem);
+    gap: clamp(1.4rem, 2.6vw, 2.4rem) clamp(1.4rem, 2.4vw, 2rem);
     align-items: start;
   }
   .breakdown { grid-column: 2; }
@@ -373,9 +439,14 @@
      "Pharmacologic Mode" restated the dial two inches above, and the boxed tag
      restated the status line directly over it. The subtype spec moves here from
      the head, because the engraving is what it describes. */
+  /* Row 1 only. Spanning two rows while .agents spans both COLUMNS meant .agents could
+     not fit row 2 and was auto-placed into an implicit row 3, leaving row 2 a 5px sliver
+     with a full row gap on each side: ~57px of the plate spent on a row holding nothing.
+     Stretching within row 1 gives the same result the span was reaching for, which is a
+     figure column as tall as the case beside it and no hole under the caption. */
   .monitor {
     grid-column: 1;
-    grid-row: 1 / span 2;
+    grid-row: 1;
     align-self: stretch;
     display: grid;
     grid-template-rows: 1fr auto;
@@ -388,10 +459,13 @@
   /* ── archival receptor engraving system ── */
   .engraving {
     width: 100%;
-    max-width: 170px;
+    /* Was 170px, which left the figure floating in 58% of its own box. It now fills the
+       widened column: a catalogued object should be drawn at plate size, not at
+       thumbnail size. The SVGs are vector and gain detail rather than blur. */
+    max-width: 19rem;
     aspect-ratio: 1;
     align-self: center;
-    margin: 0 auto 1.1rem;
+    margin: 0 auto 0.9rem;
   }
   .engraving svg { width: 100%; height: 100%; overflow: visible; }
   .e-line {
@@ -461,7 +535,18 @@
     .monitor-cap { border-top: 0; border-left: 1px solid var(--brass-faint); padding: 0.2rem 0 0.2rem 1.1rem; }
   }
 
-  .breakdown { display: flex; flex-direction: column; gap: clamp(1.6rem, 2.5vw, 2.4rem); }
+  /* Stretched to the figure's height, with its blocks distributed rather than stacked at
+     the top. The plate figure is square, so a figure column wide enough to be worth
+     looking at is always taller than 70ch of prose; that surplus used to sit as a hole
+     under the last paragraph. Distributing turns it into separation between two distinct
+     fields, which is what the space should have been doing. space-between is bounded by
+     the figure, so it cannot run away: the gap floors at the tight grouping value. */
+  .breakdown {
+    display: flex; flex-direction: column;
+    gap: clamp(1.6rem, 2.5vw, 2.4rem);
+    align-self: stretch;
+    justify-content: space-between;
+  }
   .field-head {
     font-family: var(--mono);
     font-size: 0.6875rem;
@@ -493,15 +578,38 @@
     margin-bottom: 0.8rem;
   }
   .pharm-detail b { color: var(--st, var(--bone)); font-weight: 500; }
-  .concept-tags .tag {
+  /* Two kinds of tag, and they must not look alike, because only one of them does
+     anything. The split follows the system's own elevation rule — controls sink to a
+     recess wash and carry a hairline; flat-on-the-wall is the resting, inert state.
+       .is-link  a cross-reference to a concept the Primer defines: sunk well, brass
+                 hairline, brass ▸ marker, hover, pointer, focus ring.
+       .is-note  a property of this target with no Primer entry: flat, no fill, no
+                 border, no marker, quieter ink, default cursor. It reads as engraved
+                 into the plate rather than sitting on it as an object. */
+  .concept-tags .tag.is-link {
     cursor: pointer;
     border-color: var(--st, var(--brass-faint));
     color: var(--st, var(--bone-dim));
     background: oklch(0% 0 0 / 0.16);
-    transition: background-color 0.3s var(--ease);
+    transition: background-color 0.3s var(--ease), border-color 0.3s var(--ease);
   }
-  .concept-tags .tag:hover { background: oklch(0% 0 0 / 0.30); }
-  .concept-tags .tag::before { content: "▸ "; color: var(--st, var(--brass)); }
+  .concept-tags .tag.is-link:hover {
+    background: oklch(0% 0 0 / 0.30);
+    border-color: var(--st, var(--brass));
+  }
+  .concept-tags .tag.is-link::before { content: "▸ "; color: var(--st, var(--brass)); }
+
+  .concept-tags .tag.is-note {
+    cursor: default;
+    background: transparent;
+    border-color: transparent;
+    color: var(--bone-faint);
+    padding-inline: 0;
+  }
+  /* A list marker, not an underline: underlining a label would put back the one signal
+     that most says "link". The ▸ on a cross-reference points somewhere; the · on a
+     property just holds its place in the row. */
+  .concept-tags .tag.is-note::before { content: "· "; color: var(--brass-faint); }
 
   /* clinical plaque (warning) */
   .plaque {
@@ -553,21 +661,81 @@
   .binder-list {
     list-style: none;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr));
+    /* min() so the track may fall below 24rem when the viewport is narrower than one.
+       A bare minmax(24rem, 1fr) is a 384px floor that the grid honours by overflowing:
+       on a 375px phone it forced the whole explorer column to 428px and gave the page a
+       horizontal scrollbar. Above 24rem this computes identically, so the two-column
+       plate is unchanged. */
+    grid-template-columns: repeat(auto-fit, minmax(min(24rem, 100%), 1fr));
     gap: 0 clamp(1rem, 2vw, 1.8rem);
     align-content: start;
   }
+  /* Five tracks: action dot, name, the measured value, the spread it was taken over,
+     and what this molecule engages harder than the specimen on the plate. The last two
+     are what makes this a Cabinet row rather than a list of names — the plate is
+     permanently anchored on its own receptor, so every row is read against it. */
+  /* The last track is fixed rather than auto so the fold figures align down the column
+     instead of leaving a ragged right edge that varies with how many digits a row
+     happens to need. */
   .binder {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: baseline;
+    grid-template-columns: auto minmax(0, 1fr) auto 3.6rem 5rem;
+    align-items: center;
     gap: 0.55rem;
     padding: 0.24rem 0;
     border-bottom: 1px solid var(--brass-faint);
     font-family: var(--mono);
     font-size: 0.72rem;
     line-height: 1.45;
+    /* Rows settle in sequence, like a drawer's contents coming to rest. --ri is the
+       row's index, set on the element; the cap keeps a 12-row target from dragging. */
+    opacity: 0;
+    animation: binder-settle 0.5s var(--ease) forwards;
+    animation-delay: calc(0.30s + min(var(--ri, 0) * 28ms, 340ms));
   }
+  @keyframes binder-settle { from { opacity: 0; translate: 0 5px; } to { opacity: 1; translate: 0 0; } }
+  /* The spread, drawn rather than written. A median with 62 measurements behind it
+     spanning five log units is a different object from one with two that agree, and
+     no amount of decimal places on the median says so. Scale is fixed pKi 5 to 10.5
+     across every row and every specimen, so bar lengths are comparable everywhere. */
+  .bd-spread { position: relative; height: 5px; align-self: center; }
+  .bd-spread::before {
+    content: ""; position: absolute; inset: 2px 0;
+    background: var(--brass-faint);
+  }
+  /* The range opens outward FROM the median rather than wiping in from one end: the
+     median is the measurement, the spread is what the measurements did around it, and
+     the motion should say that in the right order. --mo is where the median sits inside
+     the range (0-100%), so the origin is the value itself, not the bar's midpoint. */
+  .bd-range {
+    position: absolute; top: 1px; bottom: 1px;
+    background: var(--bd, var(--action-partial));
+    opacity: 0.45;
+    transform-origin: var(--mo, 50%) 50%;
+    scale: 0 1;
+    animation: bd-open 0.55s var(--ease) forwards;
+    animation-delay: calc(0.42s + min(var(--ri, 0) * 28ms, 340ms));
+  }
+  @keyframes bd-open { to { scale: 1 1; } }
+  .bd-median {
+    position: absolute; top: -1px; bottom: -1px; width: 2px;
+    translate: -1px 0;
+    background: var(--bd, var(--action-partial));
+    scale: 1 0;
+    animation: bd-tick 0.4s var(--ease) forwards;
+    animation-delay: calc(0.36s + min(var(--ri, 0) * 28ms, 340ms));
+  }
+  @keyframes bd-tick { to { scale: 1 1; } }
+  /* What this agent binds harder than the specimen. Vermilion is spoken for, so the
+     over-state colour carries it: the same hue the Catalogue's readout uses for the
+     same fact. */
+  .bd-over {
+    color: var(--state-over); font-variant-numeric: tabular-nums;
+    white-space: nowrap; font-size: var(--lbl);
+    text-align: right; overflow: hidden; text-overflow: ellipsis;
+  }
+  .bd-over i { font-style: normal; color: var(--bone-faint); }
+  .bd-over.none { color: var(--bone-faint); opacity: 0.55; }
   .binder-dot {
     width: 6px; height: 6px; border-radius: 50%;
     align-self: center;
@@ -582,6 +750,14 @@
   .binder-val { color: var(--bone); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .binder-val .bd-n { color: var(--bone-faint); }
   .binder.is-inert .binder-val, .binder.is-unscreened .binder-val { color: var(--bone-faint); }
+
+  .binder-census {
+    font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.06em;
+    color: var(--bone-faint); margin: -0.15rem 0 0.6rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .binder-census b { color: var(--bone-dim); font-weight: 400; }
+  .binder-census[hidden] { display: none; }
 
   .binder-note {
     margin-top: 0.7rem;
@@ -730,6 +906,49 @@
   .radar-legend span { letter-spacing: 0.02em; }
   .radar-legend .hint { color: var(--bone-faint); text-transform: uppercase; font-size: var(--lbl); letter-spacing: 0.12em; }
 
+  /* The anchor readout: what the plate says about the anchored target, computed from
+     the hydrated cells at anchor time (never stored). Lives in the sticky rose column
+     so anchoring adds no page height; settles in with the page's plate motion. */
+  .anchor-readout { border-top: 1px solid var(--brass-faint); padding-top: 0.7rem; margin-top: 0.6rem; }
+  .anchor-readout[hidden], #radar-intro[hidden] { display: none; }
+  .anchor-readout.settle { animation: anchor-settle 0.45s var(--ease); }
+  @keyframes anchor-settle { from { opacity: 0; translate: 0 6px; } to { opacity: 1; translate: 0 0; } }
+  .anchor-head { display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.45rem; }
+  .anchor-head h5 { font-family: var(--mono); font-size: var(--lbl); font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; color: var(--vermilion); }
+  .anchor-clear { appearance: none; background: none; border: 1px solid var(--brass-faint); border-radius: 2px; margin-left: auto; cursor: pointer; color: var(--bone-faint); font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.1em; text-transform: uppercase; padding: 0.15rem 0.45rem; transition: color 0.25s var(--ease), border-color 0.25s var(--ease); }
+  .anchor-clear:hover { color: var(--vermilion); border-color: var(--brass-line); }
+  /* A 20px-tall control is a mouse target, not a finger one. Grow it where the
+     pointer is coarse rather than everywhere, so the desktop plate stays quiet. */
+  @media (pointer: coarse) { .anchor-clear { padding: 0.55rem 0.8rem; } }
+  .anchor-def { font-size: 0.82rem; color: var(--bone-dim); margin-bottom: 0.5rem; line-height: 1.45; }
+  .anchor-rows { font-family: var(--mono); font-size: 0.75rem; display: flex; flex-direction: column; gap: 0.35rem; color: var(--bone-faint); }
+  .anchor-rows b { color: var(--bone-dim); font-weight: 400; }
+  .anchor-rows .num { font-variant-numeric: tabular-nums; color: var(--bone); }
+  /* Per-pinned-agent block: what this molecule engages harder than the anchor. */
+  .a-agent { border-top: 1px solid var(--brass-faint); margin-top: 0.55rem; padding-top: 0.5rem;
+             display: flex; flex-direction: column; gap: 0.22rem; }
+  .a-name { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.04em; color: var(--bone); }
+  .a-name .num { color: var(--bone-faint); font-variant-numeric: tabular-nums; }
+  .a-lead { font-family: var(--mono); font-size: var(--lbl); letter-spacing: 0.1em;
+            text-transform: uppercase; color: var(--bone-faint); }
+  /* One line per hit, always. The axis phrase is curated prose of unpredictable
+     length, so it is clipped rather than allowed to wrap: that makes the block's
+     height a function of how many targets outrank the anchor (at most three) and
+     never of how the phrase was worded. The full text stays in the title. */
+  .a-hit { font-size: 0.8rem; color: var(--bone-dim); display: flex; gap: 0.4rem;
+           align-items: baseline; min-width: 0; }
+  .a-hit b { color: var(--bone); font-weight: 400; font-family: var(--mono); font-size: 0.75rem;
+             min-width: 3.4em; flex: none; }
+  .a-hit .num { color: var(--state-over); font-variant-numeric: tabular-nums; min-width: 3em; flex: none; }
+  .a-hit i { font-style: normal; color: var(--bone-faint); font-size: 0.78rem;
+             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .a-none { font-size: 0.8rem; color: var(--bone-faint); line-height: 1.45; }
+  /* On a short screen the rose column is already tight before anything is anchored,
+     so the anchored state gives back the one line it can spare: the target's own
+     description, which the column header still carries as its title. The counts and
+     the selectivity margins are the part that cannot be read anywhere else. */
+  @media (max-height: 880px) { .anchor-def { display: none; } }
+
   .matrix-head { padding: 1.1rem clamp(1.4rem, 3vw, 2rem) 0; font-family: var(--mono); font-size: 0.6875rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--bone-faint); }
   /* Finding one of 92 agents was a scroll-and-scan. The control sits in the head it
      filters, so the scope of what it does is never in doubt. */
@@ -820,6 +1039,22 @@
   .row.pinned .agent-name::before { content: "◆ "; color: var(--vermilion); font-size: 0.7em; }
   .col-head.lit { color: var(--vermilion); }
 
+  /* The anchor: one target fixed as the reference the whole plate is read against.
+     Set by clicking a column head — the same element whose hover already lights the
+     rose spoke, so the gesture is where the reader's hand already is. The selected
+     state borrows the specimen grammar (vermilion diamond, like a pinned row) rather
+     than inventing a new one. */
+  .col-head[data-col] { cursor: pointer; }
+  /* Anchored reads as vermilion text over a vermilion rule. Deliberately NOT a ◆
+     glyph like the pinned rows use: these tracks are minmax(56px, 1fr), so a glyph
+     widens whichever column carries it and the whole matrix shifts sideways each time
+     the anchor moves. The rule is drawn as an inset shadow rather than a thicker
+     border for the same reason — it cannot change the box. Hover is the same
+     vermilion text with no rule, so the held state stays distinct from the preview. */
+  .col-head.anchored { color: var(--vermilion); box-shadow: inset 0 -2px 0 var(--vermilion); }
+  /* An anchored plate keeps the never-screened rows dimmed even when no column is
+     hovered — the same .dim the hover already uses, held rather than momentary. */
+
   .affinity-note { margin-top: var(--space-xs); padding: 0.8rem 0 0.2rem; font-family: var(--mono); font-size: 0.7rem; color: var(--bone-faint); border-top: 1px solid var(--brass-faint); max-width: 90ch; }
   .affinity-note a { color: var(--bone-dim); border-bottom: 1px solid var(--brass-faint); text-decoration: none; }
   .affinity-note a:hover { color: var(--vermilion); border-color: var(--vermilion); }
@@ -859,6 +1094,15 @@
     border-bottom: 1px solid var(--brass-faint);
   }
   .concept-row:first-child { padding-top: 0.4rem; }
+  /* Arriving from a plate tag: light the concept that answered the click, once, so the
+     reader can tell which of the eight they were sent to. A brief sweep rather than a
+     persistent selection, because nothing here stays selected. */
+  .concept-row.is-found { animation: concept-found 1.9s var(--ease); }
+  @keyframes concept-found {
+    0%   { background: oklch(62% 0.19 35 / 0.10); }
+    100% { background: transparent; }
+  }
+  .concept-row.is-found .concept-term { color: var(--vermilion); transition: color 1.9s var(--ease); }
   @media (max-width: 720px) { .concept-row { grid-template-columns: 1fr; gap: var(--space-xs); } }
   .concept-term {
     font-family: var(--display);
@@ -968,10 +1212,17 @@
     }
     .e-line, .e-dim { transition-delay: 0ms !important; }
     .rv, .specimen-row { opacity: 1; translate: 0 0; }
+    /* The shared reset zeroes animation DURATION but not DELAY, so a staggered entry
+       would still sit invisible for its delay and then snap in. These three carry a
+       per-row delay, so they need the resting state stated outright. */
+    .binder { opacity: 1 !important; translate: 0 !important; animation: none !important; }
+    .bd-range, .bd-median { scale: 1 1 !important; animation: none !important; }
+    .anchor-readout.settle { animation: none !important; }
     .masthead { translate: 0; opacity: 1; }
     .bm-path { stroke-dashoffset: 0 !important; }
     .bm-inner { animation: none !important; stroke-dashoffset: 0 !important; }
     .tag-wrap .tag { opacity: 1 !important; translate: 0 !important; }
+    .concept-row.is-found { animation: none !important; }
     .sim button:active { scale: 1; }
   }
 
@@ -1080,7 +1331,10 @@
        against. The earlier attempt at this failed because those rows shrank to
        absorb the shortfall and clipped their own text with no way to reach it,
        so both are flex: none and cannot. */
-    .plate { min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+    /* Fill the column. The plate hugged its content and stopped 183px above the foot of
+       a viewport-fit column, so the page reserved height the exhibit refused to use and
+       the binding register was squeezed for room that was sitting empty below it. */
+    .plate { min-height: 0; flex: 1 1 auto; display: flex; flex-direction: column; overflow: hidden; }
     .plate-head, .plate-foot { flex: none; }
     .plate-body {
       flex: 1 1 auto;
@@ -1105,6 +1359,16 @@
       var h = (location.hash || '').replace('#', '').toLowerCase();
       var map = { cabinet: 'explorer', explorer: 'explorer', catalogue: 'matrix', matrix: 'matrix', primer: 'primer' };
       if (map[h] && typeof setViewMode === 'function') setViewMode(map[h]);
+      // #anchor=<target> opens the Catalogue already anchored, so an anchored plate
+      // survives a reload and can be linked to. This runs on `load` (after the grid
+      // is built by DOMContentLoaded) and on every later hashchange, so it is the one
+      // path that reads the anchor out of the URL. setCatalogueAnchor's own
+      // replaceState does not fire hashchange, so this cannot loop.
+      var m = h.match(/^anchor=([a-z0-9_]+)$/);
+      if (m && typeof window.setCatalogueAnchor === 'function') {
+        if (typeof setViewMode === 'function') setViewMode('matrix');
+        window.setCatalogueAnchor(m[1]);
+      }
     }
     window.addEventListener('load', applyHash);
     window.addEventListener('hashchange', applyHash);
@@ -1238,6 +1502,7 @@
                    measured values for the same target one tab away. -->
               <div class="agents rv rv-4">
                 <div class="field-head" id="binding-head">Binding at This Target</div>
+                <p class="binder-census" id="binder-census" hidden></p>
                 <ol class="binder-list" id="binder-list"></ol>
                 <p class="binder-note" id="binder-note"></p>
               </div>
@@ -1292,8 +1557,9 @@
               <div class="radar" id="radar"></div>
               <div class="radar-caption">
                 <h4>Affinity fingerprint</h4>
-                <p>Sixteen slots, one per target. A petal's length is its pKi and its colour is what the drug does there; an empty slot means nobody has screened it. Hover an agent to trace it; click to pin and compare.</p>
+                <p id="radar-intro">Sixteen slots, one per target. A petal's length is its pKi and its colour is what the drug does there; an empty slot means nobody has screened it. Hover an agent to trace it; click to pin and compare. Click a column head to anchor that target and read every agent against it.</p>
                 <div class="radar-legend" id="radar-legend"></div>
+                <div class="anchor-readout" id="anchor-readout" hidden aria-live="polite"></div>
               </div>
             </div>
           </div>
@@ -1327,14 +1593,14 @@
         <div class="primer-body">
           <dl class="concepts">
 
-            <div class="concept-row">
+            <div class="concept-row" id="concept-affinity-efficacy">
               <dt class="concept-term">Affinity vs efficacy <span class="concept-chip">foundational</span></dt>
               <dd class="concept-def">
                 <p><b>Affinity</b> is the strength of binding (indexed by Kᵢ / pKᵢ, see the Catalogue’s Binding Affinity Plate). <b>Efficacy</b> (intrinsic activity) is the magnitude of response the bound drug produces. The two are independent: an antagonist can bind with very high affinity yet have zero efficacy. Affinity decides <i>where</i> a drug acts; efficacy decides <i>what</i> it does there.</p>
               </dd>
             </div>
 
-            <div class="concept-row">
+            <div class="concept-row" id="concept-full-agonist">
               <dt class="concept-term">Full agonist <span class="concept-chip ag">activation</span></dt>
               <dd class="concept-def">
                 <p>Binds and produces the maximal receptor response the system can give (high intrinsic efficacy). Increasing dose moves the tissue toward its ceiling.</p>
@@ -1342,7 +1608,7 @@
               </dd>
             </div>
 
-            <div class="concept-row">
+            <div class="concept-row" id="concept-partial-agonist">
               <dt class="concept-term">Partial agonist <span class="concept-chip ag">activation</span></dt>
               <dd class="concept-def">
                 <p>Binds and activates, but produces a <i>sub-maximal</i> response even at full occupancy. Because it occupies the receptor while delivering less signal, it behaves as a functional <b>agonist when endogenous tone is low</b> and a functional <b>antagonist when tone is high</b>, a built-in stabiliser with a ceiling effect.</p>
@@ -1350,7 +1616,7 @@
               </dd>
             </div>
 
-            <div class="concept-row">
+            <div class="concept-row" id="concept-neutral-antagonist">
               <dt class="concept-term">Neutral (silent) antagonist <span class="concept-chip an">blockade</span></dt>
               <dd class="concept-def">
                 <p>Binds with affinity but <b>zero intrinsic efficacy</b>. Alone it does nothing visible; its job is to occupy the site and <b>block agonists</b>. Its clinical effect is therefore <b>tone-dependent</b>, dramatic when an agonist or high endogenous tone is present, silent otherwise.</p>
@@ -1358,7 +1624,7 @@
               </dd>
             </div>
 
-            <div class="concept-row">
+            <div class="concept-row" id="concept-inverse-agonist">
               <dt class="concept-term">Inverse agonist <span class="concept-chip an">blockade</span></dt>
               <dd class="concept-def">
                 <p>Some receptors are active <i>without</i> a ligand (constitutive activity). An inverse agonist binds and <b>reduces that baseline activity</b>, producing the opposite effect of an agonist. It does more than a neutral antagonist, which only blocks.</p>
@@ -1366,7 +1632,7 @@
               </dd>
             </div>
 
-            <div class="concept-row">
+            <div class="concept-row" id="concept-competitive-noncompetitive">
               <dt class="concept-term">Competitive vs noncompetitive antagonism <span class="concept-chip an">blockade</span></dt>
               <dd class="concept-def">
                 <p><b>Competitive</b> antagonists vie for the same (orthosteric) site as the agonist and can be <b>surmounted</b> by raising agonist concentration (e.g. naloxone). <b>Noncompetitive</b> antagonists bind elsewhere, or, for ion channels, inside the open pore, and are <b>not overcome</b> by more agonist.</p>
@@ -1374,7 +1640,7 @@
               </dd>
             </div>
 
-            <div class="concept-row">
+            <div class="concept-row" id="concept-allosteric">
               <dt class="concept-term">Allosteric modulation (PAM / NAM) <span class="concept-chip pa">modulation</span></dt>
               <dd class="concept-def">
                 <p>An allosteric modulator binds a site <i>distinct</i> from the agonist and tunes the response up (<b>positive</b>, PAM) or down (<b>negative</b>, NAM) <b>without activating the receptor itself</b>. Because it amplifies the endogenous signal, a PAM needs the natural ligand to be present.</p>
@@ -1382,7 +1648,7 @@
               </dd>
             </div>
 
-            <div class="concept-row">
+            <div class="concept-row" id="concept-tone-dependence">
               <dt class="concept-term">Tone-dependence <span class="concept-chip">principle</span></dt>
               <dd class="concept-def">
                 <p>An antagonist or inverse agonist only reveals an effect where there is endogenous agonist tone or constitutive activity. The <i>same</i> drug looks inert in one setting and powerful in another, which is why this cabinet shows agonism and antagonism <b>relative to a physiologic-tone reference</b>, not as fixed “on/off” states.</p>
@@ -2308,6 +2574,56 @@
       }
     ];
 
+    // ── Which tags are cross-references, and to what ─────────────────────────
+    // Only a tag naming a concept the Primer actually defines can link to it. The map is
+    // written out rather than derived from the tag text, because the tag wording is
+    // clinical shorthand ("Channel blocker") and the Primer's is the formal term
+    // ("Competitive vs noncompetitive antagonism"); matching them by string would either
+    // miss most of the real pairs or invent pairs that are not there.
+    //
+    // A tag absent from this map is a LABEL, not a broken link. Several of them name
+    // ideas worth defining — fast dissociation, use-dependence, autoreceptor function —
+    // and if the Primer gains an entry for one, add it here and the tag becomes a link
+    // with no other change.
+    const CONCEPT_OF_TAG = {
+      'Affinity vs efficacy':            'affinity-efficacy',
+      'Agonist':                         'full-agonist',
+      'Full agonist':                    'full-agonist',
+      'Orthosteric agonist':             'full-agonist',
+      'Partial agonist':                 'partial-agonist',
+      'Partial agonist (aripiprazole)':  'partial-agonist',
+      'Partial agonist (buprenorphine)': 'partial-agonist',
+      'Antagonist':                      'neutral-antagonist',
+      'Inverse agonist':                 'inverse-agonist',
+      'Inverse agonist (pimavanserin)':  'inverse-agonist',
+      'Competitive antagonist':          'competitive-noncompetitive',
+      'Channel blocker':                 'competitive-noncompetitive',
+      'Noncompetitive channel blocker':  'competitive-noncompetitive',
+      'Positive allosteric modulator':   'allosteric',
+      'Tone-dependent':                  'tone-dependence',
+    };
+    const conceptIdFor = tag => CONCEPT_OF_TAG[tag] || null;
+
+    // Cross-volume-style trace, within one volume: switch to the Primer, then bring the
+    // named concept into view and light it briefly so the reader can see which of the
+    // eight answered their click. The frame wait is because the Primer pane has just
+    // been unhidden and has no layout yet.
+    function openPrimerConcept(conceptId) {
+      setViewMode('primer');
+      requestAnimationFrame(() => {
+        const row = document.getElementById('concept-' + conceptId);
+        if (!row) return;
+        try { row.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+        catch (e) { row.scrollIntoView(); }
+        // Clear the mark from EVERY row, not just this one. Marking only the new row let
+        // the previous one keep its highlight, so a reader who followed two tags saw two
+        // concepts lit and no way to tell which answered the second click.
+        document.querySelectorAll('.concept-row.is-found').forEach(r => r.classList.remove('is-found'));
+        void row.offsetWidth;
+        row.classList.add('is-found');
+      });
+    }
+
     // ===== PHARMACOLOGIC ACTION LAYER =====
     // Reframes each target's three modes around what a DRUG does at it:
     // antagonism (blockade) · physiologic tone (reference) · agonism (activation).
@@ -2576,6 +2892,32 @@
           </div>`;
         container.appendChild(btn);
       });
+
+      sizeSpecimenNumerals(container);
+    }
+
+    // The numeral column was a fixed 2.4rem, which fits "№ VI" and not "№ VIII": five of
+    // thirteen numerals wrapped onto a second line, so those rows stood 52px tall against
+    // their neighbours' 44px and every name in the rail sat on a different baseline.
+    //
+    // Measured rather than widened to a new guess, because the roster grows: each row is
+    // its own grid, so `max-content` would size the column per row and misalign the names
+    // it was meant to line up. One measurement of the widest numeral, shared by all rows,
+    // stays correct at any roster size. Same approach the matrix header offset uses.
+    function sizeSpecimenNumerals(container) {
+      const nos = container.querySelectorAll('.specimen-no');
+      if (!nos.length) return;
+      let widest = 0;
+      nos.forEach(n => { widest = Math.max(widest, n.scrollWidth); });
+      if (widest) container.style.setProperty('--no-col', Math.ceil(widest) + 'px');
+
+      // The pitch the empty rules below the entries are ruled at. Measured from a
+      // single-line row rather than the last one, because the last one may be the wrapped
+      // two-line name and would set a pitch twice the true row height.
+      const rows = [...container.querySelectorAll('.specimen-row')];
+      if (!rows.length) return;
+      const pitch = Math.min(...rows.map(r => Math.round(r.getBoundingClientRect().height)));
+      if (pitch) container.style.setProperty('--row-pitch', pitch + 'px');
     }
 
     function selectReceptor(id) {
@@ -2595,7 +2937,17 @@
        Three states, and the difference between the last two is the one clinical
        readers get wrong: measured, screened and found not to bind, and never
        screened. A row with no number must never read as a row with a zero. */
-    const BINDER_CAP = 12;
+    // Twelve fitted the plate when the plate stopped 183px above the foot of its column
+    // and spent another 57px on an empty grid row. Both are reclaimed, so the register
+    // that is this volume's entire subject gets the room instead of the container: at
+    // D2 that is 18 of the 37 measured agents on the plate rather than 12. The note
+    // beneath still states every count it trimmed, and the plate body scrolls on a short
+    // screen rather than clipping, so this degrades by scrolling and never by hiding.
+    //
+    // Sixteen rather than eighteen: eighteen overran the reclaimed space by 26px, which
+    // is a single row, and a 26px scrollbar on a tall screen is a worse outcome than one
+    // fewer row. Two columns of eight lands flush.
+    const BINDER_CAP = 16;
 
     function normAgent(label) {
       return label.replace(/\s*[\(\[].*$/, '').replace(/[^a-z0-9]/gi, '').toLowerCase();
@@ -2612,6 +2964,24 @@
       const hasTarget = AFF_TARGETS.some(t => t.id === tid);
       const isTransporter = tid === 'sert' || tid === 'net';
       head.textContent = isTransporter ? 'What Acts at This Transporter' : 'Binding at This Target';
+
+      // The census: how much evidence stands behind this plate at all. It is the same
+      // count the Catalogue's anchored readout gives, because the explorer plate IS an
+      // anchored view — the specimen on the wall is the anchor, it simply cannot move.
+      const census = document.getElementById('binder-census');
+      if (census) {
+        if (!hasTarget) { census.textContent = ''; census.hidden = true; }
+        else {
+          const scr = AFF_AGENTS.filter(a => a.b && a.b[tid]);
+          const bnd = scr.filter(x => x.b[tid].n > 0);
+          const act = bnd.filter(x => x.b[tid].act);
+          const meas = bnd.reduce((s, x) => s + (x.b[tid].n || 0), 0);
+          census.innerHTML = `<b>${scr.length}</b> of ${AFF_AGENTS.length} agents screened here · ` +
+            `<b>${bnd.length}</b> bind · ${act.length} actions curated · ` +
+            `${meas} measurements behind them`;
+          census.hidden = false;
+        }
+      }
 
       // the atlas's own curation, keyed for lookup and kept whole for display
       const curated = new Map();
@@ -2632,7 +3002,10 @@
       const mk = (kind, x) => {
         const k = normAgent(x.agent.name);
         const c = curated.get(k);
-        return { kind, key: k, isCurated: !!c, name: c ? c.label : x.agent.name, bind: x.bind, curatedAct: c && c.act };
+        // `agent` rides along so a row can be read against the rest of its own
+        // binding profile, not just against this one target.
+        return { kind, key: k, isCurated: !!c, name: c ? c.label : x.agent.name,
+                 agent: x.agent, bind: x.bind, curatedAct: c && c.act };
       };
       const measuredRows = measured.map(x => mk('measured', x));
       const inertRows = inert.map(x => mk('inert', x));
@@ -2667,9 +3040,10 @@
         ...inertRows.filter(r => filled.has(r))
       ];
 
-      shown.forEach(r => {
+      shown.forEach((r, ri) => {
         const li = document.createElement('li');
         li.className = 'binder' + (r.kind === 'inert' ? ' is-inert' : r.kind === 'unscreened' ? ' is-unscreened' : '');
+        li.style.setProperty('--ri', ri);   // its place in the settle sequence
 
         // Action comes from IUPHAR where IUPHAR has curated it, and otherwise from
         // this atlas's own agonist/antagonist lists, which is the same assertion the
@@ -2707,6 +3081,56 @@
           val.textContent = 'not screened';
         }
 
+        // The spread, drawn. Only a measured row has one; the other two kinds get an
+        // empty track so the columns stay aligned down the list.
+        const spread = document.createElement('span');
+        spread.className = 'bd-spread';
+        if (r.kind === 'measured' && typeof r.bind.lo === 'number' && typeof r.bind.hi === 'number') {
+          const pos = p => Math.max(0, Math.min(100, ((p - 5) / 5.5) * 100));
+          const lo = pos(r.bind.lo), hi = pos(r.bind.hi), md = pos(getPKi(r.bind) ?? r.bind.lo);
+          const w = Math.max(hi - lo, 1.5);
+          // Where the median sits INSIDE the range, so the bar opens from the value
+          // rather than from the bar's midpoint. A single measurement gives a bar of
+          // floor width, where either origin lands on the same pixel.
+          const mo = Math.max(0, Math.min(100, ((md - lo) / w) * 100));
+          spread.innerHTML =
+            `<span class="bd-range" style="left:${lo}%;width:${w}%;--mo:${mo.toFixed(1)}%"></span>` +
+            `<span class="bd-median" style="left:${md}%"></span>`;
+          spread.title = r.bind.n + ' human value' + (r.bind.n === 1 ? '' : 's') +
+            ', pKi ' + r.bind.lo + ' to ' + r.bind.hi;
+        }
+
+        // What else this molecule binds HARDER than the specimen on the plate. This is
+        // the plate's whole reason for listing the drug: a binder that engages three
+        // other targets first will show those effects before it shows this one. Only
+        // the single hardest is named — the Catalogue is where the full row lives.
+        const over = document.createElement('span');
+        over.className = 'bd-over';
+        if (r.kind === 'measured' && hasTarget && r.agent && r.agent.b) {
+          const here = getPKi(r.bind);
+          let best = null, bestT = null;
+          for (const otid in r.agent.b) {
+            if (otid === tid) continue;
+            const b = r.agent.b[otid];
+            if (isInactive(b)) continue;
+            const p = getPKi(b);
+            if (p !== null && (best === null || p > best)) { best = p; bestT = otid; }
+          }
+          if (best !== null && here !== null && best > here + 0.005) {
+            const t2 = AFF_TARGETS.find(x => x.id === bestT);
+            const f = Math.pow(10, best - here);
+            over.innerHTML = (f >= 100 ? Math.round(f) : f >= 10 ? f.toFixed(0) : f.toFixed(1)) +
+              '&times; <i>' + (t2 ? t2.label : bestT) + '</i>';
+            over.title = r.name + ' binds ' + (t2 ? t2.label : bestT) + ' harder than ' +
+              (AFF_TARGETS.find(x => x.id === tid) || {}).label +
+              (t2 && t2.axis ? ': ' + t2.axis : '');
+          } else if (best !== null) {
+            over.className = 'bd-over none';
+            over.textContent = 'none';
+            over.title = 'Nothing it binds is tighter than this target.';
+          }
+        }
+
         // provenance on the row, per the rule that every value carries its source,
         // its spread and how many measurements sit behind it
         const bits = [];
@@ -2720,7 +3144,7 @@
         else if (r.curatedAct) bits.push('action per this atlas');
         li.title = r.name + (bits.length ? ': ' + bits.join(' · ') : '');
 
-        li.append(dot, nameEl, val);
+        li.append(dot, nameEl, val, spread, over);
         list.appendChild(li);
       });
 
@@ -2861,14 +3285,26 @@
           conceptWrap.innerHTML = '';
           pharm.tags.forEach((t, i) => {
             const s = document.createElement('span');
-            s.className = 'tag';
             s.style.setProperty('--ti', i);
             s.textContent = t;
-            s.setAttribute('role', 'button');
-            s.setAttribute('tabindex', '0');
-            s.setAttribute('title', 'Open the Pharmacology Primer');
-            s.setAttribute('onclick', "setViewMode('primer')");
-            s.setAttribute('onkeydown', "if(event.key==='Enter'||event.key===' '){event.preventDefault();setViewMode('primer');}");
+            // A tag is a cross-reference only if the Primer actually defines the concept
+            // it names. Every tag used to be a button that opened the Primer at the top,
+            // so "Fast-dissociation (clozapine)" and "Tone-dependent" led to the same
+            // place and neither led to a definition. The ones with no entry are labels
+            // now, and are drawn as labels — see .tag.is-note.
+            const concept = conceptIdFor(t);
+            if (concept) {
+              s.className = 'tag is-link';
+              s.setAttribute('role', 'link');
+              s.setAttribute('tabindex', '0');
+              s.setAttribute('title', 'Read this in the Pharmacology Primer');
+              s.addEventListener('click', () => openPrimerConcept(concept));
+              s.addEventListener('keydown', e => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPrimerConcept(concept); }
+              });
+            } else {
+              s.className = 'tag is-note';
+            }
             conceptWrap.appendChild(s);
           });
         } else {
@@ -2964,26 +3400,26 @@
       // NMDA and beta-1 were dropped rather than left empty: PDSP has human values for
       // exactly one drug at NMDA, which cannot carry the ketamine story the column existed
       // to tell, and beta-1 is a cardiology target that only propranolol uses here.
-      { id:'sert',            label:'SERT',   def:'Serotonin transporter (SLC6A4): the SSRI target' },
-      { id:'net',             label:'NET',    def:'Norepinephrine transporter (SLC6A2)' },
-      { id:'dat',             label:'DAT',    def:'Dopamine transporter (SLC6A3): the stimulant target' },
-      { id:'dopamine_d2',     label:'D2',     def:'Dopamine D2 receptor (DRD2): antipsychotic efficacy, and EPS' },
+      { id:'sert',            label:'SERT',   def:'Serotonin transporter (SLC6A4): the SSRI target', axis:'serotonergic load' },
+      { id:'net',             label:'NET',    def:'Norepinephrine transporter (SLC6A2)', axis:'noradrenergic activation' },
+      { id:'dat',             label:'DAT',    def:'Dopamine transporter (SLC6A3): the stimulant target', axis:'dopaminergic activation' },
+      { id:'dopamine_d2',     label:'D2',     def:'Dopamine D2 receptor (DRD2): antipsychotic efficacy, and EPS', axis:'EPS, prolactin' },
       { id:'dopamine_d3',     label:'D3',     def:'Dopamine D3 receptor (DRD3): what distinguishes cariprazine' },
-      { id:'serotonin_5ht1a', label:'5-HT1A', def:'5-HT1A receptor: anxiolysis; buspirone, aripiprazole, vortioxetine' },
-      { id:'serotonin_5ht2a', label:'5-HT2A', def:'5-HT2A receptor: atypicality, and the psychedelic target' },
-      { id:'serotonin_5ht2c', label:'5-HT2C', def:'5-HT2C receptor: appetite and metabolic burden' },
-      { id:'alpha_1',         label:'α1',     def:'Alpha-1 adrenergic receptor: orthostasis' },
+      { id:'serotonin_5ht1a', label:'5-HT1A', def:'5-HT1A receptor: anxiolysis; buspirone, aripiprazole, vortioxetine', axis:'anxiolysis' },
+      { id:'serotonin_5ht2a', label:'5-HT2A', def:'5-HT2A receptor: atypicality, and the psychedelic target', axis:'atypicality, lower EPS' },
+      { id:'serotonin_5ht2c', label:'5-HT2C', def:'5-HT2C receptor: appetite and metabolic burden', axis:'appetite, weight gain' },
+      { id:'alpha_1',         label:'α1',     def:'Alpha-1 adrenergic receptor: orthostasis', axis:'orthostasis, falls' },
       { id:'alpha_2',         label:'α2',     def:'Alpha-2 adrenergic receptor: guanfacine, clonidine, mirtazapine' },
       // Kept for propranolol alone. Akathisia, performance anxiety and lithium tremor are
       // real prescriptions and beta-blockade is the whole reason for them, so without this
       // column the plate would misrepresent propranolol the way it once misrepresented
       // cocaine without DAT. The cardiology agents that also used it have been dropped.
-      { id:'beta_1',          label:'β1',     def:'Beta-1 adrenergic receptor: propranolol in akathisia and performance anxiety' },
-      { id:'histamine_h1',    label:'H1',     def:'Histamine H1 receptor (HRH1): sedation and weight gain' },
-      { id:'muscarinic_m1',   label:'M1',     def:'Muscarinic M1 receptor (CHRM1, neuronal): anticholinergic cognitive load' },
-      { id:'muscarinic_m3',   label:'M3',     def:'Muscarinic M3 receptor (CHRM3, smooth muscle & glands)' },
-      { id:'gaba_a',          label:'GABA-A', def:'GABA-A benzodiazepine allosteric site (ionotropic Cl- channel)' },
-      { id:'mu_opioid',       label:'μ-OR',   def:'μ-opioid receptor (OPRM1)' }
+      { id:'beta_1',          label:'β1',     def:'Beta-1 adrenergic receptor: propranolol in akathisia and performance anxiety', axis:'bradycardia, tremor relief' },
+      { id:'histamine_h1',    label:'H1',     def:'Histamine H1 receptor (HRH1): sedation and weight gain', axis:'sedation, weight gain' },
+      { id:'muscarinic_m1',   label:'M1',     def:'Muscarinic M1 receptor (CHRM1, neuronal): anticholinergic cognitive load', axis:'anticholinergic, cognition' },
+      { id:'muscarinic_m3',   label:'M3',     def:'Muscarinic M3 receptor (CHRM3, smooth muscle & glands)', axis:'dry mouth, constipation' },
+      { id:'gaba_a',          label:'GABA-A', def:'GABA-A benzodiazepine allosteric site (ionotropic Cl- channel)', axis:'sedation, dependence' },
+      { id:'mu_opioid',       label:'μ-OR',   def:'μ-opioid receptor (OPRM1)', axis:'analgesia, resp. depression' }
     ];
 
     const AFF_GROUPS = [
@@ -3400,7 +3836,13 @@
           liveFrame = frameAt(ease(e));
           paint(liveFrame);
           if (e < 1) { tweenRAF = requestAnimationFrame(step); }
-          else { tweenRAF = null; clearTimeout(tweenTimer); tweenTimer = null; liveFrame = next; }
+          // Land on the real target frame, not the last interpolated one. frameAt() is a
+          // union of the outgoing and incoming selections, so an agent that was just
+          // unpinned is still IN it at v=0 — its petals are skipped, but it still counts
+          // when paint() divides each slot between pinned agents, and every remaining
+          // petal is drawn at half width. Assigning liveFrame without repainting left
+          // that on screen until some later redraw cleared it.
+          else { tweenRAF = null; clearTimeout(tweenTimer); tweenTimer = null; liveFrame = next; paint(next); }
         };
         tweenRAF = requestAnimationFrame(step);
         // rAF is paused outright in a background tab; setTimeout is only throttled.
@@ -3424,9 +3866,13 @@
             .filter(x => x.t && x.p !== null && x.p > 5)
             .sort((x, y) => y.p - x.p)
             .slice(0, 3);
-          const parts = top.length
+          // Anchored, the per-agent block below lists this agent's targets organised
+          // around the anchor, which strictly supersedes this top-three tail. Printing
+          // both said the same thing twice and pushed the rose behind a scrollbar, so
+          // the legend keeps only what the block cannot carry: which fill is which.
+          const parts = anchorTarget ? '' : (top.length
             ? top.map(x => x.t.label + ' ' + x.p.toFixed(1)).join(' · ')
-            : 'nothing above pKi 5';
+            : 'nothing above pKi 5');
           const sw = top.length ? (ACTION_COLOR[top[0].act] || ACTION_COLOR_UNCURATED) : 'var(--bone-faint)';
           const swatch = idx === 0
             ? `<rect width="11" height="11" fill="${sw}"/>`
@@ -3436,7 +3882,7 @@
               + `<line x1="0" y1="5.5" x2="5.5" y2="0" stroke="${sw}" stroke-width="1.5"/>`;
           return `<span style="display:inline-flex;align-items:baseline;gap:var(--space-xs);color:var(--bone-dim)">`
             + `<svg width="11" height="11" style="flex:none;translate:0 1px" aria-hidden="true">${swatch}</svg>`
-            + `<span><span style="color:var(--bone)">${nm}</span>: ${parts}</span></span>`;
+            + `<span><span style="color:var(--bone)">${nm}</span>${parts ? ': ' + parts : ''}</span></span>`;
         }).join('')
         + (pins.length > 1
             ? `<span class="hint">solid petals are ${pins[0]} · hatched are ${pins[1]}</span>`
@@ -3457,6 +3903,10 @@
         }
         tweenTo({ layout: layoutFor(list), series: list });
         renderLegend();
+        // The anchored readout is written per pinned agent, so a pin change rewrites
+        // it. Only on a real pin change, never on a hover trace — the readout would
+        // otherwise flicker under the cursor as it swept the rows.
+        if (!hoverName) renderAnchorReadout(false);
       }
 
       drawPolys(null);
@@ -3466,6 +3916,180 @@
       window.affinityPins = pins;
     }
 
+    // ── The anchor ──────────────────────────────────────────────────────────
+    // One target fixed as the reference the whole plate is read against: the
+    // Catalogue's answer to "compared to what?". Everything the anchored state
+    // shows — the Δ line in each tooltip, the census and selectivity margins in
+    // the readout — is derived from the hydrated AFF_AGENTS at the moment it is
+    // needed and never stored, so a Ki corrected in the Desk moves every derived
+    // number on the next load with nothing to fall out of sync.
+    let anchorTarget = null;
+
+    const foldOf = d => {
+      const x = Math.pow(10, Math.abs(d));
+      return x >= 100 ? String(Math.round(x)) : x >= 10 ? x.toFixed(0) : x.toFixed(1);
+    };
+    const anchorLabelOf = tid => {
+      const t = AFF_TARGETS.find(x => x.id === tid);
+      return t ? t.label : '';
+    };
+
+    function syncAnchorHeads() {
+      document.querySelectorAll('.col-head[data-col]').forEach(c => {
+        const on = c.dataset.col === anchorTarget;
+        c.classList.toggle('anchored', on);
+        c.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    }
+
+    // Rows re-rank inside their drug class so the tightest binders at the anchor rise
+    // to the top of each group. The class grouping itself never changes — it is the
+    // Catalogue's spine, and an antipsychotic does not stop being one because the
+    // anchor moved. Rows are MOVED rather than re-rendered, so every listener, pin and
+    // filter class on them survives.
+    //   0  binds the anchor       — ordered by pKi, tightest first
+    //   1  screened, no binding   — below the binders; "we looked" still outranks silence
+    //   2  never screened there   — last, and dimmed by applyAnchorDim
+    function applyAnchorOrder() {
+      const grid = document.getElementById('grid');
+      if (!grid) return;
+      const rank = name => {
+        const a = AFF_AGENTS.find(x => x.name === name);
+        const c = a && a.b[anchorTarget];
+        if (!c) return [2, 0];
+        if (isInactive(c)) return [1, 0];
+        return [0, -(getPKi(c) ?? 0)];
+      };
+      AFF_GROUPS.forEach(gp => {
+        const label = grid.querySelector(`.group-label[data-group="${gp.id}"]`);
+        if (!label) return;
+        const rows = [...grid.querySelectorAll(`.row[data-group="${gp.id}"]`)];
+        if (!rows.length) return;
+        rows.sort((p, q) => {
+          if (!anchorTarget) return +p.dataset.idx - +q.dataset.idx;
+          const rp = rank(p.dataset.agent), rq = rank(q.dataset.agent);
+          // Ties fall back to the shipped order, so the sort is stable and a group
+          // with no values at the anchor keeps exactly the order it always had.
+          return rp[0] - rq[0] || rp[1] - rq[1] || (+p.dataset.idx - +q.dataset.idx);
+        });
+        const frag = document.createDocumentFragment();
+        rows.forEach(r => frag.appendChild(r));
+        label.after(frag);
+      });
+    }
+
+    // The same .dim the column-hover uses, held for as long as the anchor stands:
+    // an agent never screened at the anchor cannot be read against it.
+    function applyAnchorDim() {
+      document.querySelectorAll('#grid .row').forEach(r => {
+        const a = AFF_AGENTS.find(x => x.name === r.dataset.agent);
+        r.classList.toggle('dim', !!anchorTarget && !(a && a.b[anchorTarget]));
+      });
+    }
+
+    function renderAnchorReadout(fresh) {
+      const el = document.getElementById('anchor-readout');
+      if (!el) return;
+      // The readout REPLACES the how-to-read paragraph rather than stacking under it.
+      // That copy teaches the plate's grammar to someone who has not read it yet; a
+      // reader who has anchored a target has already demonstrated they have. Swapping
+      // keeps the rose column at roughly the height it had, so anchoring never puts
+      // the rose itself out of reach behind a scroll.
+      const intro = document.getElementById('radar-intro');
+      if (intro) intro.hidden = !!anchorTarget;
+      if (!anchorTarget) { el.hidden = true; el.innerHTML = ''; return; }
+      const t = AFF_TARGETS.find(x => x.id === anchorTarget);
+
+      const screened = AFF_AGENTS.map(a => ({ a, c: a.b[anchorTarget] })).filter(x => x.c);
+      const bind = screened.filter(x => !isInactive(x.c) && getPKi(x.c) !== null);
+      const curated = bind.filter(x => x.c.act);
+      const top = bind.slice().sort((p, q) => getPKi(q.c) - getPKi(p.c)).slice(0, 3);
+
+      const rows = [
+        `<span><b>${screened.length}</b> of ${AFF_AGENTS.length} agents screened here · ` +
+        `<span class="num">${bind.length}</span> bind (pKi &gt; 5) · ${curated.length} actions curated</span>`
+      ];
+      // Roster-wide trivia, shown only while nothing is pinned. Once the reader has
+      // chosen agents, those agents are the subject and this is just noise above them.
+      const anyPinned = (window.affinityPins || []).some(nm => {
+        const a = AFF_AGENTS.find(x => x.name === nm); return a && a.b[anchorTarget];
+      });
+      if (top.length && !anyPinned) rows.push('<span>Tightest here: ' + top.map(x =>
+        `<b>${x.a.name}</b> <span class="num">${getPKi(x.c).toFixed(2)}</span>`).join(' · ') + '</span>');
+
+      // ── What the anchor is FOR ─────────────────────────────────────────────
+      // Per PINNED agent, never across the roster. Scanning all 92 for extremes
+      // answers a question about the dataset ("which molecule touches D2 most
+      // incidentally?" — doxepin) that no prescriber asked. The question a
+      // prescriber brings to an anchored column is: dose this drug far enough to
+      // engage the anchor, and what is it engaging HARDER on the way? Those are
+      // the targets whose effects arrive first, so they are what the reader gets.
+      const pinned = (window.affinityPins || []).map(nm => AFF_AGENTS.find(a => a.name === nm))
+        .filter(a => a && a.b[anchorTarget]);
+      const blocks = pinned.map(a => {
+        const anc = a.b[anchorTarget];
+        const ancP = getPKi(anc);
+        const dead = isInactive(anc);
+        // Every other target this agent binds meaningfully, tightest first.
+        const others = Object.keys(a.b)
+          .filter(tid => tid !== anchorTarget && !isInactive(a.b[tid]) && getPKi(a.b[tid]) !== null)
+          .map(tid => ({ t: AFF_TARGETS.find(x => x.id === tid), p: getPKi(a.b[tid]) }))
+          .filter(x => x.t)
+          .sort((p, q) => q.p - p.p);
+        const tighter = others.filter(x => x.p > ancP + 0.005).slice(0, 3);
+
+        let body;
+        if (dead) {
+          body = `<span class="a-none">screened here, no meaningful binding</span>`;
+        } else if (!tighter.length) {
+          body = `<span class="a-none">Nothing it binds is tighter than ${t.label}.</span>`;
+        } else {
+          body = `<span class="a-lead">Engages harder than ${t.label}:</span>` + tighter.map(x =>
+            `<span class="a-hit"><b>${x.t.label}</b> ` +
+            `<span class="num">${foldOf(x.p - ancP)}&times;</span>` +
+            (x.t.axis ? ` <i>${x.t.axis}</i>` : '') + `</span>`).join('');
+        }
+        return `<div class="a-agent"><div class="a-name">${a.name} ` +
+          `<span class="num">${t.label} ${dead ? '&le;5' : ancP.toFixed(2)}</span></div>${body}</div>`;
+      });
+
+      const pinHint = blocks.length
+        ? ''
+        : `<div class="a-agent"><span class="a-none">Pin an agent (click its row) to read its ` +
+          `profile against ${t.label}.</span></div>`;
+
+      el.innerHTML =
+        `<div class="anchor-head"><h5>◆ Anchored · ${t.label}</h5>` +
+        `<button type="button" class="anchor-clear" onclick="setCatalogueAnchor(null)">Clear</button></div>` +
+        // The target's own description gives way to the pinned agents' profiles: it
+        // describes the column, they answer the question. It stays reachable as the
+        // column header's title either way.
+        (blocks.length ? '' : `<p class="anchor-def">${t.def}</p>`) +
+        `<div class="anchor-rows">${rows.join('')}</div>` +
+        blocks.join('') + pinHint;
+      el.hidden = false;
+      if (fresh) { el.classList.remove('settle'); void el.offsetWidth; el.classList.add('settle'); }
+    }
+
+    // Set (nav, idempotent) vs toggle (click, re-click clears). Both are safe to
+    // call before the grid exists — the bridge can navigate here during hydration —
+    // because renderAffinityMatrix re-applies the anchor once the grid is built.
+    function setCatalogueAnchor(tid) {
+      // An id with no column here (NMDA has a specimen but no column) is ignored
+      // rather than treated as "clear" — only an explicit null releases the anchor.
+      if (tid && !AFF_TARGETS.some(x => x.id === tid)) return;
+      anchorTarget = tid || null;
+      syncAnchorHeads(); applyAnchorOrder(); applyAnchorDim(); renderAnchorReadout(true);
+      try {
+        history.replaceState(null, '',
+          anchorTarget ? '#anchor=' + anchorTarget : location.pathname + location.search);
+      } catch (e) {}
+    }
+    function toggleCatalogueAnchor(tid) {
+      setCatalogueAnchor(tid === anchorTarget ? null : tid);
+    }
+    window.setCatalogueAnchor = setCatalogueAnchor;
+
     // Matrix grid
     function renderAffinityMatrix() {
       const grid = document.getElementById('grid');
@@ -3474,11 +4098,12 @@
       // silently fall out of step.
       grid.style.setProperty('--aff-cols', AFF_TARGETS.length);
       let html = `<div class="col-head corner"></div>`;
-      AFF_TARGETS.forEach(t => html += `<div class="col-head" data-col="${t.id}">${t.label}</div>`);
+      AFF_TARGETS.forEach(t => html += `<div class="col-head" data-col="${t.id}" role="button" tabindex="0" aria-pressed="false" title="${t.def} · click to anchor">${t.label}</div>`);
       AFF_GROUPS.forEach(gp => {
-        html += `<div class="group-label">${gp.label}</div>`;
-        AFF_AGENTS.filter(a => a.g === gp.id).forEach(a => {
-          html += `<div class="row" data-agent="${a.name}"><div class="agent-name" role="button" tabindex="0" aria-pressed="false" title="${a.name}">${a.name}</div>`;
+        html += `<div class="group-label" data-group="${gp.id}">${gp.label}</div>`;
+        // data-idx preserves the shipped order so clearing the anchor can restore it.
+        AFF_AGENTS.filter(a => a.g === gp.id).forEach((a, i) => {
+          html += `<div class="row" data-agent="${a.name}" data-group="${gp.id}" data-idx="${i}"><div class="agent-name" role="button" tabindex="0" aria-pressed="false" title="${a.name}">${a.name}</div>`;
           AFF_TARGETS.forEach(t => {
             const v = a.b[t.id];
             if (v) {
@@ -3558,9 +4183,22 @@
         c.addEventListener('mouseleave', () => {
           c.classList.remove('lit');
           document.querySelectorAll('.axis-label').forEach(l => l.classList.remove('lit'));
-          document.querySelectorAll('.row').forEach(r => r.classList.remove('dim'));
+          // Leaving a column restores the anchored dim rather than clearing all of
+          // it: the hover was a preview, the anchor is a held state.
+          applyAnchorDim();
+        });
+        // Clicking anchors; clicking the anchored head again releases it.
+        c.addEventListener('click', () => toggleCatalogueAnchor(c.dataset.col));
+        c.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleCatalogueAnchor(c.dataset.col);
+          }
         });
       });
+
+      // A rebuilt grid has fresh headers and rows; re-apply whatever anchor stands.
+      syncAnchorHeads(); applyAnchorOrder(); applyAnchorDim(); renderAnchorReadout(false);
 
       // Dot hover tooltips
       document.querySelectorAll('.dot').forEach(dot => {
@@ -3592,6 +4230,34 @@
             ? `${act}${actSrc ? ` <em style="font-size:var(--lbl);color:var(--bone-faint)">(${actSrc})</em>` : ''}`
             : `<em style="font-size:var(--lbl);color:var(--bone-faint)">action not curated in IUPHAR</em>`;
 
+          // With an anchor set, every cell also answers "compared to the anchor?".
+          // Δ is a difference of two pKi medians, so it is only a point figure when
+          // both are measured; against a clean screen it is a bound, and against a
+          // never-screened anchor it is not a number at all. Say which one it is.
+          let anchorLine = '';
+          if (anchorTarget) {
+            const aL = anchorLabelOf(anchorTarget);
+            if (dot.dataset.target === anchorTarget) {
+              anchorLine = `<span style="color:var(--vermilion)">◆ anchored reference</span><br/>`;
+            } else if (!inactive) {
+              const ag = AFF_AGENTS.find(x => x.name === agent);
+              const ab = ag && ag.b[anchorTarget];
+              const cellP = parseFloat(pki);
+              if (!ab) {
+                anchorLine = `<em style="font-size:var(--lbl);color:var(--bone-faint)">vs ${aL}: never screened there</em><br/>`;
+              } else if (isInactive(ab)) {
+                anchorLine = `vs ${aL}: &ge; ${(cellP - 5).toFixed(2)} toward ${target.label}`
+                  + ` <em style="font-size:var(--lbl);color:var(--bone-faint)">(screened clean at ${aL})</em><br/>`;
+              } else {
+                const d = cellP - getPKi(ab);
+                anchorLine = (Math.abs(d) < 0.005
+                  ? `Δ vs ${aL}: even`
+                  : `Δ vs ${aL}: ${d > 0 ? '+' : '−'}${Math.abs(d).toFixed(2)} &middot; ${foldOf(d)}&times; toward ${d > 0 ? target.label : aL}`)
+                  + `<br/>`;
+              }
+            }
+          }
+
           const tooltip = document.createElement('div');
           tooltip.className = 'affinity-tooltip';
           tooltip.innerHTML = `
@@ -3599,7 +4265,7 @@
             <strong>${target ? target.label : 'Target'}</strong><br/>
             ${affinityLine}<br/>
             ${actionLine}<br/>
-            <em style="font-size: var(--lbl); color: var(--bone-faint);">${src}${detail ? ` &middot; ${detail}` : ''}</em>
+            ${anchorLine}<em style="font-size: var(--lbl); color: var(--bone-faint);">${src}${detail ? ` &middot; ${detail}` : ''}</em>
           `;
           // Set initial position at mouse cursor
           tooltip.style.left = (e.clientX + 12) + 'px';
@@ -3684,6 +4350,14 @@
     }
     function applyNav(subject, station) {
       if (station && STATION2VIEW[station] && typeof setViewMode === 'function') setViewMode(STATION2VIEW[station]);
+      // Tracing a receptor INTO the Catalogue anchors the plate on it: the question
+      // that sent the reader here ("what binds D2?") becomes the reference the whole
+      // plate is read against. setCatalogueAnchor ignores ids with no target column
+      // (e.g. NMDA has a specimen but no column), so this is safe for every subject.
+      if (subject && CANON2LOCAL[subject] && station && STATION2VIEW[station] === 'matrix'
+          && typeof window.setCatalogueAnchor === 'function') {
+        window.setCatalogueAnchor(CANON2LOCAL[subject]);
+      }
       if (subject && CANON2LOCAL[subject] && typeof selectReceptor === 'function') {
         if (!station && typeof setViewMode === 'function') setViewMode('explorer');
         selectReceptor(CANON2LOCAL[subject]);

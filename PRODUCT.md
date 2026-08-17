@@ -10,7 +10,7 @@ Two audiences. Primary: visitors the owner is presenting to — colleagues, coll
 
 ## Product Purpose
 
-A neuroreceptor pharmacology reference presented as a digital museum, where the act of browsing is itself the exhibit. One receptor is followed across three volumes: the **Archive** (what a receptor does), the **Cabinet** (what binds it, including a 92-agent binding-affinity plate), and the **Ledger** (how it presents clinically). A local-only Conservator's Desk is where the collection is curated and every citation verified.
+A neuroreceptor pharmacology reference presented as a digital museum, where the act of browsing is itself the exhibit. One receptor is followed across three volumes, and each volume has a distinct **form** as well as a distinct topic, because the form is what keeps their scopes apart: the **Archive** is prose and explains what a receptor does; the **Cabinet** is tables and binding profiles and specifies how the molecules at a target differ, across 92 agents and 16 targets; the **Ledger** is syndromic and describes how a receptor presents clinically, with onset, course, risk and monitoring. What varies between molecules at the same receptor belongs to the Cabinet; what a state looks like at the bedside belongs to the Ledger; neither restates the other. A local-only Conservator's Desk is where the collection is curated and every citation verified.
 
 Motion, animation, and scroll choreography are the product's identity, not decoration. Success: a first-time visitor moves through a volume unprompted and remembers the experience, and a clinician can trace any number on the page back to the source and the rule that filtered it.
 
