@@ -8,13 +8,21 @@
    "citation": 0,
    "mastery": 0,
    "note": ""
+  },
+  "sert": {
+   "mechanism": 1,
+   "affinity": 0,
+   "clinical": 0,
+   "citation": 0,
+   "mastery": 0,
+   "note": ""
   }
  },
  "activity": [
   {
    "receptor_id": "d2",
    "volume": "archive",
-   "last_edited_at": "2026-08-14T02:11:50.825Z",
+   "last_edited_at": "2026-08-16T13:40:09.531Z",
    "last_reviewed_at": "2026-08-14T02:14:37.315Z"
   },
   {
@@ -26,8 +34,26 @@
   {
    "receptor_id": "d2",
    "volume": "ledger",
-   "last_edited_at": "2026-08-14T02:13:24.480Z",
+   "last_edited_at": "2026-08-16T13:39:51.983Z",
    "last_reviewed_at": "2026-08-14T02:14:37.315Z"
+  },
+  {
+   "receptor_id": "sert",
+   "volume": "archive",
+   "last_edited_at": "2026-08-19T23:26:55.506Z",
+   "last_reviewed_at": "2026-08-19T23:21:46.040Z"
+  },
+  {
+   "receptor_id": "sert",
+   "volume": "cabinet",
+   "last_edited_at": null,
+   "last_reviewed_at": "2026-08-19T23:21:46.040Z"
+  },
+  {
+   "receptor_id": "sert",
+   "volume": "ledger",
+   "last_edited_at": null,
+   "last_reviewed_at": "2026-08-19T23:21:46.040Z"
   }
  ],
  "bindingReview": [],
@@ -43,6 +69,114 @@
    "doi": "10.1146/annurev.neuro.28.061604.135722",
    "url": null,
    "notes": null
+  },
+  {
+   "key": "pmid:21303898",
+   "kind": "article",
+   "authors": "Beaulieu JM, Gainetdinov RR",
+   "year": 2011,
+   "title": "The physiology, signaling, and pharmacology of dopamine receptors",
+   "journal": "Pharmacol Rev",
+   "pmid": "21303898",
+   "doi": "10.1124/pr.110.002642",
+   "url": "https://pubmed.ncbi.nlm.nih.gov/21303898/",
+   "notes": null
+  },
+  {
+   "key": "pmid:11089973",
+   "kind": "article",
+   "authors": "Usiello A, et al.",
+   "year": 2000,
+   "title": "Distinct functions of the two isoforms of dopamine D2 receptors",
+   "journal": "Nature",
+   "pmid": "11089973",
+   "doi": "10.1038/35041572",
+   "url": "https://pubmed.ncbi.nlm.nih.gov/11089973/",
+   "notes": null
+  },
+  {
+   "key": "pmid:2147780",
+   "kind": "article",
+   "authors": "Gerfen CR, et al.",
+   "year": 1990,
+   "title": "D1 and D2 dopamine receptor-regulated gene expression of striatonigral and striatopallidal neurons",
+   "journal": "Science",
+   "pmid": "2147780",
+   "doi": "10.1126/science.2147780",
+   "url": "https://pubmed.ncbi.nlm.nih.gov/2147780/",
+   "notes": null
+  },
+  {
+   "key": "pmid:20613723",
+   "kind": "article",
+   "authors": "Kravitz AV, et al.",
+   "year": 2010,
+   "title": "Regulation of parkinsonian motor behaviours by optogenetic control of basal ganglia circuitry",
+   "journal": "Nature",
+   "pmid": "20613723",
+   "doi": "10.1038/nature09159",
+   "url": "https://pubmed.ncbi.nlm.nih.gov/20613723/",
+   "notes": null
+  },
+  {
+   "key": "pmid:21743470",
+   "kind": "article",
+   "authors": "Bello EP, et al.",
+   "year": 2011,
+   "title": "Cocaine supersensitivity and enhanced motivation for reward in mice lacking dopamine D2 autoreceptors",
+   "journal": "Nat Neurosci",
+   "pmid": "21743470",
+   "doi": "10.1038/nn.2862",
+   "url": "https://pubmed.ncbi.nlm.nih.gov/21743470/",
+   "notes": null
+  },
+  {
+   "key": "pmid:12505794",
+   "kind": "article",
+   "authors": "Kapur S",
+   "year": 2003,
+   "title": "Psychosis as a state of aberrant salience: a framework linking biology, phenomenology, and pharmacology in schizophrenia",
+   "journal": "Am J Psychiatry",
+   "pmid": "12505794",
+   "doi": "10.1176/appi.ajp.160.1.13",
+   "url": "https://pubmed.ncbi.nlm.nih.gov/12505794/",
+   "notes": null
+  },
+  {
+   "key": "pmid:18987627",
+   "kind": "article",
+   "authors": "Graff-Guerrero A, et al.",
+   "year": 2008,
+   "title": "The dopamine D2 receptors in high-affinity state and D3 receptors in schizophrenia: a clinical [11C]-(+)-PHNO PET study",
+   "journal": "Neuropsychopharmacology",
+   "pmid": "18987627",
+   "doi": "10.1038/npp.2008.199",
+   "url": "https://pubmed.ncbi.nlm.nih.gov/18987627/",
+   "notes": null
+  },
+  {
+   "key": "pmid:31279747",
+   "kind": "article",
+   "authors": "Factor SA, et al.",
+   "year": 2019,
+   "title": "Recent developments in drug-induced movement disorders: a mixed picture",
+   "journal": "Lancet Neurol",
+   "pmid": "31279747",
+   "doi": "10.1016/S1474-4422(19)30152-8",
+   "url": "https://pubmed.ncbi.nlm.nih.gov/31279747/",
+   "notes": null
+  },
+  {
+   "key": "pmid:33213556",
+   "kind": "article",
+   "authors": "Hauser RA, et al.",
+   "year": 2020,
+   "title": "Differentiating tardive dyskinesia: a video-based review of antipsychotic-induced movement disorders in clinical practice",
+   "journal": "CNS Spectr",
+   "pmid": "33213556",
+   "doi": "10.1017/S109285292000200X",
+   "url": "https://pubmed.ncbi.nlm.nih.gov/33213556/",
+   "notes": null
   }
  ],
  "receptorSources": [
@@ -54,9 +188,86 @@
    "correction_note": null
   },
   {
+   "receptor_id": "sert",
+   "source": "pmid:40789515",
+   "status": "verified",
+   "is_primary": 1,
+   "correction_note": null
+  },
+  {
+   "receptor_id": "sert",
+   "source": "url:https://www.cambridge.org/core/books/stahls-essential-psychopharmacology/transporters-receptors-and-enzymes-as-targets-of-psychopharmacological-drug-action/A87FE28EA57F0979564CECDDF7669E64",
+   "status": "verified",
+   "is_primary": 0,
+   "correction_note": null
+  },
+  {
    "receptor_id": "d2",
    "source": "doi:10.1146/annurev.neuro.28.061604.135722",
    "status": "verified",
+   "is_primary": 0,
+   "correction_note": null
+  },
+  {
+   "receptor_id": "d2",
+   "source": "pmid:21303898",
+   "status": "provided",
+   "is_primary": 0,
+   "correction_note": null
+  },
+  {
+   "receptor_id": "d2",
+   "source": "pmid:11089973",
+   "status": "provided",
+   "is_primary": 0,
+   "correction_note": null
+  },
+  {
+   "receptor_id": "d2",
+   "source": "pmid:2147780",
+   "status": "provided",
+   "is_primary": 0,
+   "correction_note": null
+  },
+  {
+   "receptor_id": "d2",
+   "source": "pmid:20613723",
+   "status": "provided",
+   "is_primary": 0,
+   "correction_note": null
+  },
+  {
+   "receptor_id": "d2",
+   "source": "pmid:21743470",
+   "status": "provided",
+   "is_primary": 0,
+   "correction_note": null
+  },
+  {
+   "receptor_id": "d2",
+   "source": "pmid:12505794",
+   "status": "provided",
+   "is_primary": 0,
+   "correction_note": null
+  },
+  {
+   "receptor_id": "d2",
+   "source": "pmid:18987627",
+   "status": "provided",
+   "is_primary": 0,
+   "correction_note": null
+  },
+  {
+   "receptor_id": "d2",
+   "source": "pmid:31279747",
+   "status": "provided",
+   "is_primary": 0,
+   "correction_note": null
+  },
+  {
+   "receptor_id": "d2",
+   "source": "pmid:33213556",
+   "status": "provided",
    "is_primary": 0,
    "correction_note": null
   }
@@ -65,16 +276,24 @@
  "content": {
   "claims": {},
   "archive": {
+   "sert": {
+    "abstract": "SERT determines how long serotonin remains at each synapse, setting the amplitude and duration of every serotonergic signal in the brain. Serotonin system activity is thought to be central to the pathophysiology of depression. ",
+    "body_json": "[\"SERT clears serotonin from the synapse, determining the half-life of each serotonergic signal. By mediating reuptake of 5-HT (serotonin) into presynaptic neurons, SERT regulates serotinergic signaling throughout the brain. Due to interactions with other key cerebral molecules and its contribution to neurotransmission, SERT plays an integral role in the pathophysiology of depression. Activity and expression of SERT is regulated by pro-inflammatory cytokines and growth factors which then affects serotonin transmission and neural plasticity. Other influencers of SERT function include environmental exposure, diet, gut microbiota, and therapy. Genetic variations in the SLC6A4 gene influence the expression and function of SERT which leads to differences in depression symptoms as well as treatment response.\"]",
+    "tags_json": "[\"Serotonin signal duration\",\"Mood regulation\"]"
+   },
    "d2": {
-    "abstract": "Dopamine D2 receptors are inhibitory receptors that regulate dopaminergic activity in the brain. They help regulate locomotor activity, cognition, and motivation through their wide distribution on neurons as autoreceptors of dopamine. ",
+    "abstract": "The dopamine receptor that governs its own transmitter's supply. D2 sits presynaptically on midbrain dopamine neurons, where it slows firing and suppresses release, and postsynaptically on the striatal projection neurons of the indirect pathway. What deviates at D2 is dopamine availability rather than the receptor itself, which is why it is at once the most heavily occupied target in psychiatric pharmacology and an unconvincing site of primary pathology.",
     "presentation": "",
     "body_json": "[\"D2 receptors describe a class of dopamine receptors with inhibitory activty. They are located presynaptically on dopaminegic neurons where they are the primary regulators of dopamine release through negative feedback. D2 receptors can also be found on postsynaptically on non-dopamine neurons, thought to function as regulators of neuronal activity in other neutrotransmitter pathways. The regulating activity of D2 receptors controls dopamine release in the mesocorticolimbic and striatonigral systems. Striatal Dopamine D2 receptors regulate reward and salience signals D2 receptor activity in the mesolimbic pathway plays imporatn role in emotionally-motivated behaviors such as motivation, reward, and pleasure.\"]",
-    "tags_json": "[]"
+    "tags_json": "[\"Autoreceptor control\",\"Indirect pathway\",\"Supply, not receptor\"]"
    }
   },
   "clinical": {
    "3": {
-    "mech": "Gi/o inhibits adenylyl cyclase (↓ cAMP) and opens GIRK K⁺ channels, damping postsynaptic excitability across striatal and limbic circuits."
+    "baseline": "Motor and reward equilibrium, striatal gating, mesolimbic salience, prolactin suppression.",
+    "mech": "Gi/o inhibits adenylyl cyclase (↓ cAMP) and opens GIRK K⁺ channels, damping postsynaptic excitability across striatal and limbic circuits.",
+    "over_json": "[\"Aberrant salience: ideas of reference, paranoid delusion\",\"Auditory hallucination\",\"Psychomotor activation, pressured speech, mania\",\"Impulse control disorder on dopamine agonists: gambling, hypersexuality, binge eating\",\"Chorea and dyskinesia at high dopaminergic load\"]",
+    "under_json": "[\"Acute dystonia: oculogyric crisis, torticollis, laryngospasm\",\"Drug-induced parkinsonism: bradykinesia, rigidity, tremor\",\"Akathisia: inner restlessness, inability to remain seated\",\"Tardive dyskinesia: orofacial and limb choreoathetosis\",\"Hyperprolactinaemia: galactorrhoea, amenorrhoea, sexual dysfunction\",\"Neuroleptic malignant syndrome: rigidity, hyperthermia, autonomic instability\"]"
    }
   },
   "bindings": []
