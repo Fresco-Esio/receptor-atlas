@@ -82,12 +82,18 @@ automatically.
    to the commit sha only on records unchanged since the pull, and write the documents
    back with `ArtifactData set`, pinned with `if_version`. Nothing is deleted.
 
+Two open views of the Desk merge each other's writes record by record, the later edit winning; a
+record deleted in one open view can be restored by another open view until published.
+
 ### Publishing from the fallback
 
 1. **Download changes** (the first button in the fallback) saves `changes.json`: the raw
    changes this browser holds, not an edits file.
 2. `npm run desk:pull -- --check changes.json` — the same check as step 3 above.
 3. `npm run desk:pull -- changes.json`, then commit `db/curator-state.json` and push.
+
+After a fallback publish, re-seed (`desk:seed`, `desk:build`) before editing again, because
+the browser store is never marked published.
 
 *Download edits file (full replacement)* builds a whole `db/curator-state.json` on the
 page's own snapshot. Use it only when the repo's edits file is the snapshot's: after any
@@ -134,7 +140,7 @@ attribution is the only piece missing.
 | Command | What it does |
 |---|---|
 | `npm start` | Run the server on port 3000 (same as `start.bat`, without the browser/auto-setup). Override with `PORT`. |
-| `npm test` | Run the suite (`node --test`). 233 tests (one a recorded todo). |
+| `npm test` | Run the suite (`node --test`). 239 tests. |
 | `npm run migrate` | Build `db/atlas.db` from seed data, then lay your saved work back over it. **Seed-only**: the seed is a no-op if the database already holds receptors. |
 | `npm run snapshot` | Export the static, backend-free site into `dist/`. |
 | `npm run preview` | Serve `dist/` to check the snapshot before publishing. |

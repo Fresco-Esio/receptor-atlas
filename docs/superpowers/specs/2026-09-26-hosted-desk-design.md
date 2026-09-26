@@ -75,14 +75,21 @@ record per receptor.
 ```
 changes/<receptorId> = {
   seedCommit: sha,                       // which seed these are relative to
-  fields: { "archive.abstract": { value, at, publishedAs: sha|null }, ... },
-  sources: { add: [ { key, is_primary, conflicting, correction_note, at, publishedAs } ],
-             remove: [ { key, at, publishedAs } ], set: { key: { is_primary, conflicting,
-             correction_note, at, publishedAs } } },
+  fields: { "archive.abstract": { value, at, publishedAs: sha|null, published? }, ...
+            "claim": { cleared: true, at, publishedAs, published? } },   // tombstone: back to the seed
+  sources: { add: [ { key, is_primary, conflicting, correction_note, at, publishedAs, published? } ],
+             remove: [ { key, at, publishedAs, published? } ],   // detach of a source with a published add
+             set: { key: { is_primary, conflicting, correction_note, at, publishedAs, published? } } },
   library: { key: { kind, authors, year, title, journal, pmid, doi, url } },  // new sources
   spans: [ { field: "archive.body.1", start, end, text, sourceKey, at } ],
-  review: { mechanism, affinity, clinical, note, at, publishedAs } }
+  review: { mechanism, affinity, clinical, note, at, publishedAs, published? } }
 ```
+
+`published` is the predecessor: a record that overwrites a published one (a re-edit, a tombstone, a
+remove replacing a published add) keeps that record's last published state, `publishedAs` included,
+so `publishedOnly` can still say what the repo's edits file holds. Marking a record published drops
+it, and so does re-keying. A tombstone (`clearField` of a record with a published state) exports as
+the seed value; a remove drops the edge, and the library row once nothing else cites it.
 
 Field-keyed, not keystroke-keyed: the second edit to a field replaces the first. The git
 history of the edits file is the version history, one commit per publish. `spans` are
@@ -154,8 +161,10 @@ the page (this is the only action that moves the artifact's version), and clears
 store's published changes; unpublished changes are re-keyed to the new seed. Worth doing
 before a long session or when the published-since count is large; never required.
 
-**Fallback publish:** Download edits file → replace `db/curator-state.json` → commit. Same
-bytes as step 2.
+**Fallback publish:** Download changes → `desk:pull --check` → `desk:pull` → commit; the
+full-replacement download only when the repo's edits file is the snapshot's; after a fallback
+publish, re-seed (`desk:seed`, `desk:build`) before editing again, because the browser store is
+never marked published.
 
 ## Section 4 · the fallback, and how it is tested
 
@@ -208,7 +217,9 @@ desk/desk.html               generated; committed; published as artifact and at 
 scripts/desk-seed.mjs        npm run desk:seed
 scripts/desk-build.mjs       npm run desk:build
 scripts/desk-pull.mjs        npm run desk:pull [--check] [changes.json]
+scripts/desk-rekey.mjs       npm run desk:rekey <changes.json>  (after a re-seed)
 test/desk-core.test.js       converter and store tests
+test/desk-core-columns.test.js  the core's column lists equal curator-state's
 test/desk-seed.test.js       seed equality, dump completeness
 ```
 
