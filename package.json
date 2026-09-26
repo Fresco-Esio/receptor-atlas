@@ -8,6 +8,7 @@
     "migrate": "node scripts/migrate.js && node scripts/curator-state.mjs import",
     "curator:export": "node scripts/curator-state.mjs export",
     "curator:import": "node scripts/curator-state.mjs import",
+    "desk:seed": "node scripts/desk-seed.mjs",
     "snapshot": "node scripts/publish.js",
     "preview": "node scripts/serve-dist.js",
     "test": "node --test"
