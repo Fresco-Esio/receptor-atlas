@@ -339,8 +339,8 @@ function editReview(id, patch) {
   const cur = marksFor(id), next = { ...cur, ...patch };
   if (same(next, cur)) return;
   const rec = store.get(id).review;
-  // Back to the seed's own marks with nothing published yet: drop the record rather than store an equal update.
-  if (rec && !rec.publishedAs && same(next, marksOf(seedOf(id).review))) { commit(id, c => ({ ...c, review: null })); return; }
+  // Back to the seed's own marks with nothing published behind it: drop the record rather than store an equal update.
+  if (rec && !rec.publishedAs && !rec.published && same(next, marksOf(seedOf(id).review))) { commit(id, c => ({ ...c, review: null })); return; }
   commit(id, c => setReview(c, next, now()));
 }
 // ---------- banner + picker ----------
@@ -667,7 +667,8 @@ function labelsFor(id) {
 }
 /** A real change only. The patch carries just what the curator touched (a seeded edge keeps its own status
  *  unless "conflicts" was changed; see edgeStatus in the core); unchecking "conflicts" also clears the note.
- *  A seeded source's flags set back to what the seed shows drop the unpublished record. */
+ *  A seeded source's flags set back to what the seed shows drop the unpublished record, unless it carries a
+ *  published state (then the record stays, so the next publish takes the published flags back out). */
 const shown = s => ({ is_primary: s.is_primary ? 1 : 0, status: s.status, correction_note: s.correction_note ?? null });
 function editFlags(id, key, patch) {
   const src = viewFor(id).sources.find(s => s.key === key); if (!src) return;
@@ -676,7 +677,7 @@ function editFlags(id, key, patch) {
   const next = viewOf(seedOf(id), cand).sources.find(s => s.key === key);
   if (same(shown(next), shown(src))) return;
   const seeded = (seedOf(id).sources || []).find(s => s.key === key), rec = c0.sources.set[key];
-  if (seeded && rec && !rec.publishedAs && same(shown(next), shown(seeded))) {
+  if (seeded && rec && !rec.publishedAs && !rec.published && same(shown(next), shown(seeded))) {
     commit(id, c => ({ ...c, sources: { ...c.sources, set: Object.fromEntries(Object.entries(c.sources.set).filter(([k]) => k !== key)) } }));
     return;
   }

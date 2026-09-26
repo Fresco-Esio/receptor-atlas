@@ -19,7 +19,10 @@ export function publishedShas(changes) {
   const shas = new Set();
   for (const c of changes) {
     const src = c.sources || {};
-    for (const r of [...Object.values(c.fields || {}), ...(src.add || []), ...(src.remove || []), ...Object.values(src.set || {}), ...(c.review ? [c.review] : [])]) if (r && r.publishedAs) shas.add(r.publishedAs);
+    for (const r of [...Object.values(c.fields || {}), ...(src.add || []), ...(src.remove || []), ...Object.values(src.set || {}), ...(c.review ? [c.review] : [])]) {
+      if (r && r.publishedAs) shas.add(r.publishedAs);
+      if (r && r.published && r.published.publishedAs) shas.add(r.published.publishedAs);   // rekey drops these too
+    }
   }
   return [...shas];
 }

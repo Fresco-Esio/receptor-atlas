@@ -78,19 +78,59 @@ test('pull summarises the repo file against the new one; the core summary only w
   assert.equal(summaryOf(base, base, [c]), 'nothing to publish');
 });
 
-// Rulings A (accept the published-only conversion) and E (a revert of a published field is a tombstone;
-// a detach of a published add is a remove) do not compose: the tombstone/remove REPLACES the published
-// record, so publishedOnly no longer carries the value the repo file holds, and the check refuses. The
-// same happens when a published field is simply edited again. Kept as a todo until the store keeps the
-// published predecessor of an overwritten record (see the fix report).
-test('a revert of a published field is publishable', { todo: 'blocked: A x E, see .superpowers/sdd/2026-09-26-hosted-desk/final-fix-report.md' }, () => {
+// A record that overwrites a published one keeps the published state as its predecessor, so the check
+// still recognises the repo file after a revert, a re-edit or a detach of something published.
+function published1() {
   const base = exportState(fresh());
   const seed = buildSeed({ baseState: base, commit: 'x' });
   let c = core.setField(core.emptyChanges('d2', 'x'), 'claim', 'Published claim', AT);
-  const repoState = JSON.parse(JSON.stringify(pull({ seed, changes: [c], repoState: base }).state));
-  c = core.clearField(core.markPublished(c, 'sha1'), 'claim', '2026-09-26T14:00:00.000Z');
-  const two = pull({ seed, changes: [c], repoState });
+  c = core.setField(c, 'archive.abstract', 'Published abstract', AT);
+  c = core.attachSource(c, seed, { kind: 'article', authors: 'Kapur S', year: 2003, title: 'Aberrant salience', journal: 'Am J Psychiatry', pmid: '12505794', doi: null, url: null, notes: null }, { is_primary: 0 }, AT);
+  c = core.setReview(c, { mechanism: 1 }, AT);
+  const one = pull({ seed, changes: [c], repoState: base });
+  assert.equal(one.ok, true);
+  return { seed, c: core.markPublished(c, 'sha1'), repoState: JSON.parse(JSON.stringify(one.state)) };
+}
+const T2 = '2026-09-26T14:00:00.000Z';
+
+test('a revert of a published field is publishable', () => {
+  const { seed, c, repoState } = published1();
+  const two = pull({ seed, changes: [core.clearField(c, 'claim', T2)], repoState });
   assert.equal(two.ok, true, JSON.stringify(two.diff));
+  assert.equal(two.state.content.claims.d2, undefined, 'the published claim is reverted');
+  assert.equal(two.summary, '1 change returned to what the atlas ships');
+});
+
+test('a published field edited again is publishable, and publish 2 carries the new value', () => {
+  const { seed, c, repoState } = published1();
+  const two = pull({ seed, changes: [core.setField(c, 'archive.abstract', 'Edited again', T2)], repoState });
+  assert.equal(two.ok, true, JSON.stringify(two.diff));
+  assert.equal(two.state.content.archive.d2.abstract, 'Edited again');
+  assert.equal(two.state.content.claims.d2, 'Published claim');
+});
+
+test('a published add, detached, is publishable: the edge and its library row are gone', () => {
+  const { seed, c, repoState } = published1();
+  const two = pull({ seed, changes: [core.detachSource(c, seed, 'pmid:12505794', T2)], repoState });
+  assert.equal(two.ok, true, JSON.stringify(two.diff));
+  assert.equal(two.state.receptorSources.some(e => e.receptor_id === 'd2' && e.source === 'pmid:12505794'), false);
+  assert.equal(two.state.sources.some(x => x.key === 'pmid:12505794'), false);
+});
+
+test('every record kind edited again after a publish; after markPublishedFrom the third publish is accepted too', () => {
+  const { seed, c, repoState } = published1();
+  const seededKey = seed.receptors.find(r => r.id === 'd2').sources[0].key;
+  let e = core.setSourceFlags(c, seed, 'pmid:12505794', { is_primary: 1 }, T2);
+  e = core.setSourceFlags(e, seed, seededKey, { conflicting: true, correction_note: 'n' }, T2);
+  e = core.setReview(e, { affinity: 1 }, T2);
+  e = core.setField(e, 'claim', 'Claim 2', T2);
+  const two = pull({ seed, changes: [e], repoState });
+  assert.equal(two.ok, true, JSON.stringify(two.diff));
+  const marked = core.markPublishedFrom(e, e, 'sha2');
+  assert.equal(JSON.stringify(marked).includes('"published"'), false, 'the predecessors are dropped once marked');
+  const three = pull({ seed, changes: [core.setField(marked, 'claim', 'Claim 3', '2026-09-26T15:00:00.000Z')], repoState: JSON.parse(JSON.stringify(two.state)) });
+  assert.equal(three.ok, true, JSON.stringify(three.diff));
+  assert.equal(three.state.content.claims.d2, 'Claim 3');
 });
 
 test('loadChanges reads an array file or a directory of documents, skips unknown receptors, and rejects other shapes', async () => {

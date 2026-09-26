@@ -26,8 +26,10 @@ const diffKeys = (a, b) => STATE_KEYS.filter(k => JSON.stringify((a || {})[k]) !
 export function pull({ seed, changes, repoState }) {
   const fromSeed = diffKeys(seed.baseState, repoState);
   if (fromSeed.length) {
-    const anyPublished = changes.some(c => countPublished([c]) > 0);
-    const fromPublished = anyPublished ? diffKeys(canonicalise(toCuratorState(seed, changes.map(publishedOnly))), repoState) : fromSeed;
+    // (a document can hold no published record yet still carry a published state, as a record's predecessor)
+    const published = changes.map(publishedOnly);
+    const anyPublished = published.some(c => countPublished([c]) > 0);
+    const fromPublished = anyPublished ? diffKeys(canonicalise(toCuratorState(seed, published)), repoState) : fromSeed;
     if (fromPublished.length) return { ok: false, reason: 'seed moved', diff: fromPublished };
   }
   const state = canonicalise(toCuratorState(seed, changes));

@@ -362,9 +362,10 @@ test('publishedOnly keeps published fields/adds/sets/review and drops the unpubl
   assert.equal(p.review.mechanism, 1);
   assert.equal(p.receptorId, 'd2'); assert.equal(p.seedCommit, s.commit);
   assert.equal(c.fields.claim.value, 'Unpublished.', 'the input is not mutated');
-  // an unpublished review is dropped
+  // a review edited again after the publish: its published predecessor stands in for it
   const q = core.publishedOnly(core.setReview(c, { affinity: 1 }, AT));
-  assert.equal(q.review, null);
+  assert.deepEqual(q.review, { mechanism: 1, at: AT, publishedAs: 'sha1' });
+  assert.equal(core.publishedOnly(core.setReview(core.emptyChanges('d2', s.commit), { affinity: 1 }, AT)).review, null, 'nothing published behind it: nothing');
 });
 
 test('publishedOnly of a changes object with nothing published is the empty shape', () => {
@@ -392,7 +393,7 @@ test('clearField on a published record keeps a tombstone that exports as the see
   t = core.clearField(t, 'archive.effect', T2);
   t = core.clearField(t, 'claim', T2);
   t = core.clearField(t, 'clinical.onset', T2);
-  assert.deepEqual(t.fields['archive.abstract'], { cleared: true, at: T2, publishedAs: null });
+  assert.deepEqual(t.fields['archive.abstract'], { cleared: true, at: T2, publishedAs: null, published: { value: 'Published abstract.', at: AT, publishedAs: 'sha1' } });
   assert.equal('clinical.onset' in t.fields, false, 'an unpublished record is simply dropped');
   const out = core.toCuratorState(s, [t]);
   assert.deepEqual(out.content.archive, { d2: { effect: 'Seed-era edit' } }, 'back to the seed: the seed-era edit stays, the published one goes');
@@ -417,7 +418,8 @@ test('detaching a published add records a remove; the converter drops the edge a
   let d = core.detachSource(c, s, 'pmid:12505794', T2);
   d = core.detachSource(d, s, 'pmid:999', T2);
   assert.deepEqual(d.sources.add, []);
-  assert.deepEqual(d.sources.remove, [{ key: 'pmid:12505794', at: T2, publishedAs: null }, { key: 'pmid:999', at: T2, publishedAs: null }]);
+  assert.deepEqual(d.sources.remove.map(({ published, ...x }) => x), [{ key: 'pmid:12505794', at: T2, publishedAs: null }, { key: 'pmid:999', at: T2, publishedAs: null }]);
+  assert.equal(d.sources.remove[0].published.publishedAs, 'sha1', 'the remove carries the published add');
   const out = core.toCuratorState(s, [d, m]);
   assert.deepEqual(out.receptorSources.map(e => `${e.receptor_id}|${e.source}`), ['mu|pmid:999']);
   assert.deepEqual(out.sources.map(x => x.key), ['pmid:999'], 'a row another receptor still cites stays; the other goes');
@@ -512,4 +514,67 @@ test('mergeChanges: a later remove beats an earlier add of the same source, and 
   const reattached = core.attachSource(detached, s, KAPUR, { is_primary: 1 }, '2026-09-26T15:00:00.000Z');
   m = core.mergeChanges(detached, reattached);
   assert.deepEqual(m.sources.add.map(a => a.is_primary), [1]); assert.deepEqual(m.sources.remove, []);
+});
+
+test('a record that overwrites a published one keeps it as `published`, for every record kind', () => {
+  const s = seed(); const T2 = '2026-09-26T14:00:00.000Z';
+  let c = core.emptyChanges('d2', s.commit);
+  c = core.setField(c, 'archive.abstract', 'P', AT);
+  c = core.attachSource(c, s, KAPUR, { is_primary: 0 }, AT);
+  c = core.setSourceFlags(c, s, 'pmid:24463000', { conflicting: true, correction_note: 'n' }, AT);
+  c = core.setReview(c, { mechanism: 1 }, AT);
+  const pub = core.markPublished(c, 'sha1');
+  let e = core.setField(pub, 'archive.abstract', 'Q', T2);
+  assert.deepEqual(e.fields['archive.abstract'].published, { value: 'P', at: AT, publishedAs: 'sha1' });
+  e = core.setField(e, 'archive.abstract', 'R', T2);
+  assert.equal(e.fields['archive.abstract'].published.value, 'P', 'a second overwrite keeps the published state, not the unpublished one between');
+  e = core.clearField(e, 'archive.abstract', T2);
+  assert.equal(e.fields['archive.abstract'].published.value, 'P', 'a tombstone over an unpublished overwrite keeps the published state');
+  e = core.setSourceFlags(e, s, 'pmid:12505794', { is_primary: 1 }, T2);
+  assert.equal(e.sources.add[0].published.is_primary, 0);
+  e = core.setSourceFlags(e, s, 'pmid:24463000', { correction_note: 'm' }, T2);
+  assert.equal(e.sources.set['pmid:24463000'].published.correction_note, 'n');
+  e = core.setReview(e, { affinity: 1 }, T2);
+  assert.deepEqual(e.review.published, { mechanism: 1, at: AT, publishedAs: 'sha1' });
+  e = core.detachSource(e, s, 'pmid:12505794', T2);
+  assert.equal(e.sources.remove[0].published.is_primary, 0, 'a flag-edited published add, detached, still carries the published add');
+  assert.ok(e.library['pmid:12505794'], 'its library row stays, for publishedOnly');
+  const r = core.attachSource(e, s, KAPUR, { is_primary: 1 }, T2);
+  assert.equal(r.sources.add[0].published.publishedAs, 'sha1', 'attached again: the published state stays behind the new add');
+  // publishedOnly is the published state exactly
+  const po = core.publishedOnly(e);
+  assert.deepEqual(po, core.publishedOnly(pub));
+  assert.deepEqual(core.toCuratorState(s, [po]), core.toCuratorState(s, [pub]));
+  // marking drops the predecessors; so does rekey
+  const m = core.markPublished(e, 'sha2');
+  assert.equal(JSON.stringify(m).includes('"published"'), false);
+  const k = core.rekey(e, { ...s, commit: 'new' });
+  assert.equal(JSON.stringify(k).includes('"published"'), false);
+});
+
+test('markPublishedFrom drops the predecessor of the records it marks, and only those', () => {
+  const s = seed(); const T2 = '2026-09-26T14:00:00.000Z';
+  const pub = core.markPublished(core.setField(core.setField(core.emptyChanges('d2', s.commit), 'archive.abstract', 'P', AT), 'claim', 'C', AT), 'sha1');
+  const pulled = core.setField(core.setField(pub, 'archive.abstract', 'Q', T2), 'claim', 'D', T2);
+  const cur = core.setField(pulled, 'claim', 'E', '2026-09-26T15:00:00.000Z');
+  const m = core.markPublishedFrom(cur, pulled, 'sha2');
+  assert.deepEqual(m.fields['archive.abstract'], { value: 'Q', at: T2, publishedAs: 'sha2' });
+  assert.equal(m.fields.claim.publishedAs, null);
+  assert.deepEqual(m.fields.claim.published, { value: 'C', at: AT, publishedAs: 'sha1' }, 'typed after the pull: keeps the older published state');
+});
+
+test('mergeChanges hands the published state to a winner that overwrote it unseen', () => {
+  const s = seed(); const T2 = '2026-09-26T14:00:00.000Z';
+  const published = core.markPublished(core.setField(core.emptyChanges('d2', s.commit), 'archive.abstract', 'P', AT), 'sha1');
+  const unseen = core.setField(core.emptyChanges('d2', s.commit), 'archive.abstract', 'Q', T2);   // another view, never saw the publish
+  let m = core.mergeChanges(published, unseen);
+  assert.deepEqual(m.fields['archive.abstract'].published, { value: 'P', at: AT, publishedAs: 'sha1' });
+  const edited = core.setField(published, 'archive.abstract', 'R', AT);   // same at as nothing newer: carries its own predecessor
+  m = core.mergeChanges(edited, core.setField(core.emptyChanges('d2', s.commit), 'archive.abstract', 'S', T2));
+  assert.equal(m.fields['archive.abstract'].value, 'S');
+  assert.equal(m.fields['archive.abstract'].published.value, 'P', "the loser's predecessor is kept");
+  // a published detach seen by one view only: the remove wins and carries the add
+  const add = core.markPublished(core.attachSource(core.emptyChanges('d2', s.commit), s, KAPUR, { is_primary: 0 }, AT), 'sha1');
+  m = core.mergeChanges(add, core.detachSource(add, s, 'pmid:12505794', T2));
+  assert.equal(m.sources.remove[0].published.publishedAs, 'sha1');
 });

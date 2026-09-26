@@ -15,8 +15,10 @@ function docs() {
   return [a, b];
 }
 
-test('publishedShas lists every distinct publishedAs across the documents', () => {
+test('publishedShas lists every distinct publishedAs across the documents, predecessors included', () => {
   assert.deepEqual(publishedShas(docs()), ['sha1', 'sha2']);
+  const [a, b] = docs();
+  assert.deepEqual(publishedShas([core.setField(a, 'claim', 'again', AT), core.setReview(b, { affinity: 1 }, AT)]), ['sha1', 'sha2'], 'shas that survive only as predecessors');
 });
 
 test('rekeyAll refuses unless every publish is an ancestor of HEAD', () => {
