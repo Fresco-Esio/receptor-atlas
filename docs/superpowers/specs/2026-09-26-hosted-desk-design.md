@@ -164,7 +164,10 @@ before a long session or when the published-since count is large; never required
 **Fallback publish:** Download changes → `desk:pull --check` → `desk:pull` → commit; the
 full-replacement download only when the repo's edits file is the snapshot's; after a fallback
 publish, re-seed (`desk:seed`, `desk:build`) before editing again, because the browser store is
-never marked published.
+never marked published. If the site has been published from the hosted Desk since this snapshot,
+run `npm run desk:seed && npm run desk:build` locally first (do not commit them), then open the
+rebuilt `desk/desk.html`. `/desk/` on the public site is always built from the current edits file
+(the Actions workflow runs `desk:seed` and `desk:build` before the snapshot), so it has no such lag.
 
 ## Section 4 · the fallback, and how it is tested
 

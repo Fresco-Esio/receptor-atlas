@@ -93,24 +93,29 @@ record deleted in one open view can be restored by another open view until publi
 3. `npm run desk:pull -- changes.json`, then commit `db/curator-state.json` and push.
 
 After a fallback publish, re-seed (`desk:seed`, `desk:build`) before editing again, because
-the browser store is never marked published.
+the browser store is never marked published. If the site has been published from the hosted
+Desk since this snapshot, run `npm run desk:seed && npm run desk:build` locally first (do not
+commit them), then open the rebuilt `desk/desk.html`.
 
 *Download edits file (full replacement)* builds a whole `db/curator-state.json` on the
 page's own snapshot. Use it only when the repo's edits file is the snapshot's: after any
 publish from the hosted Desk it would overwrite that publish, which `desk:pull` never does.
 
 The `/desk/` copy on the public site is rebuilt on every push (`desk:seed` and
-`desk:build` run in the Actions workflow before the snapshot), so it always starts from
-the repo's current edits file.
+`desk:build` run in the Actions workflow before the snapshot), so it is always built from
+the repo's current edits file and has no such lag; only `desk/desk.html` in a clone does.
 
 `re-seed the desk`:
 
 1. Read the store as in step 1 above.
 2. `npm run desk:seed && npm run desk:build`.
-3. `npm run desk:rekey -- changes.json > rekeyed.json`. Re-keying drops every published
-   record because the new seed carries it, so this refuses (exit 2) unless every
-   `publishedAs` in the documents is an ancestor of HEAD; on a refusal, stop: pull, and
-   start again. On success it prints the re-keyed documents as one JSON array.
+3. `npm run -s desk:rekey -- changes.json > rekeyed.json` (or `node scripts/desk-rekey.mjs
+   changes.json > rekeyed.json`; `-s` keeps npm's own lines out of the file). Re-keying
+   drops every published record because the new seed carries it, so this refuses (exit 2)
+   unless every `publishedAs` in the documents is an ancestor of HEAD, and while any
+   document holds an unpublished revert or detach ("publish or discard N unpublished
+   reverts/detaches before re-seeding: <receptor ids>"). On a refusal, stop, deal with it,
+   and start again. On success it prints the re-keyed documents as one JSON array.
 4. Republish `desk/desk.artifact.html` to the same artifact URL.
 5. Write each document of `rekeyed.json` back with `ArtifactData set`, pinned with
    `if_version`.
@@ -140,7 +145,7 @@ attribution is the only piece missing.
 | Command | What it does |
 |---|---|
 | `npm start` | Run the server on port 3000 (same as `start.bat`, without the browser/auto-setup). Override with `PORT`. |
-| `npm test` | Run the suite (`node --test`). 239 tests. |
+| `npm test` | Run the suite (`node --test`). 244 tests. |
 | `npm run migrate` | Build `db/atlas.db` from seed data, then lay your saved work back over it. **Seed-only**: the seed is a no-op if the database already holds receptors. |
 | `npm run snapshot` | Export the static, backend-free site into `dist/`. |
 | `npm run preview` | Serve `dist/` to check the snapshot before publishing. |
