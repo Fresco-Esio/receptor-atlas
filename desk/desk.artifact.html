@@ -1,8 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Receptor Atlas Desk</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -211,8 +206,6 @@ html,body{ background:var(--bg); color:var(--ink); }   /* white/black holds what
 .mnew{ margin:4px 0 0 }
 .pop .chips{ max-height:220px; overflow:auto }
 </style>
-</head>
-<body>
 <div class="top">
   <select id="rx" aria-label="Receptor"></select>
   <span class="banner" id="banner"></span>
@@ -5443,5 +5436,3 @@ try { if (window.claude?.use) mcp = await window.claude.use('mcp'); } catch { mc
 // expose for the walkthrough (after boot, so its presence means the page is ready)
 window.__desk = { SEED, BUILT_AT, store, toCuratorState, flush, view: () => view() };
 </script>
-</body>
-</html>
