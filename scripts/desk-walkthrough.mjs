@@ -28,9 +28,10 @@ const SEED = JSON.parse(readFileSync(join(HERE, '..', 'desk', 'seed.json'), 'utf
 // --- static: the built file is self-contained ---
 const html = readFileSync(FILE, 'utf8');
 const external = [...html.matchAll(/\b(?:src|href)\s*=\s*["'](https?:)?\/\/[^"']+/gi)].map(m => m[0]);
-ok('build is self-contained (no <script src>, no fetch(), only Google Fonts)',
-  !/<script[^>]*\bsrc=/i.test(html) && !/\bfetch\s*\(/.test(html) && external.every(u => /fonts\.(googleapis|gstatic)\.com/.test(u)),
-  external.filter(u => !/fonts\.(googleapis|gstatic)\.com/.test(u)).join(', '));
+const fetches = (html.match(/\bfetch\s*\(/g) || []).length;
+ok('build is self-contained (no <script src>, one fetch() to api.github.com, only Google Fonts loaded)',
+  !/<script[^>]*\bsrc=/i.test(html) && fetches === 1 && html.includes("GH_API = 'https://api.github.com'") && external.every(u => /fonts\.(googleapis|gstatic)\.com/.test(u)),
+  `fetch() × ${fetches}; ` + external.filter(u => !/fonts\.(googleapis|gstatic)\.com/.test(u)).join(', '));
 
 const browser = await chromium.launch({ executablePath: exe, args: ['--no-sandbox'] });
 const ctx = await browser.newContext({ acceptDownloads: true }); const page = await ctx.newPage();
@@ -238,6 +239,72 @@ await page.reload(); await ready('d1');
 ok('the hint is dismissed by its × and stays dismissed across a reload', hintBefore === 1 && hintAfter === 0 && (await page.locator('#hint').count()) === 0);
 ok('no page errors in the Provenance layer', errors.length === 0, errors.join(' | '));
 
+// --- Publish button (browser mode) against a faked GitHub ---
+const utf8b64 = t => Buffer.from(t, 'utf8').toString('base64');
+async function fakeGitHub(context, cfg) {
+  const log = { gets: 0, puts: [], compares: [], auth: [] };
+  await context.route('https://api.github.com/**', async route => {
+    const req = route.request(); const url = new URL(req.url()); log.auth.push(req.headers()['authorization'] || '');
+    const contents = url.pathname === '/repos/Fresco-Esio/receptor-atlas/contents/db/curator-state.json';
+    if (contents && req.method() === 'GET') {
+      log.gets++;
+      if (cfg.status) return route.fulfill({ status: cfg.status, contentType: 'application/json', body: JSON.stringify({ message: 'Bad credentials' }) });
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ sha: 'blob111', encoding: 'base64', content: utf8b64(JSON.stringify(cfg.repoState, null, 1) + '\n').replace(/(.{60})/g, '$1\n') }) });
+    }
+    if (contents && req.method() === 'PUT') { log.puts.push(JSON.parse(req.postData())); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ content: { sha: 'blob222' }, commit: { sha: 'c0ffee1234567890c0ffee1234567890c0ffee12', html_url: 'https://github.com/Fresco-Esio/receptor-atlas/commit/c0ffee1' } }) }); }
+    const m = url.pathname.match(/\/compare\/([^.]+)\.\.\.(.+)$/);
+    if (m) { log.compares.push(m[1]); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ status: (cfg.ancestors || []).includes(m[1]) ? 'ahead' : 'diverged' }) }); }
+    return route.fulfill({ status: 404, contentType: 'application/json', body: '{"message":"Not Found"}' });
+  });
+  return log;
+}
+{
+  const pctx = await browser.newContext(); const p = await pctx.newPage();
+  const perrs = []; p.on('pageerror', e => perrs.push(e.message));
+  const gh = await fakeGitHub(pctx, { repoState: SEED.baseState });
+  await p.goto(PAGE); await p.waitForFunction(() => window.__desk); await p.selectOption('#rx', 'd2');
+  ok('browser mode shows Publish and GitHub…', await p.locator('#pub:not(.hidden)').count() === 1 && await p.locator('#ghset:not(.hidden)').count() === 1);
+  await p.locator('#pub').click(); await p.waitForTimeout(200);
+  ok('nothing to publish: toast, no request', (await p.locator('.toast').innerText()).includes('Nothing to publish') && gh.gets === 0);
+  await p.locator('[data-path="archive.abstract"]').fill('Published from the button.'); await p.waitForTimeout(500);
+  await p.locator('#pub').click(); await p.waitForTimeout(200);
+  ok('no token: the token dialog opens first', await p.locator('#modalBg #gh-h').count() === 1 && await p.locator('#modalBg [name=token]').getAttribute('type') === 'password' && await p.locator('#modalBg [name=remember]').isChecked());
+  await p.locator('#modalBg [name=token]').fill('github_pat_TEST'); await p.locator('#modalBg [data-save]').click(); await p.waitForFunction(() => document.querySelector('#modalBg #pc-h'));
+  ok('token remembered in this browser', await p.evaluate(() => localStorage.getItem('atlas-desk-github-token')) === 'github_pat_TEST');
+  ok('after Save the publish continues: the repo file was read with the token, confirm shows the subject', gh.gets === 1 && gh.auth[0] === 'Bearer github_pat_TEST' && await p.locator('#modalBg #pc-h').count() === 1 && (await p.locator('#modalBg').innerText()).includes('curate: 1 narrative edit'));
+  await p.locator('#modalBg [data-cancel]').click(); await p.waitForTimeout(100);
+  ok('cancel sends no PUT and marks nothing', gh.puts.length === 0 && await p.evaluate(() => !window.__desk.store.get('d2').fields['archive.abstract'].publishedAs));
+  await p.locator('#pub').click(); await p.waitForFunction(() => document.querySelector('#modalBg #pc-h')); await p.locator('#modalBg [data-go]').click();
+  await p.waitForFunction(() => document.querySelector('#pub').textContent === 'Publish' && !document.querySelector('#pub').disabled);
+  // marking changes publishedAs only; the converter reads values, so the store still converts to the committed bytes
+  const expectedText = await p.evaluate(() => JSON.stringify(window.__desk.toCuratorState(window.__desk.SEED, window.__desk.store.list()), null, 1) + '\n');
+  const put = gh.puts[0] || {};
+  ok('PUT carries the subject, the blob sha, the branch, and the converter\'s bytes', gh.puts.length === 1 && put.message === 'curate: 1 narrative edit' && put.sha === 'blob111' && put.branch === 'main' && Buffer.from(put.content, 'base64').toString('utf8') === expectedText);
+  ok('records marked published with the commit sha; receipt stored; banner shows it', await p.evaluate(() => window.__desk.store.get('d2').fields['archive.abstract'].publishedAs === 'c0ffee1234567890c0ffee1234567890c0ffee12' && JSON.parse(localStorage.getItem('atlas-desk-last-publish')).sha.startsWith('c0ffee1')) && /· last published c0ffee1 · \d{4}-\d{2}-\d{2}$/.test(await p.locator('#banner').innerText()));
+  ok('publish pass: no page errors', perrs.length === 0, perrs.join(' | '));
+  await pctx.close();
+}
+{ // the repo moved: refusal, no PUT
+  const pctx = await browser.newContext(); const p = await pctx.newPage();
+  const moved = JSON.parse(JSON.stringify(SEED.baseState)); moved.review.d1 = { mechanism: 1, affinity: 0, clinical: 0, citation: 0, mastery: 0, note: 'moved elsewhere' };
+  const gh = await fakeGitHub(pctx, { repoState: moved });
+  await p.goto(PAGE); await p.waitForFunction(() => window.__desk); await p.evaluate(() => localStorage.setItem('atlas-desk-github-token', 't'));
+  await p.selectOption('#rx', 'd2'); await p.locator('[data-path="archive.abstract"]').fill('Blocked.'); await p.waitForTimeout(500);
+  await p.locator('#pub').click(); await p.waitForFunction(() => document.querySelector('#modalBg #pr-h'));
+  ok('a moved repo file is refused, naming the keys, with no PUT', (await p.locator('#modalBg').innerText()).includes('review') && gh.puts.length === 0 && await p.evaluate(() => !window.__desk.store.get('d2').fields['archive.abstract'].publishedAs));
+  await pctx.close();
+}
+{ // a rejected token
+  const pctx = await browser.newContext(); const p = await pctx.newPage();
+  const gh = await fakeGitHub(pctx, { repoState: SEED.baseState, status: 401 });
+  await p.goto(PAGE); await p.waitForFunction(() => window.__desk); await p.evaluate(() => localStorage.setItem('atlas-desk-github-token', 'bad'));
+  await p.selectOption('#rx', 'd2'); await p.locator('[data-path="archive.abstract"]').fill('Unauthorised.'); await p.waitForTimeout(500);
+  await p.locator('#pub').click(); await p.waitForFunction(() => document.querySelector('#modalBg #gh-h'));
+  ok('401 → toast "rejected the token", token dialog, nothing marked, no PUT', (await p.locator('.toast').innerText()).includes('rejected the token') && gh.puts.length === 0 && await p.locator('#modalBg [data-forget]').count() === 1);
+  await p.locator('#modalBg [data-forget]').click(); await p.waitForTimeout(100);
+  ok('Forget clears the stored token', await p.evaluate(() => localStorage.getItem('atlas-desk-github-token')) === null);
+  await pctx.close();
+}
 // --- simulated claude.ai frame: a fake window.claude with db + downloads, same page from disk ---
 async function framePage(cfg) {
   const fctx = await browser.newContext({ acceptDownloads: true });
@@ -282,6 +349,7 @@ async function framePage(cfg) {
   const toastText = await f.p.locator('.toast').innerText().catch(() => '');
   ok('frame: a failing store read is retried once, then the page works in this browser',
     (await f.log()).reads === 2 && / · store: this browser$/.test(await f.p.locator('#banner').innerText()) && toastText === 'claude.ai store did not answer; working in this browser', toastText);
+  ok('frame: Publish and GitHub… are hidden', await f.p.locator('#pub.hidden').count() === 1 && await f.p.locator('#ghset.hidden').count() === 1);
   await f.p.selectOption('#rx', 'd2'); await f.p.locator('[data-path="archive.abstract"]').fill('Local.'); await f.p.waitForTimeout(450);
   ok('frame: after the fallback no write goes to the store', (await f.log()).sets.length === 0 && await f.p.evaluate(() => !!JSON.parse(localStorage.getItem('atlas-desk-changes-v1')).d2));
   await f.fctx.close();

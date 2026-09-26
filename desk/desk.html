@@ -210,6 +210,8 @@ html,body{ background:var(--bg); color:var(--ink); }   /* white/black holds what
 .mctl .check{ display:inline-flex; align-items:center; cursor:pointer } .mctl [data-detach]{ margin-left:auto }
 .mnew{ margin:4px 0 0 }
 .lsmerge{ flex-basis:100%; color:var(--warn) } .lsmerge .btn{ margin-left:6px }
+.notice{ flex-basis:100%; color:var(--warn) } .notice .btn{ margin-left:6px }
+.modal .tiny.warn{ color:var(--warn) } .modal .check{ display:flex; gap:6px; align-items:center; font-size:.85rem; margin:8px 0 }
 .hint{ display:flex; gap:8px; align-items:baseline; margin:0 0 14px } .hint button{ border:0; background:transparent; color:var(--ink-3); cursor:pointer; padding:0 2px; font-size:.95rem; line-height:1 } .hint button:hover{ color:var(--ink) }
 .pop .chips{ max-height:220px; overflow:auto }
 </style>
@@ -221,7 +223,10 @@ html,body{ background:var(--bg); color:var(--ink); }   /* white/black holds what
   <span class="grow"></span>
   <button class="btn sm" id="dlc" type="button">Download changes</button>
   <button class="btn sm" id="dl" type="button">Download edits file</button>
+  <button class="btn sm" id="ghset" type="button" title="GitHub token for the Publish button">GitHub…</button>
+  <button class="btn sm primary" id="pub" type="button">Publish</button>
   <div class="banner lsmerge hidden" id="lsmerge"></div>
+  <div class="banner notice hidden" id="notice"></div>
 </div>
 <main class="main"><div class="write"><div id="editor"></div><aside class="margin" id="margin"></aside></div><svg id="flow" aria-hidden="true"></svg></main>
 <div id="toastRoot"></div>
@@ -470,7 +475,15 @@ function toCuratorState(seed, changesList) {
   for (const key of removedKeys) {
     if (!P.sources[key] && !out.receptorSources.some(e => e.source === key) && !(out.bindingSources || []).some(e => e.source === key)) dropSource(key);
   }
-  return { format: FORMAT, review: out.review, activity: out.activity, bindingReview: out.bindingReview || [], sources: out.sources, receptorSources: out.receptorSources, bindingSources: out.bindingSources || [], content: { claims: out.content.claims, archive: out.content.archive, clinical: out.content.clinical, bindings: out.content.bindings || [] } };
+  // Map key order follows the pristine seed (the database's row order), so the file is byte-identical to
+  // exportState's: keys the seed does not have (a receptor's first review, say) go last, in the order made.
+  const like = (obj, ref) => { const idx = new Map(Object.keys(ref || {}).map((k, i) => [k, i])); const at = k => idx.has(k) ? idx.get(k) : Infinity; return Object.fromEntries(Object.keys(obj).map((k, i) => [k, i]).sort((x, y) => (at(x[0]) - at(y[0])) || (x[1] - y[1])).map(([k]) => [k, obj[k]])); };
+  // Same rule for a row list keyed by something other than its own property: a pristine row (already a rowid
+  // in the seed's own database) keeps that row's place; a row the seed never had goes last, in the order made.
+  const likeArr = (arr, ref, keyOf) => { const idx = new Map(Object.keys(ref || {}).map((k, i) => [k, i])); const at = k => idx.has(k) ? idx.get(k) : Infinity; return arr.map((v, i) => [v, i]).sort((x, y) => (at(keyOf(x[0])) - at(keyOf(y[0]))) || (x[1] - y[1])).map(([v]) => v); };
+  return { format: FORMAT, review: like(out.review, P.review), activity: out.activity, bindingReview: out.bindingReview || [],
+    sources: likeArr(out.sources, P.sources, s => s.key), receptorSources: likeArr(out.receptorSources, P.receptorSources, e => `${e.receptor_id}|${e.source}`), bindingSources: out.bindingSources || [],
+    content: { claims: like(out.content.claims, P.claims), archive: like(out.content.archive, P.archive), clinical: like(out.content.clinical, P.clinical), bindings: out.content.bindings || [] } };
 }
 
 const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
@@ -493,6 +506,119 @@ function summarise(changesList) {
   if (conflicts) parts.push(plural(conflicts, 'conflict') + ' noted');
   if (reviews) parts.push(plural(reviews, 'review') + ' updated');
   return parts.join(', ') || 'nothing to publish';
+}
+
+// ---------- publishing: the check desk:pull makes, and the words its commit uses ----------
+const STATE_KEYS = ['review', 'activity', 'bindingReview', 'sources', 'receptorSources', 'bindingSources', 'content'];
+// Compared as data, not bytes: object keys sorted and every array taken as a set of rows. The edits file's
+// arrays are row lists (activity, sources, edges, bindings) whose order is only the order rows were written in.
+const setwise = v => Array.isArray(v) ? '[' + v.map(setwise).sort().join(',') + ']'
+  : v && typeof v === 'object' ? '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + setwise(v[k])).join(',') + '}'
+  : JSON.stringify(v === undefined ? null : v);
+/** The top-level keys of the edits file on which two states differ as data. */
+function stateDiffKeys(a, b) { return STATE_KEYS.filter(k => setwise((a || {})[k]) !== setwise((b || {})[k])); }
+
+const keysOfObj = o => Object.keys(o || {});
+/** Describe the delta in the words a curator would use, so the history is readable
+ *  without opening a diff. Returns [] when nothing of substance moved. */
+function summariseStates(before, after) {
+  const b = before || { review: {}, sources: [], receptorSources: [], bindingSources: [], content: {} };
+  const bc = b.content || {}, ac = after.content || {};
+  const out = [];
+
+  const reviewed = keysOfObj(after.review).filter(id => JSON.stringify(after.review[id]) !== JSON.stringify((b.review || {})[id]));
+  if (reviewed.length) out.push(`${reviewed.length} specimen${reviewed.length === 1 ? '' : 's'} reviewed`);
+
+  const beforeSources = new Set((b.sources || []).map(s => s.key));
+  const newSources = (after.sources || []).filter(s => !beforeSources.has(s.key));
+  if (newSources.length) out.push(`${newSources.length} source${newSources.length === 1 ? '' : 's'} added`);
+
+  // The dump carries only the delta from a fresh seed, so an edge appearing in it
+  // for the first time does NOT mean the citation is new: it means something about
+  // it stopped matching the seed. Verifying a citation the atlas already shipped
+  // makes a row appear here, and calling that "attached" is a lie about what the
+  // curator did. The Desk attaches at status 'provided', so that is the tell.
+  const edgeKey = e => `${e.receptor_id}|${e.source}`;
+  const beforeEdges = new Map((b.receptorSources || []).map(e => [edgeKey(e), e.status]));
+  const fresh = (after.receptorSources || []).filter(e => !beforeEdges.has(edgeKey(e)));
+  const attached = fresh.filter(e => e.status === 'provided');
+  const restatused = [
+    ...fresh.filter(e => e.status !== 'provided'),
+    ...(after.receptorSources || []).filter(e => beforeEdges.has(edgeKey(e)) && beforeEdges.get(edgeKey(e)) !== e.status),
+  ];
+  if (attached.length) out.push(`${attached.length} citation${attached.length === 1 ? '' : 's'} attached`);
+  if (restatused.length) {
+    const verified = restatused.filter(e => e.status === 'verified').length;
+    out.push(verified === restatused.length
+      ? `${verified} citation${verified === 1 ? '' : 's'} verified`
+      : `${restatused.length} citation status${restatused.length === 1 ? '' : 'es'} changed`);
+  }
+
+  const bindKey = e => `${e.agent_name}|${e.target_alias}|${e.source}`;
+  const beforeBinds = new Map((b.bindingSources || []).map(e => [bindKey(e), e.status]));
+  const bindMoved = (after.bindingSources || []).filter(e => beforeBinds.get(bindKey(e)) !== e.status);
+  if (bindMoved.length) out.push(`${bindMoved.length} binding citation${bindMoved.length === 1 ? '' : 's'} settled`);
+
+  const contentMoved = [
+    ...keysOfObj(ac.claims).filter(k => (ac.claims || {})[k] !== (bc.claims || {})[k]).map(() => 'claim'),
+    ...keysOfObj(ac.archive).filter(k => JSON.stringify((ac.archive || {})[k]) !== JSON.stringify((bc.archive || {})[k])).map(() => 'narrative'),
+    ...keysOfObj(ac.clinical).filter(k => JSON.stringify((ac.clinical || {})[k]) !== JSON.stringify((bc.clinical || {})[k])).map(() => 'clinical row'),
+  ];
+  const bindingEdits = (ac.bindings || []).filter(x =>
+    !(bc.bindings || []).some(y => y.agent_name === x.agent_name && y.target_alias === x.target_alias && JSON.stringify(y) === JSON.stringify(x)));
+  if (contentMoved.length) {
+    const kinds = [...new Set(contentMoved)];
+    out.push(`${contentMoved.length} ${kinds.length === 1 ? kinds[0] : 'content'} edit${contentMoved.length === 1 ? '' : 's'}`);
+  }
+  if (bindingEdits.length) out.push(`${bindingEdits.length} affinity value${bindingEdits.length === 1 ? '' : 's'} edited`);
+
+  // Undoing work makes rows LEAVE the dump, because the dump holds only the delta
+  // from a fresh seed and undoing puts you back on the seed. Everything above reads
+  // what is present, so a session spent reverting summarised to nothing at all and
+  // committed as "review session". A revert is a decision worth recording.
+  const gone =
+    keysOfObj(b.review).filter(id => !(after.review || {})[id]).length
+    + (b.sources || []).filter(s => !(after.sources || []).some(x => x.key === s.key)).length
+    + (b.receptorSources || []).filter(e => !(after.receptorSources || []).some(x => edgeKey(x) === edgeKey(e))).length
+    + (b.bindingSources || []).filter(e => !(after.bindingSources || []).some(x => bindKey(x) === bindKey(e))).length
+    + keysOfObj(bc.claims).filter(k => !(ac.claims || {})[k]).length
+    + keysOfObj(bc.archive).filter(k => !(ac.archive || {})[k]).length
+    + keysOfObj(bc.clinical).filter(k => !(ac.clinical || {})[k]).length
+    + (bc.bindings || []).filter(x => !(ac.bindings || []).some(y => y.agent_name === x.agent_name && y.target_alias === x.target_alias)).length;
+  if (gone) out.push(`${gone} change${gone === 1 ? '' : 's'} returned to what the atlas ships`);
+
+  // Said last and only when it is the whole story, because a timestamp moving is
+  // real but is not what a session was about. Without it an activity-only publish
+  // fell through to "curate: review session", which tells a future reader nothing.
+  if (!out.length && JSON.stringify(b.activity || []) !== JSON.stringify(after.activity || [])) {
+    out.push('review timestamps updated');
+  }
+
+  return out;
+}
+
+/** `curate: ` + the lines; a count when that would not fit a 72-character subject; the old Desk's fallback when there are none. */
+function commitSubject(lines) {
+  if (!lines.length) return 'curate: review session';
+  const subject = `curate: ${lines.join(', ')}`;
+  return subject.length <= 72 ? subject : `curate: ${lines.length} changes this session`;
+}
+
+/** What a publish from the page needs: the repo's edits file must be the snapshot's (seed.baseState) or what
+ *  this Desk already published (its published records alone, converted); anything else moved by another route.
+ *  On ok: the new state, its file text (desk:pull's formatting) and the commit subject. */
+function preparePublish(seed, changes, repoState) {
+  const fromSeed = stateDiffKeys(seed.baseState, repoState);
+  if (fromSeed.length) {
+    // (a document can hold no published record yet still carry a published state, as a record's predecessor)
+    const published = changes.map(publishedOnly);
+    const anyPublished = published.some(c => countPublished([c]) > 0);
+    const fromPublished = anyPublished ? stateDiffKeys(toCuratorState(seed, published), repoState) : fromSeed;
+    if (fromPublished.length) return { ok: false, reason: 'seed moved', diff: fromPublished };
+  }
+  const state = toCuratorState(seed, changes);
+  const lines = summariseStates(repoState, state);
+  return { ok: true, state, text: JSON.stringify(state, null, 1) + '\n', subject: commitSubject(lines) };
 }
 
 /** Every record in one changes object (fields, tombstones, adds, removes, flags, review), for counting and marking. */
@@ -647,6 +773,56 @@ function rekey(changes, newSeed) {
   for (const k of Object.keys(c.library)) if (!c.sources.add.some(a => a.key === k)) delete c.library[k];
   if (c.review && c.review.publishedAs) c.review = null;
   return c;
+}
+
+/** What is wrong with one change document (as a store or a file holds it), or null. */
+function changeShapeError(d) {
+  if (!d || typeof d !== 'object' || Array.isArray(d)) return 'is not a change document (an object)';
+  if (typeof d.receptorId !== 'string') return 'has no receptorId';
+  if (!d.fields || typeof d.fields !== 'object') return 'has no fields object';
+  if (!d.sources || typeof d.sources !== 'object' || !Array.isArray(d.sources.add) || !d.sources.set || typeof d.sources.set !== 'object') return 'has no sources { add: [], set: {} }';
+  return null;
+}
+
+/** Every distinct publishedAs in the documents, in first-seen order. */
+function publishedShas(changes) {
+  const shas = new Set();
+  for (const c of changes) {
+    const src = c.sources || {};
+    for (const r of [...Object.values(c.fields || {}), ...(src.add || []), ...(src.remove || []), ...Object.values(src.set || {}), ...(c.review ? [c.review] : [])]) {
+      if (r && r.publishedAs) shas.add(r.publishedAs);
+      if (r && r.published && r.published.publishedAs) shas.add(r.published.publishedAs);   // rekey drops these too
+    }
+  }
+  return [...shas];
+}
+
+/** Unpublished reverts (tombstones) and detaches (removes), per receptor. They mean "take the published
+ *  state back out"; once rekey folds that published state into the seed, a tombstone would be read as
+ *  "back to the NEW seed" and silently keep what it was meant to remove. */
+function unpublishedReverts(changes) {
+  const out = [];
+  for (const c of changes) {
+    const src = c.sources || {};
+    const n = [...Object.values(c.fields || {}), ...Object.values(src.set || {}), ...(c.review ? [c.review] : [])].filter(r => r && r.cleared && !r.publishedAs).length
+      + (src.remove || []).filter(r => !r.publishedAs).length;
+    if (n) out.push({ receptorId: c.receptorId, n });
+  }
+  return out;
+}
+
+/** isAncestor(sha) → boolean is the git seam. */
+function rekeyAll(seed, changes, isAncestor) {
+  const reverts = unpublishedReverts(changes);
+  if (reverts.length) {
+    const n = reverts.reduce((a, r) => a + r.n, 0);
+    return { ok: false, reason: 'unpublished reverts', n, receptors: reverts.map(r => r.receptorId),
+      message: `publish or discard ${n} unpublished reverts/detaches before re-seeding: ${reverts.map(r => r.receptorId).join(', ')}` };
+  }
+  const missing = publishedShas(changes).filter(sha => !isAncestor(sha));
+  if (missing.length) return { ok: false, reason: 'not in history', missing,
+    message: `published as ${missing.join(', ')}, which ${missing.length === 1 ? 'is' : 'are'} not in the history of HEAD, so the new seed (${seed.commit}) may not carry ${missing.length === 1 ? 'it' : 'them'}. Pull, re-seed, and run this again.` };
+  return { ok: true, docs: changes.map(c => rekey(c, seed)) };
 }
 
 const SEED = {
@@ -5064,10 +5240,12 @@ const SEED = {
   }
  }
 };
-const BUILT_AT = '2026-09-26T19:51:34.650Z';
+const BUILT_AT = '2026-09-26T22:10:02.217Z';
 // ---------- storage: claude.ai db when it answers, else this browser ----------
 const LS = 'atlas-desk-changes-v1';
 const STORE_LABEL = { browser: 'this browser', 'claude.ai': 'claude.ai' };
+// Inside the claude.ai frame (window.claude exists) downloads go through a capability and Publish is not offered.
+const IN_FRAME = !!window.claude;
 const KNOWN = new Set(SEED.receptors.map(r => r.id));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 // Key-order-free JSON: the store may hand a document back with its keys in another order.
@@ -5184,7 +5362,8 @@ function editReview(id, patch) {
 // ---------- banner + picker ----------
 function renderBanner() {
   const all = store.list(); const unpub = countUnpublished(all), published = countPublished(all);
-  $('#banner').innerHTML = `seed <b>${esc(SEED.builtAt.slice(0, 10))}</b> · ${published} published since · <b>${unpub} unpublished</b> · <span class="${store.mode === 'claude.ai' ? 'cloud' : ''}">store: ${esc(STORE_LABEL[store.mode])}</span>`;
+  const receipt = !IN_FRAME && lastReceipt ? ` · last published <b>${esc(lastReceipt.sha.slice(0, 7))}</b> · ${esc(lastReceipt.at.slice(0, 10))}` : '';
+  $('#banner').innerHTML = `seed <b>${esc(SEED.builtAt.slice(0, 10))}</b> · ${published} published since · <b>${unpub} unpublished</b> · <span class="${store.mode === 'claude.ai' ? 'cloud' : ''}">store: ${esc(STORE_LABEL[store.mode])}</span>${receipt}`;
   const sel = $('#rx'); for (const o of sel.options) { const c = KNOWN.has(o.value) && store.all[o.value]; o.textContent = (c && countUnpublished([c]) ? '● ' : '') + seedOf(o.value).label; }
 }
 function renderPicker() {
@@ -5646,7 +5825,6 @@ function renderMergeLine() {
 // ---------- download ----------
 // Inside the claude.ai frame the page may only offer files through the downloads capability; the
 // <a download> path is for the file opened from disk (no window.claude at all).
-const IN_FRAME = !!window.claude;
 const dlReady = IN_FRAME ? Promise.resolve().then(() => typeof window.claude.use === 'function' ? window.claude.use('downloads') : null).catch(() => null) : null;
 const DL_GONE = new Set(['unavailable', 'not_granted', 'capability_disabled', 'capability_removed']);
 const hideDownload = () => { $('#dl').classList.add('hidden'); $('#dlc').classList.add('hidden'); };
@@ -5682,13 +5860,112 @@ function arrangeDownloads() {
   if (store.mode === 'browser') { $('#dlc').classList.add('primary'); $('#dl').textContent = 'Download edits file (full replacement)'; $('#dl').before($('#dlc')); }
   else { $('#dlc').classList.remove('primary'); $('#dl').textContent = 'Download edits file'; $('#dl').after($('#dlc')); }
 }
+// ---------- Publish (browser mode only: the claude.ai frame cannot reach GitHub) ----------
+const GH = { owner: 'Fresco-Esio', repo: 'receptor-atlas', branch: 'main', file: 'db/curator-state.json' };
+const GH_API = 'https://api.github.com';
+const TOKEN_KEY = 'atlas-desk-github-token', RECEIPT_KEY = 'atlas-desk-last-publish';
+let sessionToken = '';   // a token the owner chose not to remember
+const readToken = () => { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } };
+const token = () => sessionToken || readToken();
+const readReceipt = () => { try { const r = JSON.parse(localStorage.getItem(RECEIPT_KEY) || 'null'); return r && r.sha ? r : null; } catch (e) { return null; } };
+const utf8ToB64 = text => { const b = new TextEncoder().encode(text); let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); };
+const b64ToUtf8 = b64 => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, '')), c => c.charCodeAt(0)));
+/** The one call to GitHub. The token goes in the Authorization header and nowhere else; without a token the
+ *  call is anonymous (enough for compare on a public repo). Errors carry a code the callers act on. */
+async function gh(method, path, body) {
+  const headers = { Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
+  if (token()) headers.Authorization = 'Bearer ' + token();
+  if (body) headers['Content-Type'] = 'application/json';
+  let res;
+  try { res = await fetch(GH_API + path, { method, headers, body: body ? JSON.stringify(body) : undefined }); }
+  catch (e) { throw { code: 'network', message: 'GitHub could not be reached (offline?)' }; }
+  if (res.ok) return res.json();
+  const msg = await res.json().then(j => (j && j.message) || '').catch(() => '');
+  if (res.status === 401) throw { code: 'auth', message: 'GitHub rejected the token' };
+  if (res.status === 403) throw { code: 'forbidden', message: 'GitHub refused (rate limit, or the token lacks Contents: Read and write)' };
+  if (res.status === 404) throw { code: 'access', message: `the token cannot see ${GH.owner}/${GH.repo} (Repository access, and Contents: Read and write)` };
+  if (res.status === 409 || res.status === 422) throw { code: 'moved', message: 'the file moved while publishing; try again' };
+  throw { code: 'http', message: 'GitHub answered ' + res.status + (msg ? ': ' + msg : '') };
+}
+const CONTENTS = `/repos/${GH.owner}/${GH.repo}/contents/${GH.file}`;
+/** A small dialog; returns what the button clicked resolves to. `buttons`: [{ label, data, primary, value }]. */
+function dialog(id, title, bodyHtml, buttons) {
+  closeModal();
+  return new Promise(resolve => {
+    const bg = document.createElement('div'); bg.className = 'modal-bg'; bg.id = 'modalBg';
+    bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="${id}"><h2 id="${id}">${esc(title)}</h2>${bodyHtml}<div class="actions">${buttons.map(b => `<button type="button" class="btn${b.primary ? ' primary' : ''}" data-${b.data}>${esc(b.label)}</button>`).join('')}</div></div>`;
+    const onKey = e => { if (e.key === 'Escape') done(null); };
+    const done = v => { document.removeEventListener('keydown', onKey); closeModal(); resolve(v); };
+    document.addEventListener('keydown', onKey);   // the global Escape handler removes the element; this settles the promise
+    bg.addEventListener('mousedown', e => { if (e.target === bg) done(null); });
+    for (const b of buttons) bg.querySelector(`[data-${b.data}]`).addEventListener('click', () => done(typeof b.value === 'function' ? b.value(bg) : b.value));
+    document.body.appendChild(bg);
+    const first = bg.querySelector('input'); if (first) first.focus();
+  });
+}
+async function openTokenDialog() {
+  const stored = !!readToken();
+  const body = `<p class="tiny">A fine-grained personal access token (github.com → Settings → Developer settings → Personal access tokens → Fine-grained): Repository access → only <b>${esc(GH.repo)}</b>; Permissions → Contents: <b>Read and write</b>. It is sent only to api.github.com.</p>`
+    + `<div class="field"><label for="gh-token">Token</label><input id="gh-token" name="token" type="password" autocomplete="off" placeholder="github_pat_…"></div>`
+    + `<label class="check"><input type="checkbox" name="remember" checked> remember in this browser</label>`
+    + (stored ? `<p class="tiny">A token is stored in this browser now; Save replaces it.</p>` : '');
+  const buttons = [{ label: 'Cancel', data: 'cancel', value: null }];
+  if (stored) buttons.push({ label: 'Forget', data: 'forget', value: 'forget' });
+  buttons.push({ label: 'Save', data: 'save', primary: true, value: bg => ({ token: bg.querySelector('[name=token]').value.trim(), remember: bg.querySelector('[name=remember]').checked }) });
+  const r = await dialog('gh-h', 'GitHub token', body, buttons);
+  if (r === 'forget') { sessionToken = ''; try { localStorage.removeItem(TOKEN_KEY); } catch (e) { /* nothing stored */ } toast('Token forgotten.'); return false; }
+  if (!r || !r.token) return false;
+  if (r.remember) { sessionToken = ''; try { localStorage.setItem(TOKEN_KEY, r.token); } catch (e) { sessionToken = r.token; toast('This browser refused to store the token; it is kept for this session only.', 5000); } }
+  else { sessionToken = r.token; try { localStorage.removeItem(TOKEN_KEY); } catch (e) { /* nothing stored */ } }
+  return true;
+}
+let publishing = false;
+async function publish() {
+  if (publishing) return;
+  flush();
+  const changes = store.list();
+  if (!countUnpublished(changes)) { toast('Nothing to publish.'); return; }
+  if (!token()) { if (!(await openTokenDialog())) return; }
+  const btn = $('#pub'); publishing = true; btn.disabled = true; btn.textContent = 'Reading…';
+  try {
+    const file = await gh('GET', CONTENTS + '?ref=' + GH.branch);
+    const repoState = JSON.parse(b64ToUtf8(file.content));
+    const prep = preparePublish(SEED, changes, repoState);
+    if (!prep.ok) {
+      await dialog('pr-h', 'The repo has moved', `<p>The repo's edits file is neither this snapshot's nor what this page already published; it differs in: <b>${esc(prep.diff.join(', '))}</b>. Publishing now would overwrite a change made another way.</p><p class="tiny">Wait for the site to finish rebuilding and reload this page, or (from disk) pull, then run desk:seed and desk:build. Your changes are kept.</p>`, [{ label: 'Close', data: 'cancel', primary: true, value: null }]);
+      return;
+    }
+    btn.textContent = 'Publish';
+    const go = await dialog('pc-h', 'Publish to GitHub', `<p>One commit to <b>${esc(GH.owner)}/${esc(GH.repo)}</b> on <b>${esc(GH.branch)}</b>:</p><p class="mono">${esc(prep.subject)}</p><p class="tiny">The site rebuilds by itself afterwards, in a minute or two.</p>`, [{ label: 'Cancel', data: 'cancel', value: false }, { label: 'Publish', data: 'go', primary: true, value: true }]);
+    if (!go) return;
+    btn.textContent = 'Committing…';
+    const res = await gh('PUT', CONTENTS, { message: prep.subject, content: utf8ToB64(prep.text), sha: file.sha, branch: GH.branch });
+    const sha = res.commit.sha, at = now();
+    for (const pulled of changes) store.put(markPublishedFrom(store.get(pulled.receptorId), pulled, sha, at));
+    try { localStorage.setItem(RECEIPT_KEY, JSON.stringify({ sha, at, url: res.commit.html_url || '' })); } catch (e) { /* the banner still shows it this session */ }
+    lastReceipt = { sha, at, url: res.commit.html_url || '' };
+    renderBanner(); render();
+    toast('Published as ' + sha.slice(0, 7) + ' · the site rebuilds in a minute or two.', 6000);
+  } catch (e) {
+    toast('Publish failed: ' + ((e && e.message) || e), 7000);
+    if (e && (e.code === 'auth' || e.code === 'access')) await openTokenDialog();
+  } finally { publishing = false; btn.disabled = false; btn.textContent = 'Publish'; }
+}
+let lastReceipt = readReceipt();
+function arrangePublish() {
+  const on = !IN_FRAME;
+  for (const id of ['#pub', '#ghset']) $(id).classList.toggle('hidden', !on);
+  if (!on) return;
+  $('#pub').addEventListener('click', publish);
+  $('#ghset').addEventListener('click', openTokenDialog);
+}
 // ---------- boot ----------
-await store.init(); arrangeDownloads(); renderPicker(); render(); renderMergeLine();
+await store.init(); arrangeDownloads(); arrangePublish(); renderPicker(); render(); renderMergeLine();
 store.subscribe(onRemoteChange);
 // The PubMed connector, once; the source form reads `mcp` each time it opens.
 try { if (window.claude?.use) mcp = await window.claude.use('mcp'); } catch { mcp = null; }
 // expose for the walkthrough (after boot, so its presence means the page is ready)
-window.__desk = { SEED, BUILT_AT, store, toCuratorState, markPublished, markPublishedFrom, mergeChanges, flush, view: () => view() };
+window.__desk = { SEED, BUILT_AT, store, toCuratorState, markPublished, markPublishedFrom, mergeChanges, preparePublish, publish, flush, view: () => view() };
 </script>
 </body>
 </html>
