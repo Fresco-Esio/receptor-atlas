@@ -5,7 +5,7 @@ import { migrate } from '../scripts/migrate.js';
 import { exportState, importState } from '../scripts/curator-state.mjs';
 import { buildSeed } from '../scripts/desk-seed.mjs';
 import * as core from '../desk/desk-core.mjs';
-import { canonicalise, pull, summaryOf } from '../scripts/desk-pull.mjs';
+import { canonicalise, pull, summaryOf, loadChanges } from '../scripts/desk-pull.mjs';
 
 const fresh = () => { const db = openDb(':memory:'); migrate(db); return db; };
 const AT = '2026-09-26T13:00:00.000Z';
@@ -91,4 +91,31 @@ test('a revert of a published field is publishable', { todo: 'blocked: A x E, se
   c = core.clearField(core.markPublished(c, 'sha1'), 'claim', '2026-09-26T14:00:00.000Z');
   const two = pull({ seed, changes: [c], repoState });
   assert.equal(two.ok, true, JSON.stringify(two.diff));
+});
+
+test('loadChanges reads an array file or a directory of documents, skips unknown receptors, and rejects other shapes', async () => {
+  const { mkdtempSync, writeFileSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const seed = { receptors: [{ id: 'd2' }, { id: 'd1' }] };
+  const doc = id => core.setField(core.emptyChanges(id, 'x'), 'claim', 'c ' + id, AT);
+  const dir = mkdtempSync(join(tmpdir(), 'desk-pull-'));
+  writeFileSync(join(dir, 'd2.json'), JSON.stringify(doc('d2')));
+  writeFileSync(join(dir, 'd1.json'), JSON.stringify(doc('d1')));
+  writeFileSync(join(dir, 'zz.json'), JSON.stringify(doc('zz')));
+  writeFileSync(join(dir, 'notes.txt'), 'not json');
+  const notes = [];
+  const fromDir = loadChanges(dir, seed, n => notes.push(n));
+  assert.deepEqual(fromDir.map(c => c.receptorId), ['d1', 'd2'], 'every *.json, in name order, unknown receptors skipped');
+  assert.equal(notes.length, 1); assert.match(notes[0], /zz/);
+  const file = join(dir, 'changes.array');
+  writeFileSync(file, JSON.stringify([doc('d2'), doc('zz')]));
+  assert.deepEqual(loadChanges(file, seed, () => {}).map(c => c.receptorId), ['d2']);
+  writeFileSync(file, JSON.stringify({ d2: doc('d2') }));
+  assert.throws(() => loadChanges(file, seed, () => {}), /must be an array of change documents/);
+  writeFileSync(file, JSON.stringify([{ receptorId: 'd2' }]));
+  assert.throws(() => loadChanges(file, seed, () => {}), /item 0.*fields/);
+  const bad = mkdtempSync(join(tmpdir(), 'desk-pull-'));
+  writeFileSync(join(bad, 'd2.json'), JSON.stringify([doc('d2')]));
+  assert.throws(() => loadChanges(bad, seed, () => {}), /d2\.json.*a change document/);
 });

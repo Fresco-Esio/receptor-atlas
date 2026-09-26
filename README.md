@@ -50,7 +50,7 @@ the atlas" (see "Publishing from the fallback" below).
 |---|---|
 | `npm run desk:seed` | Builds `desk/seed.json` from the database, the way the Actions runner builds it: what the atlas currently is, for the editable surface. |
 | `npm run desk:build` | Writes `desk/desk.html`: the editor template with `desk-core.mjs` and `seed.json` inlined into one file; also writes `desk/desk.artifact.html`, the same page without the doctype/html/head/body wrapper, for publishing as a claude.ai artifact. |
-| `npm run desk:pull [--check] <changes.json>` | Turns a `changes.json` (what the page's store holds) into `db/curator-state.json`. `--check` reports what would change without writing it, and refuses unless the repo's edits file is the snapshot's, or what this Desk already published. |
+| `npm run desk:pull [--check] <changes.json \| dir>` | Turns a `changes.json` (what the page's store holds) into `db/curator-state.json`. `--check` reports what would change without writing it, and refuses unless the repo's edits file is the snapshot's, or what this Desk already published. |
 
 **Publishing** is "publish the atlas", asked of any Claude session: it reads the changes
 out of the page's store, runs `desk:pull`, commits, and pushes. A publish marks those
@@ -66,8 +66,10 @@ automatically.
 
 1. Read the store: `ArtifactData list` on collection `changes` of that artifact with
    `out_dir` set, which writes one JSON file per receptor.
-2. Build the array: concatenate the documents into `changes.json`, skipping any document
-   whose `receptorId` is not in `desk/seed.json` (the page hides those too).
+2. `desk:pull` takes that directory as it is (every `*.json` in it, one document each) or
+   the documents concatenated into one array in `changes.json`; either way it skips, with a
+   note, any document whose `receptorId` is not in `desk/seed.json` (the page hides those
+   too), and refuses a file of any other shape. `changes.json` below stands for either.
 3. `npm run desk:pull -- --check changes.json` — it prints the one-line summary or
    refuses with "seed moved".
 4. Show the summary to the owner and wait for "go".
