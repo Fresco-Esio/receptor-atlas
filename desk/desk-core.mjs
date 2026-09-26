@@ -377,14 +377,11 @@ export function commitSubject(lines) {
 export function preparePublish(seed, changes, repoState) {
   const fromSeed = stateDiffKeys(seed.baseState, repoState);
   if (fromSeed.length) {
+    // (a document can hold no published record yet still carry a published state, as a record's predecessor)
     const published = changes.map(publishedOnly);
     const anyPublished = published.some(c => countPublished([c]) > 0);
     const fromPublished = anyPublished ? stateDiffKeys(toCuratorState(seed, published), repoState) : fromSeed;
-    // A key only counts against the file when it is unexplained by our own publish: it must differ from
-    // the pristine snapshot AND from what we ourselves already published there (a key repoState still
-    // carries at its snapshot value, though our publish touched it elsewhere, is not yet a problem).
-    const diff = fromSeed.filter(k => fromPublished.includes(k));
-    if (diff.length) return { ok: false, reason: 'seed moved', diff };
+    if (fromPublished.length) return { ok: false, reason: 'seed moved', diff: fromPublished };
   }
   const state = toCuratorState(seed, changes);
   const lines = summariseStates(repoState, state);

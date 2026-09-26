@@ -235,10 +235,19 @@ test('preparePublish: accepts the snapshot file and the page\'s own last publish
   const second = core.preparePublish(seed, [c], first.state);
   assert.equal(second.ok, true);
   assert.equal(second.subject, 'curate: 1 narrative edit');
-  // a file that is neither: refused, naming what differs
+  // the hole an intersection would open: the repo holds the page's published content but its
+  // published review was undone by another route — still refused, naming the review alone
+  let r = core.setField(core.emptyChanges('d1', 'x'), 'claim', 'D1 claim', AT);
+  r = core.setReview(r, { mechanism: 1, note: 'checked' }, AT);
+  const pubR = core.preparePublish(seed, [r], base); assert.equal(pubR.ok, true);
+  r = core.markPublishedFrom(r, r, 'sha2', AT);
+  const undone = JSON.parse(JSON.stringify(pubR.state)); undone.review = JSON.parse(JSON.stringify(base.review));
+  const refused = core.preparePublish(seed, [r], undone);
+  assert.equal(refused.ok, false); assert.deepEqual(refused.diff, ['review']);
+  // a file that is neither: refused, naming every key that differs from what was published
   const moved = JSON.parse(JSON.stringify(base)); moved.review.d1 = { mechanism: 1, affinity: 0, clinical: 0, citation: 0, mastery: 0, note: 'elsewhere' };
   const no = core.preparePublish(seed, [c], moved);
-  assert.equal(no.ok, false); assert.equal(no.reason, 'seed moved'); assert.deepEqual(no.diff, ['review']);
+  assert.equal(no.ok, false); assert.equal(no.reason, 'seed moved'); assert.deepEqual(no.diff, ['review', 'activity', 'content']);
   // nothing to publish is still ok (subject falls back)
   assert.equal(core.preparePublish(seed, [], base).subject, 'curate: review session');
 });
