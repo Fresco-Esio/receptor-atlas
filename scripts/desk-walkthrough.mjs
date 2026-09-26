@@ -32,6 +32,9 @@ const fetches = (html.match(/\bfetch\s*\(/g) || []).length;
 ok('build is self-contained (no <script src>, one fetch() to api.github.com, only Google Fonts loaded)',
   !/<script[^>]*\bsrc=/i.test(html) && fetches === 1 && html.includes("GH_API = 'https://api.github.com'") && external.every(u => /fonts\.(googleapis|gstatic)\.com/.test(u)),
   `fetch() × ${fetches}; ` + external.filter(u => !/fonts\.(googleapis|gstatic)\.com/.test(u)).join(', '));
+// api.github.com answers Cache-Control: private, max-age=60, and the GET (?ref=main) is not the PUT's URL, so a cached
+// GET would hand a second publish a stale blob sha. Playwright's routing turns the HTTP cache off, so this is static.
+ok('the GitHub fetch() bypasses the HTTP cache (cache: \'no-store\')', /\bfetch\s*\(GH_API \+ path, \{[^}]*\bcache: 'no-store'/.test(html));
 
 const browser = await chromium.launch({ executablePath: exe, args: ['--no-sandbox'] });
 const ctx = await browser.newContext({ acceptDownloads: true }); const page = await ctx.newPage();
@@ -242,7 +245,7 @@ ok('no page errors in the Provenance layer', errors.length === 0, errors.join(' 
 // --- Publish button (browser mode) against a faked GitHub ---
 const utf8b64 = t => Buffer.from(t, 'utf8').toString('base64');
 async function fakeGitHub(context, cfg) {
-  const log = { gets: 0, puts: [], compares: [], auth: [] };
+  const log = { gets: 0, puts: [], putAuth: [], compares: [], auth: [] };
   await context.route('https://api.github.com/**', async route => {
     const req = route.request(); const url = new URL(req.url()); log.auth.push(req.headers()['authorization'] || '');
     const contents = url.pathname === '/repos/Fresco-Esio/receptor-atlas/contents/db/curator-state.json';
@@ -251,7 +254,7 @@ async function fakeGitHub(context, cfg) {
       if (cfg.status) return route.fulfill({ status: cfg.status, contentType: 'application/json', body: JSON.stringify({ message: 'Bad credentials' }) });
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ sha: 'blob111', encoding: 'base64', content: utf8b64(JSON.stringify(cfg.repoState, null, 1) + '\n').replace(/(.{60})/g, '$1\n') }) });
     }
-    if (contents && req.method() === 'PUT') { log.puts.push(JSON.parse(req.postData())); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ content: { sha: 'blob222' }, commit: { sha: 'c0ffee1234567890c0ffee1234567890c0ffee12', html_url: 'https://github.com/Fresco-Esio/receptor-atlas/commit/c0ffee1' } }) }); }
+    if (contents && req.method() === 'PUT') { log.puts.push(JSON.parse(req.postData())); log.putAuth.push(req.headers()['authorization'] || ''); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ content: { sha: 'blob222' }, commit: { sha: 'c0ffee1234567890c0ffee1234567890c0ffee12', html_url: 'https://github.com/Fresco-Esio/receptor-atlas/commit/c0ffee1' } }) }); }
     const m = url.pathname.match(/\/compare\/([^.]+)\.\.\.(.+)$/);
     if (m) { log.compares.push(m[1]); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ status: (cfg.ancestors || []).includes(m[1]) ? 'ahead' : 'diverged' }) }); }
     return route.fulfill({ status: 404, contentType: 'application/json', body: '{"message":"Not Found"}' });
@@ -285,6 +288,8 @@ async function fakeGitHub(context, cfg) {
   const expectedText = await p.evaluate(() => JSON.stringify(window.__desk.toCuratorState(window.__desk.SEED, window.__desk.store.list()), null, 1) + '\n');
   const put = gh.puts[0] || {};
   ok('PUT carries the subject, the blob sha, the branch, and the converter\'s bytes', gh.puts.length === 1 && put.message === 'curate: 1 narrative edit' && put.sha === 'blob111' && put.branch === 'main' && Buffer.from(put.content, 'base64').toString('utf8') === expectedText);
+  ok('the PUT is sent with the token in the Authorization header', gh.putAuth.length === 1 && gh.putAuth[0] === 'Bearer github_pat_TEST', JSON.stringify(gh.putAuth.map(a => a.slice(0, 12))));
+  ok('every publish attempt reads the repo file (three attempts, three GETs)', gh.gets === 3, `gets=${gh.gets}`);
   ok('records marked published with the commit sha; receipt stored; banner shows it', await p.evaluate(() => window.__desk.store.get('d2').fields['archive.abstract'].publishedAs === 'c0ffee1234567890c0ffee1234567890c0ffee12' && JSON.parse(localStorage.getItem('atlas-desk-last-publish')).sha.startsWith('c0ffee1')) && /· last published c0ffee1 · \d{4}-\d{2}-\d{2}$/.test(await p.locator('#banner').innerText()));
   ok('publish pass: no page errors', perrs.length === 0, perrs.join(' | '));
   await pctx.close();
@@ -308,6 +313,28 @@ async function fakeGitHub(context, cfg) {
   ok('401 → toast "rejected the token", token dialog, nothing marked, no PUT', (await p.locator('.toast').innerText()).includes('rejected the token') && gh.puts.length === 0 && await p.locator('#modalBg [data-forget]').count() === 1);
   await p.locator('#modalBg [data-forget]').click(); await p.waitForTimeout(100);
   ok('Forget clears the stored token', await p.evaluate(() => localStorage.getItem('atlas-desk-github-token')) === null);
+  ok('after a rejected token the Publish button is back and enabled', await p.evaluate(() => document.querySelector('#pub').textContent === 'Publish' && !document.querySelector('#pub').disabled));
+  await pctx.close();
+}
+{ // the token dialog on its own: empty Save, remember off (session only), Forget; a malformed receipt does not break the page
+  const pctx = await browser.newContext();
+  await pctx.addInitScript(() => { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); localStorage.setItem('atlas-desk-last-publish', JSON.stringify({ sha: 'abc' })); } });
+  const p = await pctx.newPage(); const perrs = []; p.on('pageerror', e => perrs.push(e.message));
+  await p.goto(PAGE); await p.waitForFunction(() => window.__desk, null, { timeout: 15000 });
+  ok('a malformed publish receipt is ignored: the page renders, no receipt in the banner', perrs.length === 0 && !(await p.locator('#banner').innerText()).includes('last published') && await p.locator('#rx option').count() === 24, perrs.join(' | '));
+  await p.locator('#ghset').click(); await p.waitForFunction(() => document.querySelector('#modalBg #gh-h'));
+  ok('no token held: the dialog offers no Forget', await p.locator('#modalBg [data-forget]').count() === 0);
+  await p.locator('#modalBg [data-save]').click(); await p.waitForTimeout(100);
+  ok('Save with an empty field: toast "Paste a token first." and the dialog stays open', (await p.locator('.toast').innerText()).includes('Paste a token first.') && await p.locator('#modalBg #gh-h').count() === 1);
+  await p.locator('#modalBg [name=token]').fill('github_pat_SESSION'); await p.locator('#modalBg [name=remember]').uncheck(); await p.locator('#modalBg [data-save]').click(); await p.waitForTimeout(100);
+  ok('remember off: nothing is stored in this browser', await p.locator('#modalBg').count() === 0 && await p.evaluate(() => localStorage.getItem('atlas-desk-github-token')) === null);
+  await p.locator('#ghset').click(); await p.waitForFunction(() => document.querySelector('#modalBg #gh-h'));
+  ok('a session-only token can be forgotten: the dialog offers Forget', await p.locator('#modalBg [data-forget]').count() === 1);
+  await p.locator('#modalBg [data-forget]').click(); await p.waitForTimeout(100);
+  await p.locator('#ghset').click(); await p.waitForFunction(() => document.querySelector('#modalBg #gh-h'));
+  ok('Forget drops the session token too', await p.locator('#modalBg [data-forget]').count() === 0);
+  await p.locator('#modalBg [data-cancel]').click();
+  ok('token dialog pass: no page errors', perrs.length === 0, perrs.join(' | '));
   await pctx.close();
 }
 // --- simulated claude.ai frame: a fake window.claude with db + downloads, same page from disk ---

@@ -862,7 +862,7 @@ const TOKEN_KEY = 'atlas-desk-github-token', RECEIPT_KEY = 'atlas-desk-last-publ
 let sessionToken = '';   // a token the owner chose not to remember
 const readToken = () => { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } };
 const token = () => sessionToken || readToken();
-const readReceipt = () => { try { const r = JSON.parse(localStorage.getItem(RECEIPT_KEY) || 'null'); return r && r.sha ? r : null; } catch (e) { return null; } };
+const readReceipt = () => { try { const r = JSON.parse(localStorage.getItem(RECEIPT_KEY) || 'null'); return r && typeof r.sha === 'string' && typeof r.at === 'string' ? r : null; } catch (e) { return null; } };
 const utf8ToB64 = text => { const b = new TextEncoder().encode(text); let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); };
 const b64ToUtf8 = b64 => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, '')), c => c.charCodeAt(0)));
 /** The one call to GitHub. The token goes in the Authorization header and nowhere else; without a token the
@@ -872,7 +872,7 @@ async function gh(method, path, body) {
   if (token()) headers.Authorization = 'Bearer ' + token();
   if (body) headers['Content-Type'] = 'application/json';
   let res;
-  try { res = await fetch(GH_API + path, { method, headers, body: body ? JSON.stringify(body) : undefined }); }
+  try { res = await fetch(GH_API + path, { method, headers, body: body ? JSON.stringify(body) : undefined, cache: 'no-store' }); }
   catch (e) { throw { code: 'network', message: 'GitHub could not be reached (offline?)' }; }
   if (res.ok) return res.json();
   const msg = await res.json().then(j => (j && j.message) || '').catch(() => '');
@@ -900,17 +900,18 @@ function dialog(id, title, bodyHtml, buttons) {
   });
 }
 async function openTokenDialog() {
-  const stored = !!readToken();
+  const stored = !!readToken(), held = !!token();   // held: stored, or kept for this session only
   const body = `<p class="tiny">A fine-grained personal access token (github.com → Settings → Developer settings → Personal access tokens → Fine-grained): Repository access → only <b>${esc(GH.repo)}</b>; Permissions → Contents: <b>Read and write</b>. It is sent only to api.github.com.</p>`
     + `<div class="field"><label for="gh-token">Token</label><input id="gh-token" name="token" type="password" autocomplete="off" placeholder="github_pat_…"></div>`
     + `<label class="check"><input type="checkbox" name="remember" checked> remember in this browser</label>`
-    + (stored ? `<p class="tiny">A token is stored in this browser now; Save replaces it.</p>` : '');
+    + (held ? `<p class="tiny">${stored ? 'A token is stored in this browser now' : 'A token is held for this session'}; Save replaces it, Forget drops it.</p>` : '');
   const buttons = [{ label: 'Cancel', data: 'cancel', value: null }];
-  if (stored) buttons.push({ label: 'Forget', data: 'forget', value: 'forget' });
+  if (held) buttons.push({ label: 'Forget', data: 'forget', value: 'forget' });
   buttons.push({ label: 'Save', data: 'save', primary: true, value: bg => ({ token: bg.querySelector('[name=token]').value.trim(), remember: bg.querySelector('[name=remember]').checked }) });
   const r = await dialog('gh-h', 'GitHub token', body, buttons);
   if (r === 'forget') { sessionToken = ''; try { localStorage.removeItem(TOKEN_KEY); } catch (e) { /* nothing stored */ } toast('Token forgotten.'); return false; }
-  if (!r || !r.token) return false;
+  if (!r) return false;
+  if (!r.token) { toast('Paste a token first.'); return openTokenDialog(); }
   if (r.remember) { sessionToken = ''; try { localStorage.setItem(TOKEN_KEY, r.token); } catch (e) { sessionToken = r.token; toast('This browser refused to store the token; it is kept for this session only.', 5000); } }
   else { sessionToken = r.token; try { localStorage.removeItem(TOKEN_KEY); } catch (e) { /* nothing stored */ } }
   return true;
