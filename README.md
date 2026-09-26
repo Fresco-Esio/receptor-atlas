@@ -134,7 +134,7 @@ attribution is the only piece missing.
 | Command | What it does |
 |---|---|
 | `npm start` | Run the server on port 3000 (same as `start.bat`, without the browser/auto-setup). Override with `PORT`. |
-| `npm test` | Run the suite (`node --test`). 176 tests. |
+| `npm test` | Run the suite (`node --test`). 233 tests (one a recorded todo). |
 | `npm run migrate` | Build `db/atlas.db` from seed data, then lay your saved work back over it. **Seed-only**: the seed is a no-op if the database already holds receptors. |
 | `npm run snapshot` | Export the static, backend-free site into `dist/`. |
 | `npm run preview` | Serve `dist/` to check the snapshot before publishing. |

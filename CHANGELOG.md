@@ -44,8 +44,8 @@ reader who wrote a number down needs to know it moved.
   `db/curator-state.json`, the same file the old Desk wrote, and commits and pushes it;
   nothing is ever cleared from the working set, only marked published, so the editor
   never goes stale between sessions. Not in it, on purpose: binding-affinity edits, which
-  stay with `scripts/sourcing/`, and a separate citation-verified check, because attaching
-  a source to a claim is treated as having read it. The same file also ships unlinked at
+  stay with `scripts/sourcing/`, and a separate citation-verified check or mastery mark,
+  because attaching a source to a claim is treated as having read it. The same file also ships unlinked at
   `/desk/` on the public site and as `desk/desk.html` in a clone, so editing never
   depends on claude.ai being reachable.
 
