@@ -51,7 +51,7 @@ the atlas" (see "Publishing from the fallback" below).
 | `npm run desk:seed` | Builds `desk/seed.json` from the database, the way the Actions runner builds it: what the atlas currently is, for the editable surface. |
 | `npm run desk:build` | Writes `desk/desk.html`: the editor template with `desk-core.mjs` and `seed.json` inlined into one file; also writes `desk/desk.artifact.html`, the same page without the doctype/html/head/body wrapper, for publishing as a claude.ai artifact. |
 | `npm run desk:pull [--check] <changes.json \| dir>` | Turns a `changes.json` (what the page's store holds) into `db/curator-state.json`. `--check` reports what would change without writing it, and refuses unless the repo's edits file is the snapshot's, or what this Desk already published. |
-| `npm run desk:rekey <changes.json \| dir>` | After a re-seed: prints the stored documents re-keyed onto the new `desk/seed.json` (published records dropped, since the seed now carries them). Refuses unless every publish they record is an ancestor of HEAD. |
+| `npm run -s desk:rekey -- <changes.json \| dir> > rekeyed.json` | After a re-seed: prints the stored documents re-keyed onto the new `desk/seed.json` (published records dropped, since the seed now carries them); `-s` keeps npm's own lines out of the output. Refuses (exit 2) while any document holds an unpublished revert or detach, and unless every publish they record is an ancestor of HEAD. |
 
 **Publishing** is "publish the atlas", asked of any Claude session: it reads the changes
 out of the page's store, runs `desk:pull`, commits, and pushes. A publish marks those
@@ -79,11 +79,15 @@ automatically.
 6. Mark the published records: read each document again (the owner may have kept typing
    since step 1), apply `markPublishedFrom(current, pulled, sha)` from `desk/desk-core.mjs`
    — `pulled` is that document as it went into `changes.json` — which sets `publishedAs`
-   to the commit sha only on records unchanged since the pull, and write the documents
-   back with `ArtifactData set`, pinned with `if_version`. Nothing is deleted.
+   to the commit sha only on records unchanged since the pull. Records changed since the
+   pull keep the pulled record as their published state; pulled records deleted before
+   marking are re-created as pending reverts, which count as unpublished and block a
+   re-seed until published. Write the documents back with `ArtifactData set`, pinned with
+   `if_version`. Nothing is deleted.
 
-Two open views of the Desk merge each other's writes record by record, the later edit winning; a
-record deleted in one open view can be restored by another open view until published.
+Keep the Desk open in one place at a time. A second open view merges what it receives, but a
+record it only received by merge is stored when that receptor is next edited, and a deletion
+made in one view can be restored by the other until published.
 
 ### Publishing from the fallback
 

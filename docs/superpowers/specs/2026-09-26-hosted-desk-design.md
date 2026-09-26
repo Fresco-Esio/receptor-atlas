@@ -161,6 +161,10 @@ the page (this is the only action that moves the artifact's version), and clears
 store's published changes; unpublished changes are re-keyed to the new seed. Worth doing
 before a long session or when the published-since count is large; never required.
 
+**One editor at a time.** Keep the Desk open in one place at a time. A second open view merges
+what it receives, but a record it only received by merge is stored when that receptor is next
+edited, and a deletion made in one view can be restored by the other until published.
+
 **Fallback publish:** Download changes → `desk:pull --check` → `desk:pull` → commit; the
 full-replacement download only when the repo's edits file is the snapshot's; after a fallback
 publish, re-seed (`desk:seed`, `desk:build`) before editing again, because the browser store is
@@ -220,7 +224,8 @@ desk/desk.html               generated; committed; published as artifact and at 
 scripts/desk-seed.mjs        npm run desk:seed
 scripts/desk-build.mjs       npm run desk:build
 scripts/desk-pull.mjs        npm run desk:pull [--check] [changes.json]
-scripts/desk-rekey.mjs       npm run desk:rekey <changes.json>  (after a re-seed)
+scripts/desk-rekey.mjs       npm run -s desk:rekey -- <changes.json> > rekeyed.json  (after a re-seed;
+                             refuses on unpublished reverts/detaches, or a publish not in HEAD)
 test/desk-core.test.js       converter and store tests
 test/desk-core-columns.test.js  the core's column lists equal curator-state's
 test/desk-seed.test.js       seed equality, dump completeness

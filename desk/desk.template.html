@@ -275,11 +275,8 @@ const store = {
         if ((this.sent[id] || []).includes(body)) continue;   // the echo of this view's own write carries nothing new
         const before = this.all[id] ? canon(this.all[id]) : null;
         const merged = mergeChanges(this.all[id] || null, JSON.parse(JSON.stringify(data)));
-        const after = canon(merged);
-        if (after !== before) { this.all[id] = merged; changed = true; }
-        // the store holds less than the union (this view has records the other lacks): write the union back,
-        // through the same one-at-a-time queue, so every view converges on it
-        if (after !== body) this.put(merged);
+        // into memory only: never a write from here (a record received by merge is stored with the next edit)
+        if (canon(merged) !== before) { this.all[id] = merged; changed = true; }
       }
       if (changed) onChange();
     }, e => { toast('Live updates from other views stopped (' + ((e && e.code) || 'unknown') + '); reload to resume.', 5000); });

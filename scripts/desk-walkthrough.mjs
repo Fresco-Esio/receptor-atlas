@@ -308,13 +308,15 @@ async function framePage(cfg) {
   await f.p.selectOption('#rx', 'd2');
   ok('frame: the page subscribes to the store once', (await f.log()).subs === 1);
   await f.p.locator('[data-path="archive.presentation"]').fill('Local presentation.'); await f.p.evaluate(() => { window.__desk.flush(); document.activeElement.blur(); });
+  await f.p.waitForTimeout(300);   // the local edit's own write lands first
+  const setsBefore = (await f.log()).sets.length;
   const later = '2999-01-01T00:00:00.000Z';
   const remote = core.setField(core.emptyChanges('d2', SEED.commit), 'archive.effect', 'Remote effect.', later);
   await f.p.evaluate(d => window.__fakeDb.push({ d2: d }), remote); await f.p.waitForTimeout(400);
   const merged = await f.p.evaluate(() => window.__desk.store.get('d2').fields);
-  const lastSet = (await f.log()).sets.filter(x => x.path === 'changes/d2').pop();
-  ok('frame: the union is written back to the store (the last write holds the remote field and the local record)',
-    lastSet && lastSet.obj.fields['archive.effect'] && lastSet.obj.fields['archive.effect'].value === 'Remote effect.' && lastSet.obj.fields['archive.presentation'] && lastSet.obj.fields['archive.presentation'].value === 'Local presentation.', JSON.stringify(lastSet && Object.keys(lastSet.obj.fields)));
+  const setsAfter = (await f.log()).sets.length;
+  ok('frame: the merge is in memory (remote field and local record) and the snapshot sends no write',
+    setsBefore >= 1 && setsAfter === setsBefore && merged['archive.effect'] && merged['archive.effect'].value === 'Remote effect.' && merged['archive.presentation'] && merged['archive.presentation'].value === 'Local presentation.', `sets ${setsBefore} -> ${setsAfter}`);
   ok('frame: a remote write on another field re-draws that field, and the local record survives',
     (await f.p.locator('[data-path="archive.effect"]').innerText()) === 'Remote effect.' && merged['archive.presentation'] && merged['archive.presentation'].value === 'Local presentation.' && (await f.p.locator('[data-path="archive.presentation"]').innerText()) === 'Local presentation.', JSON.stringify(Object.keys(merged)));
   await f.p.locator('[data-path="archive.abstract"]').focus();

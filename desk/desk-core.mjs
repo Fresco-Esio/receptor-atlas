@@ -310,8 +310,8 @@ const sameRecord = (a, b) => { if (!a || !b) return false; const { publishedAs: 
  *    (`published = { ...pulled, publishedAs: sha }`);
  *  - pulled but gone from `current` (deleted before marking): re-created as the published form of "back to
  *    the seed" — a tombstone for a field, flag set or review, a sources.remove for an add — carrying the
- *    pulled record, so publishedOnly still reproduces the repo. */
-export function markPublishedFrom(current, pulled, sha) {
+ *    pulled record, so publishedOnly still reproduces the repo; stamped `at` (the marking time). */
+export function markPublishedFrom(current, pulled, sha, at = new Date().toISOString()) {
   const c = clone(current);
   if (!pulled) return c;
   const p = clone(pulled), ps = p.sources || {};
@@ -322,7 +322,9 @@ export function markPublishedFrom(current, pulled, sha) {
     if (cur.publishedAs) return;
     if (sameRecord(cur, pr)) mark(cur); else cur.published = asPublished(pr);
   };
-  const tombstone = pr => pr.cleared ? asPublished(pr) : { cleared: true, at: pr.at, publishedAs: null, published: asPublished(pr) };
+  // a re-created revert is stamped with the marking time: it is newer than any copy of the pulled record
+  // another view may still hold, so it wins mergeChanges' later-`at` rule
+  const tombstone = pr => pr.cleared ? asPublished(pr) : { cleared: true, at, publishedAs: null, published: asPublished(pr) };
   // fields
   for (const [k, pr] of Object.entries(p.fields || {})) { if (c.fields[k]) settle(c.fields[k], pr); else c.fields[k] = tombstone(pr); }
   // a source's add or remove, one record per key
@@ -331,7 +333,7 @@ export function markPublishedFrom(current, pulled, sha) {
     const cur = c.sources.add.find(x => x.key === pr.key) || c.sources.remove.find(x => x.key === pr.key);
     if (cur) { settle(cur, pr); continue; }
     if ('is_primary' in pr) {            // an add, since deleted: a remove carrying it (and its library row)
-      c.sources.remove.push({ key: pr.key, at: pr.at, publishedAs: null, published: asPublished(pr) });
+      c.sources.remove.push({ key: pr.key, at, publishedAs: null, published: asPublished(pr) });
       if (p.library && p.library[pr.key] && !c.library[pr.key]) c.library[pr.key] = p.library[pr.key];
     } else c.sources.remove.push(asPublished(pr));
   }

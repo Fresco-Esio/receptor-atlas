@@ -575,9 +575,12 @@ test('markPublishedFrom re-creates pulled records deleted before marking, so pub
   cur = core.detachSource(cur, s, 'pmid:12505794', T2);
   cur = { ...cur, sources: { ...cur.sources, set: {} }, review: null };
   assert.deepEqual(core.countUnpublished([cur]), 0);
-  const m = core.markPublishedFrom(cur, pulled, 'sha1');
-  assert.deepEqual(m.fields['archive.abstract'], { cleared: true, at: AT, publishedAs: null, published: { value: 'New', at: AT, publishedAs: 'sha1' } });
-  assert.equal(m.sources.remove[0].key, 'pmid:12505794'); assert.equal(m.sources.remove[0].published.publishedAs, 'sha1');
+  const T3 = '2026-09-26T15:00:00.000Z';
+  const m = core.markPublishedFrom(cur, pulled, 'sha1', T3);
+  assert.deepEqual(m.fields['archive.abstract'], { cleared: true, at: T3, publishedAs: null, published: { value: 'New', at: AT, publishedAs: 'sha1' } }, 'stamped with the marking time');
+  assert.equal(m.sources.remove[0].key, 'pmid:12505794'); assert.equal(m.sources.remove[0].published.publishedAs, 'sha1'); assert.equal(m.sources.remove[0].at, T3);
+  assert.equal(core.mergeChanges(m, pulled).fields['archive.abstract'].cleared, true, 'the re-created revert beats a stale copy of the pulled record');
+  assert.ok(core.markPublishedFrom(cur, pulled, 'sha1').fields['archive.abstract'].at > T3, 'the marking time defaults to now');
   assert.ok(m.library['pmid:12505794'], 'the library row comes back with it');
   assert.equal(m.sources.set['pmid:24463000'].cleared, true);
   assert.equal(m.review.cleared, true);

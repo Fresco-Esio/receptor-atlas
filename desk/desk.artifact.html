@@ -531,8 +531,8 @@ const sameRecord = (a, b) => { if (!a || !b) return false; const { publishedAs: 
  *    (`published = { ...pulled, publishedAs: sha }`);
  *  - pulled but gone from `current` (deleted before marking): re-created as the published form of "back to
  *    the seed" — a tombstone for a field, flag set or review, a sources.remove for an add — carrying the
- *    pulled record, so publishedOnly still reproduces the repo. */
-function markPublishedFrom(current, pulled, sha) {
+ *    pulled record, so publishedOnly still reproduces the repo; stamped `at` (the marking time). */
+function markPublishedFrom(current, pulled, sha, at = new Date().toISOString()) {
   const c = clone(current);
   if (!pulled) return c;
   const p = clone(pulled), ps = p.sources || {};
@@ -543,7 +543,9 @@ function markPublishedFrom(current, pulled, sha) {
     if (cur.publishedAs) return;
     if (sameRecord(cur, pr)) mark(cur); else cur.published = asPublished(pr);
   };
-  const tombstone = pr => pr.cleared ? asPublished(pr) : { cleared: true, at: pr.at, publishedAs: null, published: asPublished(pr) };
+  // a re-created revert is stamped with the marking time: it is newer than any copy of the pulled record
+  // another view may still hold, so it wins mergeChanges' later-`at` rule
+  const tombstone = pr => pr.cleared ? asPublished(pr) : { cleared: true, at, publishedAs: null, published: asPublished(pr) };
   // fields
   for (const [k, pr] of Object.entries(p.fields || {})) { if (c.fields[k]) settle(c.fields[k], pr); else c.fields[k] = tombstone(pr); }
   // a source's add or remove, one record per key
@@ -552,7 +554,7 @@ function markPublishedFrom(current, pulled, sha) {
     const cur = c.sources.add.find(x => x.key === pr.key) || c.sources.remove.find(x => x.key === pr.key);
     if (cur) { settle(cur, pr); continue; }
     if ('is_primary' in pr) {            // an add, since deleted: a remove carrying it (and its library row)
-      c.sources.remove.push({ key: pr.key, at: pr.at, publishedAs: null, published: asPublished(pr) });
+      c.sources.remove.push({ key: pr.key, at, publishedAs: null, published: asPublished(pr) });
       if (p.library && p.library[pr.key] && !c.library[pr.key]) c.library[pr.key] = p.library[pr.key];
     } else c.sources.remove.push(asPublished(pr));
   }
@@ -5055,7 +5057,7 @@ const SEED = {
   }
  }
 };
-const BUILT_AT = '2026-09-26T19:37:09.943Z';
+const BUILT_AT = '2026-09-26T19:46:00.701Z';
 // ---------- storage: claude.ai db when it answers, else this browser ----------
 const LS = 'atlas-desk-changes-v1';
 const STORE_LABEL = { browser: 'this browser', 'claude.ai': 'claude.ai' };
@@ -5102,11 +5104,8 @@ const store = {
         if ((this.sent[id] || []).includes(body)) continue;   // the echo of this view's own write carries nothing new
         const before = this.all[id] ? canon(this.all[id]) : null;
         const merged = mergeChanges(this.all[id] || null, JSON.parse(JSON.stringify(data)));
-        const after = canon(merged);
-        if (after !== before) { this.all[id] = merged; changed = true; }
-        // the store holds less than the union (this view has records the other lacks): write the union back,
-        // through the same one-at-a-time queue, so every view converges on it
-        if (after !== body) this.put(merged);
+        // into memory only: never a write from here (a record received by merge is stored with the next edit)
+        if (canon(merged) !== before) { this.all[id] = merged; changed = true; }
       }
       if (changed) onChange();
     }, e => { toast('Live updates from other views stopped (' + ((e && e.code) || 'unknown') + '); reload to resume.', 5000); });
