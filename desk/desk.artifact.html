@@ -5235,7 +5235,7 @@ const SEED = {
   }
  }
 };
-const BUILT_AT = '2026-09-26T23:24:57.905Z';
+const BUILT_AT = '2026-09-26T23:55:21.879Z';
 // ---------- storage: claude.ai db when it answers, else this browser ----------
 const LS = 'atlas-desk-changes-v1';
 const STORE_LABEL = { browser: 'this browser', 'claude.ai': 'claude.ai' };
@@ -5363,7 +5363,7 @@ function editReview(id, patch) {
 // ---------- banner + picker ----------
 function renderBanner() {
   const all = store.list(); const unpub = countUnpublished(all), published = countPublished(all);
-  const receipt = !IN_FRAME && lastReceipt ? ` · last published <b>${esc(lastReceipt.sha.slice(0, 7))}</b> · ${esc(lastReceipt.at.slice(0, 10))}` : '';
+  const receipt = IN_FRAME ? '' : receiptHtml();
   $('#banner').innerHTML = `seed <b>${esc(SEED.builtAt.slice(0, 10))}</b> · ${published} published since · <b>${unpub} unpublished</b> · <span class="${store.mode === 'claude.ai' ? 'cloud' : ''}">store: ${esc(STORE_LABEL[store.mode])}</span>${receipt}`;
   const sel = $('#rx'); for (const o of sel.options) { const c = KNOWN.has(o.value) && store.all[o.value]; o.textContent = (c && countUnpublished([c]) ? '● ' : '') + seedOf(o.value).label; }
 }
@@ -5866,11 +5866,25 @@ function arrangeDownloads() {
 // ---------- Publish (browser mode only: the claude.ai frame cannot reach GitHub) ----------
 const GH = { owner: 'Fresco-Esio', repo: 'receptor-atlas', branch: 'main', file: 'db/curator-state.json' };
 const GH_API = 'https://api.github.com';
+const SITE = 'https://fresco-esio.github.io/receptor-atlas/';
 const TOKEN_KEY = 'atlas-desk-github-token', RECEIPT_KEY = 'atlas-desk-last-publish';
 let sessionToken = '';   // a token the owner chose not to remember
 const readToken = () => { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } };
 const token = () => sessionToken || readToken();
-const readReceipt = () => { try { const r = JSON.parse(localStorage.getItem(RECEIPT_KEY) || 'null'); return r && typeof r.sha === 'string' && typeof r.at === 'string' ? r : null; } catch (e) { return null; } };
+/** The last publish: { sha, at, url, live, ids }. `live`: the site reported this commit (older receipts: false);
+ *  `ids`: the receptors that publish carried, for the banner's link. */
+const readReceipt = () => { try { const r = JSON.parse(localStorage.getItem(RECEIPT_KEY) || 'null'); return r && typeof r.sha === 'string' && typeof r.at === 'string' ? { ...r, live: r.live === true, ids: Array.isArray(r.ids) ? r.ids.filter(x => typeof x === 'string') : [] } : null; } catch (e) { return null; } };
+function saveReceipt(r) { lastReceipt = r; try { localStorage.setItem(RECEIPT_KEY, JSON.stringify(r)); } catch (e) { /* the banner still shows it this session */ } }
+function receiptHtml() {
+  if (!lastReceipt) return '';
+  const sha7 = esc(lastReceipt.sha.slice(0, 7));
+  if (!lastReceipt.live) return ` · published <b>${sha7}</b> · site rebuilding…`;
+  const ids = lastReceipt.ids, r = seedOf(ids.includes(current) ? current : ids[0]);
+  const link = r && r.archiveAlias
+    ? `<a href="${esc(SITE + 'receptor-function.html#/entry/' + r.archiveAlias)}" target="_blank" rel="noopener">open ${esc(r.label)} ↗</a>`
+    : `<a href="${esc(SITE)}" target="_blank" rel="noopener">open the atlas ↗</a>`;
+  return ` · live on the site <b>${sha7}</b> · ${link}`;
+}
 const utf8ToB64 = text => { const b = new TextEncoder().encode(text); let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); };
 const b64ToUtf8 = b64 => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, '')), c => c.charCodeAt(0)));
 /** The one call to GitHub. The token goes in the Authorization header and nowhere else; without a token, or with
@@ -5892,6 +5906,39 @@ async function gh(method, path, body, { anon = false } = {}) {
   throw { code: 'http', message: 'GitHub answered ' + res.status + (msg ? ': ' + msg : '') };
 }
 const CONTENTS = `/repos/${GH.owner}/${GH.repo}/contents/${GH.file}`;
+/** The one call to the published site: anonymous, no headers, past the HTTP cache (Pages sends max-age=600). */
+async function siteFetch(path) {
+  let res;
+  try { res = await fetch(SITE + path, { cache: 'no-store' }); }
+  catch (e) { throw { code: 'network', message: 'the site could not be reached' }; }
+  if (!res.ok) throw { code: 'http', message: 'the site answered ' + res.status };
+  return res.json();
+}
+// After a publish the site rebuilds (a minute or two); its data/build.json names the commit it was built from.
+let POLL_MS = 15000, watchRun = 0;
+const POLL_TRIES = 24;   // ~6 minutes at 15 s
+/** Watch the site until it reports `sha`, then mark the receipt live. One watcher at a time: a newer call stops an
+ *  older one. A request that fails outright (offline, or the site unreadable from here) stops it silently; an HTTP
+ *  error or an unreadable answer counts as "not yet". `tries: 1, now: true` is the single check at boot. */
+async function watchSite(sha, { tries = POLL_TRIES, now: atOnce = false } = {}) {
+  const run = ++watchRun, sha7 = sha.slice(0, 7);
+  for (let i = 0; i < tries; i++) {
+    if (i || !atOnce) await sleep(POLL_MS);
+    if (run !== watchRun) return;
+    let build;
+    try { build = await siteFetch('data/build.json'); }
+    catch (e) { if (e && e.code === 'network') return; continue; }
+    if (run !== watchRun) return;
+    const commit = build && typeof build.commit === 'string' ? build.commit : '';
+    if (commit !== sha && !commit.startsWith(sha7)) continue;
+    const stored = readReceipt();
+    if (!lastReceipt || lastReceipt.sha !== sha || (stored && stored.sha !== sha)) return;   // another publish took over
+    saveReceipt({ ...lastReceipt, live: true });
+    renderBanner();
+    if (!atOnce) toast('Live on the site.');
+    return;
+  }
+}
 /** A small dialog; returns what the button clicked resolves to. `buttons`: [{ label, data, primary, value }]. */
 function dialog(id, title, bodyHtml, buttons) {
   closeModal();
@@ -5964,10 +6011,11 @@ async function publish() {
     btn.textContent = 'Committing…';
     const res = await gh('PUT', CONTENTS, { message: prep.subject, content: utf8ToB64(prep.text), sha: file.sha, branch: GH.branch });
     const sha = res.commit.sha, at = now();
+    const lastPublishedIds = changes.filter(c => countUnpublished([c])).map(c => c.receptorId);
     for (const pulled of changes) store.put(markPublishedFrom(store.get(pulled.receptorId), pulled, sha, at));
-    try { localStorage.setItem(RECEIPT_KEY, JSON.stringify({ sha, at, url: res.commit.html_url || '' })); } catch (e) { /* the banner still shows it this session */ }
-    lastReceipt = { sha, at, url: res.commit.html_url || '' };
+    saveReceipt({ sha, at, url: res.commit.html_url || '', live: false, ids: lastPublishedIds });
     renderBanner();
+    watchSite(sha);
     if (editingNow()) deferredRender = true; else { flush(); render(); }   // not under the caret: re-drawn once focus leaves
     toast('Published as ' + sha.slice(0, 7) + ' · the site rebuilds in a minute or two.', 6000);
   } catch (e) {
@@ -6144,7 +6192,9 @@ store.subscribe(onRemoteChange);
 // The PubMed connector, once; the source form reads `mcp` each time it opens.
 try { if (window.claude?.use) mcp = await window.claude.use('mcp'); } catch { mcp = null; }
 // expose for the walkthrough (after boot, so its presence means the page is ready)
-window.__desk = { SEED, BUILT_AT, store, toCuratorState, markPublished, markPublishedFrom, mergeChanges, preparePublish, publish, rekeyStale, flush, view: () => view(), rekeyDone: false };
+window.__desk = { SEED, BUILT_AT, store, toCuratorState, markPublished, markPublishedFrom, mergeChanges, preparePublish, publish, rekeyStale, flush, view: () => view(), setPollMs: ms => { POLL_MS = ms; }, rekeyDone: false };
+// A receipt still "rebuilding" from an earlier visit: one look at the site, no polling loop.
+if (!IN_FRAME && lastReceipt && !lastReceipt.live) watchSite(lastReceipt.sha, { tries: 1, now: true });
 try { await rekeyStale(); } catch (e) { toast('Re-keying stopped: ' + ((e && e.message) || e), 7000); }
 window.__desk.rekeyDone = true;
 </script>

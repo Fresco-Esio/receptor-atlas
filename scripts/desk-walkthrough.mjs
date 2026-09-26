@@ -29,8 +29,8 @@ const SEED = JSON.parse(readFileSync(join(HERE, '..', 'desk', 'seed.json'), 'utf
 const html = readFileSync(FILE, 'utf8');
 const external = [...html.matchAll(/\b(?:src|href)\s*=\s*["'](https?:)?\/\/[^"']+/gi)].map(m => m[0]);
 const fetches = (html.match(/\bfetch\s*\(/g) || []).length;
-ok('build is self-contained (no <script src>, one fetch() to api.github.com, only Google Fonts loaded)',
-  !/<script[^>]*\bsrc=/i.test(html) && fetches === 1 && html.includes("GH_API = 'https://api.github.com'") && external.every(u => /fonts\.(googleapis|gstatic)\.com/.test(u)),
+ok('build is self-contained (no <script src>, two fetch(): api.github.com and the site\'s build.json, only Google Fonts loaded)',
+  !/<script[^>]*\bsrc=/i.test(html) && fetches === 2 && html.includes("GH_API = 'https://api.github.com'") && html.includes("SITE = 'https://fresco-esio.github.io/receptor-atlas/'") && external.every(u => /fonts\.(googleapis|gstatic)\.com/.test(u)),
   `fetch() × ${fetches}; ` + external.filter(u => !/fonts\.(googleapis|gstatic)\.com/.test(u)).join(', '));
 // api.github.com answers Cache-Control: private, max-age=60, and the GET (?ref=main) is not the PUT's URL, so a cached
 // GET would hand a second publish a stale blob sha. Playwright's routing turns the HTTP cache off, so this is static.
@@ -248,7 +248,14 @@ ok('no page errors in the Provenance layer', errors.length === 0, errors.join(' 
 // --- Publish button (browser mode) against a faked GitHub ---
 const utf8b64 = t => Buffer.from(t, 'utf8').toString('base64');
 async function fakeGitHub(context, cfg) {
-  const log = { gets: 0, puts: [], putAuth: [], compares: [], auth: [] };
+  const log = { gets: 0, puts: [], putAuth: [], compares: [], auth: [], builds: 0, siteAborts: 0 };
+  // the published site's build.json: an older commit until `siteFlip` polls have been answered, then the PUT's commit
+  await context.route('https://fresco-esio.github.io/receptor-atlas/data/build.json', async route => {
+    if (cfg.siteAbort) { log.siteAborts++; return route.abort(); }
+    log.builds++;
+    const commit = cfg.siteFlip != null && log.builds > cfg.siteFlip ? 'c0ffee1234567890c0ffee1234567890c0ffee12' : (cfg.siteCommit || 'e14bd39e14bd39e14bd39e14bd39e14bd39e14b');
+    return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ commit, builtAt: '2026-09-26T12:00:00.000Z' }) });
+  });
   await context.route('https://api.github.com/**', async route => {
     const req = route.request(); const url = new URL(req.url()); log.auth.push(req.headers()['authorization'] || '');
     const contents = url.pathname === '/repos/Fresco-Esio/receptor-atlas/contents/db/curator-state.json';
@@ -267,7 +274,7 @@ async function fakeGitHub(context, cfg) {
 {
   const pctx = await browser.newContext(); const p = await pctx.newPage();
   const perrs = []; p.on('pageerror', e => perrs.push(e.message));
-  const gh = await fakeGitHub(pctx, { repoState: SEED.baseState });
+  const gh = await fakeGitHub(pctx, { repoState: SEED.baseState, siteFlip: 2 });
   await p.goto(PAGE); await p.waitForFunction(() => window.__desk); await p.selectOption('#rx', 'd2');
   ok('browser mode shows Publish and GitHub…', await p.locator('#pub:not(.hidden)').count() === 1 && await p.locator('#ghset:not(.hidden)').count() === 1);
   await p.locator('#pub').click(); await p.waitForTimeout(200);
@@ -285,15 +292,25 @@ async function fakeGitHub(context, cfg) {
   await p.selectOption('#rx', 'd1'); await p.waitForTimeout(200);
   ok('a confirm dialog closed by a receptor switch settles: Publish re-enabled, no PUT', await p.evaluate(() => document.querySelector('#pub').textContent === 'Publish' && !document.querySelector('#pub').disabled && !document.querySelector('#modalBg')) && gh.puts.length === 0);
   await p.selectOption('#rx', 'd2');
+  await p.evaluate(() => window.__desk.setPollMs?.(150));
   await p.locator('#pub').click(); await p.waitForFunction(() => document.querySelector('#modalBg #pc-h')); await p.locator('#modalBg [data-go]').click();
   await p.waitForFunction(() => document.querySelector('#pub').textContent === 'Publish' && !document.querySelector('#pub').disabled);
+  const rebuilding = await p.locator('#banner').innerText();
   // marking changes publishedAs only; the converter reads values, so the store still converts to the committed bytes
   const expectedText = await p.evaluate(() => JSON.stringify(window.__desk.toCuratorState(window.__desk.SEED, window.__desk.store.list()), null, 1) + '\n');
   const put = gh.puts[0] || {};
   ok('PUT carries the subject, the blob sha, the branch, and the converter\'s bytes', gh.puts.length === 1 && put.message === 'curate: 1 narrative edit' && put.sha === 'blob111' && put.branch === 'main' && Buffer.from(put.content, 'base64').toString('utf8') === expectedText);
   ok('the PUT is sent with the token in the Authorization header', gh.putAuth.length === 1 && gh.putAuth[0] === 'Bearer github_pat_TEST', JSON.stringify(gh.putAuth.map(a => a.slice(0, 12))));
   ok('every publish attempt reads the repo file (three attempts, three GETs)', gh.gets === 3, `gets=${gh.gets}`);
-  ok('records marked published with the commit sha; receipt stored; banner shows it', await p.evaluate(() => window.__desk.store.get('d2').fields['archive.abstract'].publishedAs === 'c0ffee1234567890c0ffee1234567890c0ffee12' && JSON.parse(localStorage.getItem('atlas-desk-last-publish')).sha.startsWith('c0ffee1')) && /· last published c0ffee1 · \d{4}-\d{2}-\d{2}$/.test(await p.locator('#banner').innerText()));
+  ok('records marked published with the commit sha; receipt stored; banner says the site is rebuilding', await p.evaluate(() => window.__desk.store.get('d2').fields['archive.abstract'].publishedAs === 'c0ffee1234567890c0ffee1234567890c0ffee12' && JSON.parse(localStorage.getItem('atlas-desk-last-publish')).sha.startsWith('c0ffee1')) && / · published c0ffee1 · site rebuilding…$/.test(rebuilding), rebuilding);
+  const wentLive = await p.waitForFunction(() => document.querySelector('#banner').innerText.includes('live on the site c0ffee1'), null, { timeout: 1500 }).then(() => true, () => false);
+  const liveLink = await p.evaluate(() => { const a = document.querySelector('#banner a'); return a ? { href: a.getAttribute('href'), text: a.textContent, target: a.target, rel: a.rel } : null; });
+  ok('the Desk watches the rebuild: within 1.5 s the banner says "live on the site c0ffee1" with a link to the edited entry',
+    wentLive && liveLink && liveLink.href === 'https://fresco-esio.github.io/receptor-atlas/receptor-function.html#/entry/' + d2.archiveAlias && liveLink.text === 'open Dopamine D2 ↗' && liveLink.target === '_blank' && liveLink.rel === 'noopener',
+    JSON.stringify({ banner: await p.locator('#banner').innerText(), liveLink }));
+  const rcpt = await p.evaluate(() => JSON.parse(localStorage.getItem('atlas-desk-last-publish')));
+  ok('the stored receipt turns live and names the published receptors; build.json was polled until it matched', rcpt.live === true && JSON.stringify(rcpt.ids) === '["d2"]' && gh.builds >= 3, JSON.stringify({ rcpt, builds: gh.builds }));
+  ok('going live says so once: toast "Live on the site."', (await p.locator('.toast').innerText().catch(() => '')) === 'Live on the site.');
   ok('publish pass: no page errors', perrs.length === 0, perrs.join(' | '));
   await pctx.close();
 }
@@ -319,12 +336,39 @@ async function fakeGitHub(context, cfg) {
   ok('after a rejected token the Publish button is back and enabled', await p.evaluate(() => document.querySelector('#pub').textContent === 'Publish' && !document.querySelector('#pub').disabled));
   await pctx.close();
 }
+{ // the site cannot be reached (the request fails outright): one try, then silence; the receipt stays "rebuilding"
+  const pctx = await browser.newContext(); const p = await pctx.newPage();
+  const perrs = []; p.on('pageerror', e => perrs.push(e.message));
+  const gh = await fakeGitHub(pctx, { repoState: SEED.baseState, siteAbort: true });
+  await p.goto(PAGE); await p.waitForFunction(() => window.__desk); await p.evaluate(() => { localStorage.setItem('atlas-desk-github-token', 't'); window.__desk.setPollMs?.(150); });
+  await p.selectOption('#rx', 'd2'); await p.locator('[data-path="archive.abstract"]').fill('Published, site unreachable.'); await p.waitForTimeout(500);
+  await p.locator('#pub').click(); await p.waitForFunction(() => document.querySelector('#modalBg #pc-h')); await p.locator('#modalBg [data-go]').click();
+  await p.waitForFunction(() => document.querySelector('#pub').textContent === 'Publish' && !document.querySelector('#pub').disabled);
+  await p.waitForTimeout(1000);
+  const b = await p.locator('#banner').innerText();
+  ok('site unreachable: the banner stays "site rebuilding…", polling stops after the first failure, no page errors',
+    / · published c0ffee1 · site rebuilding…$/.test(b) && gh.builds === 0 && gh.siteAborts === 1 && perrs.length === 0 && await p.evaluate(() => JSON.parse(localStorage.getItem('atlas-desk-last-publish')).live === false),
+    JSON.stringify({ b, builds: gh.builds, aborts: gh.siteAborts, perrs }));
+  await pctx.close();
+}
+for (const [label, siteCommit, live] of [['already at the receipt\'s commit', 'c0ffee1234567890c0ffee1234567890c0ffee12', true], ['still at an older commit', null, false]]) { // boot: one check of a stored "rebuilding" receipt
+  const pctx = await browser.newContext();
+  await pctx.addInitScript(() => { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); localStorage.setItem('atlas-desk-last-publish', JSON.stringify({ sha: 'c0ffee1234567890c0ffee1234567890c0ffee12', at: '2026-09-26T12:00:00.000Z', url: '', live: false, ids: ['d2'] })); } });
+  const gh = await fakeGitHub(pctx, { repoState: SEED.baseState, siteCommit });
+  const p = await pctx.newPage(); const perrs = []; p.on('pageerror', e => perrs.push(e.message));
+  await p.goto(PAGE); await p.waitForFunction(() => window.__desk); await p.waitForTimeout(600);
+  const b = await p.locator('#banner').innerText(); const r = await p.evaluate(() => JSON.parse(localStorage.getItem('atlas-desk-last-publish')));
+  ok(`boot, site ${label}: ` + (live ? 'the receipt turns live ("live on the site c0ffee1")' : 'one build.json request, the banner stays "site rebuilding…"'),
+    perrs.length === 0 && gh.builds === 1 && (live ? b.includes('live on the site c0ffee1') && r.live === true : / · published c0ffee1 · site rebuilding…$/.test(b) && r.live === false),
+    JSON.stringify({ b, builds: gh.builds, r, perrs }));
+  await pctx.close();
+}
 { // the token dialog on its own: empty Save, remember off (session only), Forget; a malformed receipt does not break the page
   const pctx = await browser.newContext();
   await pctx.addInitScript(() => { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); localStorage.setItem('atlas-desk-last-publish', JSON.stringify({ sha: 'abc' })); } });
   const p = await pctx.newPage(); const perrs = []; p.on('pageerror', e => perrs.push(e.message));
   await p.goto(PAGE); await p.waitForFunction(() => window.__desk, null, { timeout: 15000 });
-  ok('a malformed publish receipt is ignored: the page renders, no receipt in the banner', perrs.length === 0 && !(await p.locator('#banner').innerText()).includes('last published') && await p.locator('#rx option').count() === 24, perrs.join(' | '));
+  ok('a malformed publish receipt is ignored: the page renders, no receipt in the banner', perrs.length === 0 && !/ · (published \w+ · site rebuilding|live on the site)/.test(await p.locator('#banner').innerText()) && await p.locator('#rx option').count() === 24, perrs.join(' | '));
   await p.locator('#ghset').click(); await p.waitForFunction(() => document.querySelector('#modalBg #gh-h'));
   ok('no token held: the dialog offers no Forget', await p.locator('#modalBg [data-forget]').count() === 0);
   await p.locator('#modalBg [data-save]').click(); await p.waitForTimeout(100);
@@ -555,6 +599,7 @@ async function framePage(cfg) {
   await fctx.addInitScript(cfg => {
     const L = window.__fakeLog = { sets: [], inflight: 0, maxInflight: 0, reads: 0, saves: [], calls: [], subs: 0 };
     if (cfg.ls) localStorage.setItem('atlas-desk-changes-v1', JSON.stringify(cfg.ls));
+    if (cfg.receipt) localStorage.setItem('atlas-desk-last-publish', JSON.stringify(cfg.receipt));
     const asSnap = docs => ({ docs: Object.entries(docs).map(([id, d]) => ({ id, data: () => d })) });
     // the test hook: push(docs) delivers { id: body } to the page's subscription as another view's write
     window.__fakeDb = { cb: null, push(docs) { if (this.cb) this.cb(asSnap(docs)); } };
@@ -583,16 +628,19 @@ async function framePage(cfg) {
       return null;
     } };
   }, cfg);
+  let siteHits = 0; await fctx.route('https://fresco-esio.github.io/**', r => { siteHits++; return r.abort(); });
   const p = await fctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
   let downloads = 0; p.on('download', () => downloads++);
   await p.goto(PAGE); await p.waitForFunction(() => window.__desk, null, { timeout: 15000 });
-  return { p, fctx, errs, downloads: () => downloads, log: () => p.evaluate(() => window.__fakeLog) };
+  return { p, fctx, errs, downloads: () => downloads, siteHits: () => siteHits, log: () => p.evaluate(() => window.__fakeLog) };
 }
 { // db never answers: retried once, then this browser, with a toast
-  const f = await framePage({ db: 'down', dl: 'ok' });
+  const f = await framePage({ db: 'down', dl: 'ok', receipt: { sha: 'c0ffee1234567890c0ffee1234567890c0ffee12', at: '2026-09-26T12:00:00.000Z', url: '', live: false, ids: ['d2'] } });
   const toastText = await f.p.locator('.toast').innerText().catch(() => '');
   ok('frame: a failing store read is retried once, then the page works in this browser',
     (await f.log()).reads === 2 && / · store: this browser$/.test(await f.p.locator('#banner').innerText()) && toastText === 'claude.ai store did not answer; working in this browser', toastText);
+  ok('frame (store fell back to this browser): no publish receipt in the banner and no request to the site, even with a stored "rebuilding" receipt',
+    / · store: this browser$/.test(await f.p.locator('#banner').innerText()) && await f.p.locator('#banner a').count() === 0 && f.siteHits() === 0, `${await f.p.locator('#banner').innerText()} · site requests ${f.siteHits()}`);
   ok('frame: Publish, GitHub… and Import changes are hidden', await f.p.locator('#pub.hidden').count() === 1 && await f.p.locator('#ghset.hidden').count() === 1 && await f.p.locator('#imp.hidden').count() === 1);
   await f.p.selectOption('#rx', 'd2'); await f.p.locator('[data-path="archive.abstract"]').fill('Local.'); await f.p.waitForTimeout(450);
   ok('frame: after the fallback no write goes to the store', (await f.log()).sets.length === 0 && await f.p.evaluate(() => !!JSON.parse(localStorage.getItem('atlas-desk-changes-v1')).d2));
