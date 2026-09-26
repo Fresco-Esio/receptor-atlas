@@ -54,6 +54,12 @@
    "volume": "ledger",
    "last_edited_at": null,
    "last_reviewed_at": "2026-08-19T23:21:46.040Z"
+  },
+  {
+   "receptor_id": "d1",
+   "volume": "archive",
+   "last_edited_at": "2026-09-26T23:41:21.532Z",
+   "last_reviewed_at": null
   }
  ],
  "bindingReview": [],
@@ -280,6 +286,9 @@
     "abstract": "SERT terminates serotonergic transmission by sodium-coupled reuptake, controlling the duration and spread of every serotonergic signal; it is the target of the most widely used class of antidepressants, SSRIs, and its causal role in depression itself remains disputed.",
     "body_json": "[\"SERT clears serotonin from the synapse, determining the half-life of each serotonergic signal. By mediating reuptake of 5-HT (serotonin) into presynaptic neurons, SERT regulates serotinergic signaling throughout the brain. Due to interactions with other key cerebral molecules and its contribution to neurotransmission, SERT plays an integral role in the pathophysiology of depression. Activity and expression of SERT is regulated by pro-inflammatory cytokines and growth factors which then affects serotonin transmission and neural plasticity. Other influencers of SERT function include environmental exposure, diet, gut microbiota, and therapy. Genetic variations in the SLC6A4 gene influence the expression and function of SERT which leads to differences in depression symptoms as well as treatment response.\"]",
     "tags_json": "[\"Serotonin signal duration\",\"Mood regulation\"]"
+   },
+   "d1": {
+    "body_json": "[\"D1 is the dominant dopamine receptor in the prefrontal cortex, where it sustains signal in task-relevant circuits. The relationship between D1 stimulation and cognitive performance is non-linear: insufficient dopamine impairs the persistent firing that working memory requires, while excess dopamine drives haphazard, disorganised activity. In schizophrenia, the negative and cognitive symptoms (flat affect, alogia, avolition, poor working memory) are linked to insufficient prefrontal D1 tone; disorganised thought and positive symptoms track more closely with NMDA hypofunction and mesolimbic dopamine excess than with the prefrontal D1 curve itself.\"]"
    },
    "d2": {
     "abstract": "The dopamine receptor that governs its own transmitter's supply. D2 sits presynaptically on midbrain dopamine neurons, where it slows firing and suppresses release, and postsynaptically on the striatal projection neurons of the indirect pathway. What deviates at D2 is dopamine availability rather than the receptor itself, which is why it is at once the most heavily occupied target in psychiatric pharmacology and an unconvincing site of primary pathology.",
