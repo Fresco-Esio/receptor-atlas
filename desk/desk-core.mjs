@@ -27,10 +27,8 @@ export function emptyChanges(receptorId, seedCommit) {
   return { receptorId, seedCommit, fields: {}, sources: { add: [], remove: [], set: {} }, library: {}, spans: [], review: null };
 }
 
-/** Which volume a field path belongs to, for the activity stamp. */
-function volumeOf(path) { return path === 'claim' ? 'cabinet' : path.startsWith('clinical.') ? 'ledger' : 'archive'; }
-
 export function setField(changes, path, value, at) {
+  if (path !== 'claim' && !path.startsWith('archive.') && !path.startsWith('clinical.')) throw new Error('unknown field path: ' + path);
   const c = clone(changes);
   c.fields[path] = { value: Array.isArray(value) ? [...value] : value, at, publishedAs: null };
   return c;
@@ -55,28 +53,37 @@ export function attachSource(changes, seed, meta, flags, at) {
 export function detachSource(changes, seed, key, at) {
   const c = clone(changes);
   const i = c.sources.add.findIndex(s => s.key === key);
-  if (i < 0) throw new Error('seeded source: flag it as conflicting instead');
+  if (i < 0) {
+    const r = seedReceptorOf(seed, c.receptorId);
+    if (r && seededSource(r, key)) throw new Error('seeded source: flag it as conflicting instead');
+    throw new Error('unknown source: ' + key);
+  }
   c.sources.add.splice(i, 1); delete c.library[key]; delete c.sources.set[key];
   c.spans = c.spans.filter(sp => sp.sourceKey !== key);
   return c;
 }
 
+/** A flag counts as "set by the caller" only when it isn't undefined — `{ is_primary: undefined }`
+ *  leaves the stored value alone, while an explicit `null` (correction_note) still clears it. */
+const given = (flags, k) => flags[k] !== undefined;
+
 export function setSourceFlags(changes, seed, key, flags, at) {
   const c = clone(changes);
   const added = c.sources.add.find(s => s.key === key);
-  if (added) { Object.assign(added, { is_primary: has(flags, 'is_primary') ? flags.is_primary : added.is_primary, conflicting: has(flags, 'conflicting') ? flags.conflicting : added.conflicting, correction_note: has(flags, 'correction_note') ? flags.correction_note : added.correction_note, at, publishedAs: null }); return c; }
+  if (added) { Object.assign(added, { is_primary: given(flags, 'is_primary') ? flags.is_primary : added.is_primary, conflicting: given(flags, 'conflicting') ? flags.conflicting : added.conflicting, correction_note: given(flags, 'correction_note') ? flags.correction_note : added.correction_note, at, publishedAs: null }); return c; }
   const r = seedReceptorOf(seed, c.receptorId);
   const seeded = (r.sources || []).find(s => s.key === key);
   if (!seeded) throw new Error('unknown source');
   const prev = c.sources.set[key] || { is_primary: seeded.is_primary, conflicting: seeded.status === 'conflicting', correction_note: seeded.correction_note };
-  c.sources.set[key] = { is_primary: has(flags, 'is_primary') ? flags.is_primary : prev.is_primary, conflicting: has(flags, 'conflicting') ? flags.conflicting : prev.conflicting, correction_note: has(flags, 'correction_note') ? flags.correction_note : prev.correction_note, at, publishedAs: null };
+  c.sources.set[key] = { is_primary: given(flags, 'is_primary') ? flags.is_primary : prev.is_primary, conflicting: given(flags, 'conflicting') ? flags.conflicting : prev.conflicting, correction_note: given(flags, 'correction_note') ? flags.correction_note : prev.correction_note, at, publishedAs: null };
   return c;
 }
 
+/** Stores only the keys the caller passed (plus at/publishedAs), merged over any previously
+ *  stored partial — a partial update must not erase marks or the note set earlier. */
 export function setReview(changes, marks, at) {
   const c = clone(changes);
-  const prev = c.review || { mechanism: 0, affinity: 0, clinical: 0, note: '' };
-  c.review = { ...prev, ...marks, at, publishedAs: null };
+  c.review = { ...(c.review || {}), ...marks, at, publishedAs: null };
   return c;
 }
 
@@ -84,8 +91,9 @@ export function setReview(changes, marks, at) {
 export function viewOf(seedReceptor, changes) {
   const v = clone(seedReceptor);
   for (const [path, f] of Object.entries(changes.fields)) {
-    if (path === 'claim') v.claim = f.value;
-    else { const [vol, field] = path.split('.'); if (!v[vol]) v[vol] = {}; v[vol][field] = f.value; }
+    const val = Array.isArray(f.value) ? [...f.value] : f.value;
+    if (path === 'claim') v.claim = val;
+    else { const [vol, field] = path.split('.'); if (!v[vol]) v[vol] = {}; v[vol][field] = val; }
   }
   const sources = (v.sources || []).map(s => {
     const set = changes.sources.set[s.key];
@@ -93,7 +101,16 @@ export function viewOf(seedReceptor, changes) {
   });
   for (const a of changes.sources.add) sources.push({ key: a.key, is_primary: a.is_primary, status: a.conflicting ? 'conflicting' : 'verified', correction_note: a.correction_note, added: true });
   v.sources = sources;
-  if (changes.review) v.review = { ...v.review, mechanism: changes.review.mechanism, affinity: changes.review.affinity, clinical: changes.review.clinical, note: changes.review.note };
+  if (changes.review) {
+    const base = v.review || { mechanism: 0, affinity: 0, clinical: 0, citation: 0, mastery: 0, note: '' };
+    v.review = {
+      ...base,
+      mechanism: has(changes.review, 'mechanism') ? changes.review.mechanism : base.mechanism,
+      affinity: has(changes.review, 'affinity') ? changes.review.affinity : base.affinity,
+      clinical: has(changes.review, 'clinical') ? changes.review.clinical : base.clinical,
+      note: has(changes.review, 'note') ? changes.review.note : base.note,
+    };
+  }
   return v;
 }
 
@@ -117,7 +134,9 @@ export function toCuratorState(seed, changesList) {
   };
 
   for (const c of changesList) {
-    const id = c.receptorId; const r = seedReceptorOf(seed, id); const no = r.clinicalNo;
+    const id = c.receptorId; const r = seedReceptorOf(seed, id);
+    if (!r) throw new Error('unknown receptor: ' + id);
+    const no = r.clinicalNo;
     // --- content fields ---
     const arch = { ...(out.content.archive[id] || {}) }, clin = { ...(no != null ? out.content.clinical[no] || {} : {}) };
     for (const [path, f] of Object.entries(c.fields)) {
@@ -128,6 +147,7 @@ export function toCuratorState(seed, changesList) {
         if (eq(raw, (P.archive[id] || {})[col])) delete arch[col]; else arch[col] = raw;
         stamp(id, 'archive', f.at);
       } else {
+        if (no == null) throw new Error('receptor has no Ledger row: ' + id);
         const col = CLINICAL_LIST[field] || field; const raw = CLINICAL_LIST[field] ? JSON.stringify(f.value ?? []) : f.value;
         if (eq(raw, (P.clinical[no] || {})[col])) delete clin[col]; else clin[col] = raw;
         stamp(id, 'ledger', f.at);
@@ -144,10 +164,18 @@ export function toCuratorState(seed, changesList) {
       if (pr && pr.status === edge.status && (pr.is_primary ? 1 : 0) === edge.is_primary && eq(pr.correction_note, edge.correction_note)) dropEdge(id, key); else upsertEdge(edge);
       stamp(id, 'archive', s.at);
     }
-    // --- review ---
+    // --- review: only the keys the caller actually set override the base; citation/mastery
+    // are Desk-only fields with no setter here, so they always come from the base. ---
     if (c.review) {
       const base = out.review[id] || P.review[id] || { mechanism: 0, affinity: 0, clinical: 0, citation: 0, mastery: 0, note: '' };
-      const rv = { mechanism: c.review.mechanism | 0, affinity: c.review.affinity | 0, clinical: c.review.clinical | 0, citation: base.citation | 0, mastery: base.mastery | 0, note: c.review.note || '' };
+      const rv = {
+        mechanism: (has(c.review, 'mechanism') ? c.review.mechanism : base.mechanism) | 0,
+        affinity: (has(c.review, 'affinity') ? c.review.affinity : base.affinity) | 0,
+        clinical: (has(c.review, 'clinical') ? c.review.clinical : base.clinical) | 0,
+        citation: base.citation | 0,
+        mastery: base.mastery | 0,
+        note: has(c.review, 'note') ? (c.review.note || '') : (base.note || ''),
+      };
       if (!rv.mechanism && !rv.affinity && !rv.clinical && !rv.citation && !rv.mastery && !rv.note) delete out.review[id]; else out.review[id] = rv;
       for (const vol of r.volumes || VOLUMES) stamp(id, vol, null, c.review.at);
     }

@@ -155,3 +155,100 @@ test('summarise, markPublished, countUnpublished, rekey', () => {
   const u = core.rekey(core.setField(p, 'claim', 'x', AT), { ...s, commit: 'new1234' });
   assert.deepEqual(Object.keys(u.fields), ['claim'], 'unpublished ones survive a re-seed');
 });
+
+// --- fix round 1 ---
+
+test('setReview merges a partial update over the previous stored partial and over the base on export', () => {
+  const s = seed();
+  s.baseState.review.d2 = { mechanism: 1, affinity: 0, clinical: 0, citation: 0, mastery: 0, note: 'prior note' };
+  s.receptors[0].review = { mechanism: 1, affinity: 0, clinical: 0, citation: 0, mastery: 0, note: 'prior note' };
+  const c = core.setReview(core.emptyChanges('d2', s.commit), { affinity: 1 }, AT);
+  const out = core.toCuratorState(s, [c]);
+  assert.deepEqual(out.review.d2, { mechanism: 1, affinity: 1, clinical: 0, citation: 0, mastery: 0, note: 'prior note' });
+  const v = core.viewOf(s.receptors[0], c);
+  assert.equal(v.review.note, 'prior note');
+});
+
+test('setField rejects an unknown field path', () => {
+  const s = seed();
+  assert.throws(() => core.setField(core.emptyChanges('d2', s.commit), 'nope', 'x', AT), /unknown field path: nope/);
+});
+
+test('a clinical.* edit for a receptor with no Ledger row throws', () => {
+  const s = seed(); s.receptors[0].clinicalNo = null;
+  const c = core.setField(core.emptyChanges('d2', s.commit), 'clinical.onset', 'days', AT);
+  assert.throws(() => core.toCuratorState(s, [c]), /receptor has no Ledger row: d2/);
+});
+
+test('toCuratorState rejects an unknown receptorId', () => {
+  const s = seed();
+  const c = core.emptyChanges('ghost', s.commit);
+  assert.throws(() => core.toCuratorState(s, [c]), /unknown receptor: ghost/);
+});
+
+test('detachSource on a key that is neither seeded nor added throws "unknown source"', () => {
+  const s = seed();
+  const c = core.emptyChanges('d2', s.commit);
+  assert.throws(() => core.detachSource(c, s, 'pmid:000000', AT), /unknown source: pmid:000000/);
+});
+
+test('viewOf clones list values so the view never shares arrays with the store', () => {
+  const s = seed(); let c = core.emptyChanges('d2', s.commit);
+  c = core.setField(c, 'clinical.over', ['o1', 'o2'], AT);
+  const v = core.viewOf(s.receptors[0], c);
+  v.clinical.over.push('o3');
+  assert.deepEqual(c.fields['clinical.over'].value, ['o1', 'o2'], 'mutating the view must not mutate the stored change');
+});
+
+test('setSourceFlags on a change-added source: flip conflicting on, then note null clears it', () => {
+  const s = seed(); let c = core.emptyChanges('d2', s.commit);
+  const meta = { kind: 'article', authors: 'X', year: 2020, title: 'T', journal: 'J', pmid: '999', doi: null, url: null, notes: null };
+  c = core.attachSource(c, s, meta, { is_primary: 0 }, AT);
+  c = core.setSourceFlags(c, s, 'pmid:999', { conflicting: true, correction_note: 'flagged' }, AT);
+  let out = core.toCuratorState(s, [c]);
+  assert.deepEqual(out.receptorSources, [{ receptor_id: 'd2', source: 'pmid:999', status: 'conflicting', is_primary: 0, correction_note: 'flagged' }]);
+  c = core.setSourceFlags(c, s, 'pmid:999', { correction_note: null }, AT);
+  out = core.toCuratorState(s, [c]);
+  assert.deepEqual(out.receptorSources, [{ receptor_id: 'd2', source: 'pmid:999', status: 'conflicting', is_primary: 0, correction_note: null }], 'conflicting untouched, note cleared');
+});
+
+test('setSourceFlags: an explicit undefined flag does not overwrite the stored value', () => {
+  const s = seed(); let c = core.emptyChanges('d2', s.commit);
+  c = core.setSourceFlags(c, s, 'pmid:24463000', { conflicting: true, correction_note: 'n' }, AT);
+  c = core.setSourceFlags(c, s, 'pmid:24463000', { is_primary: undefined, conflicting: undefined }, AT);
+  const out = core.toCuratorState(s, [c]);
+  assert.deepEqual(out.receptorSources, [{ receptor_id: 'd2', source: 'pmid:24463000', status: 'conflicting', is_primary: 1, correction_note: 'n' }]);
+});
+
+function twoReceptorSeed() {
+  const s = seed();
+  s.receptors.push({
+    id: 'mu', label: 'Mu Opioid Receptor', system: 'opioid', hall: 'opioid', volumes: ['archive', 'cabinet', 'ledger'],
+    archiveAlias: '9', clinicalNo: 9,
+    archive: { abstract: 'Mu abstract.', presentation: 'p', effect: 'e', receptor_class: 'GPCR', ligand: 'Endorphin', figure_caption: 'Fig',
+               body: ['Mu para.'], tags: ['x'] },
+    claim: 'Mu claim.',
+    clinical: { no: 9, sys: 'opioid', name: 'MOR', cls: 'GPCR', baseline: 'b', mech: 'm', stahl: 's',
+                over: [], under: [], agonists: ['morphine'], antagonists: [],
+                onset: null, time_course: null, risk_factors: [], monitoring: [] },
+    sources: [],
+    review: { mechanism: 0, affinity: 0, clinical: 0, citation: 0, mastery: 0, note: '' },
+    activity: [],
+  });
+  s.pristine.archive.mu = { abstract: 'Mu abstract.', presentation: 'p', effect: 'e', receptor_class: 'GPCR', ligand: 'Endorphin', figure_caption: 'Fig',
+    body_json: JSON.stringify(['Mu para.']), tags_json: JSON.stringify(['x']) };
+  s.pristine.claims.mu = 'Mu claim.';
+  s.pristine.clinical[9] = { sys: 'opioid', name: 'MOR', cls: 'GPCR', baseline: 'b', mech: 'm', over_json: '[]', under_json: '[]',
+    stahl: 's', agonists_json: JSON.stringify(['morphine']), antagonists_json: '[]',
+    onset: null, time_course: null, risk_factors_json: null, monitoring_json: null };
+  s.pristine.review.mu = { mechanism: 0, affinity: 0, clinical: 0, citation: 0, mastery: 0, note: '' };
+  return s;
+}
+
+test('two receptors in one changesList produce entries for both', () => {
+  const s = twoReceptorSeed();
+  const c1 = core.setField(core.emptyChanges('d2', s.commit), 'archive.abstract', 'D2 new abstract.', AT);
+  const c2 = core.setField(core.emptyChanges('mu', s.commit), 'archive.abstract', 'Mu new abstract.', AT);
+  const out = core.toCuratorState(s, [c1, c2]);
+  assert.deepEqual(out.content.archive, { d2: { abstract: 'D2 new abstract.' }, mu: { abstract: 'Mu new abstract.' } });
+});
