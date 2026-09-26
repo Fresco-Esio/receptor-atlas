@@ -337,6 +337,55 @@ async function fakeGitHub(context, cfg) {
   ok('token dialog pass: no page errors', perrs.length === 0, perrs.join(' | '));
   await pctx.close();
 }
+// --- re-key on load (browser mode) ---
+const staleDoc = (rev) => { let d = core.setField(core.emptyChanges('d2', 'oldseed'), 'claim', 'was published', '2026-09-20T10:00:00.000Z'); d = core.markPublished(d, 'sha1'); d = core.setField(d, 'archive.abstract', 'still unpublished', '2026-09-21T10:00:00.000Z'); if (rev) d = core.clearField(core.markPublished(core.setField(d, 'archive.effect', 'x', '2026-09-20T10:00:00.000Z'), 'sha1'), 'archive.effect', '2026-09-22T10:00:00.000Z'); return d; };
+async function loadWith(cfg, doc) {
+  const c = await browser.newContext(); const p = await c.newPage(); p.setDefaultTimeout(8000);
+  const gh = cfg.abort ? null : await fakeGitHub(c, cfg);
+  if (cfg.abort) await c.route('https://api.github.com/**', r => r.abort());
+  await p.addInitScript(d => { if (!localStorage.getItem('atlas-desk-changes-v1')) localStorage.setItem('atlas-desk-changes-v1', JSON.stringify({ d2: d })); }, doc);
+  await p.goto(PAGE); await p.waitForFunction(() => window.__desk && window.__desk.rekeyDone);
+  return { c, p, gh, doc: () => p.evaluate(() => window.__desk.store.get('d2')), notice: () => p.locator('#notice').innerText() };
+}
+{
+  const t = await loadWith({ repoState: SEED.baseState, ancestors: ['sha1'] }, staleDoc(false));
+  const d = await t.doc();
+  ok('re-key on load: published field dropped, unpublished kept, seedCommit updated, one compare for sha1', d.seedCommit === SEED.commit && !d.fields.claim && d.fields['archive.abstract'] && !d.fields['archive.abstract'].publishedAs && t.gh.compares.length === 1 && t.gh.compares[0] === 'sha1');
+  ok('re-key notice', (await t.notice()).includes('re-keyed 1 document'), await t.notice());
+  await t.c.close();
+}
+{
+  const t = await loadWith({ repoState: SEED.baseState, ancestors: [] }, staleDoc(false));
+  const d = await t.doc();
+  ok('a publish not in history: left alone, notice says so', d.seedCommit === 'oldseed' && d.fields.claim && (await t.notice()).includes('not in the history'));
+  await t.c.close();
+}
+{
+  const t = await loadWith({ repoState: SEED.baseState, ancestors: ['sha1'] }, staleDoc(true));
+  const d = await t.doc();
+  ok('an unpublished revert blocks re-key, notice says so', d.seedCommit === 'oldseed' && (await t.notice()).includes('unpublished revert'));
+  await t.c.close();
+}
+{
+  const t = await loadWith({ abort: true }, staleDoc(false));
+  const d = await t.doc();
+  ok('GitHub unreachable: left alone, notice says so', d.seedCommit === 'oldseed' && (await t.notice()).includes('could not be reached'));
+  await t.c.close();
+}
+{
+  const fresh = core.setField(core.emptyChanges('d2', SEED.commit), 'claim', 'current', '2026-09-25T10:00:00.000Z');
+  const t = await loadWith({ repoState: SEED.baseState, ancestors: [] }, fresh);
+  ok('a document on the current seed makes no compare request and no notice', t.gh.compares.length === 0 && await t.p.locator('#notice.hidden').count() === 1);
+  // --- Import changes ---
+  ok('browser mode shows Import changes', await t.p.locator('#imp:not(.hidden)').count() === 1);
+  const docA = core.setField(core.emptyChanges('d2', SEED.commit), 'archive.abstract', 'imported abstract', '2026-09-25T11:00:00.000Z');
+  const docB = core.setField(core.emptyChanges('nope', SEED.commit), 'claim', 'x', '2026-09-25T11:00:00.000Z');
+  await t.p.locator('#impfile').setInputFiles({ name: 'changes.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify([docA, docB, 7])) });
+  await t.p.waitForTimeout(400);
+  const after = await t.doc();
+  ok('import merges the known document, skips the rest, keeps the existing claim', after.fields.claim && after.fields.claim.value === 'current' && after.fields['archive.abstract'] && after.fields['archive.abstract'].value === 'imported abstract' && (await t.p.locator('.toast').innerText()).includes('Imported 1 document (2 skipped)'));
+  await t.c.close();
+}
 // --- simulated claude.ai frame: a fake window.claude with db + downloads, same page from disk ---
 async function framePage(cfg) {
   const fctx = await browser.newContext({ acceptDownloads: true });
@@ -381,7 +430,7 @@ async function framePage(cfg) {
   const toastText = await f.p.locator('.toast').innerText().catch(() => '');
   ok('frame: a failing store read is retried once, then the page works in this browser',
     (await f.log()).reads === 2 && / · store: this browser$/.test(await f.p.locator('#banner').innerText()) && toastText === 'claude.ai store did not answer; working in this browser', toastText);
-  ok('frame: Publish and GitHub… are hidden', await f.p.locator('#pub.hidden').count() === 1 && await f.p.locator('#ghset.hidden').count() === 1);
+  ok('frame: Publish, GitHub… and Import changes are hidden', await f.p.locator('#pub.hidden').count() === 1 && await f.p.locator('#ghset.hidden').count() === 1 && await f.p.locator('#imp.hidden').count() === 1);
   await f.p.selectOption('#rx', 'd2'); await f.p.locator('[data-path="archive.abstract"]').fill('Local.'); await f.p.waitForTimeout(450);
   ok('frame: after the fallback no write goes to the store', (await f.log()).sets.length === 0 && await f.p.evaluate(() => !!JSON.parse(localStorage.getItem('atlas-desk-changes-v1')).d2));
   await f.fctx.close();

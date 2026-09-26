@@ -223,6 +223,8 @@ html,body{ background:var(--bg); color:var(--ink); }   /* white/black holds what
   <span class="grow"></span>
   <button class="btn sm" id="dlc" type="button">Download changes</button>
   <button class="btn sm" id="dl" type="button">Download edits file</button>
+  <button class="btn sm" id="imp" type="button" title="Merge a changes.json from another copy of the Desk">Import changes</button>
+  <input type="file" id="impfile" accept="application/json,.json" class="hidden">
   <button class="btn sm" id="ghset" type="button" title="GitHub token for the Publish button">GitHub…</button>
   <button class="btn sm primary" id="pub" type="button">Publish</button>
   <div class="banner lsmerge hidden" id="lsmerge"></div>
@@ -5240,7 +5242,7 @@ const SEED = {
   }
  }
 };
-const BUILT_AT = '2026-09-26T22:22:28.458Z';
+const BUILT_AT = '2026-09-26T22:28:05.069Z';
 // ---------- storage: claude.ai db when it answers, else this browser ----------
 const LS = 'atlas-desk-changes-v1';
 const STORE_LABEL = { browser: 'this browser', 'claude.ai': 'claude.ai' };
@@ -5963,13 +5965,54 @@ function arrangePublish() {
   $('#pub').addEventListener('click', publish);
   $('#ghset').addEventListener('click', openTokenDialog);
 }
+// ---------- re-keying stored documents onto a newer snapshot (browser mode) ----------
+// /desk/ is rebuilt on every push, so after a publish the stored documents are keyed to the older snapshot.
+// The same rule as desk:rekey: every publish they record must be in the seed's history (GitHub's compare
+// answers that, anonymously on a public repo); then published records drop out and the rest carry over.
+function renderNotice(text) { const el = $('#notice'); if (!text) { el.classList.add('hidden'); el.textContent = ''; return; } el.textContent = text; el.classList.remove('hidden'); }
+async function rekeyStale() {
+  if (IN_FRAME || store.mode !== 'browser' || SEED.commit === 'uncommitted') return;
+  const stale = store.list().filter(c => c.seedCommit !== SEED.commit);
+  if (!stale.length) { renderNotice(''); return; }
+  const shas = publishedShas(stale); const anc = new Set();
+  try {
+    for (const sha of shas) { const r = await gh('GET', `/repos/${GH.owner}/${GH.repo}/compare/${encodeURIComponent(sha)}...${encodeURIComponent(SEED.commit)}`); if (r.status === 'ahead' || r.status === 'identical') anc.add(sha); }
+  } catch (e) { renderNotice(`${stale.length} document${stale.length === 1 ? ' is' : 's are'} keyed to an older snapshot and could not be re-keyed: GitHub could not be reached. Editing continues on them.`); return; }
+  const r = rekeyAll(SEED, stale, sha => anc.has(sha));
+  if (!r.ok) { renderNotice(`${stale.length} document${stale.length === 1 ? ' is' : 's are'} keyed to an older snapshot and not re-keyed: ${r.message}`); return; }
+  for (const d of r.docs) store.put(d);
+  renderNotice(`re-keyed ${r.docs.length} document${r.docs.length === 1 ? '' : 's'} onto seed ${SEED.commit}`);
+  renderBanner(); render();
+}
+// ---------- Import changes (browser mode): a changes.json from the claude.ai copy or another browser ----------
+function arrangeImport() {
+  $('#imp').classList.toggle('hidden', IN_FRAME);
+  if (IN_FRAME) return;
+  $('#imp').addEventListener('click', () => $('#impfile').click());
+  $('#impfile').addEventListener('change', async () => {
+    const file = $('#impfile').files[0]; $('#impfile').value = ''; if (!file) return;
+    let docs;
+    try { docs = JSON.parse(await file.text()); } catch (e) { toast('That file is not JSON.'); return; }
+    if (!Array.isArray(docs)) { toast('Expected an array of change documents, as Download changes saves it.'); return; }
+    flush();
+    let n = 0, skipped = 0;
+    for (const d of docs) {
+      if (changeShapeError(d) || !KNOWN.has(d.receptorId)) { skipped++; continue; }
+      store.put(mergeChanges(store.all[d.receptorId] || null, d)); n++;
+    }
+    renderBanner(); render();
+    toast(`Imported ${n} document${n === 1 ? '' : 's'}${skipped ? ` (${skipped} skipped)` : ''}.`, 5000);
+    await rekeyStale();
+  });
+}
 // ---------- boot ----------
-await store.init(); arrangeDownloads(); arrangePublish(); renderPicker(); render(); renderMergeLine();
+await store.init(); arrangeDownloads(); arrangePublish(); arrangeImport(); renderPicker(); render(); renderMergeLine();
 store.subscribe(onRemoteChange);
 // The PubMed connector, once; the source form reads `mcp` each time it opens.
 try { if (window.claude?.use) mcp = await window.claude.use('mcp'); } catch { mcp = null; }
 // expose for the walkthrough (after boot, so its presence means the page is ready)
-window.__desk = { SEED, BUILT_AT, store, toCuratorState, markPublished, markPublishedFrom, mergeChanges, preparePublish, publish, flush, view: () => view() };
+window.__desk = { SEED, BUILT_AT, store, toCuratorState, markPublished, markPublishedFrom, mergeChanges, preparePublish, publish, rekeyStale, flush, view: () => view(), rekeyDone: false };
+await rekeyStale(); window.__desk.rekeyDone = true;
 </script>
 </body>
 </html>
