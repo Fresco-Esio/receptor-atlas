@@ -357,6 +357,7 @@ async function loadWith(cfg, doc) {
   const d = await t.doc();
   ok('re-key on load: published field dropped, unpublished kept, seedCommit updated, one compare for sha1', d.seedCommit === SEED.commit && !d.fields.claim && d.fields['archive.abstract'] && !d.fields['archive.abstract'].publishedAs && t.gh.compares.length === 1 && t.gh.compares[0] === 'sha1');
   ok('re-key notice', (await t.notice()).includes('re-keyed 1 document'), await t.notice());
+  ok('no refusal: no discard button', await t.p.locator('#discardStale').count() === 0);
   ok('re-key compare is anonymous even with a remembered token (a rejected token cannot break re-keying)', t.gh.compares.length >= 1 && t.gh.auth.length === t.gh.compares.length && t.gh.auth.every(a => a === ''), JSON.stringify(t.gh.auth));
   ok('re-key on load: no page errors', t.errs.length === 0, t.errs.join(' | '));
   await t.c.close();
@@ -365,6 +366,11 @@ async function loadWith(cfg, doc) {
   const t = await loadWith({ repoState: SEED.baseState, ancestors: [] }, staleDoc(false));
   const d = await t.doc();
   ok('a publish not in history: left alone, notice says so', d.seedCommit === 'oldseed' && d.fields.claim && (await t.notice()).includes('not in the history'));
+  ok('not in history: the notice offers the discard escape', (await t.notice()).includes('or discard them below.') && await t.p.locator('#notice #discardStale').count() === 1, await t.notice());
+  await t.p.locator('#discardStale').click(); await t.p.waitForFunction(() => document.querySelector('#modalBg #pd-h'));
+  const dtext = await t.p.locator('#modalBg').innerText();
+  ok('not in history: the discard dialog warns those publishes may not be on the site and offers Download changes first', dtext.includes('may not be') && await t.p.locator('#modalBg [data-dlfirst]').count() === 1, dtext);
+  await t.p.locator('#modalBg [data-cancel]').click();
   ok('not in history: no page errors', t.errs.length === 0, t.errs.join(' | '));
   await t.c.close();
 }
@@ -386,6 +392,28 @@ async function loadWith(cfg, doc) {
   const tomb = (await t.doc()).fields['archive.effect'];
   ok('Publish is held while a document is keyed to an older snapshot: toast, no request, nothing marked', heldToast.includes('keyed to an older snapshot') && t.gh.gets === 0 && t.gh.puts.length === 0 && tomb && tomb.cleared && !tomb.publishedAs, `${heldToast} · gets=${t.gh.gets} puts=${t.gh.puts.length}`);
   ok('unpublished revert: no page errors', t.errs.length === 0, t.errs.join(' | '));
+  await t.c.close();
+}
+{ // the escape from a permanent refusal: discard only the documents keyed to the older snapshot
+  const d1 = core.setField(core.emptyChanges('d1', SEED.commit), 'claim', 'current work', '2026-09-25T10:00:00.000Z');
+  const t = await loadWith({ repoState: SEED.baseState, ancestors: ['sha1'], token: 't', docs: { d2: staleDoc(true), d1 } });
+  const label = SEED.receptors.find(r => r.id === 'd2').label;
+  ok('a refusal offers "Discard those older-snapshot changes"', await t.p.locator('#notice #discardStale').count() === 1 && (await t.notice()).includes('or discard them below.'), await t.notice());
+  await t.p.locator('#discardStale').click(); await t.p.waitForFunction(() => document.querySelector('#modalBg #pd-h'));
+  const dtext = await t.p.locator('#modalBg').innerText();
+  ok('the discard dialog lists the receptor and its unpublished and published counts', dtext.includes(label) && dtext.includes('1 unpublished') && dtext.includes('2 published') && dtext.includes('Discard changes keyed to the older snapshot'), dtext);
+  await t.p.locator('#modalBg [data-cancel]').click(); await t.p.waitForTimeout(100);
+  await t.p.locator('#pub').click(); await t.p.waitForTimeout(200);
+  ok('Cancel discards nothing and Publish stays held', await t.p.evaluate(() => !!window.__desk.store.all.d2) && (await t.p.locator('.toast').innerText()).includes('keyed to an older snapshot') && t.gh.gets === 0);
+  await t.p.locator('#discardStale').click(); await t.p.waitForFunction(() => document.querySelector('#modalBg #pd-h'));
+  await t.p.locator('#modalBg [data-discard]').click(); await t.p.waitForTimeout(200);
+  const all = await t.p.evaluate(() => window.__desk.store.all);
+  const stored = await t.p.evaluate(() => JSON.parse(localStorage.getItem('atlas-desk-changes-v1')));
+  ok('Discard drops only the older-snapshot document, in memory and in this browser; notice hidden', !all.d2 && all.d1 && all.d1.fields.claim.value === 'current work' && !stored.d2 && stored.d1 && await t.p.locator('#notice.hidden').count() === 1 && (await t.p.locator('.toast').innerText()).includes('Discarded 1 document.'));
+  await t.p.locator('#pub').click(); await t.p.waitForFunction(() => document.querySelector('#modalBg #pc-h'), null, { timeout: 4000 }).catch(() => {});
+  ok('after Discard, Publish proceeds (reads the repo file)', t.gh.gets === 1 && await t.p.locator('#modalBg #pc-h').count() === 1, `gets=${t.gh.gets}`);
+  await t.p.locator('#modalBg [data-cancel]').click();
+  ok('discard: no page errors', t.errs.length === 0, t.errs.join(' | '));
   await t.c.close();
 }
 {
@@ -460,6 +488,17 @@ const onlyD1 = { d1: core.setField(core.emptyChanges('d1', SEED.commit), 'claim'
   const d = await t.doc();
   ok('import of an older-seed document: re-keyed onto this seed before it is stored (published claim folded, abstract kept)', d.seedCommit === SEED.commit && !d.fields.claim && d.fields['archive.abstract'] && d.fields['archive.abstract'].value === 'still unpublished' && t.gh.compares.includes('sha1'), toastText);
   ok('import re-key: no page errors', t.errs.length === 0, t.errs.join(' | '));
+  await t.c.close();
+}
+{ // an Import re-keying an older-seed document holds Publish until it is done
+  const t = await loadWith({ repoState: SEED.baseState, ancestors: ['sha1'], delayMs: 800, token: 't', docs: onlyD1 });
+  await t.p.evaluate(() => { document.querySelector('#toastRoot').innerHTML = ''; });
+  await t.p.locator('#impfile').setInputFiles({ name: 'changes.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify([staleDoc(false)])) });
+  await t.p.waitForTimeout(200);
+  await t.p.locator('#pub').click(); await t.p.waitForTimeout(150);
+  const held = await t.p.locator('.toast').innerText().catch(() => '');
+  ok('Publish during an Import re-key: held, no request', held.includes('Re-keying stored changes') && t.gh.gets === 0, held);
+  await t.p.waitForFunction(() => /Imported/.test(document.querySelector('#toastRoot').innerText));
   await t.c.close();
 }
 { // ... and merging it never turns this browser's current work stale

@@ -134,15 +134,19 @@ history — and when GitHub cannot be reached; a line under the header says whic
 editing continues on the old keys (Publish stays held until they re-key). An unpublished
 revert or detach means "take the published value back out", and the new snapshot no longer
 knows the value it would go back to: it shows the published value now. Set each of those
-fields to the value you want on this snapshot, then reload.
+fields to the value you want on this snapshot, then reload. Some refusals no edit here can
+lift — a detach of a source the new snapshot now seeds, a revert to the very value it now
+shows, a publish not in the history — so the line offers **Discard those older-snapshot
+changes**: it shows what each document keyed to the older snapshot holds and drops only those
+documents (current work is untouched). Use Download changes first if in doubt.
 
 **Import changes** merges a `changes.json` (Download changes from the claude.ai copy, or
 from another browser) into this browser's store, record by record, later `at` winning.
 Documents for receptors this snapshot does not have are skipped. Documents keyed to an older
 snapshot are re-keyed first by the same rule (all or none; if that refuses, or GitHub cannot
 be reached, none of them is imported and the toast says why), and nothing is merged into a
-document of this browser that is itself keyed to an older snapshot. Import waits while a
-publish is committing.
+document of this browser that is itself keyed to an older snapshot. Import refuses while a
+publish is committing; pick the file again once it is done.
 
 **A clone's `desk/desk.html`** is built from its own checkout: after any publish made
 elsewhere (the button on the site, or "publish the atlas"), `git pull`, then `npm run
