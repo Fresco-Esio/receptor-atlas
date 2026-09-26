@@ -93,7 +93,9 @@ change in the store, published or not, onto `seed.baseState` and returns a `form
 edits file. Every attached source exports with `status: "verified"`; a source flagged
 `conflicting` exports `status: "conflicting"` with its `correction_note`. It runs in Node
 (`npm run desk:pull`) and in the page (Download), from the same module, so the two outputs
-are byte-identical by construction.
+are the same edits; `desk:pull` canonicalises through a fresh database and is byte-identical
+to the old Desk's `writeState`, while the page's Download is a valid import that may order
+rows differently.
 
 **`desk/desk.html`** is produced by `npm run desk:build`: the editor template with
 `desk-core.mjs` and `seed.json` inlined. One file. It is committed (so the fallback in
