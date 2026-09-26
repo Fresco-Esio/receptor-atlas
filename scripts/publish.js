@@ -17,6 +17,7 @@
 import { readFile, writeFile, rm, mkdir, copyFile, cp, access } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { openDb } from '../db/index.js';
 import { atlasVolume, cabinetBinding, ledgerClinical, archiveNarrative } from '../lib/queries.js';
 
@@ -39,7 +40,8 @@ function dataFiles(db) {
 // known /api paths resolve to the bundled JSON instead. Paths are RELATIVE so the
 // bundle works at a domain root or a /repo/ subpath (e.g. GitHub Pages). Any other
 // URL passes straight through; a missing file still leaves the page's own offline
-// fallback intact.
+// fallback intact. Data files are fetched with cache: 'no-store': GitHub Pages sends
+// max-age=600, so a reload after a publish would otherwise show the old data for ten minutes.
 const SHIM = `<script>
 /* Published snapshot: read-only API served as bundled static JSON. */
 (function () {
@@ -53,7 +55,7 @@ const SHIM = `<script>
   var real = window.fetch.bind(window);
   window.fetch = function (input, init) {
     var url = typeof input === 'string' ? input : (input && input.url);
-    return real(MAP[url] || input, init);
+    return real(MAP[url] || input, MAP[url] ? Object.assign({}, init, { cache: 'no-store' }) : init);
   };
 })();
 </script>
@@ -71,6 +73,14 @@ const SHELL = 'the-receptor-atlas.html';               // served at / -> index.h
 // wholesale so the bundle is self-contained and works at a domain root or a
 // /repo/ subpath. Pages reference these with relative hrefs — see SHIM above.
 const ASSET_DIR = 'assets';
+
+// The commit this bundle is built from: GitHub Actions' GITHUB_SHA, else the local HEAD,
+// else "uncommitted". Written to data/build.json so the Desk can tell when its publish is live.
+function buildCommit() {
+  if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA;
+  try { return execFileSync('git', ['rev-parse', 'HEAD'], { cwd: join(HERE, '..'), encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || 'uncommitted'; }
+  catch { return 'uncommitted'; }
+}
 
 function injectShim(html) {
   // Every page has exactly one <head>; place the shim first so it wraps fetch
@@ -114,6 +124,8 @@ export async function publish(db, outDir) {
   // 1. Data payloads (reusing the server's own query functions).
   for (const [name, payload] of Object.entries(dataFiles(db)))
     await writeFile(join(outDir, 'data', name), JSON.stringify(payload, null, 2));
+  await writeFile(join(outDir, 'data', 'build.json'),
+    JSON.stringify({ commit: buildCommit(), builtAt: new Date().toISOString() }, null, 2));
 
   // 2. Volume pages: reroute /api -> bundled JSON, keep everything else.
   for (const page of VOLUME_PAGES) {

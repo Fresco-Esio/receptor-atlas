@@ -113,3 +113,19 @@ test('publish fails when a page references a missing asset', async () => {
     'a dangling asset reference must throw'
   );
 });
+
+test('the shim fetches bundled data with cache: no-store', async () => {
+  // GitHub Pages sends max-age=600; without no-store a reload after a publish can show
+  // the old data for ten minutes.
+  for (const f of VOLUME_PAGES) {
+    const html = await readFile(join(outDir, f), 'utf8');
+    assert.ok(html.includes("cache: 'no-store'"), `${f} shim should request data with cache: 'no-store'`);
+  }
+});
+
+test('the bundle carries data/build.json naming the commit it was built from', async () => {
+  const build = JSON.parse(await readFile(join(outDir, 'data', 'build.json'), 'utf8'));
+  assert.match(build.commit, /^([0-9a-f]{40}|uncommitted)$/, 'commit is a full sha or "uncommitted"');
+  assert.equal(typeof build.builtAt, 'string');
+  assert.equal(new Date(build.builtAt).toISOString(), build.builtAt, 'builtAt is an ISO timestamp');
+});
