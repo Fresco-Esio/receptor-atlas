@@ -248,6 +248,21 @@ export function markPublished(changes, sha) {
   return c;
 }
 
+/** Only what a publish has already carried: the records with a publishedAs (and the library rows of the
+ *  published adds). desk:pull converts this to recognise "the repo's edits file is what this Desk published". */
+export function publishedOnly(changes) {
+  const c = clone(changes);
+  const out = emptyChanges(c.receptorId, c.seedCommit);
+  for (const [k, f] of Object.entries(c.fields || {})) if (f.publishedAs) out.fields[k] = f;
+  const src = c.sources || {};
+  out.sources.add = (src.add || []).filter(a => a.publishedAs);
+  out.sources.remove = (src.remove || []).filter(r => r.publishedAs);
+  for (const [k, s] of Object.entries(src.set || {})) if (s.publishedAs) out.sources.set[k] = s;
+  for (const a of out.sources.add) if (c.library && c.library[a.key]) out.library[a.key] = c.library[a.key];
+  out.review = c.review && c.review.publishedAs ? c.review : null;
+  return out;
+}
+
 /** After a re-seed: published records are now in the seed, so drop them; keep the rest against the new commit. */
 export function rekey(changes, newSeed) {
   const c = clone(changes); c.seedCommit = newSeed.commit;

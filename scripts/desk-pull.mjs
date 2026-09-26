@@ -9,7 +9,7 @@ import { openDb } from '../db/index.js';
 import { migrate } from './migrate.js';
 import { exportState, importState, readState, STATE_FILE } from './curator-state.mjs';
 import { SEED_FILE } from './desk-seed.mjs';
-import { toCuratorState, summarise } from '../desk/desk-core.mjs';
+import { toCuratorState, summarise, publishedOnly, countPublished } from '../desk/desk-core.mjs';
 
 export function canonicalise(state) {
   const db = openDb(':memory:'); migrate(db); importState(db, state);
@@ -17,10 +17,18 @@ export function canonicalise(state) {
   return out;
 }
 
+const STATE_KEYS = ['review', 'activity', 'bindingReview', 'sources', 'receptorSources', 'bindingSources', 'content'];
+const diffKeys = (a, b) => STATE_KEYS.filter(k => JSON.stringify((a || {})[k]) !== JSON.stringify((b || {})[k]));
+
+/** The repo's edits file must be the snapshot's (seed.baseState), or what this Desk already published
+ *  (the published records alone, converted and canonicalised). Anything else moved by another route. */
 export function pull({ seed, changes, repoState }) {
-  const diff = ['review', 'activity', 'bindingReview', 'sources', 'receptorSources', 'bindingSources', 'content']
-    .filter(k => JSON.stringify(seed.baseState[k]) !== JSON.stringify((repoState || {})[k]));
-  if (diff.length) return { ok: false, reason: 'seed moved', diff };
+  const fromSeed = diffKeys(seed.baseState, repoState);
+  if (fromSeed.length) {
+    const anyPublished = changes.some(c => countPublished([c]) > 0);
+    const fromPublished = anyPublished ? diffKeys(canonicalise(toCuratorState(seed, changes.map(publishedOnly))), repoState) : fromSeed;
+    if (fromPublished.length) return { ok: false, reason: 'seed moved', diff: fromPublished };
+  }
   const state = canonicalise(toCuratorState(seed, changes));
   return { ok: true, state, summary: summarise(changes) };
 }
@@ -32,7 +40,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const seed = JSON.parse(readFileSync(SEED_FILE, 'utf8'));
   const changes = JSON.parse(readFileSync(file, 'utf8'));
   const r = pull({ seed, changes: Array.isArray(changes) ? changes : Object.values(changes), repoState: readState() });
-  if (!r.ok) { console.error(`refusing: the repo's edits file moved since the seed (${seed.commit}) in: ${r.diff.join(', ')}. Re-seed the desk, or reconcile by hand.`); process.exit(2); }
+  if (!r.ok) { console.error(`refusing: the repo's edits file is neither the snapshot's (seed ${seed.commit}) nor what this Desk already published; it differs in: ${r.diff.join(', ')}. Re-seed the desk, or reconcile by hand.`); process.exit(2); }
   if (check) { console.log(`ok: ${r.summary}`); process.exit(0); }
   writeFileSync(STATE_FILE, JSON.stringify(r.state, null, 1) + '\n');
   console.log(`wrote db/curator-state.json: ${r.summary}`);

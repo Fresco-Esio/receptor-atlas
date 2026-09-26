@@ -338,3 +338,41 @@ test('explicit false on a seeded conflicting edge exports verified; an untouched
   assert.deepEqual(core.toCuratorState(s, [c]).receptorSources, [{ receptor_id: 'd2', source: 'pmid:222', status: 'verified', is_primary: 1, correction_note: null }]);
   assert.equal(core.viewOf(s.receptors[0], c).sources.find(x => x.key === 'pmid:222').status, 'verified');
 });
+
+// --- whole-branch review, fix wave ---
+
+const KAPUR = { kind: 'article', authors: 'Kapur S', year: 2003, title: 'Aberrant salience', journal: 'Am J Psychiatry', pmid: '12505794', doi: null, url: null, notes: null };
+const OTHER = { kind: 'article', authors: 'X', year: 2020, title: 'T', journal: 'J', pmid: '999', doi: null, url: null, notes: null };
+
+test('publishedOnly keeps published fields/adds/sets/review and drops the unpublished ones', () => {
+  const s = seed(); let c = core.emptyChanges('d2', s.commit);
+  c = core.setField(c, 'archive.abstract', 'Published.', AT);
+  c = core.attachSource(c, s, KAPUR, { is_primary: 0 }, AT);
+  c = core.setSourceFlags(c, s, 'pmid:24463000', { conflicting: true, correction_note: 'n' }, AT);
+  c = core.setReview(c, { mechanism: 1 }, AT);
+  c = core.markPublished(c, 'sha1');
+  c = core.setField(c, 'claim', 'Unpublished.', AT);
+  c = core.attachSource(c, s, OTHER, { is_primary: 0 }, AT);
+  c.spans = [{ field: 'archive.abstract', start: 0, end: 4, text: 'Publ', sourceKey: 'pmid:12505794', at: AT }];
+  const p = core.publishedOnly(c);
+  assert.deepEqual(Object.keys(p.fields), ['archive.abstract']);
+  assert.deepEqual(p.sources.add.map(a => a.key), ['pmid:12505794']);
+  assert.deepEqual(Object.keys(p.sources.set), ['pmid:24463000']);
+  assert.deepEqual(Object.keys(p.library), ['pmid:12505794'], 'library rows only for published adds');
+  assert.equal(p.review.mechanism, 1);
+  assert.equal(p.receptorId, 'd2'); assert.equal(p.seedCommit, s.commit);
+  assert.equal(c.fields.claim.value, 'Unpublished.', 'the input is not mutated');
+  // an unpublished review is dropped
+  const q = core.publishedOnly(core.setReview(c, { affinity: 1 }, AT));
+  assert.equal(q.review, null);
+});
+
+test('publishedOnly of a changes object with nothing published is the empty shape', () => {
+  const s = seed(); let c = core.emptyChanges('d2', s.commit);
+  c = core.setField(c, 'archive.abstract', 'x', AT);
+  c = core.attachSource(c, s, KAPUR, { is_primary: 0 }, AT);
+  c = core.setSourceFlags(c, s, 'pmid:24463000', { conflicting: true }, AT);
+  c = core.setReview(c, { mechanism: 1 }, AT);
+  c.spans = [{ field: 'archive.abstract', start: 0, end: 1, text: 'x', sourceKey: 'pmid:12505794', at: AT }];
+  assert.deepEqual(core.publishedOnly(c), core.emptyChanges('d2', s.commit));
+});

@@ -50,7 +50,7 @@ of "publish the atlas".
 |---|---|
 | `npm run desk:seed` | Builds `desk/seed.json` from the database, the way the Actions runner builds it: what the atlas currently is, for the editable surface. |
 | `npm run desk:build` | Writes `desk/desk.html`: the editor template with `desk-core.mjs` and `seed.json` inlined into one file; also writes `desk/desk.artifact.html`, the same page without the doctype/html/head/body wrapper, for publishing as a claude.ai artifact. |
-| `npm run desk:pull [--check] <changes.json>` | Turns a `changes.json` (what the page's store holds) into `db/curator-state.json`. `--check` reports what would change without writing it. |
+| `npm run desk:pull [--check] <changes.json>` | Turns a `changes.json` (what the page's store holds) into `db/curator-state.json`. `--check` reports what would change without writing it, and refuses unless the repo's edits file is the snapshot's, or what this Desk already published. |
 
 **Publishing** is "publish the atlas", asked of any Claude session: it reads the changes
 out of the page's store, runs `desk:pull`, commits, and pushes. A publish marks those

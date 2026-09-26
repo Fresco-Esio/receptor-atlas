@@ -138,9 +138,12 @@ already carries a timestamp per change; attribution is one more field).
 2. Claude reads `changes/*` from the page's store and runs the converter.
 3. Claude shows one line, the only pause: `3 content edits, 1 source attached, 1 conflict
    noted. Go?` (reuse `summarise()` in `lib/git-publish.js`).
-4. `npm run desk:pull --check` then commit and push. The check refuses if the repo's
-   `db/curator-state.json` differs from `seed.baseState` (the edits file moved by another
-   route since the snapshot): the difference is shown, nothing is overwritten.
+4. `npm run desk:pull --check` then commit and push. The repo's edits file must be the
+   snapshot's, or what this Desk already published: the check accepts
+   `db/curator-state.json` when it equals `seed.baseState` or the converter's output for
+   the published records alone (`publishedOnly`), and refuses otherwise (the edits file
+   moved by another route since the snapshot): the difference is shown, nothing is
+   overwritten.
 5. Actions rebuilds the site.
 6. Claude marks those changes `publishedAs: sha` in the store and the page shows the
    receipt. **Nothing is cleared.** The editor is always seed + every change, published or

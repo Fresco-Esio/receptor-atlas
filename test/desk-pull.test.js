@@ -43,3 +43,22 @@ test('pull refuses when the repo edits file moved since the seed', () => {
   const no = pull({ seed, changes: [c], repoState: moved });
   assert.equal(no.ok, false); assert.equal(no.reason, 'seed moved'); assert.deepEqual(no.diff, ['content']);
 });
+
+test('a second publish is accepted: the repo edits file is what this Desk already published', () => {
+  const base = exportState(fresh());
+  const seed = buildSeed({ baseState: base, commit: 'x' });
+  let c = core.setField(core.emptyChanges('d2', 'x'), 'claim', 'First publish', AT);
+  const one = pull({ seed, changes: [c], repoState: base });
+  assert.equal(one.ok, true);
+  const repoState = JSON.parse(JSON.stringify(one.state, null, 1));   // written to db/curator-state.json and committed
+  c = core.markPublished(c, 'sha1');
+  c = core.setField(c, 'archive.abstract', 'Second publish', AT);
+  const two = pull({ seed, changes: [c], repoState });
+  assert.equal(two.ok, true, JSON.stringify(two.diff));
+  assert.equal(two.state.content.claims.d2, 'First publish');
+  assert.equal(two.state.content.archive.d2.abstract, 'Second publish');
+  // and a repo file that matches neither the snapshot nor what was published is still refused
+  const moved = { ...repoState, content: { ...repoState.content, claims: { ...repoState.content.claims, sert: 'elsewhere' } } };
+  const no = pull({ seed, changes: [c], repoState: moved });
+  assert.equal(no.ok, false); assert.equal(no.reason, 'seed moved'); assert.deepEqual(no.diff, ['content']);
+});
