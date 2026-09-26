@@ -33,6 +33,14 @@ reader who wrote a number down needs to know it moved.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Onset, time course, risk factors and monitoring now survive a rebuild.** The Desk
+  could edit them since 1.2.0, but the columns existed only on one machine and the
+  curator dump did not carry them, so a fresh clone or the published site would have
+  silently dropped the edit. The columns are now added on open, idempotently, and the
+  dump carries them. Nothing was lost: all four were still empty.
+
 ## [1.2.0] - 2026-09-26
 
 The Cabinet learns to answer "compared to what?", and the Desk gains the Ledger columns
