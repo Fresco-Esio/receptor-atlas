@@ -203,6 +203,13 @@ html,body{ background:var(--bg); color:var(--ink); }   /* white/black holds what
 .review label{ display:inline-flex; align-items:center; gap:6px } .review input[type=checkbox]{ width:16px; height:16px; accent-color:var(--ok) }
 .review input[type=text]{ flex:1; min-width:200px; padding:6px 9px; border:1px solid var(--line); border-radius:7px }
 .changed::before{ content:"●"; color:var(--warn); font-size:.6em; margin-right:6px; vertical-align:middle }
+/* Provenance layer: spans, margin cards, flow lines (the .cite/.mcard/.pop/#flow/.modal rules above are Provenance's) */
+.fld [data-paragraphs] p{ margin:0 0 1.15em }
+.mcard .mnote{ margin:8px 0 0 } .mcard .mnote textarea{ width:100%; min-height:38px; font-size:.8rem; padding:5px 7px; line-height:1.35; border:1px solid var(--line); border-radius:6px; background:var(--paper); resize:vertical }
+.mcard .mnote label{ display:block; font-size:.7rem; color:var(--ink-3); margin-bottom:3px }
+.mctl .check{ display:inline-flex; align-items:center; cursor:pointer } .mctl [data-detach]{ margin-left:auto }
+.mnew{ margin:4px 0 0 }
+.pop .chips{ max-height:220px; overflow:auto }
 </style>
 </head>
 <body>
@@ -4880,7 +4887,7 @@ const SEED = {
   }
  }
 };
-const BUILT_AT = '2026-09-26T18:08:34.962Z';
+const BUILT_AT = '2026-09-26T18:23:01.063Z';
 // ---------- storage: claude.ai db when it answers, else this browser ----------
 const LS = 'atlas-desk-changes-v1';
 const STORE_LABEL = { browser: 'this browser', 'claude.ai': 'claude.ai' };
@@ -4981,14 +4988,15 @@ function renderBanner() {
 function renderPicker() {
   $('#rx').innerHTML = SEED.receptors.map(r => `<option value="${esc(r.id)}">${esc(r.label)}</option>`).join('');
   $('#rx').value = current;
-  $('#rx').onchange = () => { flush(); current = $('#rx').value; render(); };
+  $('#rx').onchange = () => { flush(); hidePop(); closeModal(); current = $('#rx').value; openKey = null; render(); };
 }
 // ---------- editor ----------
 const ARCHIVE_LABELS = { abstract: 'Abstract', presentation: 'Presentation', effect: 'Effect', receptor_class: 'Receptor class', ligand: 'Ligand', figure_caption: 'Figure caption' };
 const CLINICAL_LABELS = { sys: 'System', name: 'Name', cls: 'Class', baseline: 'Baseline', mech: 'Mechanism', stahl: 'Stahl', onset: 'Onset', time_course: 'Time course', over: 'Over', under: 'Under', agonists: 'Agonists', antagonists: 'Antagonists', risk_factors: 'Risk factors', monitoring: 'Monitoring' };
 const fid = path => 'f-' + path.replace('.', '-');
-function fieldHTML(path, label, value, big) {
-  return `<div class="fld${big ? '' : ' small'}" data-f="${path}"><label id="${fid(path)}-l">${esc(label)}</label><div class="editor" contenteditable="plaintext-only" role="textbox" aria-multiline="true" aria-labelledby="${fid(path)}-l" data-path="${path}">${esc(value ?? '')}</div></div>`;
+/** inner: pre-built HTML (a spannable field's text with its brackets); such a field also carries data-field. */
+function fieldHTML(path, label, value, big, inner) {
+  return `<div class="fld${big ? '' : ' small'}" data-f="${path}"><label id="${fid(path)}-l">${esc(label)}</label><div class="editor" contenteditable="plaintext-only" role="textbox" aria-multiline="true" aria-labelledby="${fid(path)}-l" data-path="${path}"${inner != null ? ` data-field="${path}"` : ''}>${inner != null ? inner : esc(value ?? '')}</div></div>`;
 }
 function listHTML(path, label, items) {
   return `<div class="fld" data-f="${path}"><label for="${fid(path)}">${esc(label)} · one per line</label><textarea id="${fid(path)}" data-list="${path}" rows="${Math.max(3, items.length + 1)}">${esc(items.join('\n'))}</textarea></div>`;
@@ -5000,11 +5008,14 @@ function markChanged() {
 const textOf = el => el.innerText.replace(/\n+$/, '');
 const linesOf = s => s.split('\n').map(x => x.trim()).filter(Boolean);
 function render() {
-  const id = current; const v = view(); const ed = $('#editor');
+  const id = current;
+  dropStaleSpans(id);   // spans are drawn from stored offsets; one whose text has moved away is removed, with a toast
+  const v = view(); const ed = $('#editor');
+  if (openKey && !v.sources.some(s => s.key === openKey)) openKey = null;
   let html = `<div class="h-rx">${esc(v.label)}</div><div class="h-vol">${esc(v.volumes.join(' · '))}</div>`;
   if (v.archive) {
-    html += fieldHTML('archive.abstract', 'Abstract', v.archive.abstract, true);
-    html += `<div class="fld" data-f="archive.body"><label id="f-archive-body-l">Body</label><div class="editor" id="body" contenteditable="plaintext-only" role="textbox" aria-multiline="true" aria-labelledby="f-archive-body-l" data-paragraphs="archive.body">${(v.archive.body || []).map(p => `<p>${esc(p)}</p>`).join('')}</div></div>`;
+    html += fieldHTML('archive.abstract', 'Abstract', v.archive.abstract, true, spanHTML(id, 'archive.abstract', v.archive.abstract || ''));
+    html += `<div class="fld" data-f="archive.body"><label id="f-archive-body-l">Body</label><div class="editor" id="body" contenteditable="plaintext-only" role="textbox" aria-multiline="true" aria-labelledby="f-archive-body-l" data-paragraphs="archive.body">${bodyHTML(id, v)}</div></div>`;
     for (const k of ['presentation', 'effect', 'receptor_class', 'ligand', 'figure_caption']) html += fieldHTML('archive.' + k, ARCHIVE_LABELS[k], v.archive[k], false);
     html += listHTML('archive.tags', 'Tags', v.archive.tags || []);
   }
@@ -5019,19 +5030,326 @@ function render() {
   html += `<section class="review"><span class="tiny">reviewed:</span>` + REVIEW_MARKS.map(m => `<label><input type="checkbox" data-mark="${m}" ${r[m] ? 'checked' : ''}> ${m}</label>`).join('') + `<input type="text" data-note aria-label="Review note" placeholder="note" value="${esc(r.note)}"></section>`;
   ed.innerHTML = html;
   // wiring — every handler is bound to the receptor it was rendered for, not to whatever is current when it fires
-  ed.querySelectorAll('[data-path]').forEach(el => el.addEventListener('input', debounce(() => editField(id, el.dataset.path, textOf(el), false), 300)));
+  ed.querySelectorAll('[data-path]').forEach(el => el.addEventListener('input', debounce(() => el.dataset.path === 'archive.abstract' ? editProse(id, 'archive.abstract', textOf(el)) : editField(id, el.dataset.path, textOf(el), false), 300)));
   const body = ed.querySelector('[data-paragraphs]');
-  if (body) body.addEventListener('input', debounce(() => editField(id, 'archive.body', linesOf(body.innerText), true), 300));
+  if (body) body.addEventListener('input', debounce(() => editProse(id, 'archive.body', linesOf(body.innerText)), 300));
+  // the spannable prose: a selection offers the sources; a click on a bracket opens its card
+  ed.querySelectorAll('[data-path="archive.abstract"], [data-paragraphs]').forEach(el => {
+    el.addEventListener('mouseup', e => onProseSelect(id, e));
+    el.addEventListener('keyup', e => onProseSelect(id, e));
+    el.addEventListener('input', queueFlow);
+    // typing is not re-drawn under the caret; once focus leaves, the field is re-drawn from what was stored
+    el.addEventListener('focusout', () => setTimeout(() => { if (document.activeElement === el) return; flush(); rerenderProse(id); }, 0));
+  });
   ed.querySelectorAll('[data-scalar]').forEach(el => el.addEventListener('input', debounce(() => editField(id, el.dataset.scalar, el.value, false), 300)));
   ed.querySelectorAll('[data-list]').forEach(el => el.addEventListener('input', debounce(() => editField(id, el.dataset.list, linesOf(el.value), true), 300)));
   ed.querySelectorAll('[data-mark]').forEach(el => el.addEventListener('change', () => editReview(id, { [el.dataset.mark]: el.checked ? 1 : 0 })));
   const note = ed.querySelector('[data-note]');
   note.addEventListener('input', debounce(() => editReview(id, { note: note.value }), 300));
   markChanged();
-  renderMargin();   // Task 6 fills this in; a no-op until then
+  renderMargin(id);
   renderBanner();
 }
-function renderMargin() { /* Task 6 */ }
+// ---------- PubMed through the viewer's connector (lifted verbatim from Provenance; caps.mcp → mcp) ----------
+let mcp = null;
+function parsePayload(r){ let p=r&&r.payload!==undefined?r.payload:r; if(typeof p==='string'){ try{ p=JSON.parse(p); }catch(e){} } if(p&&p.content&&Array.isArray(p.content)&&!p.articles&&!p.pmids){ const t=p.content.find(b=>b.type==='text'); if(t){ try{ p=JSON.parse(t.text); }catch(e){ p=t.text; } } } return p; }
+function normalizeArticle(a){ const ids=a.identifiers||{}; const j=a.journal||{}; const c=a.citation||{}; const d=a.publication_date||{}; return { pmid:String(ids.pmid||a.pmid||''), doi:ids.doi||a.doi||'', title:(a.title||'').trim(), journal:j.title||'', journalAbbrev:j.iso_abbreviation||'', authors:(a.authors||[]).map(x=>({last:x.last_name||'',fore:x.fore_name||'',initials:x.initials||''})), year:String(d.year||''), volume:c.volume||'', issue:c.issue||'', pages:c.pages||'', types:a.article_types||[], abstract:a.abstract||'' }; }
+function mcpErrorText(e){ const code=e&&e.code; const s=(e&&e.server)||'PubMed'; switch(code){ case 'needs_reauth': return 'Reconnect '+s+' in claude.ai Settings, Connectors, then try again.'; case 'server_not_connected': case 'selection_required': return 'Add or choose the '+s+' connector in claude.ai Settings, Connectors.'; case 'not_in_manifest': return 'PubMed access was declined for this page. Allow it when asked, or add the source by hand.'; case 'blocked_by_policy': return 'Your organization blocks this connector here. Add the source by hand.'; case 'approval_required': return 'This connector needs per-call approval, which pages cannot request yet. Add the source by hand.'; case 'tool_error': return 'PubMed reported an error: '+(e.message||'unknown'); case 'server_unavailable': case 'rate_limited': return 'PubMed did not answer; retried once. Try again in a moment.'; case 'not_granted': case 'capability_disabled': case 'capability_removed': return 'Connector calls are not available in this view. Add the source by hand.'; case 'no_mcp': return 'No connector bridge in this view. Add the source by hand.'; default: return 'Lookup failed ('+(code||'unknown')+'). '+(e&&e.message?e.message:''); } }
+async function callPubMed(tool,input){ if(!mcp) throw {code:'no_mcp'}; try{ return await mcp.callTool('PubMed',tool,input); } catch(e){ if(e&&e.retryable){ await new Promise(r=>setTimeout(r,Math.min(e.retryAfterMs||1200,8000)+Math.random()*400)); return await mcp.callTool('PubMed',tool,input); } throw e; } }
+async function fetchArticle(idText){ let id=String(idText||'').trim().replace(/^https?:\/\/(dx\.)?doi\.org\//i,'').replace(/^doi:\s*/i,'').replace(/^pmid:\s*/i,''); let pmid=id; if(/^10\.\d{4,}/.test(id)){ const r=await callPubMed('search_articles',{query:id+'[doi]',max_results:1}); const p=parsePayload(r); pmid=p&&p.pmids&&p.pmids[0]; if(!pmid) throw {code:'tool_error',message:'No PubMed record found for DOI '+id}; } if(!/^\d{4,9}$/.test(String(pmid))) throw {code:'tool_error',message:'Enter a PMID (digits) or a DOI (starts with 10.)'}; const r2=await callPubMed('get_article_metadata',{pmids:[String(pmid)]}); const p2=parsePayload(r2); const a=p2&&p2.articles&&p2.articles[0]; if(!a) throw {code:'tool_error',message:'PMID '+pmid+' returned no metadata'}; return normalizeArticle(a); }
+const HUES=[165,275,20,330,210,95,45,250,190,350,130,300];
+
+// ---------- spans: { field, start, end, text, sourceKey, at } in changes.spans ----------
+// Fields: 'archive.abstract', and 'archive.body.<n>' for paragraph n. Offsets are into the field's plain text.
+const hueIndex = (id, key) => { const keys = [...Object.keys(SEED.sources), ...Object.keys(store.get(id).library).filter(k => !SEED.sources[k])]; return Math.max(0, keys.indexOf(key)); };
+const hueOf = (id, key) => HUES[hueIndex(id, key) % HUES.length];
+const metaOf = (id, key) => SEED.sources[key] || store.get(id).library[key] || null;
+const spansOf = id => store.get(id).spans || [];
+const spansFor = (id, field) => spansOf(id).filter(s => s.field === field);
+/** 'archive.abstract' | 'archive.body' for a span field, else null. */
+const groupOf = f => f === 'archive.abstract' ? f : typeof f === 'string' && /^archive\.body\.\d+$/.test(f) ? 'archive.body' : null;
+const proseOf = (v, group) => !v.archive ? [] : group === 'archive.abstract' ? [v.archive.abstract || ''] : (v.archive.body || []).map(String);
+function fieldText(v, field) {
+  const g = groupOf(field); if (!g) return null;
+  const n = g === 'archive.abstract' ? 0 : Number(field.split('.')[2]); const paras = proseOf(v, g);
+  return n < paras.length ? paras[n] : null;
+}
+/** Draw the field's text with bracketed spans. Offsets are into the plain text of the field. */
+function spanHTML(id, field, text) {
+  const spans = spansFor(id, field).filter(s => text.slice(s.start, s.end) === s.text).sort((a, b) => a.start - b.start);
+  let out = '', i = 0;
+  for (const s of spans) { if (s.start < i) continue; out += esc(text.slice(i, s.start)); out += `<span class="cite hue" style="--h:${hueOf(id, s.sourceKey)}" data-span="${esc(s.sourceKey)}|${s.start}">${esc(text.slice(s.start, s.end))}</span>`; i = s.end; }
+  return out + esc(text.slice(i));
+}
+const bodyHTML = (id, v) => (v.archive.body || []).map((p, n) => `<p data-field="archive.body.${n}">${spanHTML(id, 'archive.body.' + n, String(p))}</p>`).join('');
+const spanToast = n => toast(n === 1 ? '1 span no longer matches the text and was removed' : `${n} spans no longer match the text and were removed`, 4000);
+function dropStaleSpans(id) {
+  const v = viewFor(id); const c = store.get(id); const before = c.spans || [];
+  const kept = before.filter(s => { const t = fieldText(v, s.field); return t != null && t.slice(s.start, s.end) === s.text; });
+  if (kept.length !== before.length) { store.put({ ...c, spans: kept }); spanToast(before.length - kept.length); }
+}
+/** After an edit of one prose field: move each span with its text. The edit is the region between the
+ *  common prefix and suffix of the old and new text (paragraphs joined by \n): a span before it stays,
+ *  one after it shifts, one that contains it grows or shrinks, one it cuts into is dropped. */
+function rebaseSpans(spans, group, oldParas, newParas) {
+  const starts = ps => { const o = []; let i = 0; for (const p of ps) { o.push(i); i += p.length + 1; } return o; };
+  const A = oldParas.join('\n'), B = newParas.join('\n'), sa = starts(oldParas), sb = starts(newParas);
+  const m = Math.min(A.length, B.length); let p = 0, s = 0;
+  while (p < m && A[p] === B[p]) p++;
+  while (s < m - p && A[A.length - 1 - s] === B[B.length - 1 - s]) s++;
+  const oEnd = A.length - s, delta = B.length - A.length, out = new Map();
+  for (const sp of spans) {
+    const n = group === 'archive.abstract' ? 0 : Number(sp.field.split('.')[2]);
+    if (!(n < sa.length)) continue;
+    let gs = sa[n] + sp.start, ge = sa[n] + sp.end;
+    if (A.slice(gs, ge) !== sp.text) continue;
+    if (ge <= p) { /* before the edit */ } else if (gs >= oEnd) { gs += delta; ge += delta; } else if (gs <= p && oEnd <= ge) { ge += delta; } else continue;
+    const text = B.slice(gs, ge);
+    if (ge <= gs || (group === 'archive.body' && text.includes('\n'))) continue;
+    let k = 0; if (group === 'archive.body') while (k + 1 < sb.length && sb[k + 1] <= gs) k++;
+    out.set(sp, { ...sp, field: group === 'archive.abstract' ? group : `archive.body.${k}`, start: gs - sb[k], end: ge - sb[k], text });
+  }
+  return out;
+}
+/** The abstract and the body save through here: the Task 5 field edit, then the spans follow the text.
+ *  Spans are taken from before the edit, so a field that goes back to the seed (clearField drops its
+ *  spans) keeps the ones whose text is still there. */
+function editProse(id, group, value) {
+  const old = proseOf(viewFor(id), group), before = spansOf(id);
+  editField(id, group, value, group === 'archive.body');
+  const nu = proseOf(viewFor(id), group), c = store.get(id);
+  const mine = before.filter(s => groupOf(s.field) === group);
+  const moved = same(old, nu) ? new Map(mine.map(s => [s, s])) : rebaseSpans(mine, group, old, nu);
+  const next = before.flatMap(s => groupOf(s.field) !== group ? [s] : moved.has(s) ? [moved.get(s)] : []);
+  if (!same(next, c.spans || [])) store.put({ ...c, spans: next });
+  if (mine.length > moved.size) spanToast(mine.length - moved.size);
+}
+/** Offsets of the selection inside el (one field), trimmed of surrounding white space. A selection that runs
+ *  past el's end only by white space (a triple-click takes the paragraph break) is clamped to el. */
+function selectionOffsets(el) {
+  const sel = window.getSelection(); if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return null;
+  const range = sel.getRangeAt(0).cloneRange(); if (!el.contains(range.startContainer)) return null;
+  if (!el.contains(range.endContainer)) { const whole = range.toString(); range.setEnd(el, el.childNodes.length); if (whole.trim() !== range.toString().trim()) return null; }
+  const pre = range.cloneRange(); pre.selectNodeContents(el); pre.setEnd(range.startContainer, range.startOffset);
+  const text = el.textContent; let start = pre.toString().length, end = start + range.toString().length;
+  while (start < end && /\s/.test(text[start])) start++;
+  while (end > start && /\s/.test(text[end - 1])) end--;
+  return end > start ? { start, end, text: text.slice(start, end) } : null;
+}
+function rerenderProse(id) {
+  if (id !== current) return;
+  const v = viewFor(id); if (!v.archive) return;
+  const ab = $('#editor [data-path="archive.abstract"]'); if (ab) ab.innerHTML = spanHTML(id, 'archive.abstract', v.archive.abstract || '');
+  const body = $('#editor [data-paragraphs]'); if (body) body.innerHTML = bodyHTML(id, v);
+  applyOpen(); queueFlow();
+}
+// ---------- selection → popover ----------
+let pendingSel = null;   // { id, field, start, end, text } the popover and the source form act on
+function onProseSelect(id, e) {
+  if (e.type === 'keyup' && e.key === 'Escape') { hidePop(); return; }
+  const sel = getSelection();
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+    hidePop();
+    if (e.type === 'mouseup') { const cite = e.target.closest && e.target.closest('.cite[data-span]'); openCard(cite ? cite.dataset.span.slice(0, cite.dataset.span.lastIndexOf('|')) : null); }
+    return;
+  }
+  const range = sel.getRangeAt(0);
+  const start = range.startContainer.nodeType === 1 ? range.startContainer : range.startContainer.parentElement;
+  const el = start && start.closest('[data-field]');
+  if (!el || !e.currentTarget.contains(el)) { hidePop(); return; }
+  const off = selectionOffsets(el);
+  if (!off) { hidePop(); toast('Select within one paragraph to cite it.'); return; }
+  flush();   // a pending edit is stored first, so the offsets are against the stored text
+  const text = fieldText(viewFor(id), el.dataset.field);
+  if (text == null || el.textContent !== text || text.slice(off.start, off.end) !== off.text) { hidePop(); rerenderProse(id); toast('The text changed under the selection; select it again.'); return; }
+  if (spansFor(id, el.dataset.field).some(s => s.start < off.end && off.start < s.end)) { hidePop(); toast('That overlaps a bracket already there; brackets cannot overlap.'); return; }
+  pendingSel = { id, field: el.dataset.field, ...off };
+  showPop(id, range.getBoundingClientRect());
+}
+function hidePop() { const p = $('#pop'); if (p) p.remove(); }
+function showPop(id, rect) {
+  hidePop();
+  const v = viewFor(id), labels = labelsFor(id), q = pendingSel.text.length > 40 ? pendingSel.text.slice(0, 38) + '…' : pendingSel.text;
+  const pop = document.createElement('div'); pop.className = 'pop'; pop.id = 'pop';
+  pop.innerHTML = `<div class="l">Cite “${esc(q)}” to</div><div class="chips">${v.sources.map(s => `<button type="button" class="chip hue" style="--h:${hueOf(id, s.key)}" data-cite="${esc(s.key)}" title="${esc((metaOf(id, s.key) || {}).title || s.key)}">${esc(labels[s.key])}</button>`).join('')}</div><div class="acts"><button type="button" class="btn sm" data-newsrc>+ add source</button></div>`;
+  pop.addEventListener('mousedown', e => e.preventDefault());   // keep the selection and the editor's focus
+  pop.querySelectorAll('[data-cite]').forEach(b => b.addEventListener('click', () => { const ps = pendingSel; hidePop(); if (ps && addSpan(ps, b.dataset.cite)) { getSelection().removeAllRanges(); openKey = b.dataset.cite; render(); } }));
+  pop.querySelector('[data-newsrc]').addEventListener('click', () => { const ps = pendingSel; hidePop(); openSourceForm(id, ps); });
+  document.body.appendChild(pop);
+  const w = pop.offsetWidth;
+  pop.style.left = Math.max(8, Math.min(rect.left + scrollX, scrollX + document.documentElement.clientWidth - w - 8)) + 'px';
+  pop.style.top = (rect.bottom + scrollY + 8) + 'px';
+}
+function addSpan(ps, key) {
+  const { id, field, start, end, text } = ps;
+  const t = fieldText(viewFor(id), field);
+  if (t == null || t.slice(start, end) !== text) { toast('The text changed under the selection; select it again.'); return false; }
+  if (spansFor(id, field).some(s => s.start < end && start < s.end)) { toast('That overlaps a bracket already there; brackets cannot overlap.'); return false; }
+  commit(id, c => ({ ...c, spans: [...(c.spans || []), { field, start, end, text, sourceKey: key, at: now() }] }));
+  return true;
+}
+document.addEventListener('mousedown', e => { if (!e.target.closest('#pop')) hidePop(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { hidePop(); closeModal(); } });
+// ---------- adding a source: PubMed when the connector is there, by hand always ----------
+function closeModal() { const m = $('#modalBg'); if (m) m.remove(); }
+function openSourceForm(id, sel) {
+  closeModal();
+  const bg = document.createElement('div'); bg.className = 'modal-bg'; bg.id = 'modalBg';
+  const f = (name, label, ph) => `<div class="field"><label for="ns-${name}">${label}</label><input id="ns-${name}" name="${name}" autocomplete="off"${ph ? ` placeholder="${esc(ph)}"` : ''}></div>`;
+  bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="ns-h"><h2 id="ns-h">New source</h2>`
+    + (sel ? `<p class="tiny">It will cite “${esc(sel.text.length > 80 ? sel.text.slice(0, 78) + '…' : sel.text)}”.</p>` : '')
+    + (mcp ? `<div class="field"><label for="ns-lookup">PMID or DOI</label><div class="row"><input id="ns-lookup" name="lookup" class="in mono grow" style="width:auto" autocomplete="off" placeholder="12505794 or 10.1176/…"><button type="button" class="btn" data-lookup>Look up</button></div><div class="tiny" id="ns-found"></div></div><hr>`
+           : `<p class="tiny">PubMed lookup works when this page runs inside claude.ai with the PubMed connector; here, fill in the fields.</p>`)
+    + `<div class="grid2">${f('title', 'Title')}${f('authors', 'Authors', 'Surname AB, Surname C')}${f('year', 'Year')}${f('journal', 'Journal')}${f('pmid', 'PMID')}${f('doi', 'DOI')}</div>${f('url', 'URL')}`
+    + `<div class="actions"><button type="button" class="btn" data-cancel>Cancel</button><button type="button" class="btn primary" data-attach>Attach</button></div></div>`;
+  bg.addEventListener('mousedown', e => { if (e.target === bg) closeModal(); });
+  document.body.appendChild(bg);
+  const val = n => bg.querySelector(`[name=${n}]`).value.trim();
+  const put = (n, v) => { bg.querySelector(`[name=${n}]`).value = v ?? ''; };
+  bg.querySelector('[data-cancel]').addEventListener('click', closeModal);
+  const lookup = async () => {
+    const btn = bg.querySelector('[data-lookup]'), found = bg.querySelector('#ns-found');
+    btn.disabled = true; found.textContent = 'Looking up…';
+    try {
+      const a = await fetchArticle(val('lookup'));
+      put('title', a.title); put('authors', a.authors.map(x => x.last + (x.initials ? ' ' + x.initials : '')).join(', ')); put('year', a.year); put('journal', a.journal); put('pmid', a.pmid); put('doi', a.doi); put('url', '');
+      found.textContent = 'Found in PubMed: ' + (a.authors[0] ? a.authors[0].last + ' ' : '') + a.year + ', ' + a.journal;
+      return true;
+    } catch (e) { found.textContent = ''; toast(mcpErrorText(e), 5000); return false; }
+    finally { btn.disabled = false; }
+  };
+  if (mcp) {
+    bg.querySelector('[data-lookup]').addEventListener('click', lookup);
+    bg.querySelector('[name=lookup]').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); lookup(); } });
+  }
+  bg.querySelector('[data-attach]').addEventListener('click', async () => {
+    // an id typed with nothing looked up yet: look it up first
+    if (mcp && val('lookup') && !val('title') && !val('pmid') && !val('doi')) { if (!(await lookup())) return; }
+    const nul = s => s === '' ? null : s;
+    const meta = { kind: 'article', authors: nul(val('authors')), year: Number(val('year')) || null, title: nul(val('title')), journal: nul(val('journal')), pmid: nul(val('pmid').replace(/^pmid:\s*/i, '')), doi: nul(val('doi').replace(/^https?:\/\/(dx\.)?doi\.org\//i, '').replace(/^doi:\s*/i, '')), url: nul(val('url')), notes: null };
+    if (!meta.pmid && !meta.doi && !meta.journal) meta.kind = 'book';
+    if (!meta.title && !meta.pmid && !meta.doi && !meta.url) { toast('Give the source at least a title, a PMID, a DOI or a URL.'); return; }
+    if (meta.pmid && !/^\d{1,9}$/.test(meta.pmid)) { toast('A PMID is digits only.'); return; }
+    if (meta.doi && !/^10\.\S+\/\S+/.test(meta.doi)) { toast('A DOI starts with 10. and has a slash.'); return; }
+    const key = sourceKey(meta);
+    flush();
+    let already = false;
+    try { commit(id, c => attachSource(c, SEED, meta, { is_primary: 0 }, now())); }
+    catch (e) { if (e && e.message === 'already attached') already = true; else { toast('Could not attach: ' + (e && e.message || e), 5000); return; } }
+    closeModal();
+    const spanned = sel ? addSpan(sel, key) : false;
+    if (spanned) getSelection().removeAllRanges();
+    toast(already ? (spanned ? 'Already attached here; the bracket cites it.' : 'Already attached here.') : 'Added ' + labelOf(id, key) + '.');
+    if (id === current) { openKey = key; render(); }
+  });
+  (bg.querySelector('[name=lookup]') || bg.querySelector('[name=title]')).focus();
+}
+// ---------- margin cards + flow lines ----------
+let openKey = null;
+function labelOf(id, key) {
+  const m = metaOf(id, key) || {};
+  const who = String(m.authors || '').trim().split(/[\s,]+/)[0] || (m.title ? String(m.title).split(/\s+/).slice(0, 3).join(' ') : key.replace(/^\w+:/, '').replace(/^https?:\/\//, '').slice(0, 28));
+  return m.year ? `${who} ${m.year}` : who;
+}
+/** Labels for a receptor's sources, with a/b/c on labels that would otherwise repeat. */
+function labelsFor(id) {
+  const keys = viewFor(id).sources.map(s => s.key), base = Object.fromEntries(keys.map(k => [k, labelOf(id, k)]));
+  const n = {}, seen = {}; keys.forEach(k => { n[base[k]] = (n[base[k]] || 0) + 1; });
+  return Object.fromEntries(keys.map(k => [k, n[base[k]] > 1 ? base[k] + String.fromCharCode(97 + (seen[base[k]] = (seen[base[k]] || 0) + 1) - 1) : base[k]]));
+}
+const flagsOf = s => ({ is_primary: s.is_primary ? 1 : 0, conflicting: s.status === 'conflicting', correction_note: s.correction_note ?? null });
+/** A real change only; a seeded source's flags set back to the seed's drop the unpublished record. */
+function editFlags(id, key, patch) {
+  const src = viewFor(id).sources.find(s => s.key === key); if (!src) return;
+  const cur = flagsOf(src), next = { ...cur, ...patch };
+  if (!next.conflicting) next.correction_note = null;   // unchecking "conflicts with the text" clears the note
+  if (same(next, cur)) return;
+  const seeded = (seedOf(id).sources || []).find(s => s.key === key), rec = store.get(id).sources.set[key];
+  if (seeded && rec && !rec.publishedAs && same(next, flagsOf(seeded))) {
+    commit(id, c => ({ ...c, sources: { ...c.sources, set: Object.fromEntries(Object.entries(c.sources.set).filter(([k]) => k !== key)) } }));
+    return;
+  }
+  commit(id, c => setSourceFlags(c, SEED, key, next, now()));
+}
+function renderMargin(id) {
+  const m = $('#margin'); const v = viewFor(id), c = store.get(id), labels = labelsFor(id);
+  const count = {}, first = {};
+  for (const s of spansOf(id)) {
+    count[s.sourceKey] = (count[s.sourceKey] || 0) + 1;
+    const at = (s.field === 'archive.abstract' ? 0 : 1 + Number(s.field.split('.')[2])) * 1e7 + s.start;
+    if (!(first[s.sourceKey] <= at)) first[s.sourceKey] = at;
+  }
+  // cards with brackets first, in the order their first bracket appears in the text (short flow lines); then the rest
+  const order = v.sources.map((s, i) => [s, s.key in first ? first[s.key] : 1e12 + i]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
+  m.innerHTML = order.map(s => {
+    const meta = metaOf(id, s.key) || {}, conf = s.status === 'conflicting', add = s.added ? c.sources.add.find(a => a.key === s.key) : null, n = count[s.key] || 0;
+    const ids = [meta.journal, meta.pmid ? 'PMID ' + meta.pmid : '', meta.doi ? 'DOI ' + meta.doi : ''].filter(Boolean).map(esc).join(' · ');
+    return `<div class="mcard hue" style="--h:${hueOf(id, s.key)}" data-key="${esc(s.key)}"${s.added ? ' data-added="1"' : ''}>`
+      + `<div class="mhead" data-open role="button" tabindex="0" aria-label="Show the brackets for ${esc(labels[s.key])}"><span class="lab">${esc(labels[s.key])}</span><span class="n">${n} span${n === 1 ? '' : 's'}</span></div>`
+      + `<div class="mtitle">${esc(meta.title || s.key)}</div>`
+      + (ids ? `<div class="mstatus">${ids}</div>` : '')
+      + `<div class="mstatus${conf ? ' warn' : ''}" data-status><span data-st>${esc(s.status || '')}</span>${add ? ' · added ' + esc(String(add.at || '').slice(0, 10)) : ''}</div>`
+      + `<div class="mctl"><label class="check"><input type="checkbox" data-flag="is_primary"${s.is_primary ? ' checked' : ''}> primary</label><label class="check"><input type="checkbox" data-flag="conflicting"${conf ? ' checked' : ''}> conflicts with the text</label>${s.added ? '<button type="button" class="btn sm ghost danger" data-detach>Detach</button>' : ''}</div>`
+      + `<div class="mnote${conf ? '' : ' hidden'}"><label>Correction note</label><textarea rows="2" aria-label="Correction note">${esc(s.correction_note || '')}</textarea></div>`
+      + `</div>`;
+  }).join('') + `<div class="mnew"><button type="button" class="btn sm" data-newsrc>New source…</button></div>`;
+  m.querySelectorAll('.mcard').forEach(card => {
+    const key = card.dataset.key;
+    const head = card.querySelector('[data-open]');
+    head.addEventListener('click', () => openCard(openKey === key ? null : key));
+    head.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openCard(openKey === key ? null : key); } });
+    // flags update the card in place: re-drawing it under a click would swap the checkbox out from under the pointer
+    const status = () => { const s = viewFor(id).sources.find(x => x.key === key); if (!s) return; const st = card.querySelector('[data-status]'); st.querySelector('[data-st]').textContent = s.status; st.classList.toggle('warn', s.status === 'conflicting'); };
+    card.querySelector('[data-flag="is_primary"]').addEventListener('change', e => { flush(); editFlags(id, key, { is_primary: e.target.checked ? 1 : 0 }); status(); });
+    const note = card.querySelector('textarea');
+    card.querySelector('[data-flag="conflicting"]').addEventListener('change', e => {
+      flush(); editFlags(id, key, { conflicting: e.target.checked });
+      card.querySelector('.mnote').classList.toggle('hidden', !e.target.checked);
+      if (!e.target.checked) note.value = '';
+      status(); queueFlow();
+    });
+    note.addEventListener('input', debounce(() => { if (card.querySelector('[data-flag="conflicting"]').checked) editFlags(id, key, { correction_note: note.value.trim() ? note.value : null }); }, 300));
+    const det = card.querySelector('[data-detach]');
+    if (det) det.addEventListener('click', () => {
+      flush(); const label = labelOf(id, key);   // before the library row goes
+      try { commit(id, c => detachSource(c, SEED, key, now())); } catch (e) { toast(String(e && e.message || e), 4000); return; }
+      if (openKey === key) openKey = null;
+      toast('Detached ' + label + (count[key] ? '; its brackets went with it.' : '.'));
+      if (id === current) render();
+    });
+  });
+  m.querySelector('[data-newsrc]').addEventListener('click', () => openSourceForm(id, null));
+  applyOpen(); queueFlow();
+}
+function openCard(key) { openKey = key; applyOpen(); queueFlow(); }
+function applyOpen() {
+  document.querySelectorAll('#margin .mcard').forEach(c => { c.classList.toggle('open', !!openKey && c.dataset.key === openKey); c.classList.toggle('dim', !!openKey && c.dataset.key !== openKey); });
+  document.querySelectorAll('#editor .cite[data-span]').forEach(el => { const k = el.dataset.span.slice(0, el.dataset.span.lastIndexOf('|')); el.classList.toggle('active', !!openKey && k === openKey); el.classList.toggle('dim', !!openKey && k !== openKey); });
+}
+/** One path per bracket, from the end of the bracketed text to its card's left edge; only while the cards
+ *  sit beside the text (wide layout). Coordinates are relative to the svg itself. */
+function drawFlow() {
+  const svg = $('#flow'); const sr = svg.getBoundingClientRect();
+  const cards = {}; document.querySelectorAll('#margin .mcard').forEach(c => { cards[c.dataset.key] = c; });
+  let d = '';
+  for (const el of document.querySelectorAll('#editor .cite[data-span]')) {
+    const key = el.dataset.span.slice(0, el.dataset.span.lastIndexOf('|')), card = cards[key]; if (!card) continue;
+    const rects = el.getClientRects(); if (!rects.length) continue;
+    const r = rects[rects.length - 1], cr = card.getBoundingClientRect();
+    if (cr.left <= r.right) continue;
+    const x1 = r.right - sr.left, y1 = r.top + r.height / 2 - sr.top, x2 = cr.left - sr.left, y2 = cr.top + cr.height / 2 - sr.top;
+    const h = hueOf(current, key), cls = openKey ? (key === openKey ? 'hi' : 'dim') : '';
+    d += `<path${cls ? ` class="${cls}"` : ''} data-key="${esc(key)}" stroke="hsl(${h} 55% 36%)" d="M${x1.toFixed(1)} ${y1.toFixed(1)} C${(x1 + 60).toFixed(1)} ${y1.toFixed(1)}, ${(x2 - 60).toFixed(1)} ${y2.toFixed(1)}, ${x2.toFixed(1)} ${y2.toFixed(1)}"/>`;
+  }
+  svg.setAttribute('height', String(document.documentElement.scrollHeight));
+  svg.innerHTML = d;
+}
+let flowQ = 0;
+function queueFlow() { if (!flowQ) flowQ = requestAnimationFrame(() => { flowQ = 0; drawFlow(); }); }
+addEventListener('resize', queueFlow);
+addEventListener('scroll', queueFlow, { passive: true });
+if (window.ResizeObserver) { const ro = new ResizeObserver(queueFlow); ro.observe($('#editor')); ro.observe($('#margin')); }
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(queueFlow);
 // ---------- download ----------
 // Inside the claude.ai frame the page may only offer files through the downloads capability; the
 // <a download> path is for the file opened from disk (no window.claude at all).
@@ -5062,6 +5380,8 @@ $('#dl').addEventListener('click', async () => {
 });
 // ---------- boot ----------
 await store.init(); renderPicker(); render();
+// The PubMed connector, once; the source form reads `mcp` each time it opens.
+try { if (window.claude?.use) mcp = await window.claude.use('mcp'); } catch { mcp = null; }
 // expose for the walkthrough (after boot, so its presence means the page is ready)
 window.__desk = { SEED, BUILT_AT, store, toCuratorState, flush, view: () => view() };
 </script>

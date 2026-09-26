@@ -112,11 +112,73 @@ ok('download carries the review', got.review.d2 && got.review.d2.affinity === 1 
 ok('download has no spurious Ledger columns', JSON.stringify(Object.keys(got.content.clinical[d2.clinicalNo] || {}).filter(k => k !== 'baseline' && !(k in (SEED.baseState.content.clinical[d2.clinicalNo] || {})))) === '[]', JSON.stringify(got.content.clinical[d2.clinicalNo]));
 ok('no page errors during the walkthrough', errors.length === 0, errors.join(' | '));
 
+// --- Provenance layer: attach by hand, then span, then conflict ---
+const selectIn = (sel, a, b) => page.locator(sel).first().evaluate((el, [a, b]) => { const r = document.createRange(); r.setStart(el.firstChild, a); r.setEnd(el.firstChild, b); const s = getSelection(); s.removeAllRanges(); s.addRange(r); el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true })); }, [a, b]);
+await page.selectOption('#rx', 'd2');
+const d2body0 = d2.archive.body[0];
+const abstractEl = page.locator('[data-path="archive.abstract"]');
+await abstractEl.evaluate(el => { const r = document.createRange(); r.setStart(el.firstChild, 0); r.setEnd(el.firstChild, 11); const s = getSelection(); s.removeAllRanges(); s.addRange(r); el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true })); });
+ok('the popover offers one chip per attached source', (await page.locator('#pop [data-cite]').count()) === (await page.evaluate(() => window.__desk.view().sources.length)));
+await page.click('text=+ add source');
+ok('without the connector the source form is by hand only', (await page.locator('[data-lookup]').count()) === 0 && (await page.locator('.modal [name=title]').count()) === 1);
+await page.fill('[name=title]', 'Walkthrough paper'); await page.fill('[name=authors]', 'Tester T'); await page.fill('[name=year]', '2026'); await page.fill('[name=journal]', 'J Test'); await page.fill('[name=pmid]', '999999');
+await page.click('text=Attach'); await page.waitForTimeout(300);
+ok('span drawn in the abstract', (await page.locator('[data-path="archive.abstract"] .cite').count()) === 1);
+ok('one card per attached source', (await page.locator('#margin .mcard').count()) === (await page.evaluate(() => window.__desk.view().sources.length)));
+ok('a flow line per span', (await page.locator('#flow path').count()) >= 1);
+const stored = await page.evaluate(() => window.__desk.store.get('d2'));
+ok('the span is stored as { field, start, end, text, sourceKey, at }', stored.spans.length === 1 && JSON.stringify(Object.keys(stored.spans[0])) === '["field","start","end","text","sourceKey","at"]' && stored.spans[0].field === 'archive.abstract' && stored.spans[0].start === 0 && stored.spans[0].end === 11 && stored.spans[0].text === 'Walkthrough' && stored.spans[0].sourceKey === 'pmid:999999', JSON.stringify(stored.spans));
+const hues = await page.evaluate(() => ({ span: document.querySelector('[data-path="archive.abstract"] .cite').style.getPropertyValue('--h'), card: document.querySelector('#margin .mcard[data-key="pmid:999999"]').style.getPropertyValue('--h'), path: document.querySelector('#flow path[data-key="pmid:999999"]')?.getAttribute('stroke') }));
+ok('span, card and flow line share the source hue', hues.span && hues.span === hues.card && hues.path === `hsl(${hues.span} 55% 36%)`, JSON.stringify(hues));
+ok('the new card is marked added and can be detached', (await page.locator('#margin .mcard[data-key="pmid:999999"][data-added] [data-detach]').count()) === 1);
+await page.locator('#margin .mcard[data-key="pmid:999999"] [data-flag="conflicting"]').check();
+await page.fill('#margin .mcard[data-key="pmid:999999"] textarea', 'disagrees on onset'); await page.waitForTimeout(400);
+const [dl2] = await Promise.all([page.waitForEvent('download'), page.click('#dl')]);
+const got2 = JSON.parse(readFileSync(await dl2.path(), 'utf8'));
+const edge = got2.receptorSources.find(e => e.receptor_id === 'd2' && e.source === 'pmid:999999');
+ok('conflict flag reaches the edits file', edge && edge.status === 'conflicting' && edge.correction_note === 'disagrees on onset', JSON.stringify(edge));
+ok('the card status follows the flag and keeps its added date', /^conflicting · added \d{4}-\d\d-\d\d$/.test(await page.locator('#margin .mcard[data-key="pmid:999999"] [data-status]').innerText()));
+ok('seeded sources have no detach control', (await page.locator('#margin .mcard:not([data-added]) [data-detach]').count()) === 0);
+await page.locator('#margin .mcard[data-key="pmid:999999"] [data-flag="conflicting"]').uncheck(); await page.waitForTimeout(100);
+const unflagged = await page.evaluate(() => window.__desk.store.get('d2').sources.add.find(a => a.key === 'pmid:999999'));
+ok('unchecking "conflicts with the text" hides and clears the note', !unflagged.conflicting && unflagged.correction_note === null && !(await page.locator('#margin .mcard[data-key="pmid:999999"] textarea').isVisible()), JSON.stringify(unflagged));
+// a seeded source flagged and unflagged leaves no record
+const seededKey = d2.sources[0].key;
+await page.locator(`#margin .mcard[data-key="${seededKey}"] [data-flag="conflicting"]`).check(); await page.waitForTimeout(100);
+const setOn = await page.evaluate(k => !!window.__desk.store.get('d2').sources.set[k], seededKey);
+await page.locator(`#margin .mcard[data-key="${seededKey}"] [data-flag="conflicting"]`).uncheck(); await page.waitForTimeout(100);
+ok('a seeded source flagged then unflagged leaves no record', setOn && await page.evaluate(k => !(k in window.__desk.store.get('d2').sources.set), seededKey));
+// an overlapping selection is refused
+await selectIn('[data-path="archive.abstract"] .cite', 0, 4);
+ok('a selection inside a bracket is refused', (await page.locator('#pop').count()) === 0 && /overlaps/.test(await page.locator('.toast').innerText().catch(() => '')));
+// a chip cites an attached source; the body is one <p data-field> per paragraph
+ok('the body has one <p data-field="archive.body.n"> per paragraph', (await page.locator('[data-paragraphs] p[data-field="archive.body.0"]').count()) === 1);
+await selectIn('[data-paragraphs] p[data-field="archive.body.0"]', 4, 14);
+await page.click(`#pop [data-cite="${seededKey}"]`); await page.waitForTimeout(200);
+const bodySpan = await page.evaluate(() => window.__desk.store.get('d2').spans.find(s => s.field === 'archive.body.0'));
+ok('a chip draws a bracket in the body paragraph', bodySpan && bodySpan.start === 4 && bodySpan.end === 14 && bodySpan.text === d2body0.slice(4, 14) && (await page.locator('[data-paragraphs] .cite').count()) === 1, JSON.stringify(bodySpan));
+// clicking a bracket opens its card
+await page.locator('[data-paragraphs] .cite').click(); await page.waitForTimeout(100);
+ok('clicking a bracket opens its card and dims the others', (await page.locator(`#margin .mcard.open[data-key="${seededKey}"]`).count()) === 1 && (await page.locator('#margin .mcard.dim').count()) === (await page.locator('#margin .mcard').count()) - 1);
+// typing before a bracket moves it with its text
+await abstractEl.evaluate(el => { el.focus(); el.insertBefore(document.createTextNode('New. '), el.firstChild); el.dispatchEvent(new InputEvent('input', { bubbles: true })); });
+await page.waitForTimeout(450); await page.locator('[data-note]').focus(); await page.waitForTimeout(100);
+const moved = await page.evaluate(() => window.__desk.store.get('d2').spans.find(s => s.field === 'archive.abstract'));
+ok('an edit before a bracket moves the bracket with its text', moved && moved.start === 5 && moved.end === 16 && moved.text === 'Walkthrough' && (await page.locator('[data-path="archive.abstract"] .cite').innerText()) === 'Walkthrough', JSON.stringify(moved));
+// a stored span whose text is gone is dropped on load, with a toast
+await page.evaluate(() => { const k = 'atlas-desk-changes-v1'; const all = JSON.parse(localStorage.getItem(k)); all.d2.spans.push({ field: 'archive.abstract', start: 0, end: 4, text: 'Nope', sourceKey: 'pmid:999999', at: '2026-09-26T00:00:00.000Z' }); localStorage.setItem(k, JSON.stringify(all)); });
+await page.reload(); await ready('d2');
+ok('a span that no longer matches is dropped on load with a toast', (await page.locator('.toast').innerText().catch(() => '')) === '1 span no longer matches the text and was removed' && await page.evaluate(() => window.__desk.store.get('d2').spans.length === 2) && (await page.locator('#editor .cite').count()) === 2);
+// detaching an added source takes its card and its brackets
+await page.click('#margin .mcard[data-key="pmid:999999"] [data-detach]'); await page.waitForTimeout(100);
+ok('Detach removes the card and its brackets', (await page.locator('#margin .mcard[data-key="pmid:999999"]').count()) === 0 && (await page.locator('[data-path="archive.abstract"] .cite').count()) === 0 && await page.evaluate(() => !window.__desk.store.get('d2').sources.add.length));
+ok('no page errors in the Provenance layer', errors.length === 0, errors.join(' | '));
+
 // --- simulated claude.ai frame: a fake window.claude with db + downloads, same page from disk ---
 async function framePage(cfg) {
   const fctx = await browser.newContext({ acceptDownloads: true });
   await fctx.addInitScript(cfg => {
-    const L = window.__fakeLog = { sets: [], inflight: 0, maxInflight: 0, reads: 0, saves: [] };
+    const L = window.__fakeLog = { sets: [], inflight: 0, maxInflight: 0, reads: 0, saves: [], calls: [] };
     window.claude = { use: async name => {
       if (name === 'db') {
         if (cfg.db === 'none') return null;
@@ -128,6 +190,16 @@ async function framePage(cfg) {
       if (name === 'downloads') {
         if (cfg.dl === 'none') return null;
         return { save: async req => { L.saves.push(req.filename); if (cfg.dl === 'unavailable') throw { code: 'unavailable', message: 'x' }; return { status: 'saved' }; } };
+      }
+      if (name === 'mcp') {
+        if (!cfg.mcp) return null;
+        // PubMed as an MCP tool result: one text block carrying the JSON payload
+        return { callTool: async (server, tool, input) => {
+          L.calls.push({ server, tool, input });
+          if (server !== 'PubMed' || tool !== 'get_article_metadata') throw { code: 'tool_error', message: 'unexpected call ' + server + '.' + tool };
+          const articles = input.pmids.map(pmid => ({ title: 'Psychosis as a state of aberrant salience: a framework linking biology, phenomenology, and pharmacology in schizophrenia.', identifiers: { pmid, doi: '10.1176/appi.ajp.160.1.13' }, journal: { title: 'The American journal of psychiatry' }, authors: [{ last_name: 'Kapur', fore_name: 'Shitij', initials: 'S' }], publication_date: { year: 2003 }, article_types: ['Journal Article'] }));
+          return { content: [{ type: 'text', text: JSON.stringify({ articles }) }] };
+        } };
       }
       return null;
     } };
@@ -173,6 +245,21 @@ async function framePage(cfg) {
   const f = await framePage({ db: 'none', dl: 'unavailable' });
   await f.p.click('#dl'); await f.p.waitForTimeout(300);
   ok('frame: Download hides itself on "unavailable" and does not fall back', !(await f.p.locator('#dl').isVisible()) && f.downloads() === 0);
+  await f.fctx.close();
+}
+{ // the PubMed connector present: Look up fills the form from get_article_metadata, Attach attaches it
+  const f = await framePage({ db: 'none', dl: 'ok', mcp: true });
+  await f.p.selectOption('#rx', 'd1');
+  await f.p.locator('[data-path="archive.abstract"]').evaluate(el => { const r = document.createRange(); r.setStart(el.firstChild, 4); r.setEnd(el.firstChild, 11); const s = getSelection(); s.removeAllRanges(); s.addRange(r); el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true })); });
+  await f.p.click('text=+ add source');
+  await f.p.fill('[name=lookup]', '12505794'); await f.p.click('text=Look up');
+  await f.p.waitForFunction(() => document.querySelector('[name=title]').value !== '');
+  const form = await f.p.evaluate(() => Object.fromEntries(['title', 'authors', 'year', 'journal', 'pmid', 'doi'].map(n => [n, document.querySelector(`[name=${n}]`).value])));
+  ok('frame: Look up 12505794 calls PubMed.get_article_metadata and fills the form', JSON.stringify((await f.log()).calls) === JSON.stringify([{ server: 'PubMed', tool: 'get_article_metadata', input: { pmids: ['12505794'] } }]) && form.pmid === '12505794' && form.authors === 'Kapur S' && form.year === '2003' && form.doi === '10.1176/appi.ajp.160.1.13', JSON.stringify(form));
+  await f.p.click('.modal >> text=Attach'); await f.p.waitForTimeout(300);
+  const d1 = await f.p.evaluate(() => window.__desk.store.get('d1'));
+  ok('frame: Look up 12505794 → Attach attaches a source keyed pmid:12505794, with the bracket', d1.sources.add.length === 1 && d1.sources.add[0].key === 'pmid:12505794' && d1.spans.length === 1 && d1.spans[0].sourceKey === 'pmid:12505794' && d1.spans[0].text === 'primary' && (await f.p.locator('#margin .mcard[data-key="pmid:12505794"][data-added]').count()) === 1, JSON.stringify({ add: d1.sources.add, spans: d1.spans }));
+  ok('frame: no page errors with the connector', f.errs.length === 0, f.errs.join(' | '));
   await f.fctx.close();
 }
 await browser.close();
