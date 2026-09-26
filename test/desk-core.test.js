@@ -376,3 +376,91 @@ test('publishedOnly of a changes object with nothing published is the empty shap
   c.spans = [{ field: 'archive.abstract', start: 0, end: 1, text: 'x', sourceKey: 'pmid:12505794', at: AT }];
   assert.deepEqual(core.publishedOnly(c), core.emptyChanges('d2', s.commit));
 });
+
+test('clearField on a published record keeps a tombstone that exports as the seed value; an unpublished one is deleted', () => {
+  const s = seed();
+  s.baseState.content.archive.d2 = { effect: 'Seed-era edit' };
+  s.receptors[0].archive.effect = 'Seed-era edit';
+  let c = core.emptyChanges('d2', s.commit);
+  c = core.setField(c, 'archive.abstract', 'Published abstract.', AT);
+  c = core.setField(c, 'archive.effect', 'Published effect.', AT);
+  c = core.setField(c, 'claim', 'Published claim.', AT);
+  c = core.markPublished(c, 'sha1');
+  c = core.setField(c, 'clinical.onset', 'unpublished', AT);
+  const T2 = '2026-09-26T14:00:00.000Z';
+  let t = core.clearField(c, 'archive.abstract', T2);
+  t = core.clearField(t, 'archive.effect', T2);
+  t = core.clearField(t, 'claim', T2);
+  t = core.clearField(t, 'clinical.onset', T2);
+  assert.deepEqual(t.fields['archive.abstract'], { cleared: true, at: T2, publishedAs: null });
+  assert.equal('clinical.onset' in t.fields, false, 'an unpublished record is simply dropped');
+  const out = core.toCuratorState(s, [t]);
+  assert.deepEqual(out.content.archive, { d2: { effect: 'Seed-era edit' } }, 'back to the seed: the seed-era edit stays, the published one goes');
+  assert.deepEqual(out.content.claims, {});
+  assert.equal(out.activity.find(a => a.volume === 'cabinet').last_edited_at, T2, 'a revert is stamped as an edit');
+  const v = core.viewOf(s.receptors[0], t);
+  assert.equal(v.archive.abstract, 'Old abstract.'); assert.equal(v.archive.effect, 'Seed-era edit'); assert.equal(v.claim, 'D2 claim.');
+  assert.equal(core.countUnpublished([t]), 3); assert.equal(core.countPublished([t]), 0);
+  assert.equal(core.summarise([t]), '3 fields reverted');
+  const p = core.markPublished(t, 'sha2');
+  assert.equal(core.countPublished([p]), 3);
+  assert.deepEqual(core.rekey(p, { ...s, commit: 'new' }).fields, {}, 'rekey drops published tombstones');
+});
+
+test('detaching a published add records a remove; the converter drops the edge and the unreferenced library row', () => {
+  const s = twoReceptorSeed();
+  let c = core.attachSource(core.emptyChanges('d2', s.commit), s, KAPUR, { is_primary: 0 }, AT);
+  c = core.attachSource(c, s, OTHER, { is_primary: 0 }, AT);
+  c = core.markPublished(c, 'sha1');
+  let m = core.markPublished(core.attachSource(core.emptyChanges('mu', s.commit), s, OTHER, { is_primary: 0 }, AT), 'sha1');
+  const T2 = '2026-09-26T14:00:00.000Z';
+  let d = core.detachSource(c, s, 'pmid:12505794', T2);
+  d = core.detachSource(d, s, 'pmid:999', T2);
+  assert.deepEqual(d.sources.add, []);
+  assert.deepEqual(d.sources.remove, [{ key: 'pmid:12505794', at: T2, publishedAs: null }, { key: 'pmid:999', at: T2, publishedAs: null }]);
+  const out = core.toCuratorState(s, [d, m]);
+  assert.deepEqual(out.receptorSources.map(e => `${e.receptor_id}|${e.source}`), ['mu|pmid:999']);
+  assert.deepEqual(out.sources.map(x => x.key), ['pmid:999'], 'a row another receptor still cites stays; the other goes');
+  assert.deepEqual(core.toCuratorState(s, [m, d]).sources.map(x => x.key), ['pmid:999'], 'order-independent');
+  assert.equal(core.viewOf(s.receptors[0], d).sources.some(x => x.key === 'pmid:12505794'), false);
+  assert.equal(core.countUnpublished([d]), 2);
+  assert.equal(core.summarise([d]), '2 sources detached');
+  const p = core.markPublished(d, 'sha2');
+  assert.equal(core.countPublished([p]), 2);
+  assert.deepEqual(core.rekey(p, { ...s, commit: 'new' }).sources.remove, [], 'rekey drops published removes');
+  assert.deepEqual(core.rekey(d, { ...s, commit: 'new' }).sources.remove.length, 2, 'unpublished removes survive a re-seed');
+  // an unpublished add still just goes
+  const u = core.detachSource(core.attachSource(core.emptyChanges('d2', s.commit), s, KAPUR, { is_primary: 0 }, AT), s, 'pmid:12505794', T2);
+  assert.deepEqual(u.sources, { add: [], remove: [], set: {} });
+  // re-attaching drops the remove record
+  const r = core.attachSource(d, s, KAPUR, { is_primary: 0 }, T2);
+  assert.deepEqual(r.sources.remove.map(x => x.key), ['pmid:999']);
+});
+
+test('markPublishedFrom marks only the records unchanged since the pull', () => {
+  const s = seed(); let pulled = core.emptyChanges('d2', s.commit);
+  pulled = core.setField(pulled, 'archive.abstract', 'Pulled.', AT);
+  pulled = core.setField(pulled, 'claim', 'Pulled claim.', AT);
+  pulled = core.attachSource(pulled, s, KAPUR, { is_primary: 0 }, AT);
+  pulled = core.setSourceFlags(pulled, s, 'pmid:24463000', { conflicting: true, correction_note: 'n' }, AT);
+  pulled = core.setReview(pulled, { mechanism: 1 }, AT);
+  const T2 = '2026-09-26T14:00:00.000Z';
+  let cur = core.setField(pulled, 'claim', 'Typed after the pull.', T2);   // changed since
+  cur = core.setField(cur, 'clinical.onset', 'new', T2);                  // new since
+  cur = core.setReview(cur, { affinity: 1 }, T2);                          // changed since
+  const m = core.markPublishedFrom(cur, pulled, 'sha1');
+  assert.equal(m.fields['archive.abstract'].publishedAs, 'sha1');
+  assert.equal(m.fields.claim.publishedAs, null);
+  assert.equal(m.fields['clinical.onset'].publishedAs, null);
+  assert.equal(m.sources.add[0].publishedAs, 'sha1');
+  assert.equal(m.sources.set['pmid:24463000'].publishedAs, 'sha1');
+  assert.equal(m.review.publishedAs, null);
+  assert.equal(cur.fields['archive.abstract'].publishedAs, null, 'the input is not mutated');
+  // a record already published keeps its sha
+  const again = core.markPublishedFrom(core.markPublished(pulled, 'sha0'), pulled, 'sha1');
+  assert.equal(again.fields['archive.abstract'].publishedAs, 'sha0');
+  // key order does not matter (the store may reorder keys)
+  const reordered = JSON.parse(JSON.stringify(pulled)); reordered.fields['archive.abstract'] = { publishedAs: null, at: AT, value: 'Pulled.' };
+  assert.equal(core.markPublishedFrom(pulled, reordered, 'sha1').fields['archive.abstract'].publishedAs, 'sha1');
+  assert.deepEqual(core.markPublishedFrom(cur, null, 'sha1'), cur, 'nothing pulled, nothing marked');
+});

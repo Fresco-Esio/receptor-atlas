@@ -5,7 +5,7 @@ import { migrate } from '../scripts/migrate.js';
 import { exportState, importState } from '../scripts/curator-state.mjs';
 import { buildSeed } from '../scripts/desk-seed.mjs';
 import * as core from '../desk/desk-core.mjs';
-import { canonicalise, pull } from '../scripts/desk-pull.mjs';
+import { canonicalise, pull, summaryOf } from '../scripts/desk-pull.mjs';
 
 const fresh = () => { const db = openDb(':memory:'); migrate(db); return db; };
 const AT = '2026-09-26T13:00:00.000Z';
@@ -38,7 +38,7 @@ test('pull refuses when the repo edits file moved since the seed', () => {
   const seed = buildSeed({ baseState: base, commit: 'x' });
   const c = core.setField(core.emptyChanges('d2', 'x'), 'claim', 'New claim', AT);
   const ok = pull({ seed, changes: [c], repoState: base });
-  assert.equal(ok.ok, true); assert.equal(ok.state.content.claims.d2, 'New claim'); assert.equal(ok.summary, '1 content edit');
+  assert.equal(ok.ok, true); assert.equal(ok.state.content.claims.d2, 'New claim'); assert.equal(ok.summary, '1 claim edit', 'summarised from the repo file to the new one (lib/git-publish.js)');
   const moved = { ...base, content: { ...base.content, claims: { sert: 'Someone edited this at the old Desk' } } };
   const no = pull({ seed, changes: [c], repoState: moved });
   assert.equal(no.ok, false); assert.equal(no.reason, 'seed moved'); assert.deepEqual(no.diff, ['content']);
@@ -61,4 +61,34 @@ test('a second publish is accepted: the repo edits file is what this Desk alread
   const moved = { ...repoState, content: { ...repoState.content, claims: { ...repoState.content.claims, sert: 'elsewhere' } } };
   const no = pull({ seed, changes: [c], repoState: moved });
   assert.equal(no.ok, false); assert.equal(no.reason, 'seed moved'); assert.deepEqual(no.diff, ['content']);
+});
+
+test('pull summarises the repo file against the new one; the core summary only when there is no repo file', () => {
+  // The seed carries a claim edited at the old Desk; the hosted Desk sets it back to what the atlas ships.
+  const db = fresh(); db.prepare(`UPDATE claims SET text='Seed-era claim' WHERE receptor_id='d2'`).run();
+  const base = exportState(db);
+  const pristineClaim = fresh().prepare(`SELECT text FROM claims WHERE receptor_id='d2'`).get().text;
+  const seed = buildSeed({ baseState: base, commit: 'x' });
+  const c = core.setField(core.emptyChanges('d2', 'x'), 'claim', pristineClaim, AT);
+  const r = pull({ seed, changes: [c], repoState: base });
+  assert.equal(r.ok, true);
+  assert.equal(r.state.content.claims.d2, undefined);
+  assert.equal(r.summary, '1 change returned to what the atlas ships', 'a revert is counted (the core summary would call it a content edit)');
+  assert.equal(summaryOf(null, r.state, [c]), '1 content edit', 'no repo file: the core summary of the changes');
+  assert.equal(summaryOf(base, base, [c]), 'nothing to publish');
+});
+
+// Rulings A (accept the published-only conversion) and E (a revert of a published field is a tombstone;
+// a detach of a published add is a remove) do not compose: the tombstone/remove REPLACES the published
+// record, so publishedOnly no longer carries the value the repo file holds, and the check refuses. The
+// same happens when a published field is simply edited again. Kept as a todo until the store keeps the
+// published predecessor of an overwritten record (see the fix report).
+test('a revert of a published field is publishable', { todo: 'blocked: A x E, see .superpowers/sdd/2026-09-26-hosted-desk/final-fix-report.md' }, () => {
+  const base = exportState(fresh());
+  const seed = buildSeed({ baseState: base, commit: 'x' });
+  let c = core.setField(core.emptyChanges('d2', 'x'), 'claim', 'Published claim', AT);
+  const repoState = JSON.parse(JSON.stringify(pull({ seed, changes: [c], repoState: base }).state));
+  c = core.clearField(core.markPublished(c, 'sha1'), 'claim', '2026-09-26T14:00:00.000Z');
+  const two = pull({ seed, changes: [c], repoState });
+  assert.equal(two.ok, true, JSON.stringify(two.diff));
 });

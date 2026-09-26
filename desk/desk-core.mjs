@@ -34,10 +34,14 @@ export function setField(changes, path, value, at) {
   return c;
 }
 
-/** Drop a field's change record (the page's "back to the seed value") and any spans on that field. */
-export function clearField(changes, path) {
+/** "Back to the seed value" for one field, and drop any spans on it. An unpublished record is simply
+ *  deleted; a published one is replaced by a tombstone { cleared: true, at, publishedAs: null }, because
+ *  the repo's edits file carries the published value and the next publish has to take it back out. */
+export function clearField(changes, path, at = null) {
   const c = clone(changes);
-  delete c.fields[path];
+  const rec = c.fields[path];
+  if (rec && rec.publishedAs) c.fields[path] = { cleared: true, at, publishedAs: null };
+  else delete c.fields[path];
   c.spans = (c.spans || []).filter(sp => !(sp.field === path || (typeof sp.field === 'string' && sp.field.startsWith(path + '.'))));
   return c;
 }
@@ -53,6 +57,7 @@ export function attachSource(changes, seed, meta, flags, at) {
   const c = clone(changes); const key = sourceKey(meta);
   const r = seedReceptorOf(seed, c.receptorId);
   if (seededSource(r, key) || c.sources.add.some(s => s.key === key)) throw new Error('already attached');
+  c.sources.remove = (c.sources.remove || []).filter(x => x.key !== key);   // attached again after a published detach
   if (!seed.sources[key]) c.library[key] = Object.fromEntries(SOURCE_COLS.map(k => [k, meta[k] ?? null]));
   c.sources.add.push({ key, is_primary: flags.is_primary ? 1 : 0, conflicting: !!flags.conflicting, correction_note: flags.correction_note ?? null, at, publishedAs: null });
   return c;
@@ -66,7 +71,9 @@ export function detachSource(changes, seed, key, at) {
     if (r && seededSource(r, key)) throw new Error('seeded source: flag it as conflicting instead');
     throw new Error('unknown source: ' + key);
   }
-  c.sources.add.splice(i, 1); delete c.library[key]; delete c.sources.set[key];
+  const [gone] = c.sources.add.splice(i, 1); delete c.library[key]; delete c.sources.set[key];
+  // A published add is in the repo's edits file: record the detach so the next publish takes it out.
+  if (gone.publishedAs) (c.sources.remove = c.sources.remove || []).push({ key, at, publishedAs: null });
   c.spans = c.spans.filter(sp => sp.sourceKey !== key);
   return c;
 }
@@ -109,11 +116,13 @@ export function setReview(changes, marks, at) {
 export function viewOf(seedReceptor, changes) {
   const v = clone(seedReceptor);
   for (const [path, f] of Object.entries(changes.fields)) {
+    if (f.cleared) continue;   // a tombstone: the seed value shows
     const val = Array.isArray(f.value) ? [...f.value] : f.value;
     if (path === 'claim') v.claim = val;
     else { const [vol, field] = path.split('.'); if (!v[vol]) v[vol] = {}; v[vol][field] = val; }
   }
-  const sources = (v.sources || []).map(s => {
+  const removed = new Set(((changes.sources || {}).remove || []).map(x => x.key));
+  const sources = (v.sources || []).filter(s => !removed.has(s.key)).map(s => {
     const set = changes.sources.set[s.key];
     return set ? { ...s, is_primary: set.is_primary, status: edgeStatus(s.status, set), correction_note: set.correction_note } : s;
   });
@@ -153,6 +162,7 @@ export function toCuratorState(seed, changesList) {
     if (reviewed && (!a.last_reviewed_at || reviewed > a.last_reviewed_at)) a.last_reviewed_at = reviewed;
   };
 
+  const removedKeys = new Set();
   for (const c of changesList) {
     const id = c.receptorId; const r = seedReceptorOf(seed, id);
     if (!r) throw new Error('unknown receptor: ' + id);
@@ -160,6 +170,9 @@ export function toCuratorState(seed, changesList) {
     // --- content fields ---
     const arch = { ...(out.content.archive[id] || {}) }, clin = { ...(no != null ? out.content.clinical[no] || {} : {}) };
     for (const [path, f] of Object.entries(c.fields)) {
+      // A tombstone is "back to the seed": out started as a copy of the seed's own edits file, so the
+      // column is left as the seed has it; only the activity records that something was reverted.
+      if (f.cleared) { stamp(id, path === 'claim' ? 'cabinet' : path.startsWith('archive.') ? 'archive' : 'ledger', f.at); continue; }
       if (path === 'claim') { if (eq(f.value, P.claims[id])) delete out.content.claims[id]; else out.content.claims[id] = f.value; stamp(id, 'cabinet', f.at); continue; }
       const [vol, field] = path.split('.');
       if (vol === 'archive') {
@@ -178,6 +191,7 @@ export function toCuratorState(seed, changesList) {
     // --- sources ---
     for (const [key, meta] of Object.entries(c.library)) { const pr = P.sources[key]; if (pr && SOURCE_COLS.every(k => eq(meta[k], pr[k]))) dropSource(key); else upsertSource(key, meta); }
     for (const a of c.sources.add) { upsertEdge({ receptor_id: id, source: a.key, status: a.conflicting ? 'conflicting' : 'verified', is_primary: a.is_primary ? 1 : 0, correction_note: a.correction_note ?? null }); stamp(id, 'archive', a.at); }
+    for (const x of c.sources.remove || []) { dropEdge(id, x.key); removedKeys.add(x.key); stamp(id, 'archive', x.at); }
     for (const [key, s] of Object.entries(c.sources.set)) {
       const pr = P.receptorSources[`${id}|${key}`];
       const seeded = (r.sources || []).find(x => x.key === key);
@@ -201,41 +215,51 @@ export function toCuratorState(seed, changesList) {
       for (const vol of r.volumes || VOLUMES) stamp(id, vol, null, c.review.at);
     }
   }
+  // A detached source's library row goes too, once nothing else cites it (after every receptor, so the
+  // order of the list does not matter). A pristine row is not the Desk's to drop: there it is a metadata delta.
+  for (const key of removedKeys) {
+    if (!P.sources[key] && !out.receptorSources.some(e => e.source === key) && !(out.bindingSources || []).some(e => e.source === key)) dropSource(key);
+  }
   return { format: FORMAT, review: out.review, activity: out.activity, bindingReview: out.bindingReview || [], sources: out.sources, receptorSources: out.receptorSources, bindingSources: out.bindingSources || [], content: { claims: out.content.claims, archive: out.content.archive, clinical: out.content.clinical, bindings: out.content.bindings || [] } };
 }
 
 const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 /** One line for the publish prompt. Counts unpublished records only. */
 export function summarise(changesList) {
-  let edits = 0, attached = 0, conflicts = 0, reviews = 0;
+  let edits = 0, reverted = 0, attached = 0, detached = 0, conflicts = 0, reviews = 0;
   for (const c of changesList) {
-    edits += Object.values(c.fields).filter(f => !f.publishedAs).length;
+    edits += Object.values(c.fields).filter(f => !f.publishedAs && !f.cleared).length;
+    reverted += Object.values(c.fields).filter(f => !f.publishedAs && f.cleared).length;
     attached += c.sources.add.filter(a => !a.publishedAs).length;
+    detached += (c.sources.remove || []).filter(x => !x.publishedAs).length;
     conflicts += Object.values(c.sources.set).filter(s => !s.publishedAs && s.conflicting).length + c.sources.add.filter(a => !a.publishedAs && a.conflicting).length;
     if (c.review && !c.review.publishedAs) reviews++;
   }
   const parts = [];
   if (edits) parts.push(plural(edits, 'content edit'));
+  if (reverted) parts.push(plural(reverted, 'field') + ' reverted');
   if (attached) parts.push(plural(attached, 'source') + ' attached');
+  if (detached) parts.push(plural(detached, 'source') + ' detached');
   if (conflicts) parts.push(plural(conflicts, 'conflict') + ' noted');
   if (reviews) parts.push(plural(reviews, 'review') + ' updated');
   return parts.join(', ') || 'nothing to publish';
 }
 
+/** Every record in one changes object (fields, tombstones, adds, removes, flags, review), for counting and marking. */
+function records(c) {
+  return [...Object.values(c.fields), ...c.sources.add, ...(c.sources.remove || []), ...Object.values(c.sources.set), ...(c.review ? [c.review] : [])];
+}
+
 export function countUnpublished(changesList) {
   let n = 0;
-  for (const c of changesList) {
-    n += Object.values(c.fields).filter(f => !f.publishedAs).length + c.sources.add.filter(a => !a.publishedAs).length + Object.values(c.sources.set).filter(s => !s.publishedAs).length + (c.review && !c.review.publishedAs ? 1 : 0);
-  }
+  for (const c of changesList) n += records(c).filter(r => !r.publishedAs).length;
   return n;
 }
 
 /** The mirror of countUnpublished: records already carried by a published edits file. */
 export function countPublished(changesList) {
   let n = 0;
-  for (const c of changesList) {
-    n += Object.values(c.fields).filter(f => f.publishedAs).length + c.sources.add.filter(a => a.publishedAs).length + Object.values(c.sources.set).filter(s => s.publishedAs).length + (c.review && c.review.publishedAs ? 1 : 0);
-  }
+  for (const c of changesList) n += records(c).filter(r => r.publishedAs).length;
   return n;
 }
 
@@ -243,8 +267,30 @@ export function markPublished(changes, sha) {
   const c = clone(changes);
   for (const f of Object.values(c.fields)) if (!f.publishedAs) f.publishedAs = sha;
   for (const a of c.sources.add) if (!a.publishedAs) a.publishedAs = sha;
+  for (const x of c.sources.remove || []) if (!x.publishedAs) x.publishedAs = sha;
   for (const s of Object.values(c.sources.set)) if (!s.publishedAs) s.publishedAs = sha;
   if (c.review && !c.review.publishedAs) c.review.publishedAs = sha;
+  return c;
+}
+
+/** JSON with object keys sorted, so two records compare equal whatever order a store gave their keys. */
+const stable = v => Array.isArray(v) ? '[' + v.map(stable).join(',') + ']'
+  : v && typeof v === 'object' ? '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + stable(v[k])).join(',') + '}'
+  : JSON.stringify(v === undefined ? null : v);
+const sameRecord = (a, b) => { if (!a || !b) return false; const { publishedAs: _a, ...x } = a, { publishedAs: _b, ...y } = b; return stable(x) === stable(y); };
+
+/** markPublished for a store that may have moved since the pull: marks only the unpublished records of
+ *  `current` that are deep-equal (publishedAs aside) to the same record in `pulled`, the document as it was
+ *  converted. A record typed after the pull stays unpublished, so the next publish carries it. */
+export function markPublishedFrom(current, pulled, sha) {
+  const c = clone(current);
+  if (!pulled) return c;
+  const p = pulled, ps = p.sources || {};
+  for (const [k, f] of Object.entries(c.fields)) if (!f.publishedAs && sameRecord(f, (p.fields || {})[k])) f.publishedAs = sha;
+  for (const a of c.sources.add) if (!a.publishedAs && sameRecord(a, (ps.add || []).find(x => x.key === a.key))) a.publishedAs = sha;
+  for (const r of c.sources.remove || []) if (!r.publishedAs && sameRecord(r, (ps.remove || []).find(x => x.key === r.key))) r.publishedAs = sha;
+  for (const [k, s] of Object.entries(c.sources.set)) if (!s.publishedAs && sameRecord(s, (ps.set || {})[k])) s.publishedAs = sha;
+  if (c.review && !c.review.publishedAs && sameRecord(c.review, p.review)) c.review.publishedAs = sha;
   return c;
 }
 
@@ -268,6 +314,7 @@ export function rekey(changes, newSeed) {
   const c = clone(changes); c.seedCommit = newSeed.commit;
   for (const [k, f] of Object.entries(c.fields)) if (f.publishedAs) delete c.fields[k];
   c.sources.add = c.sources.add.filter(a => !a.publishedAs);
+  c.sources.remove = (c.sources.remove || []).filter(x => !x.publishedAs);
   for (const [k, s] of Object.entries(c.sources.set)) if (s.publishedAs) delete c.sources.set[k];
   for (const k of Object.keys(c.library)) if (!c.sources.add.some(a => a.key === k)) delete c.library[k];
   if (c.review && c.review.publishedAs) c.review = null;

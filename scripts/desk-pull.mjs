@@ -10,6 +10,7 @@ import { migrate } from './migrate.js';
 import { exportState, importState, readState, STATE_FILE } from './curator-state.mjs';
 import { SEED_FILE } from './desk-seed.mjs';
 import { toCuratorState, summarise, publishedOnly, countPublished } from '../desk/desk-core.mjs';
+import { summarise as summariseStates } from '../lib/git-publish.js';
 
 export function canonicalise(state) {
   const db = openDb(':memory:'); migrate(db); importState(db, state);
@@ -30,7 +31,15 @@ export function pull({ seed, changes, repoState }) {
     if (fromPublished.length) return { ok: false, reason: 'seed moved', diff: fromPublished };
   }
   const state = canonicalise(toCuratorState(seed, changes));
-  return { ok: true, state, summary: summarise(changes) };
+  return { ok: true, state, summary: summaryOf(repoState, state, changes) };
+}
+
+/** What the publish does to the repo's edits file, in the words the old Desk's commits use (reverts and
+ *  detaches included, since those make rows leave the file); the core's count of the changes only when
+ *  there is no repo file to compare with. */
+export function summaryOf(repoState, state, changes) {
+  if (!repoState) return summarise(changes);
+  return summariseStates(repoState, state).join(', ') || 'nothing to publish';
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

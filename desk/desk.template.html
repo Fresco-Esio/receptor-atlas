@@ -295,15 +295,16 @@ let current = SEED.receptors[0].id;
 const view = () => viewFor(current);
 function commit(id, mut) { store.put(mut(store.get(id))); renderBanner(); markChanged(); }
 // Only a real change reaches setField: a value equal to what the page already shows is not a change,
-// and a value back at the seed's drops the unpublished record instead of storing a no-op edit
-// (a no-op on a list whose pristine column is null would otherwise export "[]").
+// and a value back at the seed's goes through clearField instead of storing a no-op edit (a no-op on a
+// list whose pristine column is null would otherwise export "[]"): an unpublished record is dropped, a
+// published one becomes a tombstone the next publish carries as a revert.
 function editField(id, path, value, isList) {
   const norm = v => isList ? (v ?? []) : (v ?? null);
   const seedVal = norm(valueAt(seedOf(id), path));
   if (!isList && value === '' && seedVal === null) value = null;   // emptied, and empty in the seed too
   if (same(norm(value), norm(valueAt(viewFor(id), path)))) return;
   const rec = store.get(id).fields[path];
-  if (rec && !rec.publishedAs && same(norm(value), seedVal)) { commit(id, c => clearField(c, path)); return; }
+  if (rec && same(norm(value), seedVal)) { commit(id, c => clearField(c, path, now())); return; }
   commit(id, c => setField(c, path, value, now()));
 }
 const marksOf = r => ({ mechanism: (r || {}).mechanism | 0, affinity: (r || {}).affinity | 0, clinical: (r || {}).clinical | 0, note: (r || {}).note || '' });
@@ -767,7 +768,7 @@ await store.init(); renderPicker(); render();
 // The PubMed connector, once; the source form reads `mcp` each time it opens.
 try { if (window.claude?.use) mcp = await window.claude.use('mcp'); } catch { mcp = null; }
 // expose for the walkthrough (after boot, so its presence means the page is ready)
-window.__desk = { SEED, BUILT_AT, store, toCuratorState, flush, view: () => view() };
+window.__desk = { SEED, BUILT_AT, store, toCuratorState, markPublished, markPublishedFrom, flush, view: () => view() };
 </script>
 </body>
 </html>

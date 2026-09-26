@@ -73,10 +73,11 @@ automatically.
 4. Show the summary to the owner and wait for "go".
 5. `npm run desk:pull -- changes.json`, then `git add db/curator-state.json && git commit
    && git push` (Actions rebuilds the site).
-6. Mark the published records: for each document, set `publishedAs` to the commit sha on
-   every unpublished field/source/review record (`markPublished` in `desk/desk-core.mjs`
-   is the reference implementation) and write the documents back with `ArtifactData set`,
-   pinned with `if_version`. Nothing is deleted.
+6. Mark the published records: read each document again (the owner may have kept typing
+   since step 1), apply `markPublishedFrom(current, pulled, sha)` from `desk/desk-core.mjs`
+   — `pulled` is that document as it went into `changes.json` — which sets `publishedAs`
+   to the commit sha only on records unchanged since the pull, and write the documents
+   back with `ArtifactData set`, pinned with `if_version`. Nothing is deleted.
 
 `re-seed the desk` = `npm run desk:seed && npm run desk:build`, republish
 `desk/desk.artifact.html` to the same artifact URL, then `rekey` every stored document to
