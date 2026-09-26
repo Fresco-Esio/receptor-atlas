@@ -57,11 +57,22 @@ reader who wrote a number down needs to know it moved.
   (published records fold in; unpublished carry over), refusing and saying why in the same
   cases as `desk:rekey`.
 - **Import changes** merges a `changes.json` from another copy of the Desk.
+- The published site carries `data/build.json` (`{ commit, builtAt }`), naming the commit
+  it was built from.
+- After a Publish, the Desk watches the rebuild: the receipt reads "site rebuilding…" until
+  the site reports the new commit, then "live on the site" with a link to the edited
+  Archive entry and a "Live on the site." toast. A receipt left "rebuilding" gets one more
+  look when the page next loads.
 
 ### Changed
 
 - The edits file the converter writes orders its maps the way the database export does,
   so a publish from the page and one from `desk:pull` are byte-identical.
+- The published pages fetch their data with `cache: 'no-store'`. GitHub Pages lets a
+  browser keep `data/*.json` for ten minutes, so a reload right after a publish could show
+  the old text; it now always shows what the site holds.
+- The Desk's publish receipt no longer shows the date (`last published a1b2c3d · date`); it
+  shows whether the site has the publish yet.
 
 ### Fixed
 
