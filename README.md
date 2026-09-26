@@ -41,8 +41,8 @@ There is a second way to edit the atlas that needs no terminal, no port, and no 
 your own: the hosted Desk, a private claude.ai artifact. That is the normal place to edit.
 The same single file is also reachable without claude.ai — at `/desk/` on the public site,
 and as `desk/desk.html` in a clone. That fallback keeps your edits in the browser's own
-storage instead of the artifact's store, and offers a Download of the edits file in place
-of "publish the atlas".
+storage instead of the artifact's store, and offers Download changes in place of "publish
+the atlas" (see "Publishing from the fallback" below).
 
 **Edit here:** <https://claude.ai/artifact/PkCQ5RJx4KXxppbTwXqaRg> (private to the owner).
 
@@ -78,6 +78,21 @@ automatically.
    — `pulled` is that document as it went into `changes.json` — which sets `publishedAs`
    to the commit sha only on records unchanged since the pull, and write the documents
    back with `ArtifactData set`, pinned with `if_version`. Nothing is deleted.
+
+### Publishing from the fallback
+
+1. **Download changes** (the first button in the fallback) saves `changes.json`: the raw
+   changes this browser holds, not an edits file.
+2. `npm run desk:pull -- --check changes.json` — the same check as step 3 above.
+3. `npm run desk:pull -- changes.json`, then commit `db/curator-state.json` and push.
+
+*Download edits file (full replacement)* builds a whole `db/curator-state.json` on the
+page's own snapshot. Use it only when the repo's edits file is the snapshot's: after any
+publish from the hosted Desk it would overwrite that publish, which `desk:pull` never does.
+
+The `/desk/` copy on the public site is rebuilt on every push (`desk:seed` and
+`desk:build` run in the Actions workflow before the snapshot), so it always starts from
+the repo's current edits file.
 
 `re-seed the desk` = `npm run desk:seed && npm run desk:build`, republish
 `desk/desk.artifact.html` to the same artifact URL, then `rekey` every stored document to

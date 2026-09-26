@@ -40,6 +40,11 @@ jobs:
       - name: Build the database from the committed seed data
         run: npm run migrate
 
+      # /desk/ is built from the repo's current edits file, not from the committed
+      # desk/seed.json, so the fallback page never starts from a snapshot older than a publish.
+      - name: Build the fallback Desk from the current edits file
+        run: npm run desk:seed && npm run desk:build
+
       - name: Freeze the atlas to a static site
         run: npm run snapshot
 
