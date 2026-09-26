@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Receptor Atlas Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;1,14..32,400&display=swap" rel="stylesheet">
+<style>
+/* ---- Lifted verbatim from Provenance (atlas-ref/provenance.html): :root tokens + base, .hue,
+   buttons + fields (.btn/.field/.pill/.chip), write view (.write, #flow, .margin, .mcard, .editor,
+   .cite, .tag, .pop), sources view (.srow), modal + toast. ---- */
+:root{
+  --bg:#FFFFFF; --paper:#FFFFFF; --paper-2:#F3F4F3; --ink:#000000; --ink-2:#3D444C; --ink-3:#7A828A; --line:#E3E5E7; --line-2:#EEF0F1;
+  --ok:#2E7D5B; --bad:#B7472A; --warn:#B9831F; --info:#2F6F8F;
+  --ok-soft:#E4F1EA; --bad-soft:#F7E6E0; --warn-soft:#F8EFDB; --info-soft:#E3EDF3;
+  --hl:#FFF0A6; --sat:55%; --lum:36%; --bgsat:55%; --bglum:90%; --txtlum:22%;
+  --sans:"Inter","Helvetica Neue",Arial,sans-serif; --serif:"Inter","Helvetica Neue",Arial,sans-serif; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{height:100%; scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.5}
+button,input,select,textarea{font:inherit; color:inherit}
+a{color:var(--info); text-decoration-thickness:1px; text-underline-offset:2px}
+:focus-visible{outline:2px solid var(--ink-2); outline-offset:2px}
+h1,h2,h3{margin:0; font-weight:500; line-height:1.25}
+h1{font-size:1.25rem} h2{font-size:1.05rem} h3{font-size:.95rem}
+p{margin:0 0 .6rem}
+code,.mono{font-family:var(--mono); font-size:.86em}
+.hidden{display:none !important}
+.muted{color:var(--ink-2)} .small{font-size:.86rem} .tiny{font-size:.78rem; color:var(--ink-3)}
+.grow{flex:1}
+
+/* per-source colour: set --h on the element */
+.hue{--c:hsl(var(--h) var(--sat) var(--lum)); --cbg:hsl(var(--h) var(--bgsat) var(--bglum)); --ct:hsl(var(--h) 55% var(--txtlum))}
+
+/* buttons + fields */
+.btn{display:inline-flex; align-items:center; gap:6px; padding:6px 11px; border-radius:7px; border:1px solid var(--line); background:transparent; cursor:pointer; font-size:.88rem; white-space:nowrap; color:var(--ink)}
+.btn:hover{background:var(--paper-2)}
+.btn.primary{background:var(--ink); color:var(--bg); border-color:var(--ink)}
+.btn.primary:hover{opacity:.9; background:var(--ink)}
+.btn.sm{padding:3px 8px; font-size:.8rem}
+.btn.ghost{border-color:transparent; color:var(--ink-2)}
+.btn.danger{color:var(--bad)}
+.btn:disabled{opacity:.45; cursor:not-allowed}
+.field{display:flex; flex-direction:column; gap:4px; margin-bottom:12px}
+.field label{font-size:.8rem; color:var(--ink-2)}
+.field input,.field textarea,.field select,.in{padding:7px 9px; border:1px solid var(--line); border-radius:7px; background:var(--paper); width:100%}
+.field textarea{min-height:64px; resize:vertical}
+.grid2{display:grid; grid-template-columns:1fr; gap:0 14px}
+@media (min-width:700px){ .grid2{grid-template-columns:1fr 1fr} }
+.row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+.row.between{justify-content:space-between}
+.pill{display:inline-flex; align-items:center; gap:5px; border-radius:999px; padding:1px 9px; font-size:.76rem; border:1px solid var(--line); color:var(--ink-2); white-space:nowrap}
+.pill.ok{color:var(--ok); border-color:transparent; background:var(--ok-soft)}
+.pill.bad{color:var(--bad); border-color:transparent; background:var(--bad-soft)}
+.pill.warn{color:var(--warn); border-color:transparent; background:var(--warn-soft)}
+.pill.info{color:var(--info); border-color:transparent; background:var(--info-soft)}
+.chips{display:flex; flex-wrap:wrap; gap:6px}
+.chip{display:inline-flex; align-items:center; gap:5px; padding:2px 9px; border-radius:999px; border:1px solid var(--line); background:transparent; font-size:.8rem; cursor:pointer}
+.chip.on{background:var(--paper-2); border-color:var(--ink-3)}
+.chip.hue{background:var(--cbg); color:var(--ct); border-color:transparent; font-weight:500}
+.chip.dash{border-style:dashed; color:var(--ink-2)}
+hr{border:0; border-top:1px solid var(--line); margin:16px 0}
+
+/* write view */
+.write{position:relative; max-width:720px}
+.write .editor{max-width:36em}
+@media (min-width:1000px){ .write{max-width:none; display:grid; grid-template-columns:minmax(0,36em) minmax(300px,360px); column-gap:clamp(40px,5vw,96px); align-items:start; font-size:clamp(1.2rem,.85rem + .55vw,1.65rem)} .write .editor{font-size:1em} .write .margin{font-size:15px} }
+@media (min-width:1000px){ .main.writing{padding-left:clamp(40px,10vw,260px); padding-right:28px} }
+.wline{max-width:none !important}
+.wline .srcbtn{text-decoration:none}
+.wline .srcbtn.on{color:var(--ink)}
+#flow{position:absolute; left:0; top:0; width:100%; pointer-events:none; overflow:visible; z-index:1}
+#flow path{fill:none; stroke-width:1.2; opacity:.7}
+#flow path.dim{opacity:.12}
+#flow path.hi{stroke-width:1.6; opacity:1}
+.margin{position:relative; z-index:3; margin-top:34px}
+.margin:empty{margin:0}
+@media (min-width:1000px){ .margin{margin-top:0} }
+.mcard{background:var(--bg); border:1px solid var(--line); border-left:3px solid var(--c,var(--ink-3)); border-radius:8px; padding:10px 12px 11px; margin:0 0 10px; font-size:.84rem; line-height:1.45; transition:opacity .15s; box-shadow:0 2px 14px rgba(0,0,0,.05)}
+.mcard .sblock + .sblock{margin-top:12px; padding-top:12px; border-top:1px solid var(--line-2)}
+.mcard .shead{display:flex; align-items:center; gap:7px}
+.mcard .shead .lab{font-weight:600; color:var(--ct); font-size:.9rem}
+.mcard .smeta{color:var(--ink-2); font-size:.76rem; margin-top:2px}
+.mcard .ttl{color:var(--ink); margin-top:4px; font-size:.84rem; line-height:1.35}
+.mcard .field{margin:8px 0 0} .mcard .field label{font-size:.7rem; color:var(--ink-3)}
+.mcard .field textarea{min-height:38px; font-size:.8rem; padding:5px 7px; line-height:1.35}
+.mcard .cardfoot{display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:10px; padding-top:9px; border-top:1px solid var(--line-2)}
+.mcard .cardfoot .l{font-size:.72rem; color:var(--ink-3); flex-basis:100%}
+.mcard .x{margin-left:auto; border:0; background:transparent; color:var(--ink-3); cursor:pointer; font-size:1rem; line-height:1; padding:0 2px}
+.mcard .x:hover{color:var(--ink)}
+.mcard .chips{gap:5px}
+.slist .srow2{display:flex; align-items:center; gap:8px; padding:6px 2px; border-bottom:1px solid var(--line-2); cursor:pointer}
+.slist .srow2:hover{background:var(--paper-2)}
+.slist .srow2 .lab{font-weight:600; color:var(--ct)}
+.slist .srow2 .st{margin-left:auto; font-size:.72rem; color:var(--ink-3); white-space:nowrap}
+.slist .srow2 .st.warn{color:var(--warn)}
+.slist .srow2.on{background:var(--paper-2)}
+.mcard.dim{opacity:.3}
+.mcard.open{border-color:var(--ink-3); border-left-color:var(--c)}
+.mhead{display:flex; align-items:center; gap:7px; cursor:pointer}
+.mhead .lab{font-weight:600; color:var(--ct); font-size:.84rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.mhead .n{margin-left:auto; color:var(--ink-3); font-size:.72rem}
+.mtitle{color:var(--ink-2); margin-top:3px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.mstatus{margin-top:4px; color:var(--ink-3); font-size:.74rem}
+.mstatus.warn{color:var(--warn)}
+.mctl{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:8px; padding-top:8px; border-top:1px solid var(--line-2); font-size:.76rem}
+.mctl select{padding:2px 6px; border:1px solid var(--line); border-radius:6px; background:var(--paper); font-size:.76rem}
+.mctl .check{padding:0; gap:5px} .mctl .check input{width:14px; height:14px; margin-top:0}
+.mbtns{display:flex; gap:5px; flex-wrap:wrap; margin-top:6px}
+.mbtns .btn{padding:2px 7px; font-size:.74rem}
+.mrows{margin-top:8px}
+.mrow{border-top:1px solid var(--line-2); padding:7px 0 4px; border-left:2px solid var(--line); padding-left:8px; margin-top:6px}
+.mrow.supports{border-left-color:var(--ok)} .mrow.conflicting{border-left-color:var(--bad)} .mrow.void{border-left-color:var(--warn)}
+.mrow .mclaim{font-size:.82rem; color:var(--ink); line-height:1.35}
+.mrow select{padding:1px 5px; border:1px solid var(--line); border-radius:6px; background:var(--paper); font-size:.74rem}
+.mrow .tiny{margin-top:3px; line-height:1.35}
+.mrow .tiny.warn{color:var(--warn)}
+.madd{display:flex; gap:6px; flex-wrap:wrap; border-style:dashed; border-left-style:dashed; border-left-color:var(--line); background:transparent}
+.madd .btn{padding:2px 8px; font-size:.76rem}
+.wline{display:flex; gap:14px; align-items:baseline; font-size:.74rem; color:var(--ink-3); margin-bottom:30px; max-width:720px}
+.wline button{border:0; background:transparent; color:var(--ink-3); cursor:pointer; padding:0; font-size:inherit; text-decoration:underline; text-underline-offset:3px}
+.wline button:hover{color:var(--ink)}
+.gutter{display:none}
+.gdot{width:12px; height:12px; border-radius:50%; background:var(--c); border:0; padding:0; cursor:pointer; position:relative; opacity:.9}
+.gdot.hollow{background:transparent; border:2px solid var(--c)}
+.gdot.on{box-shadow:0 0 0 2px var(--bg),0 0 0 3.5px var(--ink)}
+.gdot::after{content:attr(data-label); position:absolute; left:18px; top:-5px; font-family:var(--sans); font-size:.72rem; font-weight:500; color:var(--ct); background:var(--cbg); padding:1px 7px; border-radius:4px; white-space:nowrap; opacity:0; pointer-events:none; transition:opacity .12s}
+.gdot:hover::after,.gdot:focus-visible::after,.gdot.on::after{opacity:1}
+.editor{font-family:var(--sans); font-size:clamp(1.2rem,.85rem + .55vw,1.65rem); line-height:1.62; font-weight:400; letter-spacing:-.005em; min-height:60vh; outline:0; padding:2px 0; caret-color:var(--ink); color:var(--ink); -webkit-font-smoothing:antialiased}
+.editor p{margin:0 0 1.15em}
+.editor[data-empty="1"]::before{content:attr(data-ph); color:var(--ink-3); font-style:italic; position:absolute; pointer-events:none}
+.cite{position:relative; color:inherit}
+.cite::before,.cite::after{color:var(--c); font-family:var(--sans); font-weight:600; font-size:.95em; line-height:0; vertical-align:-.05em}
+.cite::before{content:"\231C"; margin-right:1px}
+.cite::after{content:"\231D"; margin-left:1px}
+.cite.pending{background:var(--hl); --c:var(--ink-3)}
+.cite.pending::before,.cite.pending::after{color:var(--ink-3)}
+.cite.weak::before,.cite.weak::after{opacity:.6}
+.cite{cursor:pointer; border-radius:3px; transition:background .12s}
+.cite:hover{background:hsl(var(--h,0) 40% 96%)}
+.cite.pending:hover{background:var(--hl)}
+.cite.active{background:var(--cbg)}
+.cite.pending.active{background:var(--hl); outline:1px dashed var(--ink-3)}
+.cite.dim{opacity:.35}
+.tag{display:inline-block; font-family:var(--sans); font-size:.5em; font-weight:600; line-height:1.4; padding:0 .5em; border-radius:.3em; background:var(--cbg); color:var(--ct); vertical-align:.5em; margin:0 .2em; user-select:none; -webkit-user-select:none; cursor:pointer; white-space:nowrap}
+.tag.pending{background:transparent; color:var(--ink-3); border:1px dashed var(--ink-3)}
+.tag.dim{opacity:.35}
+.pop{position:absolute; z-index:30; background:var(--paper); border:1px solid var(--line); border-radius:9px; padding:8px 10px; box-shadow:0 6px 24px rgba(0,0,0,.12); font-family:var(--sans); font-size:.84rem; max-width:min(92vw,460px)}
+.pop .l{font-size:.74rem; color:var(--ink-3); margin-bottom:6px}
+.pop .chips{gap:5px}
+.pop .acts{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; padding-top:8px; border-top:1px solid var(--line-2)}
+
+/* sources view */
+.srow{border-bottom:1px solid var(--line); padding:12px 2px}
+.srow .top1{display:grid; grid-template-columns:auto 1fr auto; gap:10px; align-items:center}
+.srow .lab{font-weight:500; color:var(--ct); border:0; background:transparent; padding:0 2px; font-size:.95rem; min-width:40px; max-width:100%}
+.srow .lab:focus{outline:0; border-bottom:1px dashed var(--ink-3)}
+.srow .lab-wrap{display:flex; align-items:center; gap:6px; min-width:0}
+.srow .pen{color:var(--ink-3); font-size:.75rem; opacity:0; transition:opacity .15s}
+.srow .lab-wrap:hover .pen,.srow .lab:focus + .pen{opacity:1}
+.srow .ttl{font-family:var(--serif); font-size:1.02rem; line-height:1.35; margin:2px 0 2px}
+.srow .meta{font-size:.8rem; color:var(--ink-2); display:flex; gap:10px; flex-wrap:wrap}
+.srow .status{display:flex; gap:8px; align-items:center; font-size:.78rem; color:var(--ink-3); white-space:nowrap}
+.srow select.q{border:0; background:transparent; color:var(--ink-2); font-size:.78rem; padding:0}
+.srow .more{display:none; margin-top:10px; padding-top:10px; border-top:1px solid var(--line-2)}
+.srow.open .more{display:block}
+.srow .ctl{display:grid; grid-template-columns:1fr 1fr; gap:8px 12px}
+@media (min-width:720px){ .srow .ctl{grid-template-columns:repeat(4,1fr)} }
+.srow .ctl select,.srow .ctl input{width:100%; padding:5px 8px; border:1px solid var(--line); border-radius:7px; background:var(--paper); font-size:.86rem}
+
+/* modal + toast */
+.modal-bg{position:fixed; inset:0; background:rgba(10,12,14,.42); z-index:50; display:flex; align-items:flex-end; justify-content:center}
+@media (min-width:720px){ .modal-bg{align-items:center} }
+.modal{background:var(--paper); width:100%; max-width:700px; max-height:92vh; overflow:auto; border-radius:14px 14px 0 0; padding:18px; border:1px solid var(--line)}
+@media (min-width:720px){ .modal{border-radius:14px} }
+.modal h2{margin-bottom:10px}
+.modal .actions{display:flex; gap:8px; justify-content:flex-end; margin-top:12px; flex-wrap:wrap}
+.toast{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(64px + env(safe-area-inset-bottom,0px)); background:var(--ink); color:var(--bg); padding:8px 14px; border-radius:9px; font-size:.84rem; z-index:60; max-width:92vw}
+@media (min-width:760px){ .toast{bottom:24px} }
+@media (prefers-reduced-motion:no-preference){ .modal{animation:up .18s ease-out} @keyframes up{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}} }
+/* ---- Desk-only ---- */
+:root{ color-scheme: light only; }
+html,body{ background:var(--bg); color:var(--ink); }   /* white/black holds whatever the device theme is */
+.top{ position:sticky; top:0; z-index:20; background:var(--bg); display:flex; align-items:center; gap:14px; padding:10px 20px; border-bottom:1px solid var(--line-2); flex-wrap:wrap }
+.top select{ padding:4px 8px; border:1px solid var(--line); border-radius:7px; background:var(--paper); font-size:.92rem; max-width:60vw }
+.banner{ font-size:.8rem; color:var(--ink-3) } .banner b{ color:var(--ink) } .banner .cloud{ color:var(--info) }
+.main{ padding:30px 20px 140px } @media (min-width:1000px){ .main{ padding-left:clamp(40px,10vw,260px); padding-right:28px } }
+.write{ position:relative } @media (min-width:1000px){ .write{ display:grid; grid-template-columns:minmax(0,36em) minmax(300px,360px); column-gap:clamp(40px,5vw,96px); align-items:start } }
+.h-rx{ font-size:1.6rem; font-weight:600; margin:0 0 2px } .h-vol{ color:var(--ink-3); font-size:.8rem; margin-bottom:22px }
+.fld{ margin:0 0 18px } .fld label{ display:block; font-size:.72rem; color:var(--ink-3); margin-bottom:4px; letter-spacing:.02em; text-transform:uppercase }
+.fld [contenteditable]{ outline:0; min-height:1.4em; white-space:pre-wrap } .fld [contenteditable]:focus{ box-shadow:inset 0 -1px 0 var(--ink-3) }
+.fld.small [contenteditable]{ font-size:1rem }
+.ledger{ margin-top:48px; padding-top:20px; border-top:1px solid var(--line) } .ledger h2{ font-size:1rem; font-weight:600; margin:0 0 14px }
+.lgrid{ display:grid; grid-template-columns:1fr; gap:12px 18px } @media (min-width:760px){ .lgrid{ grid-template-columns:1fr 1fr } }
+.lgrid .fld{ margin:0 }
+.lgrid textarea,.lgrid input{ width:100%; padding:7px 9px; border:1px solid var(--line); border-radius:7px; background:var(--paper); font:inherit; font-size:.92rem } .lgrid textarea{ min-height:64px; resize:vertical }
+.fld textarea{ width:100%; padding:7px 9px; border:1px solid var(--line); border-radius:7px; background:var(--paper); font-size:.92rem; resize:vertical }
+.review{ margin-top:40px; padding-top:16px; border-top:1px solid var(--line); display:flex; gap:18px; align-items:center; flex-wrap:wrap; font-size:.9rem }
+.review label{ display:inline-flex; align-items:center; gap:6px } .review input[type=checkbox]{ width:16px; height:16px; accent-color:var(--ok) }
+.review input[type=text]{ flex:1; min-width:200px; padding:6px 9px; border:1px solid var(--line); border-radius:7px }
+.changed::before{ content:"●"; color:var(--warn); font-size:.6em; margin-right:6px; vertical-align:middle }
+</style>
+</head>
+<body>
+<div class="top">
+  <select id="rx" aria-label="Receptor"></select>
+  <span class="banner" id="banner"></span>
+  <span class="grow"></span>
+  <button class="btn sm" id="dl" type="button">Download edits file</button>
+</div>
+<main class="main"><div class="write"><div id="editor"></div><aside class="margin" id="margin"></aside></div><svg id="flow" aria-hidden="true"></svg></main>
+<div id="toastRoot"></div>
+<script type="module">
+/*__CORE__*/
+const SEED = /*__SEED__*/;
+const BUILT_AT = '__BUILT_AT__';
+// ---------- storage: claude.ai db when it answers, else this browser ----------
+const LS = 'atlas-desk-changes-v1';
+const STORE_LABEL = { browser: 'this browser', 'claude.ai': 'claude.ai' };
+const KNOWN = new Set(SEED.receptors.map(r => r.id));
+const store = {
+  mode: 'browser', db: null, all: {},          // all: receptorId -> changes
+  async init() {
+    try {
+      if (window.claude && typeof window.claude.use === 'function') {
+        const db = await Promise.race([window.claude.use('db'), new Promise(r => setTimeout(() => r(null), 8000))]);
+        if (db) { this.db = db; this.mode = 'claude.ai'; const snap = await db.collection('changes').get(); (snap.docs || []).forEach(d => { const data = typeof d.data === 'function' ? d.data() : d.data; if (data) this.all[d.id] = data; }); this.prune(); return; }
+      }
+    } catch (e) { /* fall through to the browser */ }
+    try { const raw = localStorage.getItem(LS); if (raw) this.all = JSON.parse(raw) || {}; } catch (e) { this.all = {}; }
+    this.prune();
+  },
+  // A record for a receptor the seed no longer has would make toCuratorState throw; keep it out of view.
+  prune() { for (const id of Object.keys(this.all)) if (!KNOWN.has(id)) delete this.all[id]; },
+  get(id) { return this.all[id] || emptyChanges(id, SEED.commit); },
+  put(changes) {
+    this.all[changes.receptorId] = changes;
+    if (this.db) { this.db.doc('changes/' + changes.receptorId).set(JSON.parse(JSON.stringify(changes))).catch(e => toast('Save failed (' + ((e && e.code) || 'unknown') + ').')); }
+    else { try { localStorage.setItem(LS, JSON.stringify(this.all)); } catch (e) { toast('This browser refused to store the change.'); } }
+  },
+  list() { return Object.values(this.all); },
+};
+// ---------- helpers ----------
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const now = () => new Date().toISOString();
+let toastT = null; function toast(msg, ms) { const r = $('#toastRoot'); r.innerHTML = '<div class="toast">' + esc(msg) + '</div>'; clearTimeout(toastT); toastT = setTimeout(() => { r.innerHTML = ''; }, ms || 2600); }
+// Debounced writes register themselves so a receptor switch, a download or leaving the page can flush them first.
+const pending = new Set();
+const debounce = (fn, ms) => { let t = null; const run = () => { clearTimeout(t); t = null; pending.delete(run); fn(); }; return () => { clearTimeout(t); pending.add(run); t = setTimeout(run, ms); }; };
+const flush = () => { for (const run of [...pending]) run(); };
+addEventListener('pagehide', flush);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const seedOf = id => SEED.receptors.find(r => r.id === id);
+const viewFor = id => viewOf(seedOf(id), store.get(id));
+const valueAt = (obj, path) => { if (path === 'claim') return obj.claim; const [vol, f] = path.split('.'); return (obj[vol] || {})[f]; };
+let current = SEED.receptors[0].id;
+const view = () => viewFor(current);
+function commit(id, mut) { store.put(mut(store.get(id))); renderBanner(); markChanged(); }
+// Only a real change reaches setField: a value equal to what the page already shows is not a change,
+// and a value back at the seed's drops the unpublished record instead of storing a no-op edit
+// (a no-op on a list whose pristine column is null would otherwise export "[]").
+function editField(id, path, value, isList) {
+  const norm = v => isList ? (v ?? []) : (v ?? null);
+  const seedVal = norm(valueAt(seedOf(id), path));
+  if (!isList && value === '' && seedVal === null) value = null;   // emptied, and empty in the seed too
+  if (same(norm(value), norm(valueAt(viewFor(id), path)))) return;
+  const rec = store.get(id).fields[path];
+  if (rec && !rec.publishedAs && same(norm(value), seedVal)) { commit(id, c => { const n = JSON.parse(JSON.stringify(c)); delete n.fields[path]; return n; }); return; }
+  commit(id, c => setField(c, path, value, now()));
+}
+function marksFor(id) { const r = viewFor(id).review || {}; return { mechanism: r.mechanism | 0, affinity: r.affinity | 0, clinical: r.clinical | 0, note: r.note || '' }; }
+function editReview(id, patch) {
+  const cur = marksFor(id), next = { ...cur, ...patch };
+  if (same(next, cur)) return;
+  commit(id, c => setReview(c, next, now()));
+}
+// ---------- banner + picker ----------
+function renderBanner() {
+  const all = store.list(); const unpub = countUnpublished(all);
+  const published = all.reduce((n, c) => n + Object.values(c.fields).filter(f => f.publishedAs).length + c.sources.add.filter(a => a.publishedAs).length, 0);
+  $('#banner').innerHTML = `seed <b>${esc(SEED.builtAt.slice(0, 10))}</b> · ${published ? published + ' published since · ' : ''}<b>${unpub} unpublished</b> · <span class="${store.mode === 'claude.ai' ? 'cloud' : ''}">store: ${esc(STORE_LABEL[store.mode])}</span>`;
+  const sel = $('#rx'); for (const o of sel.options) { const c = store.all[o.value]; o.textContent = (c && countUnpublished([c]) ? '● ' : '') + seedOf(o.value).label; }
+}
+function renderPicker() {
+  $('#rx').innerHTML = SEED.receptors.map(r => `<option value="${esc(r.id)}">${esc(r.label)}</option>`).join('');
+  $('#rx').value = current;
+  $('#rx').onchange = () => { flush(); current = $('#rx').value; render(); };
+}
+// ---------- editor ----------
+const ARCHIVE_LABELS = { abstract: 'Abstract', presentation: 'Presentation', effect: 'Effect', receptor_class: 'Receptor class', ligand: 'Ligand', figure_caption: 'Figure caption' };
+const CLINICAL_LABELS = { sys: 'System', name: 'Name', cls: 'Class', baseline: 'Baseline', mech: 'Mechanism', stahl: 'Stahl', onset: 'Onset', time_course: 'Time course', over: 'Over', under: 'Under', agonists: 'Agonists', antagonists: 'Antagonists', risk_factors: 'Risk factors', monitoring: 'Monitoring' };
+const fid = path => 'f-' + path.replace('.', '-');
+function fieldHTML(path, label, value, big) {
+  return `<div class="fld${big ? '' : ' small'}" data-f="${path}"><label id="${fid(path)}-l">${esc(label)}</label><div class="editor" contenteditable="plaintext-only" role="textbox" aria-multiline="true" aria-labelledby="${fid(path)}-l" data-path="${path}">${esc(value ?? '')}</div></div>`;
+}
+function listHTML(path, label, items) {
+  return `<div class="fld" data-f="${path}"><label for="${fid(path)}">${esc(label)} · one per line</label><textarea id="${fid(path)}" data-list="${path}" rows="${Math.max(3, items.length + 1)}">${esc(items.join('\n'))}</textarea></div>`;
+}
+function markChanged() {
+  const c = store.get(current);
+  document.querySelectorAll('#editor [data-f]').forEach(w => { const l = w.querySelector('label'); if (l) l.classList.toggle('changed', !!c.fields[w.dataset.f]); });
+}
+const textOf = el => el.innerText.replace(/\n+$/, '');
+const linesOf = s => s.split('\n').map(x => x.trim()).filter(Boolean);
+function render() {
+  const id = current; const v = view(); const ed = $('#editor');
+  let html = `<div class="h-rx">${esc(v.label)}</div><div class="h-vol">${esc(v.volumes.join(' · '))}</div>`;
+  if (v.archive) {
+    html += fieldHTML('archive.abstract', 'Abstract', v.archive.abstract, true);
+    html += `<div class="fld" data-f="archive.body"><label id="f-archive-body-l">Body</label><div class="editor" id="body" contenteditable="plaintext-only" role="textbox" aria-multiline="true" aria-labelledby="f-archive-body-l" data-paragraphs="archive.body">${(v.archive.body || []).map(p => `<p>${esc(p)}</p>`).join('')}</div></div>`;
+    for (const k of ['presentation', 'effect', 'receptor_class', 'ligand', 'figure_caption']) html += fieldHTML('archive.' + k, ARCHIVE_LABELS[k], v.archive[k], false);
+    html += listHTML('archive.tags', 'Tags', v.archive.tags || []);
+  }
+  if (v.volumes.includes('cabinet')) html += fieldHTML('claim', 'Cabinet claim', v.claim, false);
+  if (v.clinical) {
+    html += `<section class="ledger"><h2>Ledger · Volume III</h2><div class="lgrid">`;
+    for (const k of ['sys', 'name', 'cls', 'baseline', 'mech', 'stahl', 'onset', 'time_course']) html += `<div class="fld" data-f="clinical.${k}"><label for="${fid('clinical.' + k)}">${esc(CLINICAL_LABELS[k])}</label><textarea id="${fid('clinical.' + k)}" data-scalar="clinical.${k}" rows="2">${esc(v.clinical[k] ?? '')}</textarea></div>`;
+    for (const k of ['over', 'under', 'agonists', 'antagonists', 'risk_factors', 'monitoring']) html += listHTML('clinical.' + k, CLINICAL_LABELS[k], v.clinical[k] || []);
+    html += `</div></section>`;
+  }
+  const r = marksFor(id);
+  html += `<section class="review"><span class="tiny">reviewed:</span>` + REVIEW_MARKS.map(m => `<label><input type="checkbox" data-mark="${m}" ${r[m] ? 'checked' : ''}> ${m}</label>`).join('') + `<input type="text" data-note aria-label="Review note" placeholder="note" value="${esc(r.note)}"></section>`;
+  ed.innerHTML = html;
+  // wiring — every handler is bound to the receptor it was rendered for, not to whatever is current when it fires
+  ed.querySelectorAll('[data-path]').forEach(el => el.addEventListener('input', debounce(() => editField(id, el.dataset.path, textOf(el), false), 300)));
+  const body = ed.querySelector('[data-paragraphs]');
+  if (body) body.addEventListener('input', debounce(() => editField(id, 'archive.body', linesOf(body.innerText), true), 300));
+  ed.querySelectorAll('[data-scalar]').forEach(el => el.addEventListener('input', debounce(() => editField(id, el.dataset.scalar, el.value, false), 300)));
+  ed.querySelectorAll('[data-list]').forEach(el => el.addEventListener('input', debounce(() => editField(id, el.dataset.list, linesOf(el.value), true), 300)));
+  ed.querySelectorAll('[data-mark]').forEach(el => el.addEventListener('change', () => editReview(id, { [el.dataset.mark]: el.checked ? 1 : 0 })));
+  const note = ed.querySelector('[data-note]');
+  note.addEventListener('input', debounce(() => editReview(id, { note: note.value }), 300));
+  markChanged();
+  renderMargin();   // Task 6 fills this in; a no-op until then
+  renderBanner();
+}
+function renderMargin() { /* Task 6 */ }
+// ---------- download ----------
+$('#dl').addEventListener('click', async () => {
+  flush();
+  let text;
+  try { text = JSON.stringify(toCuratorState(SEED, store.list()), null, 1) + '\n'; }
+  catch (e) { toast('Could not build the edits file: ' + (e && e.message || e), 5000); return; }
+  let dl = null;
+  try { if (window.claude && typeof window.claude.use === 'function') dl = await window.claude.use('downloads'); } catch (e) { dl = null; }
+  if (dl) {
+    try { await dl.save({ filename: 'curator-state.json', data: text }); }
+    catch (e) { const code = e && e.code; if (code !== 'declined') toast('Download failed (' + (code || 'unknown') + ').', 4000); }
+    return;
+  }
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  const a = document.createElement('a'); a.href = url; a.download = 'curator-state.json';
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 10000);
+});
+// ---------- boot ----------
+await store.init(); renderPicker(); render();
+// expose for the walkthrough (after boot, so its presence means the page is ready)
+window.__desk = { SEED, BUILT_AT, store, toCuratorState, flush, view: () => view() };
+</script>
+</body>
+</html>
