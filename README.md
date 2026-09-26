@@ -44,6 +44,8 @@ and as `desk/desk.html` in a clone. That fallback keeps your edits in the browse
 storage instead of the artifact's store, and offers a Download of the edits file in place
 of "publish the atlas".
 
+**Edit here:** <https://claude.ai/artifact/PkCQ5RJx4KXxppbTwXqaRg> (private to the owner).
+
 | Script | What it does |
 |---|---|
 | `npm run desk:seed` | Builds `desk/seed.json` from the database, the way the Actions runner builds it: what the atlas currently is, for the editable surface. |
@@ -59,6 +61,26 @@ plus every change, published or not, so an old snapshot never looks stale.
 artifact, and re-keys whatever changes are still unpublished onto the new seed. It is the
 only action that moves the artifact's own version, and it is done only on request, never
 automatically.
+
+### How "publish the atlas" runs
+
+1. Read the store: `ArtifactData list` on collection `changes` of that artifact with
+   `out_dir` set, which writes one JSON file per receptor.
+2. Build the array: concatenate the documents into `changes.json`, skipping any document
+   whose `receptorId` is not in `desk/seed.json` (the page hides those too).
+3. `npm run desk:pull -- --check changes.json` — it prints the one-line summary or
+   refuses with "seed moved".
+4. Show the summary to the owner and wait for "go".
+5. `npm run desk:pull -- changes.json`, then `git add db/curator-state.json && git commit
+   && git push` (Actions rebuilds the site).
+6. Mark the published records: for each document, set `publishedAs` to the commit sha on
+   every unpublished field/source/review record (`markPublished` in `desk/desk-core.mjs`
+   is the reference implementation) and write the documents back with `ArtifactData set`,
+   pinned with `if_version`. Nothing is deleted.
+
+`re-seed the desk` = `npm run desk:seed && npm run desk:build`, republish
+`desk/desk.artifact.html` to the same artifact URL, then `rekey` every stored document to
+the new seed commit and write it back.
 
 **One editor at a time.** The old, local Desk (`the-conservators-desk.html`) still runs
 and still works, as a fallback of its own. It is not a second editor: do not edit at the
