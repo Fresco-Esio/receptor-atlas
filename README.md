@@ -41,8 +41,8 @@ There is a second way to edit the atlas that needs no terminal, no port, and no 
 your own: the hosted Desk, a private claude.ai artifact. That is the normal place to edit.
 The same single file is also reachable without claude.ai — at `/desk/` on the public site,
 and as `desk/desk.html` in a clone. That fallback keeps your edits in the browser's own
-storage instead of the artifact's store, and offers Download changes in place of "publish
-the atlas" (see "Publishing from the fallback" below).
+storage instead of the artifact's store, and publishes itself rather than going through
+"publish the atlas" (see "the Publish button" below).
 
 **Edit here:** <https://claude.ai/artifact/PkCQ5RJx4KXxppbTwXqaRg> (private to the owner).
 
@@ -72,7 +72,9 @@ automatically.
    note, any document whose `receptorId` is not in `desk/seed.json` (the page hides those
    too), and refuses a file of any other shape. `changes.json` below stands for either.
 3. `npm run desk:pull -- --check changes.json` — it prints the one-line summary or
-   refuses with "seed moved".
+   refuses with "seed moved". A publish made with the page's Publish button moves the file
+   too, so this check refuses until the artifact is re-seeded — as for any publish the
+   artifact did not make.
 4. Show the summary to the owner and wait for "go".
 5. `npm run desk:pull -- changes.json`, then `git add db/curator-state.json && git commit
    && git push` (Actions rebuilds the site).
@@ -89,29 +91,60 @@ Keep the Desk open in one place at a time. A second open view merges what it rec
 record it only received by merge is stored when that receptor is next edited, and a deletion
 made in one view can be restored by the other until published.
 
-### Publishing from the fallback
+### The Publish button
 
-1. **Download changes** (the first button in the fallback) saves `changes.json`: the raw
-   changes this browser holds, not an edits file.
-2. `npm run desk:pull -- --check changes.json` — the same check as step 3 above.
-3. `npm run desk:pull -- changes.json`, then commit `db/curator-state.json` and push.
+Outside claude.ai — at `/desk/` on the public site, or `desk/desk.html` opened from a
+clone — the Desk has a **Publish** button that commits the edits file itself. (Inside the
+claude.ai frame the page cannot reach GitHub, so there "publish the atlas" stays the route.)
 
-After a fallback publish, re-seed (`desk:seed`, `desk:build`) before editing again, because
-the browser store is never marked published. If the site has been published from the hosted
-Desk since this snapshot, run `npm run desk:seed && npm run desk:build` locally first (do not
-commit them), then open the rebuilt `desk/desk.html`.
+**The token, once per browser.** On github.com: Settings → Developer settings → Personal
+access tokens → Fine-grained tokens → Generate new token. Resource owner: your account;
+Repository access: *Only select repositories* → `receptor-atlas`; Permissions → Repository
+permissions → *Contents: Read and write* (Metadata: Read is added by itself). Copy the
+`github_pat_…` string into the Desk's **GitHub…** dialog. With "remember in this browser"
+on it is kept in that browser's storage (`atlas-desk-github-token`); off, for the session
+only. **Forget** clears it. The page sends it to `https://api.github.com` and nowhere else.
+Every site under `fresco-esio.github.io` shares one browser origin, so a remembered token
+is readable by any page there; they are all yours, but that is the trade.
+
+**What one click does.** It reads `db/curator-state.json` as it is on `main`; runs the
+same stale-seed check as `desk:pull` in the page (the file must be the snapshot's, or what
+this page already published); shows the commit subject (`curate: 3 content edits, 1 source
+attached`) for a Publish/Cancel; writes the converter's output — byte-identical to what
+`desk:pull` writes — as one commit on `main` in your name; and only then marks those
+changes published and keeps a receipt (`last published a1b2c3d · 2026-09-26` in the
+banner). GitHub Actions rebuilds the site in a minute or two. If anything fails before the
+commit, nothing is marked.
+
+**"The repo has moved."** The file on `main` is neither the snapshot's nor what this page
+published — something else committed it (the claude.ai copy, the old local Desk, a hand
+edit). Nothing is written. Wait for the site to finish rebuilding and reload `/desk/`, which
+is always built from the current file; from a clone, `git pull`, then `npm run desk:seed &&
+npm run desk:build`. Your changes are kept either way.
+
+**After a publish.** `/desk/` comes back on a new snapshot, and the changes this browser
+holds are keyed to the old one. At load the page checks every publish they record against
+the new seed's history (GitHub's compare endpoint, anonymous on a public repo) and applies
+`desk:rekey`'s rule: published records drop out, unpublished ones carry over. It refuses in
+the same two cases as the script — an unpublished revert or detach, or a publish not in the
+history — and when GitHub cannot be reached; a line under the header says which, and
+editing continues on the old keys.
+
+**Import changes** merges a `changes.json` (Download changes from the claude.ai copy, or
+from another browser) into this browser's store, record by record, later `at` winning.
+Documents for receptors this snapshot does not have are skipped.
+
+**A clone's `desk/desk.html`** is built from its own checkout: after any publish made
+elsewhere (the button on the site, or "publish the atlas"), `git pull`, then `npm run
+desk:seed && npm run desk:build` before editing there.
 
 *Download edits file (full replacement)* builds a whole `db/curator-state.json` on the
 page's own snapshot. Use it only when the repo's edits file is the snapshot's: after any
 publish from the hosted Desk it would overwrite that publish, which `desk:pull` never does.
 
-The `/desk/` copy on the public site is rebuilt on every push (`desk:seed` and
-`desk:build` run in the Actions workflow before the snapshot), so it is always built from
-the repo's current edits file and has no such lag; only `desk/desk.html` in a clone does.
-
 `re-seed the desk`:
 
-1. Read the store as in step 1 above.
+1. Read the store as in step 1 above (the button's publishes are already on `main`).
 2. `npm run desk:seed && npm run desk:build`.
 3. `npm run -s desk:rekey -- changes.json > rekeyed.json` (or `node scripts/desk-rekey.mjs
    changes.json > rekeyed.json`; `-s` keeps npm's own lines out of the file). Re-keying

@@ -48,6 +48,20 @@ reader who wrote a number down needs to know it moved.
   because attaching a source to a claim is treated as having read it. The same file also ships unlinked at
   `/desk/` on the public site and as `desk/desk.html` in a clone, so editing never
   depends on claude.ai being reachable.
+- The Desk's **Publish button** (outside claude.ai: `/desk/` on the site, `desk/desk.html`
+  from a clone) commits `db/curator-state.json` to `main` through GitHub's API with a
+  fine-grained token kept in that browser, after the same stale-seed check as `desk:pull`
+  and a confirm showing the commit subject; then marks the changes published and shows the
+  receipt in the banner.
+- At load, `/desk/` re-keys changes stored against an older snapshot onto the current one
+  (published records fold in; unpublished carry over), refusing and saying why in the same
+  cases as `desk:rekey`.
+- **Import changes** merges a `changes.json` from another copy of the Desk.
+
+### Changed
+
+- The edits file the converter writes orders its maps the way the database export does,
+  so a publish from the page and one from `desk:pull` are byte-identical.
 
 ### Fixed
 
