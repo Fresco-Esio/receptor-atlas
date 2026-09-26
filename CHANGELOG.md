@@ -33,6 +33,8 @@ reader who wrote a number down needs to know it moved.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-26
+
 The Cabinet learns to answer "compared to what?", and the Desk gains the Ledger columns
 it could never reach. No displayed value moved: every number here was already in the
 database, and what changed is which of them the pages show and which the curator can edit.
@@ -110,8 +112,60 @@ database, and what changed is which of them the pages show and which the curator
   reads as a catalogue with room left in it rather than a list that was cut off. No
   invented entries, only the ruling.
 
+### Changed
+
+- **A brass dot no longer means two different things.** Affinity known with no curated
+  action was drawn in the positive-modulator colour, so 317 of the plate's 729 dots looked
+  exactly like its 24 real positive modulators, and the same collision ran through the
+  rose and the Cabinet's binder list. Nothing displayed moved: no pKi, no action, no
+  count. What changed is that "we know how tightly this binds but nobody has curated what
+  it does" is no longer drawn as a claim that the drug potentiates the receptor. The hue
+  stays brass, because uncurated is not one of the three directional actions; the fill is
+  what tells them apart. A curated action is filled, an uncurated one is hollow: a ring in
+  the matrix and the binder list, an outline rather than a solid petal in the rose, and
+  hatch lines with no ground where the second pinned agent is hatched.
+- **The Catalogue's key is a key now.** It was three rows of swatches right-aligned to
+  each other, which gave it a ragged left edge, and the middle row was not a key at all
+  but a sentence about size encoding that the rose caption already made. The swatches are
+  grouped and named instead: **Action** for the four colours a drug can carry at a target,
+  **Evidence** for the three marks that say what is known there. A brass dot and a green
+  dot answer different questions and nothing used to say so. The size-encoding sentence
+  moves into the plate's subtitle, where it is stated once.
+- **The key is legible at a window that is not full screen.** It used to throw itself
+  under the title as soon as the head ran out of room, standing the header up from 130px
+  to 217px and taking that height out of the matrix; the three rows then read as a centred
+  stack. It shrinks beside the title first now, and when it does wrap it starts the line
+  and shares the title's left edge. Both group names now end on one rule and both sets
+  of swatches begin on one edge, which two independent flex groups could not manage: the
+  names are different lengths, so each group started its items wherever its own name
+  happened to end. Legend text moves from `bone-faint` to `bone-dim`,
+  5.3:1 to 7.5:1 against the header ground, with the group names left faint so the step
+  between naming a group and reading one survives. Type size does not move: 11px is the
+  atlas's one label step and its floor.
+
 ### Fixed
 
+- **`npm test` no longer overwrites your curator dump.** The auto-publish suite ran a
+  server against a throwaway database with the curator dump left on, and the dump always
+  writes to the repository's own `db/curator-state.json`. Every test run therefore
+  replaced the committed record of your review marks, sources and content edits with the
+  fixture's three-line burst, and the next Publish would have pushed that. The suite now
+  runs with the dump off and fails if anything touches the file. Your real work was never
+  lost: `db/atlas.db` was untouched, and the dump has been re-exported from it.
+- **The hole down the middle of every specimen plate.** Mechanism of Action sat at the top
+  of the plate and Pharmacologic Action ~170px below it, with nothing in between, and the
+  plate stood a screenful taller than the reading it carried. The engraving was a square
+  sized off its column, so on a wide screen the case ran 395px tall while the two fields
+  beside it needed 225px, and the surplus was being distributed *between* those fields as
+  though it were considered separation. The engraving now takes its height from the reading
+  column rather than setting it: on a 1440px screen the plate is 80px shorter, the fields
+  are one gap apart, and the drawing is smaller for it, which is the trade. Plates that
+  carry clinical material as well as prose are unaffected, because there the reading column
+  was always the taller of the two.
+- **An engraving that never drew itself.** The reveal was asked for inside a
+  `requestAnimationFrame`, which does not run while a tab is not painting, so a plate first
+  rendered in a background tab held every stroke at zero length and showed an empty case
+  until something re-rendered it in the foreground. It is asked for directly now.
 - **The affinity rose kept a gap for an agent that had gone.** Unpinning one of two
   pinned agents left every remaining petal drawn at half width, offset to one side, until
   some later redraw cleared it. The tween interpolates a frame that is a union of the
@@ -377,6 +431,7 @@ publicly readable since 0.5.0; this is the release that makes it defensible.
 The 0.x entries were reconstructed from git history after the fact and are **not tagged**,
 so they carry no compare links. Every release from 1.0.0 on is tagged as it ships.
 
-[Unreleased]: https://github.com/Fresco-Esio/receptor-atlas/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/Fresco-Esio/receptor-atlas/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/Fresco-Esio/receptor-atlas/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Fresco-Esio/receptor-atlas/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Fresco-Esio/receptor-atlas/releases/tag/v1.0.0

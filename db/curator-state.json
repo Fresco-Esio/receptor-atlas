@@ -40,7 +40,7 @@
   {
    "receptor_id": "sert",
    "volume": "archive",
-   "last_edited_at": "2026-08-19T23:26:55.506Z",
+   "last_edited_at": "2026-08-20T21:45:05.832Z",
    "last_reviewed_at": "2026-08-19T23:21:46.040Z"
   },
   {
@@ -277,7 +277,7 @@
   "claims": {},
   "archive": {
    "sert": {
-    "abstract": "SERT determines how long serotonin remains at each synapse, setting the amplitude and duration of every serotonergic signal in the brain. Serotonin system activity is thought to be central to the pathophysiology of depression. ",
+    "abstract": "SERT terminates serotonergic transmission by sodium-coupled reuptake, controlling the duration and spread of every serotonergic signal; it is the target of the most widely used class of antidepressants, SSRIs, and its causal role in depression itself remains disputed.",
     "body_json": "[\"SERT clears serotonin from the synapse, determining the half-life of each serotonergic signal. By mediating reuptake of 5-HT (serotonin) into presynaptic neurons, SERT regulates serotinergic signaling throughout the brain. Due to interactions with other key cerebral molecules and its contribution to neurotransmission, SERT plays an integral role in the pathophysiology of depression. Activity and expression of SERT is regulated by pro-inflammatory cytokines and growth factors which then affects serotonin transmission and neural plasticity. Other influencers of SERT function include environmental exposure, diet, gut microbiota, and therapy. Genetic variations in the SLC6A4 gene influence the expression and function of SERT which leads to differences in depression symptoms as well as treatment response.\"]",
     "tags_json": "[\"Serotonin signal duration\",\"Mood regulation\"]"
    },

@@ -184,6 +184,21 @@ The system is flat by default and conveys depth through tonal layering, not shad
 - **State simulator (the brass dial):** three segments (Understimulated / Baseline / Overstimulated). The active segment fills with its state color (green/red/blue) and inverts text to `wall-recess`; press gives a 0.94 scale and a state-flash.
 - **Acknowledge / ghost:** transparent with brass-hairline border, text shifts to vermilion on hover.
 
+### Legend / key (Catalogue)
+- **Structure:** named groups, not rows. **Action** carries the four action colours;
+  **Evidence** carries curated / screened-null / never-screened. The group name is set in
+  Fragment Mono at `bone-faint` with a brass-hairline divider; the items sit at
+  `bone-dim` (7.5:1 on the header ground) so the step between naming a group and reading
+  one is a lightness step, never a size one.
+- **Reflow:** the key shrinks beside the plate title before it wraps beneath it, and when
+  it wraps it takes the title's left edge. It never right-aligns rows against each other.
+- **Swatch:** 10px dot, `flex: none`. Hollow and dashed variants are classes, not inline
+  styles: a palette decision outside the sheet is a palette decision nothing can hold.
+- **Alignment:** the key is a two-column grid, not two flex groups. Group names are
+  right-aligned into a shared `max-content` column and end on one brass hairline; every
+  swatch begins on the far side of it, so an item that wraps lines up with the item above
+  rather than falling back under the group name.
+
 ### Chips (drug tags)
 - **Style:** `wall-recess` ground, brass-faint border, Fragment Mono, `rounded.sm`.
 - **Variants:** agonist tints border + text toward state-normal (green); antagonist toward state-over (red). They stagger in on render.
@@ -286,6 +301,10 @@ The three volumes are read; the Desk is worked. It uses the same materials, at a
 ### Do:
 - **Do** keep vermilion ceremonial, one accented thing per view (The One Voice Rule).
 - **Do** keep green/red/blue strictly semantic and identical across the Cabinet, the matrix, the rose, and every legend (The Semantic-Color Rule).
+- **Do** let fill, not hue, separate a claim from the absence of one. Brass filled is the
+  positive-modulator action; brass hollow is affinity known with no curated action. Any
+  mark that says "we have not established this" is drawn unfilled, in every surface that
+  draws it (The Hollow-Means-Uncurated Rule).
 - **Do** tint every neutral toward hue 75–85; convey depth with the three wall tones, not shadows.
 - **Do** present each receptor as a catalogued specimen (index numeral, engraving, provenance) and let the engraving draw on as the signature motion.
 - **Do** set all labels, counts, and catalog numerals in Fragment Mono; titles in Marcellus uppercase; prose in Schibsted Grotesk at 65–75ch.
@@ -301,3 +320,15 @@ The three volumes are read; the Desk is worked. It uses the same materials, at a
 - **Don't** use backdrop blur on resting surfaces; reserve it for the true overlay only.
 - **Don't** repurpose a state color to encode identity or mood, and don't reach for a second accent beside vermilion.
 - **Don't** nest cards/plates, wrap everything in a container, or use em dashes in copy.
+- **Don't** right-align a stack of rows against each other. Rows of different widths
+  sharing a right edge have a ragged left one, and the block reads as a centred stack the
+  moment it wraps. Keys and metadata blocks get one left edge, wherever the block itself
+  sits.
+- **Don't** let a figure set the height of the block it sits beside. A square sized off its
+  own column is as tall as that column is wide, which is routinely more than the prose next
+  to it needs; the surplus then shows up as a hole in the reading column and as scroll
+  under the section. The figure takes its height from the row and derives its size from
+  what is left, with a floor so it can never become a thumbnail.
+- **Don't** put a final resting state behind `requestAnimationFrame`. A tab that is not
+  painting never runs the callback, and the element is stranded in its entry state. Commit
+  the entry state with a forced reflow and ask for the resting one in the same task.

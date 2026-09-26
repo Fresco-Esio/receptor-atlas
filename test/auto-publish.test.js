@@ -5,24 +5,37 @@
 
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, readFile } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, stat } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from '../server.js';
 
 let dir, dbPath, publishDir, server, base;
 
+// The curator dump rides on the same trigger as auto-publish and writes to the REPO's
+// db/curator-state.json, never to the test's temp dir. Left on, this suite dumped its
+// throwaway fixture over the real file on every run: the 2026-09-26 audit found the
+// committed record of every review mark and source replaced by `"d2": "burst 3 (final)"`.
+// autoDump is off here, and the guard below fails the suite if anything touches it.
+const CURATOR_STATE = fileURLToPath(new URL('../db/curator-state.json', import.meta.url));
+let curatorStateBefore;
+
 before(async () => {
+  curatorStateBefore = await stat(CURATOR_STATE).then(s => s.mtimeMs, () => null);
   dir = await mkdtemp(join(tmpdir(), 'atlas-auto-pub-'));
   dbPath = join(dir, 'atlas.db');
   publishDir = join(dir, 'dist');
-  server = createServer(dbPath, { seed: true, autoPublish: true, publishDir });
+  server = createServer(dbPath, { seed: true, autoPublish: true, publishDir, autoDump: false });
   await new Promise(r => server.listen(0, r));
   base = `http://localhost:${server.address().port}`;
 });
 
 after(async () => {
   await new Promise(res => (server ? server.close(res) : res()));
+  const curatorStateAfter = await stat(CURATOR_STATE).then(s => s.mtimeMs, () => null);
+  assert.equal(curatorStateAfter, curatorStateBefore,
+    'the test suite must never write the repo\'s db/curator-state.json');
   for (let i = 0; ; i++) {
     try { await rm(dir, { recursive: true, force: true }); break; }
     catch (e) {
@@ -75,7 +88,7 @@ test('a read (GET) never schedules a publish', async () => {
   // Sanity check on the gate itself: hitting a GET-only endpoint on a fresh
   // publishDir must not produce a snapshot.
   const freshDir = join(dir, 'unused-dist');
-  const s2 = createServer(':memory:', { seed: true, autoPublish: true, publishDir: freshDir });
+  const s2 = createServer(':memory:', { seed: true, autoPublish: true, publishDir: freshDir, autoDump: false });
   await new Promise(r => s2.listen(0, r));
   const b2 = `http://localhost:${s2.address().port}`;
   await fetch(`${b2}/api/receptors`);
