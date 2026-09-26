@@ -120,15 +120,18 @@ ok('no page errors during the walkthrough', errors.length === 0, errors.join(' |
 // --- Provenance layer: attach by hand, then span, then conflict ---
 const selectIn = (sel, a, b) => page.locator(sel).first().evaluate((el, [a, b]) => { const r = document.createRange(); r.setStart(el.firstChild, a); r.setEnd(el.firstChild, b); const s = getSelection(); s.removeAllRanges(); s.addRange(r); el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true })); }, [a, b]);
 await page.selectOption('#rx', 'd2');
+ok('the citing hint shows above the abstract while the receptor has no brackets', await page.evaluate(() => { const h = document.querySelector('#hint'); return !!h && h.classList.contains('tiny') && h.nextElementSibling === document.querySelector('[data-f="archive.abstract"]') && /^Select a sentence, then choose the source that supports it\. Brackets and their cards appear as you go\./.test(h.innerText); }));
 const d2body0 = d2.archive.body[0];
 const abstractEl = page.locator('[data-path="archive.abstract"]');
 await abstractEl.evaluate(el => { const r = document.createRange(); r.setStart(el.firstChild, 0); r.setEnd(el.firstChild, 11); const s = getSelection(); s.removeAllRanges(); s.addRange(r); el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true })); });
+ok('the popover reads "Attach to: “<first 40 characters>…”"', (await page.locator('#pop .l').innerText()) === `Attach to: “${(await page.evaluate(() => window.__desk.view().archive.abstract)).slice(0, 11)}”`, await page.locator('#pop .l').innerText());
 ok('the popover offers one chip per attached source', (await page.locator('#pop [data-cite]').count()) === (await page.evaluate(() => window.__desk.view().sources.length)));
 await page.click('text=+ add source');
 ok('without the connector the source form is by hand only', (await page.locator('[data-lookup]').count()) === 0 && (await page.locator('.modal [name=title]').count()) === 1);
 await page.fill('[name=title]', 'Walkthrough paper'); await page.fill('[name=authors]', 'Tester T'); await page.fill('[name=year]', '2026'); await page.fill('[name=journal]', 'J Test'); await page.fill('[name=pmid]', '999999');
 await page.click('text=Attach'); await page.waitForTimeout(300);
 ok('span drawn in the abstract', (await page.locator('[data-path="archive.abstract"] .cite').count()) === 1);
+ok('the hint is gone once the receptor has a bracket', (await page.locator('#hint').count()) === 0);
 ok('one card per attached source', (await page.locator('#margin .mcard').count()) === (await page.evaluate(() => window.__desk.view().sources.length)));
 ok('a flow line per span', (await page.locator('#flow path').count()) === (await page.locator('#editor .cite').count()) && (await page.locator('#flow path').count()) === 1);
 const stored = await page.evaluate(() => window.__desk.store.get('d2'));
@@ -226,6 +229,13 @@ await page.locator(`${confCard} [data-flag="conflicting"]`).check(); await page.
 const recheck = await page.evaluate(k => ({ note: window.__desk.view().sources.find(x => x.key === k).correction_note, status: window.__desk.view().sources.find(x => x.key === k).status, rec: window.__desk.store.get(window.__desk.view().id).sources.set[k] || null }), conflicted.key);
 ok('re-checking "conflicts" on a seeded conflicting edge restores its seeded note (and so leaves no record)',
   clearedNote === '' && (await page.locator(`${confCard} textarea`).inputValue()) === conflicted.correction_note && recheck.note === conflicted.correction_note && recheck.status === 'conflicting' && recheck.rec === null, JSON.stringify(recheck));
+// the hint's × dismisses it for good (this browser)
+await page.selectOption('#rx', 'd1');
+const hintBefore = await page.locator('#hint').count();
+await page.click('#hint [data-hint-x]');
+const hintAfter = await page.locator('#hint').count();
+await page.reload(); await ready('d1');
+ok('the hint is dismissed by its × and stays dismissed across a reload', hintBefore === 1 && hintAfter === 0 && (await page.locator('#hint').count()) === 0);
 ok('no page errors in the Provenance layer', errors.length === 0, errors.join(' | '));
 
 // --- simulated claude.ai frame: a fake window.claude with db + downloads, same page from disk ---
@@ -300,8 +310,11 @@ async function framePage(cfg) {
   await f.p.locator('[data-path="archive.presentation"]').fill('Local presentation.'); await f.p.evaluate(() => { window.__desk.flush(); document.activeElement.blur(); });
   const later = '2999-01-01T00:00:00.000Z';
   const remote = core.setField(core.emptyChanges('d2', SEED.commit), 'archive.effect', 'Remote effect.', later);
-  await f.p.evaluate(d => window.__fakeDb.push({ d2: d }), remote); await f.p.waitForTimeout(100);
+  await f.p.evaluate(d => window.__fakeDb.push({ d2: d }), remote); await f.p.waitForTimeout(400);
   const merged = await f.p.evaluate(() => window.__desk.store.get('d2').fields);
+  const lastSet = (await f.log()).sets.filter(x => x.path === 'changes/d2').pop();
+  ok('frame: the union is written back to the store (the last write holds the remote field and the local record)',
+    lastSet && lastSet.obj.fields['archive.effect'] && lastSet.obj.fields['archive.effect'].value === 'Remote effect.' && lastSet.obj.fields['archive.presentation'] && lastSet.obj.fields['archive.presentation'].value === 'Local presentation.', JSON.stringify(lastSet && Object.keys(lastSet.obj.fields)));
   ok('frame: a remote write on another field re-draws that field, and the local record survives',
     (await f.p.locator('[data-path="archive.effect"]').innerText()) === 'Remote effect.' && merged['archive.presentation'] && merged['archive.presentation'].value === 'Local presentation.' && (await f.p.locator('[data-path="archive.presentation"]').innerText()) === 'Local presentation.', JSON.stringify(Object.keys(merged)));
   await f.p.locator('[data-path="archive.abstract"]').focus();

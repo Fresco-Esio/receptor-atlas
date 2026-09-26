@@ -210,6 +210,7 @@ html,body{ background:var(--bg); color:var(--ink); }   /* white/black holds what
 .mctl .check{ display:inline-flex; align-items:center; cursor:pointer } .mctl [data-detach]{ margin-left:auto }
 .mnew{ margin:4px 0 0 }
 .lsmerge{ flex-basis:100%; color:var(--warn) } .lsmerge .btn{ margin-left:6px }
+.hint{ display:flex; gap:8px; align-items:baseline; margin:0 0 14px } .hint button{ border:0; background:transparent; color:var(--ink-3); cursor:pointer; padding:0 2px; font-size:.95rem; line-height:1 } .hint button:hover{ color:var(--ink) }
 .pop .chips{ max-height:220px; overflow:auto }
 </style>
 </head>
@@ -274,7 +275,11 @@ const store = {
         if ((this.sent[id] || []).includes(body)) continue;   // the echo of this view's own write carries nothing new
         const before = this.all[id] ? canon(this.all[id]) : null;
         const merged = mergeChanges(this.all[id] || null, JSON.parse(JSON.stringify(data)));
-        if (canon(merged) !== before) { this.all[id] = merged; changed = true; }
+        const after = canon(merged);
+        if (after !== before) { this.all[id] = merged; changed = true; }
+        // the store holds less than the union (this view has records the other lacks): write the union back,
+        // through the same one-at-a-time queue, so every view converges on it
+        if (after !== body) this.put(merged);
       }
       if (changed) onChange();
     }, e => { toast('Live updates from other views stopped (' + ((e && e.code) || 'unknown') + '); reload to resume.', 5000); });
@@ -355,6 +360,10 @@ function renderPicker() {
   $('#rx').onchange = () => { flush(); hidePop(); closeModal(); current = $('#rx').value; openKey = null; render(); };
 }
 // ---------- editor ----------
+// the one-line "how to cite" hint above the abstract, until the receptor has a bracket or it is dismissed
+const HINT_KEY = 'atlas-desk-hint-dismissed';
+let hintOff = false;
+const hintDismissed = () => { if (hintOff) return true; try { return localStorage.getItem(HINT_KEY) === '1'; } catch (e) { return false; } };
 const ARCHIVE_LABELS = { abstract: 'Abstract', presentation: 'Presentation', effect: 'Effect', receptor_class: 'Receptor class', ligand: 'Ligand', figure_caption: 'Figure caption' };
 const CLINICAL_LABELS = { sys: 'System', name: 'Name', cls: 'Class', baseline: 'Baseline', mech: 'Mechanism', stahl: 'Stahl', onset: 'Onset', time_course: 'Time course', over: 'Over', under: 'Under', agonists: 'Agonists', antagonists: 'Antagonists', risk_factors: 'Risk factors', monitoring: 'Monitoring' };
 const fid = path => 'f-' + path.replace('.', '-');
@@ -378,6 +387,7 @@ function render() {
   if (openKey && !v.sources.some(s => s.key === openKey)) openKey = null;
   let html = `<div class="h-rx">${esc(v.label)}</div><div class="h-vol">${esc(v.volumes.join(' · '))}</div>`;
   if (v.archive) {
+    if (!spansOf(id).length && !hintDismissed()) html += `<div class="tiny hint" id="hint"><span>Select a sentence, then choose the source that supports it. Brackets and their cards appear as you go.</span><button type="button" data-hint-x aria-label="Dismiss the hint">×</button></div>`;
     html += fieldHTML('archive.abstract', 'Abstract', v.archive.abstract, true, spanHTML(id, 'archive.abstract', v.archive.abstract || ''));
     html += `<div class="fld" data-f="archive.body"><label id="f-archive-body-l">Body</label><div class="editor" id="body" contenteditable="plaintext-only" role="textbox" aria-multiline="true" aria-labelledby="f-archive-body-l" data-paragraphs="archive.body">${bodyHTML(id, v)}</div></div>`;
     for (const k of ['presentation', 'effect', 'receptor_class', 'ligand', 'figure_caption']) html += fieldHTML('archive.' + k, ARCHIVE_LABELS[k], v.archive[k], false);
@@ -393,6 +403,8 @@ function render() {
   const r = marksFor(id);
   html += `<section class="review"><span class="tiny">reviewed:</span>` + REVIEW_MARKS.map(m => `<label><input type="checkbox" data-mark="${m}" ${r[m] ? 'checked' : ''}> ${m}</label>`).join('') + `<input type="text" data-note aria-label="Review note" placeholder="note" value="${esc(r.note)}"></section>`;
   ed.innerHTML = html;
+  const hx = ed.querySelector('[data-hint-x]');
+  if (hx) hx.addEventListener('click', () => { try { localStorage.setItem(HINT_KEY, '1'); } catch (e) { /* the hint comes back next load */ } hintOff = true; const h = $('#hint'); if (h) h.remove(); queueFlow(); });
   // wiring — every handler is bound to the receptor it was rendered for, not to whatever is current when it fires
   ed.querySelectorAll('[data-path]').forEach(el => el.addEventListener('input', debounce(() => el.dataset.path === 'archive.abstract' ? editProse(id, 'archive.abstract', textOf(el), el) : editField(id, el.dataset.path, textOf(el), false), 300)));
   const body = ed.querySelector('[data-paragraphs]');
@@ -577,9 +589,9 @@ function onProseSelect(id, e) {
 function hidePop() { const p = $('#pop'); if (p) p.remove(); }
 function showPop(id, rect) {
   hidePop();
-  const v = viewFor(id), labels = labelsFor(id), q = pendingSel.text.length > 40 ? pendingSel.text.slice(0, 38) + '…' : pendingSel.text;
+  const v = viewFor(id), labels = labelsFor(id), q = pendingSel.text.length > 40 ? pendingSel.text.slice(0, 40) + '…' : pendingSel.text;
   const pop = document.createElement('div'); pop.className = 'pop'; pop.id = 'pop';
-  pop.innerHTML = `<div class="l">Cite “${esc(q)}” to</div><div class="chips">${v.sources.map(s => `<button type="button" class="chip hue" style="--h:${hueOf(id, s.key)}" data-cite="${esc(s.key)}" title="${esc((metaOf(id, s.key) || {}).title || s.key)}">${esc(labels[s.key])}</button>`).join('')}</div><div class="acts"><button type="button" class="btn sm" data-newsrc>+ add source</button></div>`;
+  pop.innerHTML = `<div class="l">Attach to: “${esc(q)}”</div><div class="chips">${v.sources.map(s => `<button type="button" class="chip hue" style="--h:${hueOf(id, s.key)}" data-cite="${esc(s.key)}" title="${esc((metaOf(id, s.key) || {}).title || s.key)}">${esc(labels[s.key])}</button>`).join('')}</div><div class="acts"><button type="button" class="btn sm" data-newsrc>+ add source</button></div>`;
   pop.addEventListener('mousedown', e => e.preventDefault());   // keep the selection and the editor's focus
   pop.querySelectorAll('[data-cite]').forEach(b => b.addEventListener('click', () => { const ps = pendingSel; hidePop(); if (ps && addSpan(ps, b.dataset.cite)) { getSelection().removeAllRanges(); openKey = b.dataset.cite; render(); } }));
   pop.querySelector('[data-newsrc]').addEventListener('click', () => { const ps = pendingSel; hidePop(); openSourceForm(id, ps); });
