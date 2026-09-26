@@ -622,3 +622,17 @@ test('mergeChanges hands the published state to a winner that overwrote it unsee
   m = core.mergeChanges(add, core.detachSource(add, s, 'pmid:12505794', T2));
   assert.equal(m.sources.remove[0].published.publishedAs, 'sha1');
 });
+
+test('commitSubject: curate: + the lines, or a count when over 72 characters', () => {
+  assert.equal(core.commitSubject(['3 content edits', '1 source attached']), 'curate: 3 content edits, 1 source attached');
+  assert.equal(core.commitSubject([]), 'curate: review session');
+  assert.equal(core.commitSubject(['12 specimens reviewed', '9 sources added', '14 citations attached', '3 conflicts noted']), 'curate: 4 changes this session');
+});
+
+test('stateDiffKeys compares as data: key order and row order do not count', () => {
+  const a = { review: { x: { m: 1 }, y: { m: 0 } }, sources: [{ key: 'a' }, { key: 'b' }], activity: [], bindingReview: [], receptorSources: [], bindingSources: [], content: {} };
+  const b = { review: { y: { m: 0 }, x: { m: 1 } }, sources: [{ key: 'b' }, { key: 'a' }], activity: [], bindingReview: [], receptorSources: [], bindingSources: [], content: {} };
+  assert.deepEqual(core.stateDiffKeys(a, b), []);
+  b.sources.push({ key: 'c' });
+  assert.deepEqual(core.stateDiffKeys(a, b), ['sources']);
+});

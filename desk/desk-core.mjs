@@ -242,7 +242,15 @@ export function toCuratorState(seed, changesList) {
   for (const key of removedKeys) {
     if (!P.sources[key] && !out.receptorSources.some(e => e.source === key) && !(out.bindingSources || []).some(e => e.source === key)) dropSource(key);
   }
-  return { format: FORMAT, review: out.review, activity: out.activity, bindingReview: out.bindingReview || [], sources: out.sources, receptorSources: out.receptorSources, bindingSources: out.bindingSources || [], content: { claims: out.content.claims, archive: out.content.archive, clinical: out.content.clinical, bindings: out.content.bindings || [] } };
+  // Map key order follows the pristine seed (the database's row order), so the file is byte-identical to
+  // exportState's: keys the seed does not have (a receptor's first review, say) go last, in the order made.
+  const like = (obj, ref) => { const idx = new Map(Object.keys(ref || {}).map((k, i) => [k, i])); const at = k => idx.has(k) ? idx.get(k) : Infinity; return Object.fromEntries(Object.keys(obj).map((k, i) => [k, i]).sort((x, y) => (at(x[0]) - at(y[0])) || (x[1] - y[1])).map(([k]) => [k, obj[k]])); };
+  // Same rule for a row list keyed by something other than its own property: a pristine row (already a rowid
+  // in the seed's own database) keeps that row's place; a row the seed never had goes last, in the order made.
+  const likeArr = (arr, ref, keyOf) => { const idx = new Map(Object.keys(ref || {}).map((k, i) => [k, i])); const at = k => idx.has(k) ? idx.get(k) : Infinity; return arr.map((v, i) => [v, i]).sort((x, y) => (at(keyOf(x[0])) - at(keyOf(y[0]))) || (x[1] - y[1])).map(([v]) => v); };
+  return { format: FORMAT, review: like(out.review, P.review), activity: out.activity, bindingReview: out.bindingReview || [],
+    sources: likeArr(out.sources, P.sources, s => s.key), receptorSources: likeArr(out.receptorSources, P.receptorSources, e => `${e.receptor_id}|${e.source}`), bindingSources: out.bindingSources || [],
+    content: { claims: like(out.content.claims, P.claims), archive: like(out.content.archive, P.archive), clinical: like(out.content.clinical, P.clinical), bindings: out.content.bindings || [] } };
 }
 
 const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
@@ -265,6 +273,122 @@ export function summarise(changesList) {
   if (conflicts) parts.push(plural(conflicts, 'conflict') + ' noted');
   if (reviews) parts.push(plural(reviews, 'review') + ' updated');
   return parts.join(', ') || 'nothing to publish';
+}
+
+// ---------- publishing: the check desk:pull makes, and the words its commit uses ----------
+const STATE_KEYS = ['review', 'activity', 'bindingReview', 'sources', 'receptorSources', 'bindingSources', 'content'];
+// Compared as data, not bytes: object keys sorted and every array taken as a set of rows. The edits file's
+// arrays are row lists (activity, sources, edges, bindings) whose order is only the order rows were written in.
+const setwise = v => Array.isArray(v) ? '[' + v.map(setwise).sort().join(',') + ']'
+  : v && typeof v === 'object' ? '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + setwise(v[k])).join(',') + '}'
+  : JSON.stringify(v === undefined ? null : v);
+/** The top-level keys of the edits file on which two states differ as data. */
+export function stateDiffKeys(a, b) { return STATE_KEYS.filter(k => setwise((a || {})[k]) !== setwise((b || {})[k])); }
+
+const keysOfObj = o => Object.keys(o || {});
+/** Describe the delta in the words a curator would use, so the history is readable
+ *  without opening a diff. Returns [] when nothing of substance moved. */
+export function summariseStates(before, after) {
+  const b = before || { review: {}, sources: [], receptorSources: [], bindingSources: [], content: {} };
+  const bc = b.content || {}, ac = after.content || {};
+  const out = [];
+
+  const reviewed = keysOfObj(after.review).filter(id => JSON.stringify(after.review[id]) !== JSON.stringify((b.review || {})[id]));
+  if (reviewed.length) out.push(`${reviewed.length} specimen${reviewed.length === 1 ? '' : 's'} reviewed`);
+
+  const beforeSources = new Set((b.sources || []).map(s => s.key));
+  const newSources = (after.sources || []).filter(s => !beforeSources.has(s.key));
+  if (newSources.length) out.push(`${newSources.length} source${newSources.length === 1 ? '' : 's'} added`);
+
+  // The dump carries only the delta from a fresh seed, so an edge appearing in it
+  // for the first time does NOT mean the citation is new: it means something about
+  // it stopped matching the seed. Verifying a citation the atlas already shipped
+  // makes a row appear here, and calling that "attached" is a lie about what the
+  // curator did. The Desk attaches at status 'provided', so that is the tell.
+  const edgeKey = e => `${e.receptor_id}|${e.source}`;
+  const beforeEdges = new Map((b.receptorSources || []).map(e => [edgeKey(e), e.status]));
+  const fresh = (after.receptorSources || []).filter(e => !beforeEdges.has(edgeKey(e)));
+  const attached = fresh.filter(e => e.status === 'provided');
+  const restatused = [
+    ...fresh.filter(e => e.status !== 'provided'),
+    ...(after.receptorSources || []).filter(e => beforeEdges.has(edgeKey(e)) && beforeEdges.get(edgeKey(e)) !== e.status),
+  ];
+  if (attached.length) out.push(`${attached.length} citation${attached.length === 1 ? '' : 's'} attached`);
+  if (restatused.length) {
+    const verified = restatused.filter(e => e.status === 'verified').length;
+    out.push(verified === restatused.length
+      ? `${verified} citation${verified === 1 ? '' : 's'} verified`
+      : `${restatused.length} citation status${restatused.length === 1 ? '' : 'es'} changed`);
+  }
+
+  const bindKey = e => `${e.agent_name}|${e.target_alias}|${e.source}`;
+  const beforeBinds = new Map((b.bindingSources || []).map(e => [bindKey(e), e.status]));
+  const bindMoved = (after.bindingSources || []).filter(e => beforeBinds.get(bindKey(e)) !== e.status);
+  if (bindMoved.length) out.push(`${bindMoved.length} binding citation${bindMoved.length === 1 ? '' : 's'} settled`);
+
+  const contentMoved = [
+    ...keysOfObj(ac.claims).filter(k => (ac.claims || {})[k] !== (bc.claims || {})[k]).map(() => 'claim'),
+    ...keysOfObj(ac.archive).filter(k => JSON.stringify((ac.archive || {})[k]) !== JSON.stringify((bc.archive || {})[k])).map(() => 'narrative'),
+    ...keysOfObj(ac.clinical).filter(k => JSON.stringify((ac.clinical || {})[k]) !== JSON.stringify((bc.clinical || {})[k])).map(() => 'clinical row'),
+  ];
+  const bindingEdits = (ac.bindings || []).filter(x =>
+    !(bc.bindings || []).some(y => y.agent_name === x.agent_name && y.target_alias === x.target_alias && JSON.stringify(y) === JSON.stringify(x)));
+  if (contentMoved.length) {
+    const kinds = [...new Set(contentMoved)];
+    out.push(`${contentMoved.length} ${kinds.length === 1 ? kinds[0] : 'content'} edit${contentMoved.length === 1 ? '' : 's'}`);
+  }
+  if (bindingEdits.length) out.push(`${bindingEdits.length} affinity value${bindingEdits.length === 1 ? '' : 's'} edited`);
+
+  // Undoing work makes rows LEAVE the dump, because the dump holds only the delta
+  // from a fresh seed and undoing puts you back on the seed. Everything above reads
+  // what is present, so a session spent reverting summarised to nothing at all and
+  // committed as "review session". A revert is a decision worth recording.
+  const gone =
+    keysOfObj(b.review).filter(id => !(after.review || {})[id]).length
+    + (b.sources || []).filter(s => !(after.sources || []).some(x => x.key === s.key)).length
+    + (b.receptorSources || []).filter(e => !(after.receptorSources || []).some(x => edgeKey(x) === edgeKey(e))).length
+    + (b.bindingSources || []).filter(e => !(after.bindingSources || []).some(x => bindKey(x) === bindKey(e))).length
+    + keysOfObj(bc.claims).filter(k => !(ac.claims || {})[k]).length
+    + keysOfObj(bc.archive).filter(k => !(ac.archive || {})[k]).length
+    + keysOfObj(bc.clinical).filter(k => !(ac.clinical || {})[k]).length
+    + (bc.bindings || []).filter(x => !(ac.bindings || []).some(y => y.agent_name === x.agent_name && y.target_alias === x.target_alias)).length;
+  if (gone) out.push(`${gone} change${gone === 1 ? '' : 's'} returned to what the atlas ships`);
+
+  // Said last and only when it is the whole story, because a timestamp moving is
+  // real but is not what a session was about. Without it an activity-only publish
+  // fell through to "curate: review session", which tells a future reader nothing.
+  if (!out.length && JSON.stringify(b.activity || []) !== JSON.stringify(after.activity || [])) {
+    out.push('review timestamps updated');
+  }
+
+  return out;
+}
+
+/** `curate: ` + the lines; a count when that would not fit a 72-character subject; the old Desk's fallback when there are none. */
+export function commitSubject(lines) {
+  if (!lines.length) return 'curate: review session';
+  const subject = `curate: ${lines.join(', ')}`;
+  return subject.length <= 72 ? subject : `curate: ${lines.length} changes this session`;
+}
+
+/** What a publish from the page needs: the repo's edits file must be the snapshot's (seed.baseState) or what
+ *  this Desk already published (its published records alone, converted); anything else moved by another route.
+ *  On ok: the new state, its file text (desk:pull's formatting) and the commit subject. */
+export function preparePublish(seed, changes, repoState) {
+  const fromSeed = stateDiffKeys(seed.baseState, repoState);
+  if (fromSeed.length) {
+    const published = changes.map(publishedOnly);
+    const anyPublished = published.some(c => countPublished([c]) > 0);
+    const fromPublished = anyPublished ? stateDiffKeys(toCuratorState(seed, published), repoState) : fromSeed;
+    // A key only counts against the file when it is unexplained by our own publish: it must differ from
+    // the pristine snapshot AND from what we ourselves already published there (a key repoState still
+    // carries at its snapshot value, though our publish touched it elsewhere, is not yet a problem).
+    const diff = fromSeed.filter(k => fromPublished.includes(k));
+    if (diff.length) return { ok: false, reason: 'seed moved', diff };
+  }
+  const state = toCuratorState(seed, changes);
+  const lines = summariseStates(repoState, state);
+  return { ok: true, state, text: JSON.stringify(state, null, 1) + '\n', subject: commitSubject(lines) };
 }
 
 /** Every record in one changes object (fields, tombstones, adds, removes, flags, review), for counting and marking. */

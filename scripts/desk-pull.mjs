@@ -9,7 +9,7 @@ import { openDb } from '../db/index.js';
 import { migrate } from './migrate.js';
 import { exportState, importState, readState, STATE_FILE } from './curator-state.mjs';
 import { SEED_FILE } from './desk-seed.mjs';
-import { toCuratorState, summarise, publishedOnly, countPublished } from '../desk/desk-core.mjs';
+import { summarise, preparePublish } from '../desk/desk-core.mjs';
 import { summarise as summariseStates } from '../lib/git-publish.js';
 
 export function canonicalise(state) {
@@ -18,28 +18,12 @@ export function canonicalise(state) {
   return out;
 }
 
-const STATE_KEYS = ['review', 'activity', 'bindingReview', 'sources', 'receptorSources', 'bindingSources', 'content'];
-// Compared as data, not bytes: object keys sorted and every array taken as a set of rows. The edits file's
-// arrays are row lists (activity, sources, edges, bindings) whose order is only the order rows were written
-// in, which differs between a file and the same state rebuilt from the store (a record re-created after a
-// deletion lands last).
-const setwise = v => Array.isArray(v) ? '[' + v.map(setwise).sort().join(',') + ']'
-  : v && typeof v === 'object' ? '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + setwise(v[k])).join(',') + '}'
-  : JSON.stringify(v === undefined ? null : v);
-const diffKeys = (a, b) => STATE_KEYS.filter(k => setwise((a || {})[k]) !== setwise((b || {})[k]));
-
 /** The repo's edits file must be the snapshot's (seed.baseState), or what this Desk already published
  *  (the published records alone, converted and canonicalised). Anything else moved by another route. */
 export function pull({ seed, changes, repoState }) {
-  const fromSeed = diffKeys(seed.baseState, repoState);
-  if (fromSeed.length) {
-    // (a document can hold no published record yet still carry a published state, as a record's predecessor)
-    const published = changes.map(publishedOnly);
-    const anyPublished = published.some(c => countPublished([c]) > 0);
-    const fromPublished = anyPublished ? diffKeys(canonicalise(toCuratorState(seed, published)), repoState) : fromSeed;
-    if (fromPublished.length) return { ok: false, reason: 'seed moved', diff: fromPublished };
-  }
-  const state = canonicalise(toCuratorState(seed, changes));
+  const prep = preparePublish(seed, changes, repoState);
+  if (!prep.ok) return prep;
+  const state = canonicalise(prep.state);
   return { ok: true, state, summary: summaryOf(repoState, state, changes) };
 }
 

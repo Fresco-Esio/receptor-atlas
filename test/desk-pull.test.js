@@ -186,3 +186,59 @@ test('loadChanges reads an array file or a directory of documents, skips unknown
   writeFileSync(join(bad, 'd2.json'), JSON.stringify([doc('d2')]));
   assert.throws(() => loadChanges(bad, seed, () => {}), /d2\.json.*a change document/);
 });
+
+test('converter output is byte-identical to its canonical form (map key order follows the pristine seed)', () => {
+  const seed = buildSeed({ baseState: exportState(fresh()), commit: 'x' });
+  const order = seed.receptors.map(r => r.id);
+  // scenario 1: a few receptors, every kind of record, touched out of seed order
+  let a = core.emptyChanges(order[0], 'x');
+  a = core.setField(a, 'archive.abstract', 'New abstract text.', AT);
+  a = core.setField(a, 'clinical.onset', 'hours', AT);
+  a = core.setField(a, 'clinical.over', ['x', 'y'], AT);
+  a = core.setField(a, 'claim', 'A claim', AT);
+  a = core.attachSource(a, seed, { kind: 'article', authors: 'Doe J', year: 2020, title: 'T', journal: 'J', pmid: '12345678', doi: '10.1000/x', url: null, notes: null }, { is_primary: 1 }, AT);
+  a = core.setReview(a, { mechanism: 1, affinity: 0, clinical: 1, note: 'n' }, AT);
+  let b = core.emptyChanges(order[1], 'x');
+  b = core.setField(b, 'archive.body', ['p1', 'p2'], AT);
+  b = core.setField(b, 'clinical.name', 'Renamed', AT);
+  const r1 = seed.receptors[1]; if ((r1.sources || []).length) b = core.setSourceFlags(b, seed, r1.sources[0].key, { conflicting: true }, AT);
+  for (const changes of [[a, b], [b, a]]) {
+    const raw = core.toCuratorState(seed, changes);
+    assert.equal(JSON.stringify(raw, null, 1), JSON.stringify(canonicalise(raw), null, 1));
+  }
+  // scenario 2: six receptors in reverse seed order, each with a claim, an Archive and Ledger field where present, a review and a new source
+  const cs = [];
+  for (const r of [...seed.receptors].reverse().slice(0, 6)) {
+    let c = core.setField(core.emptyChanges(r.id, 'x'), 'claim', 'Claim for ' + r.id, AT);
+    if (r.archive) c = core.setField(c, 'archive.effect', 'E ' + r.id, AT);
+    if (r.clinicalNo != null) c = core.setField(c, 'clinical.mech', 'M ' + r.id, AT);
+    c = core.setReview(c, { affinity: 1 }, AT);
+    c = core.attachSource(c, seed, { kind: 'article', authors: 'X', year: 2021, title: 'T' + r.id, journal: 'J', pmid: String(20000000 + order.indexOf(r.id)), doi: null, url: null, notes: null }, {}, AT);
+    cs.push(c);
+  }
+  const raw2 = core.toCuratorState(seed, cs);
+  assert.equal(JSON.stringify(raw2, null, 1), JSON.stringify(canonicalise(raw2), null, 1));
+});
+
+test('preparePublish: accepts the snapshot file and the page\'s own last publish, refuses a moved file', () => {
+  const base = exportState(fresh());
+  const seed = buildSeed({ baseState: base, commit: 'x' });
+  let c = core.setField(core.emptyChanges('d2', 'x'), 'claim', 'New claim', AT);
+  const first = core.preparePublish(seed, [c], base);
+  assert.equal(first.ok, true);
+  assert.equal(first.text, JSON.stringify(first.state, null, 1) + '\n');
+  assert.equal(first.subject, 'curate: 1 claim edit');
+  assert.deepEqual(first.state, core.toCuratorState(seed, [c]));
+  // the repo now holds that publish; a second edit is accepted against it
+  c = core.markPublishedFrom(c, c, 'sha1', AT);
+  c = core.setField(c, 'archive.abstract', 'Second.', AT);
+  const second = core.preparePublish(seed, [c], first.state);
+  assert.equal(second.ok, true);
+  assert.equal(second.subject, 'curate: 1 narrative edit');
+  // a file that is neither: refused, naming what differs
+  const moved = JSON.parse(JSON.stringify(base)); moved.review.d1 = { mechanism: 1, affinity: 0, clinical: 0, citation: 0, mastery: 0, note: 'elsewhere' };
+  const no = core.preparePublish(seed, [c], moved);
+  assert.equal(no.ok, false); assert.equal(no.reason, 'seed moved'); assert.deepEqual(no.diff, ['review']);
+  // nothing to publish is still ok (subject falls back)
+  assert.equal(core.preparePublish(seed, [], base).subject, 'curate: review session');
+});
