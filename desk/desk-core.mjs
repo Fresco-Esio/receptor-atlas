@@ -309,6 +309,35 @@ export function publishedOnly(changes) {
   return out;
 }
 
+/** Two copies of one receptor's changes (this view's, and another view's from the store) as one. Per record
+ *  (a field, a source add or remove, a flag set, the review) the one with the later `at` wins, ties to remote,
+ *  and it keeps its own publishedAs; an add and a remove of the same source compete as one record. Spans
+ *  are unioned by (field, start, sourceKey), remote's copy first; the library is unioned. */
+export function mergeChanges(local, remote) {
+  if (!local) return clone(remote);
+  if (!remote) return clone(local);
+  const L = clone(local), R = clone(remote);
+  const later = (l, r) => !l ? r : !r ? l : String(l.at || '') > String(r.at || '') ? l : r;
+  const out = emptyChanges(R.receptorId ?? L.receptorId, R.seedCommit ?? L.seedCommit);
+  const keysOf = (a, b) => [...new Set([...Object.keys(b || {}), ...Object.keys(a || {})])];
+  for (const k of keysOf(L.fields, R.fields)) out.fields[k] = later((L.fields || {})[k], (R.fields || {})[k]);
+  const edges = c => { const m = {}; const src = c.sources || {}; for (const a of src.add || []) m[a.key] = { kind: 'add', rec: a }; for (const x of src.remove || []) m[x.key] = { kind: 'remove', rec: x }; return m; };
+  const le = edges(L), re = edges(R);
+  for (const k of keysOf(le, re)) {
+    const l = le[k], r = re[k];
+    const w = !l ? r : !r ? l : later(l.rec, r.rec) === l.rec ? l : r;
+    out.sources[w.kind].push(w.rec);
+  }
+  const ls = (L.sources || {}).set || {}, rs = (R.sources || {}).set || {};
+  for (const k of keysOf(ls, rs)) out.sources.set[k] = later(ls[k], rs[k]);
+  out.library = { ...(L.library || {}), ...(R.library || {}) };
+  const spanKey = sp => `${sp.field}|${sp.start}|${sp.sourceKey}`;
+  const seen = new Set((R.spans || []).map(spanKey));
+  out.spans = [...(R.spans || []), ...(L.spans || []).filter(sp => !seen.has(spanKey(sp)))];
+  out.review = L.review || R.review ? later(L.review, R.review) : null;
+  return out;
+}
+
 /** After a re-seed: published records are now in the seed, so drop them; keep the rest against the new commit. */
 export function rekey(changes, newSeed) {
   const c = clone(changes); c.seedCommit = newSeed.commit;

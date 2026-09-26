@@ -209,6 +209,7 @@ html,body{ background:var(--bg); color:var(--ink); }   /* white/black holds what
 .mcard .mnote label{ display:block; font-size:.7rem; color:var(--ink-3); margin-bottom:3px }
 .mctl .check{ display:inline-flex; align-items:center; cursor:pointer } .mctl [data-detach]{ margin-left:auto }
 .mnew{ margin:4px 0 0 }
+.lsmerge{ flex-basis:100%; color:var(--warn) } .lsmerge .btn{ margin-left:6px }
 .pop .chips{ max-height:220px; overflow:auto }
 </style>
 </head>
@@ -217,7 +218,9 @@ html,body{ background:var(--bg); color:var(--ink); }   /* white/black holds what
   <select id="rx" aria-label="Receptor"></select>
   <span class="banner" id="banner"></span>
   <span class="grow"></span>
+  <button class="btn sm" id="dlc" type="button">Download changes</button>
   <button class="btn sm" id="dl" type="button">Download edits file</button>
+  <div class="banner lsmerge hidden" id="lsmerge"></div>
 </div>
 <main class="main"><div class="write"><div id="editor"></div><aside class="margin" id="margin"></aside></div><svg id="flow" aria-hidden="true"></svg></main>
 <div id="toastRoot"></div>
@@ -530,6 +533,35 @@ function publishedOnly(changes) {
   for (const [k, s] of Object.entries(src.set || {})) if (s.publishedAs) out.sources.set[k] = s;
   for (const a of out.sources.add) if (c.library && c.library[a.key]) out.library[a.key] = c.library[a.key];
   out.review = c.review && c.review.publishedAs ? c.review : null;
+  return out;
+}
+
+/** Two copies of one receptor's changes (this view's, and another view's from the store) as one. Per record
+ *  (a field, a source add or remove, a flag set, the review) the one with the later `at` wins, ties to remote,
+ *  and it keeps its own publishedAs; an add and a remove of the same source compete as one record. Spans
+ *  are unioned by (field, start, sourceKey), remote's copy first; the library is unioned. */
+function mergeChanges(local, remote) {
+  if (!local) return clone(remote);
+  if (!remote) return clone(local);
+  const L = clone(local), R = clone(remote);
+  const later = (l, r) => !l ? r : !r ? l : String(l.at || '') > String(r.at || '') ? l : r;
+  const out = emptyChanges(R.receptorId ?? L.receptorId, R.seedCommit ?? L.seedCommit);
+  const keysOf = (a, b) => [...new Set([...Object.keys(b || {}), ...Object.keys(a || {})])];
+  for (const k of keysOf(L.fields, R.fields)) out.fields[k] = later((L.fields || {})[k], (R.fields || {})[k]);
+  const edges = c => { const m = {}; const src = c.sources || {}; for (const a of src.add || []) m[a.key] = { kind: 'add', rec: a }; for (const x of src.remove || []) m[x.key] = { kind: 'remove', rec: x }; return m; };
+  const le = edges(L), re = edges(R);
+  for (const k of keysOf(le, re)) {
+    const l = le[k], r = re[k];
+    const w = !l ? r : !r ? l : later(l.rec, r.rec) === l.rec ? l : r;
+    out.sources[w.kind].push(w.rec);
+  }
+  const ls = (L.sources || {}).set || {}, rs = (R.sources || {}).set || {};
+  for (const k of keysOf(ls, rs)) out.sources.set[k] = later(ls[k], rs[k]);
+  out.library = { ...(L.library || {}), ...(R.library || {}) };
+  const spanKey = sp => `${sp.field}|${sp.start}|${sp.sourceKey}`;
+  const seen = new Set((R.spans || []).map(spanKey));
+  out.spans = [...(R.spans || []), ...(L.spans || []).filter(sp => !seen.has(spanKey(sp)))];
+  out.review = L.review || R.review ? later(L.review, R.review) : null;
   return out;
 }
 
@@ -4960,36 +4992,57 @@ const SEED = {
   }
  }
 };
-const BUILT_AT = '2026-09-26T19:09:53.919Z';
+const BUILT_AT = '2026-09-26T19:13:12.596Z';
 // ---------- storage: claude.ai db when it answers, else this browser ----------
 const LS = 'atlas-desk-changes-v1';
 const STORE_LABEL = { browser: 'this browser', 'claude.ai': 'claude.ai' };
 const KNOWN = new Set(SEED.receptors.map(r => r.id));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+// Key-order-free JSON: the store may hand a document back with its keys in another order.
+const canon = v => Array.isArray(v) ? '[' + v.map(canon).join(',') + ']' : v && typeof v === 'object' ? '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}' : JSON.stringify(v === undefined ? null : v);
+const readLocal = () => { try { const raw = localStorage.getItem(LS); const all = raw ? JSON.parse(raw) : null; return all && typeof all === 'object' ? all : {}; } catch (e) { return {}; } };
 const store = {
   mode: 'browser', db: null, all: {},          // all: receptorId -> changes
   queues: {}, waiting: {},                     // per-document write chain, and "a write for this id is already queued"
+  sent: {},                                    // per document, the last few bodies this view wrote (to recognise their echo)
   async init() {
     if (window.claude && typeof window.claude.use === 'function') {
       let db = null;
-      try { db = await Promise.race([window.claude.use('db'), sleep(8000).then(() => null)]); } catch (e) { db = null; }
+      try { db = await window.claude.use('db'); } catch (e) { db = null; }   // resolves null by itself when db cannot run here
       if (db) {
         // claude.ai mode only once the stored documents are in hand: a half-open store would show
         // this browser's data and then overwrite the stored documents with it on the next edit.
-        const read = () => db.collection('changes').get();
+        // A read that has not answered in 10 s counts as a failed read.
+        const read = () => Promise.race([db.collection('changes').get(), sleep(10000).then(() => { throw { code: 'timeout' }; })]);
         let snap = null;
         try { snap = await read(); }
         catch (e) { if (e && e.code === 'unavailable') { await sleep(800); try { snap = await read(); } catch (e2) { snap = null; } } }
         if (snap) {
           const all = {};
-          (snap.docs || []).forEach(d => { const data = typeof d.data === 'function' ? d.data() : d.data; if (data) all[d.id] = data; });
+          (snap.docs || []).forEach(d => { const data = typeof d.data === 'function' ? d.data() : d.data; if (data) all[d.id] = JSON.parse(JSON.stringify(data)); });
           this.all = all; this.db = db; this.mode = 'claude.ai';
           return;
         }
         toast('claude.ai store did not answer; working in this browser', 5000);
       }
     }
-    try { const raw = localStorage.getItem(LS); const all = raw ? JSON.parse(raw) : null; this.all = all && typeof all === 'object' ? all : {}; } catch (e) { this.all = {}; }
+    this.all = readLocal();
+  },
+  /** Subscribe once (claude.ai mode): another open view's writes are merged in record by record. */
+  subscribe(onChange) {
+    if (!this.db) return;
+    this.db.collection('changes').onSnapshot(snap => {
+      let changed = false;
+      for (const d of snap.docs || []) {
+        const data = typeof d.data === 'function' ? d.data() : d.data; if (!data) continue;
+        const id = d.id, body = canon(data);
+        if ((this.sent[id] || []).includes(body)) continue;   // the echo of this view's own write carries nothing new
+        const before = this.all[id] ? canon(this.all[id]) : null;
+        const merged = mergeChanges(this.all[id] || null, JSON.parse(JSON.stringify(data)));
+        if (canon(merged) !== before) { this.all[id] = merged; changed = true; }
+      }
+      if (changed) onChange();
+    }, e => { toast('Live updates from other views stopped (' + ((e && e.code) || 'unknown') + '); reload to resume.', 5000); });
   },
   // A record for a receptor the seed no longer has would make toCuratorState throw, so it is kept out of
   // view here — but never deleted: the whole map is what gets written back to this browser.
@@ -5005,7 +5058,9 @@ const store = {
       const db = this.db;
       this.queues[id] = (this.queues[id] || Promise.resolve()).then(() => {
         this.waiting[id] = false;
-        return db.doc('changes/' + id).set(JSON.parse(JSON.stringify(this.all[id])));
+        const body = JSON.parse(JSON.stringify(this.all[id]));
+        this.sent[id] = [...(this.sent[id] || []), canon(body)].slice(-8);
+        return db.doc('changes/' + id).set(body);
       }).catch(e => { this.waiting[id] = false; toast('Save failed (' + ((e && e.code) || 'unknown') + ').', 4000); });
     }
     else { try { localStorage.setItem(LS, JSON.stringify(this.all)); } catch (e) { toast('This browser refused to store the change.'); } }
@@ -5392,6 +5447,7 @@ function editFlags(id, key, patch) {
   }
   commit(id, () => cand);
 }
+const priorNotes = new Map();   // receptor|source -> the correction note a card had when "conflicts" was unchecked
 function renderMargin(id) {
   const m = $('#margin'); const v = viewFor(id), c = store.get(id), labels = labelsFor(id);
   const count = {}, first = {};
@@ -5424,7 +5480,16 @@ function renderMargin(id) {
     card.querySelector('[data-flag="is_primary"]').addEventListener('change', e => { flush(); editFlags(id, key, { is_primary: e.target.checked ? 1 : 0 }); status(); });
     const note = card.querySelector('textarea');
     card.querySelector('[data-flag="conflicting"]').addEventListener('change', e => {
-      flush(); editFlags(id, key, { conflicting: e.target.checked });
+      flush();
+      if (e.target.checked) {
+        // re-checked with no note: bring back the seeded edge's note, else the one this card last had
+        const prior = note.value.trim() ? null : (((seedOf(id).sources || []).find(x => x.key === key) || {}).correction_note || priorNotes.get(id + '|' + key) || null);
+        if (prior) note.value = prior;
+        editFlags(id, key, prior ? { conflicting: true, correction_note: prior } : { conflicting: true });
+      } else {
+        if (note.value.trim()) priorNotes.set(id + '|' + key, note.value);
+        editFlags(id, key, { conflicting: false });
+      }
       card.querySelector('.mnote').classList.toggle('hidden', !e.target.checked);
       if (!e.target.checked) note.value = '';
       status(); queueFlow();
@@ -5471,23 +5536,46 @@ addEventListener('resize', queueFlow);
 addEventListener('scroll', queueFlow, { passive: true });
 if (window.ResizeObserver) { const ro = new ResizeObserver(queueFlow); ro.observe($('#editor')); ro.observe($('#margin')); }
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(queueFlow);
+// ---------- another view's writes (claude.ai mode) ----------
+// Re-draw on a remote change, except under the caret: while a field or note of this receptor has focus
+// only the banner and picker update, and the whole view is re-drawn once focus leaves.
+let deferredRender = false;
+const editingNow = () => { const a = document.activeElement; return !!(a && a.closest && a.closest('#editor, #margin') && (a.isContentEditable || a.matches('textarea, input[type=text], input:not([type])'))); };
+function onRemoteChange() {
+  if (editingNow()) { deferredRender = true; renderBanner(); return; }
+  flush(); render();
+}
+document.addEventListener('focusout', () => setTimeout(() => { if (deferredRender && !editingNow()) { deferredRender = false; flush(); render(); } }, 0));
+// ---------- changes left in this browser before the store answered (claude.ai mode) ----------
+function localLeftovers() { const all = readLocal(); return Object.entries(all).filter(([id, c]) => KNOWN.has(id) && c && c.fields); }
+function renderMergeLine() {
+  const el = $('#lsmerge');
+  const n = store.mode === 'claude.ai' ? countUnpublished(localLeftovers().map(([, c]) => c)) : 0;
+  if (!n) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+  el.innerHTML = `this browser holds ${n} change${n === 1 ? '' : 's'} that ${n === 1 ? 'is' : 'are'} not in the store —<button type="button" class="btn sm" id="lsmergeBtn">Merge</button>`;
+  el.classList.remove('hidden');
+  $('#lsmergeBtn').addEventListener('click', () => {
+    flush();
+    for (const [id, c] of localLeftovers()) store.put(mergeChanges(c, store.all[id] || null));
+    try { localStorage.removeItem(LS); } catch (e) { /* nothing to clear */ }
+    renderMergeLine(); render();
+    toast('Merged into the claude.ai store.');
+  });
+}
 // ---------- download ----------
 // Inside the claude.ai frame the page may only offer files through the downloads capability; the
 // <a download> path is for the file opened from disk (no window.claude at all).
 const IN_FRAME = !!window.claude;
 const dlReady = IN_FRAME ? Promise.resolve().then(() => typeof window.claude.use === 'function' ? window.claude.use('downloads') : null).catch(() => null) : null;
 const DL_GONE = new Set(['unavailable', 'not_granted', 'capability_disabled', 'capability_removed']);
-const hideDownload = () => { $('#dl').classList.add('hidden'); };
+const hideDownload = () => { $('#dl').classList.add('hidden'); $('#dlc').classList.add('hidden'); };
 if (dlReady) dlReady.then(dl => { if (!dl) hideDownload(); });
-$('#dl').addEventListener('click', async () => {
-  flush();
-  let text;
-  try { text = JSON.stringify(toCuratorState(SEED, store.list()), null, 1) + '\n'; }
-  catch (e) { toast('Could not build the edits file: ' + (e && e.message || e), 5000); return; }
+/** Hand the viewer a file: through the downloads capability inside the frame, else <a download>. */
+async function offer(filename, text) {
   if (dlReady) {
     const dl = await dlReady;
     if (!dl) { hideDownload(); return; }
-    try { await dl.save({ filename: 'curator-state.json', data: text }); }
+    try { await dl.save({ filename, data: text }); }
     catch (e) {
       const code = e && e.code;
       if (DL_GONE.has(code)) hideDownload();
@@ -5496,15 +5584,30 @@ $('#dl').addEventListener('click', async () => {
     return;
   }
   const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-  const a = document.createElement('a'); a.href = url; a.download = 'curator-state.json';
+  const a = document.createElement('a'); a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+// The raw store: desk:pull merges it onto whatever this Desk already published, so it is the safe fallback.
+$('#dlc').addEventListener('click', () => { flush(); offer('changes.json', JSON.stringify(store.list())); });
+// The whole edits file, built on this page's snapshot: right only while the repo's file is still the snapshot's.
+$('#dl').addEventListener('click', () => {
+  flush();
+  let text;
+  try { text = JSON.stringify(toCuratorState(SEED, store.list()), null, 1) + '\n'; }
+  catch (e) { toast('Could not build the edits file: ' + (e && e.message || e), 5000); return; }
+  offer('curator-state.json', text);
 });
+function arrangeDownloads() {
+  if (store.mode === 'browser') { $('#dlc').classList.add('primary'); $('#dl').textContent = 'Download edits file (full replacement)'; $('#dl').before($('#dlc')); }
+  else { $('#dlc').classList.remove('primary'); $('#dl').textContent = 'Download edits file'; $('#dl').after($('#dlc')); }
+}
 // ---------- boot ----------
-await store.init(); renderPicker(); render();
+await store.init(); arrangeDownloads(); renderPicker(); render(); renderMergeLine();
+store.subscribe(onRemoteChange);
 // The PubMed connector, once; the source form reads `mcp` each time it opens.
 try { if (window.claude?.use) mcp = await window.claude.use('mcp'); } catch { mcp = null; }
 // expose for the walkthrough (after boot, so its presence means the page is ready)
-window.__desk = { SEED, BUILT_AT, store, toCuratorState, markPublished, markPublishedFrom, flush, view: () => view() };
+window.__desk = { SEED, BUILT_AT, store, toCuratorState, markPublished, markPublishedFrom, mergeChanges, flush, view: () => view() };
 </script>
 </body>
 </html>

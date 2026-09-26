@@ -110,6 +110,11 @@ ok('download equals the node core on the same changes', JSON.stringify(got) === 
 ok('download carries the edit', got.content.archive.d2 && got.content.archive.d2.abstract === 'Walkthrough abstract.');
 ok('download carries the review', got.review.d2 && got.review.d2.affinity === 1 && got.review.d2.mechanism === 0 && got.review.d2.note === 'walkthrough note');
 ok('download has no spurious Ledger columns', JSON.stringify(Object.keys(got.content.clinical[d2.clinicalNo] || {}).filter(k => k !== 'baseline' && !(k in (SEED.baseState.content.clinical[d2.clinicalNo] || {})))) === '[]', JSON.stringify(got.content.clinical[d2.clinicalNo]));
+ok('in this browser "Download changes" is the first, primary action; the edits file says it is a full replacement',
+  await page.evaluate(() => { const c = document.querySelector('#dlc'), d = document.querySelector('#dl'); return c.classList.contains('primary') && c.nextElementSibling === d && d.textContent === 'Download edits file (full replacement)'; }));
+const [dlc] = await Promise.all([page.waitForEvent('download'), page.click('#dlc')]);
+const rawChanges = JSON.parse(readFileSync(await dlc.path(), 'utf8'));
+ok('"Download changes" saves changes.json, deep-equal to the store', dlc.suggestedFilename() === 'changes.json' && JSON.stringify(rawChanges) === JSON.stringify(await page.evaluate(() => window.__desk.store.list())));
 ok('no page errors during the walkthrough', errors.length === 0, errors.join(' | '));
 
 // --- Provenance layer: attach by hand, then span, then conflict ---
@@ -211,18 +216,32 @@ await page.mouse.click(pt.x, pt.y); await page.waitForTimeout(50);
 await page.keyboard.type('ZZ'); await page.waitForTimeout(450); await page.locator('[data-note]').focus(); await page.waitForTimeout(100);
 const after = await page.evaluate(() => ({ abs: window.__desk.view().archive.abstract, b0: window.__desk.view().archive.body[0] }));
 ok('clicking from the abstract into the body types where clicked; the abstract is untouched', after.b0 === body0Before.slice(0, at) + 'ZZ' + body0Before.slice(at) && after.abs === absBefore, JSON.stringify({ b0: after.b0.slice(0, 50) }));
+// re-checking "conflicts" on a seeded conflicting edge brings its seeded note back
+const conflicted = SEED.receptors.flatMap(r => r.sources.map(x => ({ id: r.id, ...x }))).find(x => x.status === 'conflicting');
+await page.selectOption('#rx', conflicted.id);
+const confCard = `#margin .mcard[data-key="${conflicted.key}"]`;
+await page.locator(`${confCard} [data-flag="conflicting"]`).uncheck(); await page.waitForTimeout(100);
+const clearedNote = await page.locator(`${confCard} textarea`).inputValue();
+await page.locator(`${confCard} [data-flag="conflicting"]`).check(); await page.waitForTimeout(100);
+const recheck = await page.evaluate(k => ({ note: window.__desk.view().sources.find(x => x.key === k).correction_note, status: window.__desk.view().sources.find(x => x.key === k).status, rec: window.__desk.store.get(window.__desk.view().id).sources.set[k] || null }), conflicted.key);
+ok('re-checking "conflicts" on a seeded conflicting edge restores its seeded note (and so leaves no record)',
+  clearedNote === '' && (await page.locator(`${confCard} textarea`).inputValue()) === conflicted.correction_note && recheck.note === conflicted.correction_note && recheck.status === 'conflicting' && recheck.rec === null, JSON.stringify(recheck));
 ok('no page errors in the Provenance layer', errors.length === 0, errors.join(' | '));
 
 // --- simulated claude.ai frame: a fake window.claude with db + downloads, same page from disk ---
 async function framePage(cfg) {
   const fctx = await browser.newContext({ acceptDownloads: true });
   await fctx.addInitScript(cfg => {
-    const L = window.__fakeLog = { sets: [], inflight: 0, maxInflight: 0, reads: 0, saves: [], calls: [] };
+    const L = window.__fakeLog = { sets: [], inflight: 0, maxInflight: 0, reads: 0, saves: [], calls: [], subs: 0 };
+    if (cfg.ls) localStorage.setItem('atlas-desk-changes-v1', JSON.stringify(cfg.ls));
+    const asSnap = docs => ({ docs: Object.entries(docs).map(([id, d]) => ({ id, data: () => d })) });
+    // the test hook: push(docs) delivers { id: body } to the page's subscription as another view's write
+    window.__fakeDb = { cb: null, push(docs) { if (this.cb) this.cb(asSnap(docs)); } };
     window.claude = { use: async name => {
       if (name === 'db') {
         if (cfg.db === 'none') return null;
         return {
-          collection: () => ({ get: async () => { L.reads++; if (cfg.db === 'down' || (cfg.db === 'flaky' && L.reads === 1)) throw { code: 'unavailable', message: 'x' }; return { docs: Object.entries(cfg.docs || {}).map(([id, d]) => ({ id, data: () => d })) }; } }),
+          collection: () => ({ onSnapshot: (cb) => { L.subs++; window.__fakeDb.cb = cb; setTimeout(() => cb(asSnap(cfg.docs || {})), 0); return () => {}; }, get: async () => { L.reads++; if (cfg.db === 'down' || (cfg.db === 'flaky' && L.reads === 1)) throw { code: 'unavailable', message: 'x' }; return { docs: Object.entries(cfg.docs || {}).map(([id, d]) => ({ id, data: () => d })) }; } }),
           doc: path => ({ set: async obj => { L.inflight++; L.maxInflight = Math.max(L.maxInflight, L.inflight); await new Promise(r => setTimeout(r, 80)); L.inflight--; L.sets.push({ path, obj }); } }),
         };
       }
@@ -274,10 +293,44 @@ async function framePage(cfg) {
   ok('frame: no page errors', f.errs.length === 0, f.errs.join(' | '));
   await f.fctx.close();
 }
+{ // another view writes: merged record by record, re-drawn except under the caret
+  const f = await framePage({ db: 'ok', dl: 'ok', docs: {} });
+  await f.p.selectOption('#rx', 'd2');
+  ok('frame: the page subscribes to the store once', (await f.log()).subs === 1);
+  await f.p.locator('[data-path="archive.presentation"]').fill('Local presentation.'); await f.p.evaluate(() => { window.__desk.flush(); document.activeElement.blur(); });
+  const later = '2999-01-01T00:00:00.000Z';
+  const remote = core.setField(core.emptyChanges('d2', SEED.commit), 'archive.effect', 'Remote effect.', later);
+  await f.p.evaluate(d => window.__fakeDb.push({ d2: d }), remote); await f.p.waitForTimeout(100);
+  const merged = await f.p.evaluate(() => window.__desk.store.get('d2').fields);
+  ok('frame: a remote write on another field re-draws that field, and the local record survives',
+    (await f.p.locator('[data-path="archive.effect"]').innerText()) === 'Remote effect.' && merged['archive.presentation'] && merged['archive.presentation'].value === 'Local presentation.' && (await f.p.locator('[data-path="archive.presentation"]').innerText()) === 'Local presentation.', JSON.stringify(Object.keys(merged)));
+  await f.p.locator('[data-path="archive.abstract"]').focus();
+  const remote2 = core.setField(remote, 'archive.ligand', 'Remote ligand.', later);
+  await f.p.evaluate(d => window.__fakeDb.push({ d2: d }), remote2); await f.p.waitForTimeout(100);
+  const whileFocused = await f.p.locator('[data-path="archive.ligand"]').innerText();
+  const stillFocused = await f.p.evaluate(() => document.activeElement && document.activeElement.dataset.path === 'archive.abstract');
+  await f.p.evaluate(() => document.activeElement.blur()); await f.p.waitForTimeout(100);
+  ok('frame: while a field has focus the view is not re-drawn; it is once focus leaves',
+    whileFocused !== 'Remote ligand.' && stillFocused && (await f.p.locator('[data-path="archive.ligand"]').innerText()) === 'Remote ligand.', whileFocused);
+  ok('frame: no page errors with live updates', f.errs.length === 0, f.errs.join(' | '));
+  await f.fctx.close();
+}
+{ // changes this browser kept before the store answered: a persistent line offers to merge them
+  const local = core.setField(core.emptyChanges('d1', SEED.commit), 'claim', 'Kept in this browser.', '2026-09-26T00:00:00.000Z');
+  const f = await framePage({ db: 'ok', dl: 'ok', docs: {}, ls: { d1: local } });
+  const line = await f.p.locator('#lsmerge').innerText().catch(() => '');
+  ok('frame: a store-mode page with changes left in this browser says so', (await f.p.locator('#lsmerge').isVisible()) && /^this browser holds 1 change that is not in the store —\s*Merge$/.test(line), line);
+  await f.p.click('#lsmergeBtn'); await f.p.waitForTimeout(300);
+  const L = await f.log(); const w = L.sets.filter(x => x.path === 'changes/d1').pop();
+  ok('frame: Merge writes the merged document to the store and empties this browser',
+    w && w.obj.fields.claim.value === 'Kept in this browser.' && await f.p.evaluate(() => localStorage.getItem('atlas-desk-changes-v1') === null) && !(await f.p.locator('#lsmerge').isVisible()) && await f.p.evaluate(() => window.__desk.store.get('d1').fields.claim.value === 'Kept in this browser.'));
+  ok('frame: no page errors merging this browser', f.errs.length === 0, f.errs.join(' | '));
+  await f.fctx.close();
+}
 { // downloads capability absent: the button is hidden
   const f = await framePage({ db: 'none', dl: 'none' });
   await f.p.waitForTimeout(100);
-  ok('frame: Download is hidden when the downloads capability is absent', !(await f.p.locator('#dl').isVisible()));
+  ok('frame: Download is hidden when the downloads capability is absent', !(await f.p.locator('#dl').isVisible()) && !(await f.p.locator('#dlc').isVisible()));
   await f.fctx.close();
 }
 { // downloads capability rejects unavailable: hidden after the attempt, no fallback download

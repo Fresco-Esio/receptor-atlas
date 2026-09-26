@@ -464,3 +464,52 @@ test('markPublishedFrom marks only the records unchanged since the pull', () => 
   assert.equal(core.markPublishedFrom(pulled, reordered, 'sha1').fields['archive.abstract'].publishedAs, 'sha1');
   assert.deepEqual(core.markPublishedFrom(cur, null, 'sha1'), cur, 'nothing pulled, nothing marked');
 });
+
+test('mergeChanges: per record the later at wins (ties to remote); spans and library are unioned', () => {
+  const s = seed();
+  const T1 = '2026-09-26T13:00:00.000Z', T2 = '2026-09-26T14:00:00.000Z';
+  let local = core.emptyChanges('d2', s.commit), remote = core.emptyChanges('d2', s.commit);
+  local = core.setField(local, 'archive.abstract', 'local newer', T2);
+  remote = core.setField(remote, 'archive.abstract', 'remote older', T1);
+  local = core.setField(local, 'claim', 'local tie', T1);
+  remote = core.setField(remote, 'claim', 'remote tie', T1);
+  remote = core.markPublished(core.setField(remote, 'archive.effect', 'remote only', T1), 'shaR');
+  local = core.setField(local, 'clinical.onset', 'local only', T1);
+  local = core.attachSource(local, s, KAPUR, { is_primary: 0 }, T1);
+  remote = core.attachSource(remote, s, OTHER, { is_primary: 1 }, T1);
+  local = core.setSourceFlags(local, s, 'pmid:24463000', { conflicting: true, correction_note: 'local' }, T1);
+  remote = core.setSourceFlags(remote, s, 'pmid:24463000', { conflicting: true, correction_note: 'remote' }, T2);
+  local = core.setReview(local, { mechanism: 1 }, T2);
+  remote = core.setReview(remote, { affinity: 1 }, T1);
+  local.spans = [{ field: 'archive.abstract', start: 0, end: 5, text: 'local', sourceKey: 'pmid:12505794', at: T1 }, { field: 'archive.body.0', start: 0, end: 4, text: 'Para', sourceKey: 'pmid:24463000', at: T1 }];
+  remote.spans = [{ field: 'archive.body.0', start: 0, end: 4, text: 'Para', sourceKey: 'pmid:24463000', at: T2 }];
+  const m = core.mergeChanges(local, remote);
+  assert.equal(m.fields['archive.abstract'].value, 'local newer');
+  assert.equal(m.fields.claim.value, 'remote tie', 'a tie goes to remote');
+  assert.equal(m.fields['archive.effect'].value, 'remote only');
+  assert.equal(m.fields['archive.effect'].publishedAs, 'shaR', 'publishedAs comes from the winning record');
+  assert.equal(m.fields['clinical.onset'].value, 'local only');
+  assert.deepEqual(m.sources.add.map(a => a.key).sort(), ['pmid:12505794', 'pmid:999']);
+  assert.deepEqual(Object.keys(m.library).sort(), ['pmid:12505794', 'pmid:999']);
+  assert.equal(m.sources.set['pmid:24463000'].correction_note, 'remote');
+  assert.deepEqual(m.review, local.review);
+  assert.equal(m.spans.length, 2, 'spans unioned by (field, start, sourceKey)');
+  assert.equal(m.spans.find(x => x.field === 'archive.body.0').at, T2, 'the remote copy of a shared span');
+  assert.equal(local.fields['archive.abstract'].value, 'local newer', 'inputs are not mutated');
+  assert.deepEqual(core.mergeChanges(null, remote), remote);
+  assert.deepEqual(core.mergeChanges(local, null), local);
+});
+
+test('mergeChanges: a later remove beats an earlier add of the same source, and the reverse', () => {
+  const s = seed();
+  const T1 = '2026-09-26T13:00:00.000Z', T2 = '2026-09-26T14:00:00.000Z';
+  const published = core.markPublished(core.attachSource(core.emptyChanges('d2', s.commit), s, KAPUR, { is_primary: 0 }, T1), 'sha1');
+  const detached = core.detachSource(published, s, 'pmid:12505794', T2);
+  let m = core.mergeChanges(published, detached);
+  assert.deepEqual(m.sources.add, []); assert.deepEqual(m.sources.remove.map(x => x.key), ['pmid:12505794']);
+  m = core.mergeChanges(detached, published);
+  assert.deepEqual(m.sources.add, [], 'local remove is later, it wins over the remote add');
+  const reattached = core.attachSource(detached, s, KAPUR, { is_primary: 1 }, '2026-09-26T15:00:00.000Z');
+  m = core.mergeChanges(detached, reattached);
+  assert.deepEqual(m.sources.add.map(a => a.is_primary), [1]); assert.deepEqual(m.sources.remove, []);
+});
