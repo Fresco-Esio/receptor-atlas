@@ -256,7 +256,7 @@ async function fakeGitHub(context, cfg) {
     }
     if (contents && req.method() === 'PUT') { log.puts.push(JSON.parse(req.postData())); log.putAuth.push(req.headers()['authorization'] || ''); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ content: { sha: 'blob222' }, commit: { sha: 'c0ffee1234567890c0ffee1234567890c0ffee12', html_url: 'https://github.com/Fresco-Esio/receptor-atlas/commit/c0ffee1' } }) }); }
     const m = url.pathname.match(/\/compare\/([^.]+)\.\.\.(.+)$/);
-    if (m) { log.compares.push(m[1]); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ status: (cfg.ancestors || []).includes(m[1]) ? 'ahead' : 'diverged' }) }); }
+    if (m) { log.compares.push(m[1]); if (cfg.delayMs) await new Promise(r => setTimeout(r, cfg.delayMs)); if (cfg.compare404) return route.fulfill({ status: 404, contentType: 'application/json', body: '{"message":"Not Found"}' }); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ status: (cfg.ancestors || []).includes(m[1]) ? 'ahead' : 'diverged' }) }); }
     return route.fulfill({ status: 404, contentType: 'application/json', body: '{"message":"Not Found"}' });
   });
   return log;
@@ -341,35 +341,68 @@ async function fakeGitHub(context, cfg) {
 const staleDoc = (rev) => { let d = core.setField(core.emptyChanges('d2', 'oldseed'), 'claim', 'was published', '2026-09-20T10:00:00.000Z'); d = core.markPublished(d, 'sha1'); d = core.setField(d, 'archive.abstract', 'still unpublished', '2026-09-21T10:00:00.000Z'); if (rev) d = core.clearField(core.markPublished(core.setField(d, 'archive.effect', 'x', '2026-09-20T10:00:00.000Z'), 'sha1'), 'archive.effect', '2026-09-22T10:00:00.000Z'); return d; };
 async function loadWith(cfg, doc) {
   const c = await browser.newContext(); const p = await c.newPage(); p.setDefaultTimeout(8000);
+  const errs = []; p.on('pageerror', e => errs.push(e.message));
   const gh = cfg.abort ? null : await fakeGitHub(c, cfg);
-  if (cfg.abort) await c.route('https://api.github.com/**', r => r.abort());
+  const aborted = { n: 0 };
+  if (cfg.abort) await c.route('https://api.github.com/**', r => { aborted.n++; return r.abort(); });
   await p.addInitScript(d => { if (!localStorage.getItem('atlas-desk-changes-v1')) localStorage.setItem('atlas-desk-changes-v1', JSON.stringify({ d2: d })); }, doc);
-  await p.goto(PAGE); await p.waitForFunction(() => window.__desk && window.__desk.rekeyDone);
-  return { c, p, gh, doc: () => p.evaluate(() => window.__desk.store.get('d2')), notice: () => p.locator('#notice').innerText() };
+  await p.goto(PAGE); await p.waitForFunction(cfg.noWait ? () => window.__desk : () => window.__desk && window.__desk.rekeyDone);
+  return { c, p, gh, errs, aborted, doc: () => p.evaluate(() => window.__desk.store.get('d2')), notice: () => p.locator('#notice').innerText() };
 }
 {
   const t = await loadWith({ repoState: SEED.baseState, ancestors: ['sha1'] }, staleDoc(false));
   const d = await t.doc();
   ok('re-key on load: published field dropped, unpublished kept, seedCommit updated, one compare for sha1', d.seedCommit === SEED.commit && !d.fields.claim && d.fields['archive.abstract'] && !d.fields['archive.abstract'].publishedAs && t.gh.compares.length === 1 && t.gh.compares[0] === 'sha1');
   ok('re-key notice', (await t.notice()).includes('re-keyed 1 document'), await t.notice());
+  ok('re-key compare is anonymous when no token is held', t.gh.auth.length >= 1 && t.gh.auth.every(a => a === ''), JSON.stringify(t.gh.auth));
+  ok('re-key on load: no page errors', t.errs.length === 0, t.errs.join(' | '));
   await t.c.close();
 }
 {
   const t = await loadWith({ repoState: SEED.baseState, ancestors: [] }, staleDoc(false));
   const d = await t.doc();
   ok('a publish not in history: left alone, notice says so', d.seedCommit === 'oldseed' && d.fields.claim && (await t.notice()).includes('not in the history'));
+  ok('not in history: no page errors', t.errs.length === 0, t.errs.join(' | '));
+  await t.c.close();
+}
+{
+  const t = await loadWith({ repoState: SEED.baseState, ancestors: ['sha1'], compare404: true }, staleDoc(false));
+  const d = await t.doc();
+  ok('a compare answering 404 counts as not an ancestor, not as unreachable', d.seedCommit === 'oldseed' && (await t.notice()).includes('not in the history') && !(await t.notice()).includes('could not be reached'), await t.notice());
+  ok('compare 404: no page errors', t.errs.length === 0, t.errs.join(' | '));
   await t.c.close();
 }
 {
   const t = await loadWith({ repoState: SEED.baseState, ancestors: ['sha1'] }, staleDoc(true));
   const d = await t.doc();
   ok('an unpublished revert blocks re-key, notice says so', d.seedCommit === 'oldseed' && (await t.notice()).includes('unpublished revert'));
+  ok('an unpublished revert is reported without a compare request', t.gh.compares.length === 0);
+  ok('unpublished revert: no page errors', t.errs.length === 0, t.errs.join(' | '));
+  await t.c.close();
+}
+{
+  const t = await loadWith({ abort: true }, staleDoc(true));
+  const d = await t.doc();
+  ok('reverts with GitHub down: the revert notice shows, and no request was attempted', d.seedCommit === 'oldseed' && (await t.notice()).includes('unpublished revert') && t.aborted.n === 0, `aborted=${t.aborted.n} · ${await t.notice()}`);
+  ok('reverts with GitHub down: no page errors', t.errs.length === 0, t.errs.join(' | '));
   await t.c.close();
 }
 {
   const t = await loadWith({ abort: true }, staleDoc(false));
   const d = await t.doc();
-  ok('GitHub unreachable: left alone, notice says so', d.seedCommit === 'oldseed' && (await t.notice()).includes('could not be reached'));
+  ok('GitHub unreachable: left alone, notice says so', d.seedCommit === 'oldseed' && (await t.notice()).includes('could not be reached') && t.aborted.n >= 1);
+  ok('GitHub unreachable: no page errors', t.errs.length === 0, t.errs.join(' | '));
+  await t.c.close();
+}
+{ // an edit made while the compare is in flight survives the re-key
+  const t = await loadWith({ repoState: SEED.baseState, ancestors: ['sha1'], delayMs: 600, noWait: true }, staleDoc(false));
+  const early = await t.p.evaluate(() => window.__desk.rekeyDone);
+  await t.p.selectOption('#rx', 'd2');
+  await t.p.locator('[data-path="archive.abstract"]').fill('typed during rekey'); await t.p.waitForTimeout(450);
+  await t.p.waitForFunction(() => window.__desk.rekeyDone);
+  const d = await t.doc();
+  ok('an edit typed while GitHub answers survives the re-key', early === false && d.seedCommit === SEED.commit && d.fields['archive.abstract'] && d.fields['archive.abstract'].value === 'typed during rekey' && !d.fields.claim, JSON.stringify({ early, seedCommit: d.seedCommit, abstract: d.fields['archive.abstract'] }));
+  ok('race: no page errors', t.errs.length === 0, t.errs.join(' | '));
   await t.c.close();
 }
 {
@@ -383,6 +416,7 @@ async function loadWith(cfg, doc) {
   await t.p.locator('#impfile').setInputFiles({ name: 'changes.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify([docA, docB, 7])) });
   await t.p.waitForTimeout(400);
   const after = await t.doc();
+  ok('import: no page errors', t.errs.length === 0, t.errs.join(' | '));
   ok('import merges the known document, skips the rest, keeps the existing claim', after.fields.claim && after.fields.claim.value === 'current' && after.fields['archive.abstract'] && after.fields['archive.abstract'].value === 'imported abstract' && (await t.p.locator('.toast').innerText()).includes('Imported 1 document (2 skipped)'));
   await t.c.close();
 }

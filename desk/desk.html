@@ -5242,7 +5242,7 @@ const SEED = {
   }
  }
 };
-const BUILT_AT = '2026-09-26T22:29:42.104Z';
+const BUILT_AT = '2026-09-26T22:35:47.690Z';
 // ---------- storage: claude.ai db when it answers, else this browser ----------
 const LS = 'atlas-desk-changes-v1';
 const STORE_LABEL = { browser: 'this browser', 'claude.ai': 'claude.ai' };
@@ -5970,25 +5970,56 @@ function arrangePublish() {
 // The same rule as desk:rekey: every publish they record must be in the seed's history (GitHub's compare
 // answers that, anonymously on a public repo); then published records drop out and the rest carry over.
 function renderNotice(text) { const el = $('#notice'); if (!text) { el.classList.add('hidden'); el.textContent = ''; return; } el.textContent = text; el.classList.remove('hidden'); }
-async function rekeyStale() {
-  if (IN_FRAME || store.mode !== 'browser' || SEED.commit === 'uncommitted') return;
-  const stale = store.list().filter(c => c.seedCommit !== SEED.commit);
-  if (!stale.length) { renderNotice(''); return; }
-  const shas = publishedShas(stale); const anc = new Set();
-  try {
-    for (const sha of shas) { const r = await gh('GET', `/repos/${GH.owner}/${GH.repo}/compare/${encodeURIComponent(sha)}...${encodeURIComponent(SEED.commit)}`); if (r.status === 'ahead' || r.status === 'identical') anc.add(sha); }
-  } catch (e) { renderNotice(`${stale.length} document${stale.length === 1 ? ' is' : 's are'} keyed to an older snapshot and could not be re-keyed: GitHub could not be reached. Editing continues on them.`); return; }
-  const r = rekeyAll(SEED, stale, sha => anc.has(sha));
-  if (!r.ok) {
-    const n = stale.length, docs = `${n} document${n === 1 ? ' is' : 's are'} keyed to an older snapshot`;
-    renderNotice(r.reason === 'unpublished reverts'
-      ? `${docs} and not re-keyed: ${r.receptors.join(', ')} hold${r.receptors.length === 1 ? 's' : ''} ${r.n} unpublished revert${r.n === 1 ? '' : 's'}/detach${r.n === 1 ? '' : 'es'}. Publish or undo them, then reload.`
-      : `${docs} and not re-keyed: a publish they record (${r.missing.map(s => s.slice(0, 7)).join(', ')}) is not in the history of this snapshot (${SEED.commit}). If the site is still rebuilding, reload in a minute; otherwise use Download changes to keep them safe.`);
+// One run at a time: a call while a run is in flight gets a fresh run chained after it, so an Import's documents
+// are never missed. Each run re-reads the store after every await, and everything after the last await is
+// synchronous, so an edit, a Publish's marks or an Import made while GitHub answered is never overwritten.
+let rekeying = null;
+function rekeyStale() {
+  if (IN_FRAME || store.mode !== 'browser' || SEED.commit === 'uncommitted') return Promise.resolve();
+  if (rekeying) return rekeying.then(() => rekeyStale());
+  rekeying = rekeyRun().finally(() => { rekeying = null; });
+  return rekeying;
+}
+function rekeyRefusal(nDocs, receptors, n) {
+  return `${nDocs} document${nDocs === 1 ? ' is' : 's are'} keyed to an older snapshot and not re-keyed: ${receptors.join(', ')} hold${receptors.length === 1 ? 's' : ''} ${n} unpublished revert${n === 1 ? '' : 's'}/detach${n === 1 ? '' : 'es'}. Publish or undo them, then reload.`;
+}
+async function rekeyRun() {
+  const anc = new Set(), checked = new Set();
+  for (;;) {
+    flush();
+    const stale = store.list().filter(c => c.seedCommit !== SEED.commit);
+    if (!stale.length) { renderNotice(''); return; }
+    const docs = `${stale.length} document${stale.length === 1 ? ' is' : 's are'} keyed to an older snapshot`;
+    // reverts refuse whatever GitHub says, so they are reported without a request
+    const rv = unpublishedReverts(stale);
+    if (rv.length) { renderNotice(rekeyRefusal(stale.length, rv.map(x => x.receptorId), rv.reduce((a, x) => a + x.n, 0))); return; }
+    const todo = publishedShas(stale).filter(sha => !checked.has(sha));
+    if (todo.length) {
+      try {
+        for (const sha of todo) {
+          checked.add(sha);
+          try { const r = await gh('GET', `/repos/${GH.owner}/${GH.repo}/compare/${encodeURIComponent(sha)}...${encodeURIComponent(SEED.commit)}`); if (r.status === 'ahead' || r.status === 'identical') anc.add(sha); }
+          catch (e) { if (e && e.code === 'access') continue; throw e; }   // 404: GitHub does not know that commit, so it is not an ancestor
+        }
+      } catch (e) {
+        const why = e && e.code === 'network' ? e.message : `GitHub could not be reached (${(e && e.message) || e})`;
+        renderNotice(`${docs} and could not be re-keyed: ${why}. Editing continues on them.`); return;
+      }
+      continue;   // the store may have changed while GitHub answered: re-read it before deciding
+    }
+    // from here to the end nothing awaits, so the documents written are the ones just read
+    const r = rekeyAll(SEED, stale, sha => anc.has(sha));
+    if (!r.ok) {
+      renderNotice(r.reason === 'unpublished reverts'
+        ? rekeyRefusal(stale.length, r.receptors, r.n)
+        : `${docs} and not re-keyed: a publish they record (${r.missing.map(s => s.slice(0, 7)).join(', ')}) is not in the history of this snapshot (${SEED.commit}). If the site is still rebuilding, reload in a minute; otherwise use Download changes to keep them safe.`);
+      return;
+    }
+    for (const d of r.docs) store.put(d);
+    renderNotice(`re-keyed ${r.docs.length} document${r.docs.length === 1 ? '' : 's'} onto seed ${SEED.commit}`);
+    if (editingNow()) { deferredRender = true; renderBanner(); } else { flush(); render(); }
     return;
   }
-  for (const d of r.docs) store.put(d);
-  renderNotice(`re-keyed ${r.docs.length} document${r.docs.length === 1 ? '' : 's'} onto seed ${SEED.commit}`);
-  renderBanner(); render();
 }
 // ---------- Import changes (browser mode): a changes.json from the claude.ai copy or another browser ----------
 function arrangeImport() {
