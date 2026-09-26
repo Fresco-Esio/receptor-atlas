@@ -19,7 +19,7 @@ export function canonicalise(state) {
 }
 
 /** The repo's edits file must be the snapshot's (seed.baseState), or what this Desk already published
- *  (the published records alone, converted and canonicalised). Anything else moved by another route. */
+ *  (the published records alone, converted and compared as data). Anything else moved by another route. */
 export function pull({ seed, changes, repoState }) {
   const prep = preparePublish(seed, changes, repoState);
   if (!prep.ok) return prep;

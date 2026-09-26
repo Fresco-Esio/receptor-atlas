@@ -105,7 +105,9 @@ permissions → *Contents: Read and write* (Metadata: Read is added by itself). 
 on it is kept in that browser's storage (`atlas-desk-github-token`); off, for the session
 only. **Forget** clears it. The page sends it to `https://api.github.com` and nowhere else.
 Every site under `fresco-esio.github.io` shares one browser origin, so a remembered token
-is readable by any page there; they are all yours, but that is the trade.
+is readable by any page there; they are all yours, but that is the trade. On the disk copy
+(`file://`) Chrome shares one localStorage across all local files, so a token remembered there
+is readable by any local HTML file opened in that browser; prefer "remember" off for the disk copy.
 
 **What one click does.** It reads `db/curator-state.json` as it is on `main`; runs the
 same stale-seed check as `desk:pull` in the page (the file must be the snapshot's, or what
@@ -114,7 +116,8 @@ attached`) for a Publish/Cancel; writes the converter's output — byte-identica
 `desk:pull` writes — as one commit on `main` in your name; and only then marks those
 changes published and keeps a receipt (`last published a1b2c3d · 2026-09-26` in the
 banner). GitHub Actions rebuilds the site in a minute or two. If anything fails before the
-commit, nothing is marked.
+commit, nothing is marked. Publish is held while stored changes are keyed to an older
+snapshot (until they re-key on load) or while a re-key is running.
 
 **"The repo has moved."** The file on `main` is neither the snapshot's nor what this page
 published — something else committed it (the claude.ai copy, the old local Desk, a hand
@@ -128,11 +131,18 @@ the new seed's history (GitHub's compare endpoint, anonymous on a public repo) a
 `desk:rekey`'s rule: published records drop out, unpublished ones carry over. It refuses in
 the same two cases as the script — an unpublished revert or detach, or a publish not in the
 history — and when GitHub cannot be reached; a line under the header says which, and
-editing continues on the old keys.
+editing continues on the old keys (Publish stays held until they re-key). An unpublished
+revert or detach means "take the published value back out", and the new snapshot no longer
+knows the value it would go back to: it shows the published value now. Set each of those
+fields to the value you want on this snapshot, then reload.
 
 **Import changes** merges a `changes.json` (Download changes from the claude.ai copy, or
 from another browser) into this browser's store, record by record, later `at` winning.
-Documents for receptors this snapshot does not have are skipped.
+Documents for receptors this snapshot does not have are skipped. Documents keyed to an older
+snapshot are re-keyed first by the same rule (all or none; if that refuses, or GitHub cannot
+be reached, none of them is imported and the toast says why), and nothing is merged into a
+document of this browser that is itself keyed to an older snapshot. Import waits while a
+publish is committing.
 
 **A clone's `desk/desk.html`** is built from its own checkout: after any publish made
 elsewhere (the button on the site, or "publish the atlas"), `git pull`, then `npm run

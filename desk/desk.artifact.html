@@ -216,10 +216,10 @@ html,body{ background:var(--bg); color:var(--ink); }   /* white/black holds what
   <span class="grow"></span>
   <button class="btn sm" id="dlc" type="button">Download changes</button>
   <button class="btn sm" id="dl" type="button">Download edits file</button>
-  <button class="btn sm" id="imp" type="button" title="Merge a changes.json from another copy of the Desk">Import changes</button>
+  <button class="btn sm hidden" id="imp" type="button" title="Merge a changes.json from another copy of the Desk">Import changes</button>
   <input type="file" id="impfile" accept="application/json,.json" class="hidden">
-  <button class="btn sm" id="ghset" type="button" title="GitHub token for the Publish button">GitHub…</button>
-  <button class="btn sm primary" id="pub" type="button">Publish</button>
+  <button class="btn sm hidden" id="ghset" type="button" title="GitHub token for the Publish button">GitHub…</button>
+  <button class="btn sm primary hidden" id="pub" type="button">Publish</button>
   <div class="banner lsmerge hidden" id="lsmerge"></div>
   <div class="banner notice hidden" id="notice"></div>
 </div>
@@ -5235,7 +5235,7 @@ const SEED = {
   }
  }
 };
-const BUILT_AT = '2026-09-26T22:35:47.690Z';
+const BUILT_AT = '2026-09-26T23:14:21.735Z';
 // ---------- storage: claude.ai db when it answers, else this browser ----------
 const LS = 'atlas-desk-changes-v1';
 const STORE_LABEL = { browser: 'this browser', 'claude.ai': 'claude.ai' };
@@ -5867,11 +5867,12 @@ const token = () => sessionToken || readToken();
 const readReceipt = () => { try { const r = JSON.parse(localStorage.getItem(RECEIPT_KEY) || 'null'); return r && typeof r.sha === 'string' && typeof r.at === 'string' ? r : null; } catch (e) { return null; } };
 const utf8ToB64 = text => { const b = new TextEncoder().encode(text); let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(s); };
 const b64ToUtf8 = b64 => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, '')), c => c.charCodeAt(0)));
-/** The one call to GitHub. The token goes in the Authorization header and nowhere else; without a token the
- *  call is anonymous (enough for compare on a public repo). Errors carry a code the callers act on. */
-async function gh(method, path, body) {
+/** The one call to GitHub. The token goes in the Authorization header and nowhere else; without a token, or with
+ *  `anon` (compare: a public repo needs none, and a rejected token would fail it), the call is anonymous.
+ *  Errors carry a code the callers act on. */
+async function gh(method, path, body, { anon = false } = {}) {
   const headers = { Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
-  if (token()) headers.Authorization = 'Bearer ' + token();
+  if (!anon && token()) headers.Authorization = 'Bearer ' + token();
   if (body) headers['Content-Type'] = 'application/json';
   let res;
   try { res = await fetch(GH_API + path, { method, headers, body: body ? JSON.stringify(body) : undefined, cache: 'no-store' }); }
@@ -5918,14 +5919,31 @@ async function openTokenDialog() {
   else { sessionToken = r.token; try { localStorage.removeItem(TOKEN_KEY); } catch (e) { /* nothing stored */ } }
   return true;
 }
-let publishing = false;
+let publishing = false, publishDone = Promise.resolve();   // publishDone settles when the running publish ends
+let importing = false;                                        // an Import is re-keying older-seed documents
+/** Why Publish is held right now, or ''. A document keyed to an older snapshot converts a revert as "leave it as the
+ *  seed has it", and a newer seed already holds the published value that revert was meant to take out; so nothing
+ *  publishes until every document is re-keyed. A re-key in flight is about to rewrite the documents. */
+function publishHold(changes) {
+  if (rekeying || importing) return 'Re-keying stored changes; try again in a moment.';
+  if (SEED.commit === 'uncommitted') return '';
+  const n = changes.filter(c => c.seedCommit !== SEED.commit).length;
+  return n ? `${n} document${n === 1 ? ' is' : 's are'} keyed to an older snapshot; Publish is held until ${n === 1 ? 'it is' : 'they are'} re-keyed — see the line under the header.` : '';
+}
 async function publish() {
   if (publishing) return;
   flush();
-  const changes = store.list();
+  let changes = store.list();
   if (!countUnpublished(changes)) { toast('Nothing to publish.'); return; }
-  if (!token()) { if (!(await openTokenDialog())) return; }
-  const btn = $('#pub'); publishing = true; btn.disabled = true; btn.textContent = 'Reading…';
+  let hold = publishHold(changes);
+  if (hold) { toast(hold, 6000); return; }
+  if (!token()) {
+    if (!(await openTokenDialog())) return;
+    flush(); changes = store.list();   // the dialog awaited: read the store again, and ask again
+    hold = publishHold(changes); if (hold) { toast(hold, 6000); return; }
+  }
+  const btn = $('#pub'); let settle; publishing = true; publishDone = new Promise(r => { settle = r; });
+  btn.disabled = true; btn.textContent = 'Reading…';
   try {
     const file = await gh('GET', CONTENTS + '?ref=' + GH.branch);
     const repoState = JSON.parse(b64ToUtf8(file.content));
@@ -5943,12 +5961,13 @@ async function publish() {
     for (const pulled of changes) store.put(markPublishedFrom(store.get(pulled.receptorId), pulled, sha, at));
     try { localStorage.setItem(RECEIPT_KEY, JSON.stringify({ sha, at, url: res.commit.html_url || '' })); } catch (e) { /* the banner still shows it this session */ }
     lastReceipt = { sha, at, url: res.commit.html_url || '' };
-    renderBanner(); render();
+    renderBanner();
+    if (editingNow()) deferredRender = true; else { flush(); render(); }   // not under the caret: re-drawn once focus leaves
     toast('Published as ' + sha.slice(0, 7) + ' · the site rebuilds in a minute or two.', 6000);
   } catch (e) {
     toast('Publish failed: ' + ((e && e.message) || e), 7000);
     if (e && (e.code === 'auth' || e.code === 'access')) await openTokenDialog();
-  } finally { publishing = false; btn.disabled = false; btn.textContent = 'Publish'; }
+  } finally { publishing = false; settle(); btn.disabled = false; btn.textContent = 'Publish'; }
 }
 let lastReceipt = readReceipt();
 function arrangePublish() {
@@ -5969,12 +5988,22 @@ function renderNotice(text) { const el = $('#notice'); if (!text) { el.classList
 let rekeying = null;
 function rekeyStale() {
   if (IN_FRAME || store.mode !== 'browser' || SEED.commit === 'uncommitted') return Promise.resolve();
-  if (rekeying) return rekeying.then(() => rekeyStale());
+  if (rekeying) { const again = () => rekeyStale(); return rekeying.then(again, again); }   // a failed run does not skip it
   rekeying = rekeyRun().finally(() => { rekeying = null; });
   return rekeying;
 }
 function rekeyRefusal(nDocs, receptors, n) {
-  return `${nDocs} document${nDocs === 1 ? ' is' : 's are'} keyed to an older snapshot and not re-keyed: ${receptors.join(', ')} hold${receptors.length === 1 ? 's' : ''} ${n} unpublished revert${n === 1 ? '' : 's'}/detach${n === 1 ? '' : 'es'}. Publish or undo them, then reload.`;
+  return `${nDocs} document${nDocs === 1 ? ' is' : 's are'} keyed to an older snapshot and not re-keyed: ${receptors.join(', ')} hold${receptors.length === 1 ? 's' : ''} ${n} unpublished revert${n === 1 ? '' : 's'}/detach${n === 1 ? '' : 'es'} whose old value this snapshot no longer knows. Set each of those fields to the value you want on this snapshot (it shows the published value now), then reload.`;
+}
+/** Which of these commits are in the seed's history (GitHub's compare, anonymous). 404: GitHub does not know the
+ *  commit, so it is not an ancestor. Any other failure throws. */
+async function ancestorsOf(shas) {
+  const anc = new Set();
+  for (const sha of shas) {
+    try { const r = await gh('GET', `/repos/${GH.owner}/${GH.repo}/compare/${encodeURIComponent(sha)}...${encodeURIComponent(SEED.commit)}`, null, { anon: true }); if (r.status === 'ahead' || r.status === 'identical') anc.add(sha); }
+    catch (e) { if (e && e.code === 'access') continue; throw e; }
+  }
+  return anc;
 }
 async function rekeyRun() {
   const anc = new Set(), checked = new Set();
@@ -5988,18 +6017,17 @@ async function rekeyRun() {
     if (rv.length) { renderNotice(rekeyRefusal(stale.length, rv.map(x => x.receptorId), rv.reduce((a, x) => a + x.n, 0))); return; }
     const todo = publishedShas(stale).filter(sha => !checked.has(sha));
     if (todo.length) {
-      try {
-        for (const sha of todo) {
-          checked.add(sha);
-          try { const r = await gh('GET', `/repos/${GH.owner}/${GH.repo}/compare/${encodeURIComponent(sha)}...${encodeURIComponent(SEED.commit)}`); if (r.status === 'ahead' || r.status === 'identical') anc.add(sha); }
-          catch (e) { if (e && e.code === 'access') continue; throw e; }   // 404: GitHub does not know that commit, so it is not an ancestor
-        }
-      } catch (e) {
+      for (const sha of todo) checked.add(sha);
+      try { for (const sha of await ancestorsOf(todo)) anc.add(sha); }
+      catch (e) {
         const why = e && e.code === 'network' ? e.message : `GitHub could not be reached (${(e && e.message) || e})`;
         renderNotice(`${docs} and could not be re-keyed: ${why}. Editing continues on them.`); return;
       }
       continue;   // the store may have changed while GitHub answered: re-read it before deciding
     }
+    // a publish's marks land first (marking a document re-keyed under it would re-create its dropped published
+    // records as reverts); then the store is read again
+    if (publishing) { await publishDone; continue; }
     // from here to the end nothing awaits, so the documents written are the ones just read
     const r = rekeyAll(SEED, stale, sha => anc.has(sha));
     if (!r.ok) {
@@ -6019,20 +6047,53 @@ function arrangeImport() {
   $('#imp').classList.toggle('hidden', IN_FRAME);
   if (IN_FRAME) return;
   $('#imp').addEventListener('click', () => $('#impfile').click());
+  // A merged document takes the imported copy's seedCommit, so only documents keyed to this snapshot are merged:
+  // older-seed ones are re-keyed first (desk:rekey's rule, all or none), and none is merged into a document of this
+  // browser that is itself keyed to an older snapshot.
   $('#impfile').addEventListener('change', async () => {
     const file = $('#impfile').files[0]; $('#impfile').value = ''; if (!file) return;
+    const wait = 'Wait for the publish to finish.';
+    if (publishing) { toast(wait); return; }
     let docs;
     try { docs = JSON.parse(await file.text()); } catch (e) { toast('That file is not JSON.'); return; }
     if (!Array.isArray(docs)) { toast('Expected an array of change documents, as Download changes saves it.'); return; }
+    if (publishing) { toast(wait); return; }
+    const onSeed = d => SEED.commit === 'uncommitted' || d.seedCommit === SEED.commit;
+    let skipped = 0; const valid = [];
+    for (const d of docs) { if (changeShapeError(d) || !KNOWN.has(d.receptorId)) skipped++; else valid.push(d); }
+    const current = valid.filter(onSeed); let older = valid.filter(d => !onSeed(d));
+    const nOlder = older.length; let olderWhy = '';
+    if (nOlder) {
+      importing = true;   // Publish is held until these are re-keyed or dropped
+      try {
+        // reverts refuse whatever GitHub says, so they are refused without a request
+        const anc = unpublishedReverts(older).length ? new Set() : await ancestorsOf(publishedShas(older));
+        const r = rekeyAll(SEED, older, sha => anc.has(sha));
+        if (r.ok) older = r.docs;
+        else {
+          older = [];
+          olderWhy = r.reason === 'unpublished reverts'
+            ? `${r.receptors.join(', ')} hold${r.receptors.length === 1 ? 's' : ''} ${r.n} unpublished revert${r.n === 1 ? '' : 's'}/detach${r.n === 1 ? '' : 'es'} whose old value this snapshot no longer knows`
+            : `a publish they record (${r.missing.map(s => s.slice(0, 7)).join(', ')}) is not in the history of this snapshot (${SEED.commit})`;
+        }
+      } catch (e) { older = []; olderWhy = e && e.code === 'network' ? e.message : `GitHub could not be reached (${(e && e.message) || e})`; }
+      finally { importing = false; }
+    }
+    // from here to the end of the merge nothing awaits, so each merge reads the store as it is now
     flush();
-    let n = 0, skipped = 0;
-    for (const d of docs) {
-      if (changeShapeError(d) || !KNOWN.has(d.receptorId)) { skipped++; continue; }
-      store.put(mergeChanges(store.all[d.receptorId] || null, d)); n++;
+    let n = 0; const held = [];
+    for (const d of [...current, ...older]) {
+      const local = store.all[d.receptorId] || null;
+      if (local && !onSeed(local)) { held.push(d.receptorId); continue; }
+      store.put(mergeChanges(local, d)); n++;
     }
     renderBanner(); render();
-    toast(`Imported ${n} document${n === 1 ? '' : 's'}${skipped ? ` (${skipped} skipped)` : ''}.`, 5000);
-    await rekeyStale();
+    let msg = `Imported ${n} document${n === 1 ? '' : 's'}${skipped ? ` (${skipped} skipped)` : ''}.`;
+    if (nOlder && !olderWhy) msg += ` ${nOlder} keyed to an older snapshot ${nOlder === 1 ? 'was' : 'were'} re-keyed onto this one first.`;
+    if (olderWhy) msg += ` Not imported: ${nOlder} document${nOlder === 1 ? '' : 's'} keyed to an older snapshot, because ${olderWhy}.`;
+    if (held.length) msg += ` Not merged: this browser's ${held.join(', ')} ${held.length === 1 ? 'is' : 'are'} keyed to an older snapshot (see the line under the header).`;
+    toast(msg, olderWhy || held.length ? 10000 : 5000);
+    await rekeyStale().catch(e => toast('Re-keying stopped: ' + ((e && e.message) || e), 7000));
   });
 }
 // ---------- boot ----------
@@ -6042,5 +6103,6 @@ store.subscribe(onRemoteChange);
 try { if (window.claude?.use) mcp = await window.claude.use('mcp'); } catch { mcp = null; }
 // expose for the walkthrough (after boot, so its presence means the page is ready)
 window.__desk = { SEED, BUILT_AT, store, toCuratorState, markPublished, markPublishedFrom, mergeChanges, preparePublish, publish, rekeyStale, flush, view: () => view(), rekeyDone: false };
-await rekeyStale(); window.__desk.rekeyDone = true;
+try { await rekeyStale(); } catch (e) { toast('Re-keying stopped: ' + ((e && e.message) || e), 7000); }
+window.__desk.rekeyDone = true;
 </script>

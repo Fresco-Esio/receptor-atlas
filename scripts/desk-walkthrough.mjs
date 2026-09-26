@@ -35,6 +35,9 @@ ok('build is self-contained (no <script src>, one fetch() to api.github.com, onl
 // api.github.com answers Cache-Control: private, max-age=60, and the GET (?ref=main) is not the PUT's URL, so a cached
 // GET would hand a second publish a stale blob sha. Playwright's routing turns the HTTP cache off, so this is static.
 ok('the GitHub fetch() bypasses the HTTP cache (cache: \'no-store\')', /\bfetch\s*\(GH_API \+ path, \{[^}]*\bcache: 'no-store'/.test(html));
+// shipped hidden, so nothing flashes in the claude.ai frame before the script decides; browser mode un-hides them
+const tagOf = id => (html.match(new RegExp(`<button[^>]*\\bid="${id}"[^>]*>`)) || [''])[0];
+ok('Publish, GitHub… and Import changes ship hidden in the markup', ['pub', 'ghset', 'imp'].every(id => /\bclass="[^"]*\bhidden\b/.test(tagOf(id))), ['pub', 'ghset', 'imp'].map(tagOf).join(' | '));
 
 const browser = await chromium.launch({ executablePath: exe, args: ['--no-sandbox'] });
 const ctx = await browser.newContext({ acceptDownloads: true }); const page = await ctx.newPage();
@@ -254,7 +257,7 @@ async function fakeGitHub(context, cfg) {
       if (cfg.status) return route.fulfill({ status: cfg.status, contentType: 'application/json', body: JSON.stringify({ message: 'Bad credentials' }) });
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ sha: 'blob111', encoding: 'base64', content: utf8b64(JSON.stringify(cfg.repoState, null, 1) + '\n').replace(/(.{60})/g, '$1\n') }) });
     }
-    if (contents && req.method() === 'PUT') { log.puts.push(JSON.parse(req.postData())); log.putAuth.push(req.headers()['authorization'] || ''); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ content: { sha: 'blob222' }, commit: { sha: 'c0ffee1234567890c0ffee1234567890c0ffee12', html_url: 'https://github.com/Fresco-Esio/receptor-atlas/commit/c0ffee1' } }) }); }
+    if (contents && req.method() === 'PUT') { log.puts.push(JSON.parse(req.postData())); log.putAuth.push(req.headers()['authorization'] || ''); if (cfg.putDelayMs) await new Promise(r => setTimeout(r, cfg.putDelayMs)); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ content: { sha: 'blob222' }, commit: { sha: 'c0ffee1234567890c0ffee1234567890c0ffee12', html_url: 'https://github.com/Fresco-Esio/receptor-atlas/commit/c0ffee1' } }) }); }
     const m = url.pathname.match(/\/compare\/([^.]+)\.\.\.(.+)$/);
     if (m) { log.compares.push(m[1]); if (cfg.delayMs) await new Promise(r => setTimeout(r, cfg.delayMs)); if (cfg.compare404) return route.fulfill({ status: 404, contentType: 'application/json', body: '{"message":"Not Found"}' }); return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ status: (cfg.ancestors || []).includes(m[1]) ? 'ahead' : 'diverged' }) }); }
     return route.fulfill({ status: 404, contentType: 'application/json', body: '{"message":"Not Found"}' });
@@ -345,16 +348,16 @@ async function loadWith(cfg, doc) {
   const gh = cfg.abort ? null : await fakeGitHub(c, cfg);
   const aborted = { n: 0 };
   if (cfg.abort) await c.route('https://api.github.com/**', r => { aborted.n++; return r.abort(); });
-  await p.addInitScript(d => { if (!localStorage.getItem('atlas-desk-changes-v1')) localStorage.setItem('atlas-desk-changes-v1', JSON.stringify({ d2: d })); }, doc);
+  await p.addInitScript(([all, tok]) => { if (!localStorage.getItem('atlas-desk-changes-v1')) localStorage.setItem('atlas-desk-changes-v1', JSON.stringify(all)); if (tok) localStorage.setItem('atlas-desk-github-token', tok); }, [cfg.docs || { d2: doc }, cfg.token || '']);
   await p.goto(PAGE); await p.waitForFunction(cfg.noWait ? () => window.__desk : () => window.__desk && window.__desk.rekeyDone);
   return { c, p, gh, errs, aborted, doc: () => p.evaluate(() => window.__desk.store.get('d2')), notice: () => p.locator('#notice').innerText() };
 }
 {
-  const t = await loadWith({ repoState: SEED.baseState, ancestors: ['sha1'] }, staleDoc(false));
+  const t = await loadWith({ repoState: SEED.baseState, ancestors: ['sha1'], token: 'github_pat_REMEMBERED' }, staleDoc(false));
   const d = await t.doc();
   ok('re-key on load: published field dropped, unpublished kept, seedCommit updated, one compare for sha1', d.seedCommit === SEED.commit && !d.fields.claim && d.fields['archive.abstract'] && !d.fields['archive.abstract'].publishedAs && t.gh.compares.length === 1 && t.gh.compares[0] === 'sha1');
   ok('re-key notice', (await t.notice()).includes('re-keyed 1 document'), await t.notice());
-  ok('re-key compare is anonymous when no token is held', t.gh.auth.length >= 1 && t.gh.auth.every(a => a === ''), JSON.stringify(t.gh.auth));
+  ok('re-key compare is anonymous even with a remembered token (a rejected token cannot break re-keying)', t.gh.compares.length >= 1 && t.gh.auth.length === t.gh.compares.length && t.gh.auth.every(a => a === ''), JSON.stringify(t.gh.auth));
   ok('re-key on load: no page errors', t.errs.length === 0, t.errs.join(' | '));
   await t.c.close();
 }
@@ -373,10 +376,15 @@ async function loadWith(cfg, doc) {
   await t.c.close();
 }
 {
-  const t = await loadWith({ repoState: SEED.baseState, ancestors: ['sha1'] }, staleDoc(true));
+  const t = await loadWith({ repoState: SEED.baseState, ancestors: ['sha1'], token: 't' }, staleDoc(true));
   const d = await t.doc();
-  ok('an unpublished revert blocks re-key, notice says so', d.seedCommit === 'oldseed' && (await t.notice()).includes('unpublished revert'));
+  const note = await t.notice();
+  ok('an unpublished revert blocks re-key, notice says so and gives the honest remedy', d.seedCommit === 'oldseed' && note.includes('unpublished revert') && note.includes('not re-keyed') && note.includes('no longer knows') && !note.includes('Publish or undo'), note);
   ok('an unpublished revert is reported without a compare request', t.gh.compares.length === 0);
+  await t.p.locator('#pub').click(); await t.p.waitForTimeout(300);
+  const heldToast = await t.p.locator('.toast').innerText().catch(() => '');
+  const tomb = (await t.doc()).fields['archive.effect'];
+  ok('Publish is held while a document is keyed to an older snapshot: toast, no request, nothing marked', heldToast.includes('keyed to an older snapshot') && t.gh.gets === 0 && t.gh.puts.length === 0 && tomb && tomb.cleared && !tomb.publishedAs, `${heldToast} · gets=${t.gh.gets} puts=${t.gh.puts.length}`);
   ok('unpublished revert: no page errors', t.errs.length === 0, t.errs.join(' | '));
   await t.c.close();
 }
@@ -405,6 +413,30 @@ async function loadWith(cfg, doc) {
   ok('race: no page errors', t.errs.length === 0, t.errs.join(' | '));
   await t.c.close();
 }
+{ // Publish while a re-key is in flight: held, no request
+  const t = await loadWith({ repoState: SEED.baseState, ancestors: ['sha1'], delayMs: 800, noWait: true, token: 't' }, staleDoc(false));
+  const early = await t.p.evaluate(() => window.__desk.rekeyDone);
+  await t.p.locator('#pub').click(); await t.p.waitForTimeout(150);
+  const toastText = await t.p.locator('.toast').innerText().catch(() => '');
+  ok('Publish during a re-key: toast "Re-keying stored changes", no request', early === false && toastText.includes('Re-keying stored changes; try again in a moment.') && t.gh.gets === 0 && t.gh.puts.length === 0, toastText);
+  await t.p.waitForFunction(() => window.__desk.rekeyDone);
+  await t.c.close();
+}
+{ // a re-key run that throws: boot still finishes (toast, rekeyDone), and a run queued behind it still runs
+  const t = await loadWith({ repoState: SEED.baseState, ancestors: ['sha1'], delayMs: 600, noWait: true }, staleDoc(false));
+  await t.p.evaluate(() => {
+    const s = window.__desk.store, list = s.list; let once = true;
+    s.list = function () { if (once) { once = false; throw new Error('store list failed (test)'); } return list.call(this); };
+    window.__q = window.__desk.rekeyStale();   // queued behind the boot run, which is waiting on GitHub
+  });
+  const done = await t.p.waitForFunction(() => window.__desk.rekeyDone, null, { timeout: 4000 }).then(() => true, () => false);
+  const toastText = await t.p.locator('.toast').innerText().catch(() => '');
+  const queued = await t.p.evaluate(() => window.__q.then(() => 'resolved', e => 'rejected: ' + (e && e.message)));
+  const d = await t.doc();
+  ok('a throwing boot re-key: toast, rekeyDone still set, no unhandled rejection', done && toastText.includes('store list failed (test)') && t.errs.length === 0, `done=${done} toast=${toastText} errs=${t.errs.join(' | ')}`);
+  ok('a re-key queued behind a failed run still runs', queued === 'resolved' && d.seedCommit === SEED.commit && !d.fields.claim, `${queued} · ${d.seedCommit}`);
+  await t.c.close();
+}
 {
   const fresh = core.setField(core.emptyChanges('d2', SEED.commit), 'claim', 'current', '2026-09-25T10:00:00.000Z');
   const t = await loadWith({ repoState: SEED.baseState, ancestors: [] }, fresh);
@@ -418,6 +450,64 @@ async function loadWith(cfg, doc) {
   const after = await t.doc();
   ok('import: no page errors', t.errs.length === 0, t.errs.join(' | '));
   ok('import merges the known document, skips the rest, keeps the existing claim', after.fields.claim && after.fields.claim.value === 'current' && after.fields['archive.abstract'] && after.fields['archive.abstract'].value === 'imported abstract' && (await t.p.locator('.toast').innerText()).includes('Imported 1 document (2 skipped)'));
+  await t.c.close();
+}
+const importFile = async (p, docs) => { await p.evaluate(() => { document.querySelector('#toastRoot').innerHTML = ''; }); await p.locator('#impfile').setInputFiles({ name: 'changes.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(docs)) }); await p.waitForFunction(() => /Imported|Wait for/.test(document.querySelector('#toastRoot').innerText)); await p.waitForTimeout(300); return p.locator('.toast').innerText(); };
+const onlyD1 = { d1: core.setField(core.emptyChanges('d1', SEED.commit), 'claim', 'd1 local', '2026-09-25T10:00:00.000Z') };
+{ // an older-seed document is re-keyed before it is merged (a fresh store)
+  const t = await loadWith({ repoState: SEED.baseState, ancestors: ['sha1'], docs: onlyD1 });
+  const toastText = await importFile(t.p, [staleDoc(false)]);
+  const d = await t.doc();
+  ok('import of an older-seed document: re-keyed onto this seed before it is stored (published claim folded, abstract kept)', d.seedCommit === SEED.commit && !d.fields.claim && d.fields['archive.abstract'] && d.fields['archive.abstract'].value === 'still unpublished' && t.gh.compares.includes('sha1'), toastText);
+  ok('import re-key: no page errors', t.errs.length === 0, t.errs.join(' | '));
+  await t.c.close();
+}
+{ // ... and merging it never turns this browser's current work stale
+  let local = core.setField(core.emptyChanges('d2', SEED.commit), 'archive.effect', 'published here', '2026-09-24T10:00:00.000Z');
+  local = core.clearField(core.markPublished(local, 'shaP'), 'archive.effect', '2026-09-25T10:00:00.000Z');   // published on this seed, then reverted
+  const t = await loadWith({ repoState: SEED.baseState, ancestors: ['sha1'] }, local);
+  const toastText = await importFile(t.p, [staleDoc(false)]);
+  const d = await t.doc();
+  ok('import of an older-seed document into current work: stays on this seed, revert kept, claim folded', d.seedCommit === SEED.commit && d.fields['archive.effect'] && d.fields['archive.effect'].cleared && !d.fields.claim && d.fields['archive.abstract'] && await t.p.locator('#notice.hidden').count() === 1, `${toastText} · ${d.seedCommit}`);
+  await t.c.close();
+}
+{ // an older-seed document whose publish is not in this seed's history: not imported, and the toast says why
+  const t = await loadWith({ repoState: SEED.baseState, ancestors: [], docs: onlyD1 });
+  const docA = core.setField(core.emptyChanges('d3', SEED.commit), 'claim', 'current d3', '2026-09-25T11:00:00.000Z');
+  const toastText = await importFile(t.p, [staleDoc(false), docA]);
+  const all = await t.p.evaluate(() => window.__desk.store.all);
+  ok('an older-seed document not in the history is not imported; the current-seed one is', !all.d2 && all.d3 && all.d3.fields.claim.value === 'current d3' && toastText.includes('not in the history'), toastText);
+  await t.c.close();
+}
+{ // this browser's copy is keyed to an older snapshot (re-key refused): an import is not merged into it
+  const t = await loadWith({ repoState: SEED.baseState, ancestors: ['sha1'] }, staleDoc(true));
+  const docA = core.setField(core.emptyChanges('d2', SEED.commit), 'archive.abstract', 'imported abstract', '2026-09-25T11:00:00.000Z');
+  const toastText = await importFile(t.p, [docA]);
+  const d = await t.doc();
+  ok('an import is not merged into a document keyed to an older snapshot (it would re-key its reverts silently)', d.seedCommit === 'oldseed' && d.fields['archive.abstract'].value === 'still unpublished' && toastText.includes('keyed to an older snapshot'), `${toastText} · ${d.seedCommit}`);
+  await t.c.close();
+}
+{ // while a publish commits: Import is refused, a re-key waits, and the view under the caret is not re-drawn
+  let doc = core.setField(core.emptyChanges('d2', SEED.commit), 'claim', 'published earlier', '2026-09-24T10:00:00.000Z');
+  doc = core.setField(core.markPublished(doc, 'shaX'), 'archive.abstract', 'to publish', '2026-09-25T10:00:00.000Z');
+  const t = await loadWith({ repoState: SEED.baseState, ancestors: ['shaX'], putDelayMs: 1200, token: 't' }, doc);
+  const gh = t.gh;
+  await t.p.selectOption('#rx', 'd2');
+  await t.p.locator('#pub').click(); await t.p.waitForFunction(() => document.querySelector('#modalBg #pc-h')); await t.p.locator('#modalBg [data-go]').click();
+  await t.p.waitForFunction(() => document.querySelector('#pub').textContent === 'Committing…');
+  const imp = core.setField(core.emptyChanges('d1', SEED.commit), 'claim', 'imported mid-publish', '2026-09-25T11:00:00.000Z');
+  const toastText = await importFile(t.p, [imp]);
+  ok('Import during a publish: "Wait for the publish to finish." and the store is unchanged', toastText.includes('Wait for the publish to finish.') && await t.p.evaluate(() => !window.__desk.store.all.d1), toastText);
+  // a re-key started now (the document keyed to an older seed by another route) must not write before the marks land
+  await t.p.evaluate(() => { const s = window.__desk.store; s.put({ ...s.get('d2'), seedCommit: 'oldseed' }); window.__rk = window.__desk.rekeyStale(); });
+  await t.p.locator('[data-path="archive.presentation"]').fill('typed while committing');
+  await t.p.waitForFunction(() => document.querySelector('#pub').textContent === 'Publish' && !document.querySelector('#pub').disabled, null, { timeout: 8000 });
+  const focus = await t.p.evaluate(() => document.activeElement && document.activeElement.dataset && document.activeElement.dataset.path);
+  await t.p.evaluate(() => window.__rk);
+  const d = await t.doc();
+  ok('a publish landing while a field has focus does not re-draw under the caret', focus === 'archive.presentation', String(focus));
+  ok('a re-key started mid-publish waits for the marks: no phantom revert of the published claim', gh.puts.length === 1 && d.fields.claim && !d.fields.claim.cleared && d.fields.claim.publishedAs === 'shaX' && d.fields['archive.abstract'].publishedAs && d.fields['archive.abstract'].publishedAs.startsWith('c0ffee'), JSON.stringify(d.fields.claim));
+  ok('mid-publish: no page errors', t.errs.length === 0, t.errs.join(' | '));
   await t.c.close();
 }
 // --- simulated claude.ai frame: a fake window.claude with db + downloads, same page from disk ---
