@@ -51,6 +51,7 @@ the atlas" (see "Publishing from the fallback" below).
 | `npm run desk:seed` | Builds `desk/seed.json` from the database, the way the Actions runner builds it: what the atlas currently is, for the editable surface. |
 | `npm run desk:build` | Writes `desk/desk.html`: the editor template with `desk-core.mjs` and `seed.json` inlined into one file; also writes `desk/desk.artifact.html`, the same page without the doctype/html/head/body wrapper, for publishing as a claude.ai artifact. |
 | `npm run desk:pull [--check] <changes.json \| dir>` | Turns a `changes.json` (what the page's store holds) into `db/curator-state.json`. `--check` reports what would change without writing it, and refuses unless the repo's edits file is the snapshot's, or what this Desk already published. |
+| `npm run desk:rekey <changes.json \| dir>` | After a re-seed: prints the stored documents re-keyed onto the new `desk/seed.json` (published records dropped, since the seed now carries them). Refuses unless every publish they record is an ancestor of HEAD. |
 
 **Publishing** is "publish the atlas", asked of any Claude session: it reads the changes
 out of the page's store, runs `desk:pull`, commits, and pushes. A publish marks those
@@ -96,9 +97,17 @@ The `/desk/` copy on the public site is rebuilt on every push (`desk:seed` and
 `desk:build` run in the Actions workflow before the snapshot), so it always starts from
 the repo's current edits file.
 
-`re-seed the desk` = `npm run desk:seed && npm run desk:build`, republish
-`desk/desk.artifact.html` to the same artifact URL, then `rekey` every stored document to
-the new seed commit and write it back.
+`re-seed the desk`:
+
+1. Read the store as in step 1 above.
+2. `npm run desk:seed && npm run desk:build`.
+3. `npm run desk:rekey -- changes.json > rekeyed.json`. Re-keying drops every published
+   record because the new seed carries it, so this refuses (exit 2) unless every
+   `publishedAs` in the documents is an ancestor of HEAD; on a refusal, stop: pull, and
+   start again. On success it prints the re-keyed documents as one JSON array.
+4. Republish `desk/desk.artifact.html` to the same artifact URL.
+5. Write each document of `rekeyed.json` back with `ArtifactData set`, pinned with
+   `if_version`.
 
 **One editor at a time.** The old, local Desk (`the-conservators-desk.html`) still runs
 and still works, as a fallback of its own. It is not a second editor: do not edit at the

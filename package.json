@@ -11,6 +11,7 @@
     "desk:seed": "node scripts/desk-seed.mjs",
     "desk:pull": "node scripts/desk-pull.mjs",
     "desk:build": "node scripts/desk-build.mjs",
+    "desk:rekey": "node scripts/desk-rekey.mjs",
     "snapshot": "node scripts/publish.js",
     "preview": "node scripts/serve-dist.js",
     "test": "node --test"
