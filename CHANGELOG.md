@@ -33,6 +33,22 @@ reader who wrote a number down needs to know it moved.
 
 ## [Unreleased]
 
+### Added
+
+- **The hosted Desk: a second way to edit the atlas, and the normal one.** A single-file
+  editor, published as a private claude.ai artifact, that needs no terminal, no port, and
+  no machine of your own. It edits the same ground the old Desk did — the Archive prose
+  per receptor with sources attached where they are used, the Cabinet claim line, the
+  Ledger row, and the three review marks — but the writing surface is prose with sources
+  in the margin, not a form. "Publish the atlas" turns whatever changed into
+  `db/curator-state.json`, the same file the old Desk wrote, and commits and pushes it;
+  nothing is ever cleared from the working set, only marked published, so the editor
+  never goes stale between sessions. Not in it, on purpose: binding-affinity edits, which
+  stay with `scripts/sourcing/`, and a separate citation-verified check, because attaching
+  a source to a claim is treated as having read it. The same file also ships unlinked at
+  `/desk/` on the public site and as `desk/desk.html` in a clone, so editing never
+  depends on claude.ai being reachable.
+
 ### Fixed
 
 - **Onset, time course, risk factors and monitoring now survive a rebuild.** The Desk

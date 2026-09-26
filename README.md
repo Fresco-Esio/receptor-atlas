@@ -35,6 +35,43 @@ the database; after that it just starts. It opens
 
 To stop it, close the black terminal window (or press `Ctrl+C` in it).
 
+## The hosted Desk
+
+There is a second way to edit the atlas that needs no terminal, no port, and no machine of
+your own: the hosted Desk, a private claude.ai artifact. That is the normal place to edit.
+The same single file is also reachable without claude.ai — at `/desk/` on the public site,
+and as `desk/desk.html` in a clone. That fallback keeps your edits in the browser's own
+storage instead of the artifact's store, and offers a Download of the edits file in place
+of "publish the atlas".
+
+| Script | What it does |
+|---|---|
+| `npm run desk:seed` | Builds `desk/seed.json` from the database, the way the Actions runner builds it: what the atlas currently is, for the editable surface. |
+| `npm run desk:build` | Writes `desk/desk.html`: the editor template with `desk-core.mjs` and `seed.json` inlined into one file. |
+| `npm run desk:pull [--check] <changes.json>` | Turns a `changes.json` (what the page's store holds) into `db/curator-state.json`. `--check` reports what would change without writing it. |
+
+**Publishing** is "publish the atlas", asked of any Claude session: it reads the changes
+out of the page's store, runs `desk:pull`, commits, and pushes. A publish marks those
+changes published in the store; it never clears them; the editor always shows the seed
+plus every change, published or not, so an old snapshot never looks stale.
+
+**Re-seeding** — "re-seed the desk" — runs `desk:seed`, `desk:build`, republishes the
+artifact, and re-keys whatever changes are still unpublished onto the new seed. It is the
+only action that moves the artifact's own version, and it is done only on request, never
+automatically.
+
+**One editor at a time.** The old, local Desk (`the-conservators-desk.html`) still runs
+and still works, as a fallback of its own. It is not a second editor: do not edit at the
+old Desk and the hosted Desk between publishes.
+
+**One curator, for now.** Attaching a source to a claim counts as having read it, so the
+hosted Desk carries no separate "citation verified" check: every attached source exports
+verified, and a seeded source keeps its seeded status unless you explicitly mark it as
+conflicting with the text (or clear that mark). A source *you* attach exports verified
+from the start. If a second author ever edits alongside you, reinstate the read-before-
+verified gate first — the change record already carries a timestamp per edit, so
+attribution is the only piece missing.
+
 ## Move it / back it up
 
 - The whole `atlas-app` folder is self-contained — copy or move it anywhere

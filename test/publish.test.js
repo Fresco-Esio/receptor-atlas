@@ -7,7 +7,7 @@
 
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, readFile, writeFile, stat } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, writeFile, stat, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openDb } from '../db/index.js';
@@ -89,6 +89,12 @@ test('each volume page reroutes /api to the bundled JSON', async () => {
 test('shared assets are carried into the bundle', async () => {
   assert.ok((await stat(join(outDir, 'assets/tokens.css'))).isFile(),
     'assets/tokens.css should exist in dist');
+});
+
+test('the hosted Desk ships at /desk/, unlinked', async () => {
+  const html = await readFile(join(outDir, 'desk', 'index.html'), 'utf8');
+  assert.equal(html, await readFile(new URL('../desk/desk.html', import.meta.url), 'utf8'));
+  for (const page of await readdir(outDir)) if (page.endsWith('.html')) assert.doesNotMatch(await readFile(join(outDir, page), 'utf8'), /desk\//, `${page} links to the Desk`);
 });
 
 test('publish fails when a page references a missing asset', async () => {

@@ -10,8 +10,9 @@
 //   2. Copy the pages and inject a tiny shim that reroutes those five /api paths to
 //      the bundled JSON. The pages' own code runs unchanged, so the published site
 //      is visually and behaviourally identical to the live one — just frozen.
-// The Conservator's Desk (the editor) is deliberately left out; the public site is
-// strictly read-only.
+// The Conservator's Desk (the old, server-backed editor) is deliberately left out; the
+// public site is strictly read-only. The hosted Desk's single file ships too, but only
+// as an unlinked fallback at /desk/ — see step 4b below.
 
 import { readFile, writeFile, rm, mkdir, copyFile, cp, access } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -128,6 +129,11 @@ export async function publish(db, outDir) {
   // 4. Fully standalone pages, verbatim.
   for (const page of STANDALONE_PAGES)
     await copyFile(join(PUBLIC, page), join(outDir, page));
+
+  // 4b. The hosted Desk's fallback: the same single file the artifact publishes, reachable
+  // without claude.ai. Deliberately unlinked from every page; it writes nothing.
+  await mkdir(join(outDir, 'desk'), { recursive: true });
+  await copyFile(join(HERE, '..', 'desk', 'desk.html'), join(outDir, 'desk', 'index.html'));
 
   // 5. Guard the invariant: nothing in the published bundle may reference the Desk.
   for (const page of ['index.html', ...VOLUME_PAGES, ...STANDALONE_PAGES]) {
