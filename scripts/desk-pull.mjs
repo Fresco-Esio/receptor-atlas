@@ -9,7 +9,7 @@ import { openDb } from '../db/index.js';
 import { migrate } from './migrate.js';
 import { exportState, importState, readState, STATE_FILE } from './curator-state.mjs';
 import { SEED_FILE } from './desk-seed.mjs';
-import { summarise, preparePublish } from '../desk/desk-core.mjs';
+import { summarise, preparePublish, changeShapeError } from '../desk/desk-core.mjs';
 import { summarise as summariseStates } from '../lib/git-publish.js';
 
 export function canonicalise(state) {
@@ -35,15 +35,6 @@ export function summaryOf(repoState, state, changes) {
   return summariseStates(repoState, state).join(', ') || 'nothing to publish';
 }
 
-/** What is wrong with one change document, or null. */
-function shapeError(d) {
-  if (!d || typeof d !== 'object' || Array.isArray(d)) return 'is not a change document (an object)';
-  if (typeof d.receptorId !== 'string') return 'has no receptorId';
-  if (!d.fields || typeof d.fields !== 'object') return 'has no fields object';
-  if (!d.sources || typeof d.sources !== 'object' || !Array.isArray(d.sources.add) || !d.sources.set || typeof d.sources.set !== 'object') return 'has no sources { add: [], set: {} }';
-  return null;
-}
-
 /** The changes to pull: a JSON file holding an array of change documents (the page's Download changes,
  *  or the documents concatenated), or a directory whose every *.json is one document (ArtifactData list
  *  with out_dir). Documents for a receptor the seed does not have are skipped, with a note. */
@@ -52,13 +43,13 @@ export function loadChanges(path, seed, note = m => console.error(m)) {
   if (statSync(path).isDirectory()) {
     docs = readdirSync(path).filter(f => f.endsWith('.json')).sort().map(f => {
       const d = JSON.parse(readFileSync(join(path, f), 'utf8'));
-      const err = shapeError(d); if (err) throw new Error(`${f} ${err}; each *.json in the directory must be a change document`);
+      const err = changeShapeError(d); if (err) throw new Error(`${f} ${err}; each *.json in the directory must be a change document`);
       return d;
     });
   } else {
     docs = JSON.parse(readFileSync(path, 'utf8'));
     if (!Array.isArray(docs)) throw new Error(`${path} must be an array of change documents ([{ receptorId, fields, sources, ... }]), as Download changes saves it`);
-    docs.forEach((d, i) => { const err = shapeError(d); if (err) throw new Error(`${path}: item ${i} ${err}`); });
+    docs.forEach((d, i) => { const err = changeShapeError(d); if (err) throw new Error(`${path}: item ${i} ${err}`); });
   }
   const known = new Set(seed.receptors.map(r => r.id));
   return docs.filter(d => known.has(d.receptorId) || (note(`skipping changes for ${d.receptorId}: not a receptor in desk/seed.json`), false));

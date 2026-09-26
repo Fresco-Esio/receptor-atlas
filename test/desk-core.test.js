@@ -636,3 +636,25 @@ test('stateDiffKeys compares as data: key order and row order do not count', () 
   b.sources.push({ key: 'c' });
   assert.deepEqual(core.stateDiffKeys(a, b), ['sources']);
 });
+
+test('changeShapeError names what is wrong with a document, null when it is one', () => {
+  assert.equal(core.changeShapeError(null), 'is not a change document (an object)');
+  assert.equal(core.changeShapeError([]), 'is not a change document (an object)');
+  assert.equal(core.changeShapeError({}), 'has no receptorId');
+  assert.equal(core.changeShapeError({ receptorId: 'd2' }), 'has no fields object');
+  assert.equal(core.changeShapeError({ receptorId: 'd2', fields: {} }), 'has no sources { add: [], set: {} }');
+  assert.equal(core.changeShapeError(core.emptyChanges('d2', 'x')), null);
+});
+
+test('rekeyAll is exported from desk-core (the page inlines it)', () => {
+  const seed = { commit: 'new1', receptors: [{ id: 'd2', sources: [] }], sources: {} };
+  let a = core.setField(core.emptyChanges('d2', 'old'), 'claim', 'p', AT);
+  a = core.markPublished(a, 'sha1');
+  a = core.setField(a, 'archive.abstract', 'u', AT);
+  assert.deepEqual(core.publishedShas([a]), ['sha1']);
+  assert.deepEqual(core.unpublishedReverts([a]), []);
+  const ok = core.rekeyAll(seed, [a], sha => sha === 'sha1');
+  assert.equal(ok.ok, true); assert.equal(ok.docs[0].seedCommit, 'new1'); assert.deepEqual(Object.keys(ok.docs[0].fields), ['archive.abstract']);
+  const no = core.rekeyAll(seed, [a], () => false);
+  assert.equal(no.ok, false); assert.equal(no.reason, 'not in history'); assert.deepEqual(no.missing, ['sha1']);
+});
