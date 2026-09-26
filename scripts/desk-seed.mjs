@@ -8,14 +8,11 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 import { openDb } from '../db/index.js';
 import { migrate } from '../scripts/migrate.js';
-import { importState, readState, sourceKey } from './curator-state.mjs';
+import { importState, readState, sourceKey, SOURCE_COLS, ARCHIVE_COLS, CLINICAL_COLS } from './curator-state.mjs';
 import { archiveNarrative, ledgerClinical } from '../lib/queries.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const SEED_FILE = join(HERE, '..', 'desk', 'seed.json');
-const SOURCE_COLS = ['kind', 'authors', 'year', 'title', 'journal', 'pmid', 'doi', 'url', 'notes'];
-const ARCHIVE_COLS = ['abstract', 'presentation', 'effect', 'receptor_class', 'ligand', 'figure_caption', 'body_json', 'tags_json'];
-const CLINICAL_COLS = ['sys', 'name', 'cls', 'baseline', 'mech', 'over_json', 'under_json', 'stahl', 'agonists_json', 'antagonists_json', 'onset', 'time_course', 'risk_factors_json', 'monitoring_json'];
 const REVIEW_COLS = ['mechanism', 'affinity', 'clinical', 'citation', 'mastery', 'note'];
 const pick = (row, cols) => Object.fromEntries(cols.map(c => [c, row[c] ?? null]));
 const list = s => JSON.parse(s || '[]');
