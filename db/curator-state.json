@@ -58,7 +58,7 @@
   {
    "receptor_id": "d1",
    "volume": "archive",
-   "last_edited_at": "2026-09-26T23:41:21.532Z",
+   "last_edited_at": "2026-09-26T23:43:20.333Z",
    "last_reviewed_at": null
   }
  ],
@@ -288,6 +288,7 @@
     "tags_json": "[\"Serotonin signal duration\",\"Mood regulation\"]"
    },
    "d1": {
+    "abstract": "D1 activity follows an inverted-U relationship with performance: insufficient tone impairs sustained firing in task-relevant circuits, while excess dopamine produces disordered, noisy activity. Both extremes can manifest as the cognitive and negative dimensions of thought disorder.",
     "body_json": "[\"D1 is the dominant dopamine receptor in the prefrontal cortex, where it sustains signal in task-relevant circuits. The relationship between D1 stimulation and cognitive performance is non-linear: insufficient dopamine impairs the persistent firing that working memory requires, while excess dopamine drives haphazard, disorganised activity. In schizophrenia, the negative and cognitive symptoms (flat affect, alogia, avolition, poor working memory) are linked to insufficient prefrontal D1 tone; disorganised thought and positive symptoms track more closely with NMDA hypofunction and mesolimbic dopamine excess than with the prefrontal D1 curve itself.\"]"
    },
    "d2": {
