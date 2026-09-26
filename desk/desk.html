@@ -5240,7 +5240,7 @@ const SEED = {
   }
  }
 };
-const BUILT_AT = '2026-09-26T22:10:02.217Z';
+const BUILT_AT = '2026-09-26T22:13:36.776Z';
 // ---------- storage: claude.ai db when it answers, else this browser ----------
 const LS = 'atlas-desk-changes-v1';
 const STORE_LABEL = { browser: 'this browser', 'claude.ai': 'claude.ai' };
@@ -5623,7 +5623,9 @@ function addSpan(ps, key) {
 document.addEventListener('mousedown', e => { if (!e.target.closest('#pop')) hidePop(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { hidePop(); closeModal(); } });
 // ---------- adding a source: PubMed when the connector is there, by hand always ----------
-function closeModal() { const m = $('#modalBg'); if (m) m.remove(); }
+// A pending dialog() is settled (with null) by whatever removes the modal: Escape, the backdrop, a receptor switch, another form.
+let dialogSettle = null;
+function closeModal() { const m = $('#modalBg'); if (m) m.remove(); const s = dialogSettle; dialogSettle = null; if (s) s(); }
 function openSourceForm(id, sel) {
   closeModal();
   const bg = document.createElement('div'); bg.className = 'modal-bg'; bg.id = 'modalBg';
@@ -5893,10 +5895,11 @@ function dialog(id, title, bodyHtml, buttons) {
   closeModal();
   return new Promise(resolve => {
     const bg = document.createElement('div'); bg.className = 'modal-bg'; bg.id = 'modalBg';
+    dialogSettle = () => { document.removeEventListener('keydown', onKey); resolve(null); };
     bg.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="${id}"><h2 id="${id}">${esc(title)}</h2>${bodyHtml}<div class="actions">${buttons.map(b => `<button type="button" class="btn${b.primary ? ' primary' : ''}" data-${b.data}>${esc(b.label)}</button>`).join('')}</div></div>`;
     const onKey = e => { if (e.key === 'Escape') done(null); };
-    const done = v => { document.removeEventListener('keydown', onKey); closeModal(); resolve(v); };
-    document.addEventListener('keydown', onKey);   // the global Escape handler removes the element; this settles the promise
+    const done = v => { dialogSettle = null; document.removeEventListener('keydown', onKey); closeModal(); resolve(v); };
+    document.addEventListener('keydown', onKey);   // Escape settles with null (the global handler's closeModal usually gets there first)
     bg.addEventListener('mousedown', e => { if (e.target === bg) done(null); });
     for (const b of buttons) bg.querySelector(`[data-${b.data}]`).addEventListener('click', () => done(typeof b.value === 'function' ? b.value(bg) : b.value));
     document.body.appendChild(bg);

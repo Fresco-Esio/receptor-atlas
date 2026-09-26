@@ -274,6 +274,11 @@ async function fakeGitHub(context, cfg) {
   ok('after Save the publish continues: the repo file was read with the token, confirm shows the subject', gh.gets === 1 && gh.auth[0] === 'Bearer github_pat_TEST' && await p.locator('#modalBg #pc-h').count() === 1 && (await p.locator('#modalBg').innerText()).includes('curate: 1 narrative edit'));
   await p.locator('#modalBg [data-cancel]').click(); await p.waitForTimeout(100);
   ok('cancel sends no PUT and marks nothing', gh.puts.length === 0 && await p.evaluate(() => !window.__desk.store.get('d2').fields['archive.abstract'].publishedAs));
+  // a confirm dialog closed another way (the picker's onchange calls closeModal) still settles: the button comes back
+  await p.locator('#pub').click(); await p.waitForFunction(() => document.querySelector('#modalBg #pc-h'));
+  await p.selectOption('#rx', 'd1'); await p.waitForTimeout(200);
+  ok('a confirm dialog closed by a receptor switch settles: Publish re-enabled, no PUT', await p.evaluate(() => document.querySelector('#pub').textContent === 'Publish' && !document.querySelector('#pub').disabled && !document.querySelector('#modalBg')) && gh.puts.length === 0);
+  await p.selectOption('#rx', 'd2');
   await p.locator('#pub').click(); await p.waitForFunction(() => document.querySelector('#modalBg #pc-h')); await p.locator('#modalBg [data-go]').click();
   await p.waitForFunction(() => document.querySelector('#pub').textContent === 'Publish' && !document.querySelector('#pub').disabled);
   // marking changes publishedAs only; the converter reads values, so the store still converts to the committed bytes
