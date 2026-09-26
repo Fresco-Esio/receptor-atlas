@@ -5235,7 +5235,7 @@ const SEED = {
   }
  }
 };
-const BUILT_AT = '2026-09-26T22:28:05.069Z';
+const BUILT_AT = '2026-09-26T22:29:42.104Z';
 // ---------- storage: claude.ai db when it answers, else this browser ----------
 const LS = 'atlas-desk-changes-v1';
 const STORE_LABEL = { browser: 'this browser', 'claude.ai': 'claude.ai' };
@@ -5972,7 +5972,13 @@ async function rekeyStale() {
     for (const sha of shas) { const r = await gh('GET', `/repos/${GH.owner}/${GH.repo}/compare/${encodeURIComponent(sha)}...${encodeURIComponent(SEED.commit)}`); if (r.status === 'ahead' || r.status === 'identical') anc.add(sha); }
   } catch (e) { renderNotice(`${stale.length} document${stale.length === 1 ? ' is' : 's are'} keyed to an older snapshot and could not be re-keyed: GitHub could not be reached. Editing continues on them.`); return; }
   const r = rekeyAll(SEED, stale, sha => anc.has(sha));
-  if (!r.ok) { renderNotice(`${stale.length} document${stale.length === 1 ? ' is' : 's are'} keyed to an older snapshot and not re-keyed: ${r.message}`); return; }
+  if (!r.ok) {
+    const n = stale.length, docs = `${n} document${n === 1 ? ' is' : 's are'} keyed to an older snapshot`;
+    renderNotice(r.reason === 'unpublished reverts'
+      ? `${docs} and not re-keyed: ${r.receptors.join(', ')} hold${r.receptors.length === 1 ? 's' : ''} ${r.n} unpublished revert${r.n === 1 ? '' : 's'}/detach${r.n === 1 ? '' : 'es'}. Publish or undo them, then reload.`
+      : `${docs} and not re-keyed: a publish they record (${r.missing.map(s => s.slice(0, 7)).join(', ')}) is not in the history of this snapshot (${SEED.commit}). If the site is still rebuilding, reload in a minute; otherwise use Download changes to keep them safe.`);
+    return;
+  }
   for (const d of r.docs) store.put(d);
   renderNotice(`re-keyed ${r.docs.length} document${r.docs.length === 1 ? '' : 's'} onto seed ${SEED.commit}`);
   renderBanner(); render();
