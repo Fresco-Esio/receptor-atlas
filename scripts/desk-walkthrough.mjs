@@ -125,7 +125,7 @@ await page.fill('[name=title]', 'Walkthrough paper'); await page.fill('[name=aut
 await page.click('text=Attach'); await page.waitForTimeout(300);
 ok('span drawn in the abstract', (await page.locator('[data-path="archive.abstract"] .cite').count()) === 1);
 ok('one card per attached source', (await page.locator('#margin .mcard').count()) === (await page.evaluate(() => window.__desk.view().sources.length)));
-ok('a flow line per span', (await page.locator('#flow path').count()) >= 1);
+ok('a flow line per span', (await page.locator('#flow path').count()) === (await page.locator('#editor .cite').count()) && (await page.locator('#flow path').count()) === 1);
 const stored = await page.evaluate(() => window.__desk.store.get('d2'));
 ok('the span is stored as { field, start, end, text, sourceKey, at }', stored.spans.length === 1 && JSON.stringify(Object.keys(stored.spans[0])) === '["field","start","end","text","sourceKey","at"]' && stored.spans[0].field === 'archive.abstract' && stored.spans[0].start === 0 && stored.spans[0].end === 11 && stored.spans[0].text === 'Walkthrough' && stored.spans[0].sourceKey === 'pmid:999999', JSON.stringify(stored.spans));
 const hues = await page.evaluate(() => ({ span: document.querySelector('[data-path="archive.abstract"] .cite').style.getPropertyValue('--h'), card: document.querySelector('#margin .mcard[data-key="pmid:999999"]').style.getPropertyValue('--h'), path: document.querySelector('#flow path[data-key="pmid:999999"]')?.getAttribute('stroke') }));
@@ -148,9 +148,19 @@ await page.locator(`#margin .mcard[data-key="${seededKey}"] [data-flag="conflict
 const setOn = await page.evaluate(k => !!window.__desk.store.get('d2').sources.set[k], seededKey);
 await page.locator(`#margin .mcard[data-key="${seededKey}"] [data-flag="conflicting"]`).uncheck(); await page.waitForTimeout(100);
 ok('a seeded source flagged then unflagged leaves no record', setOn && await page.evaluate(k => !(k in window.__desk.store.get('d2').sources.set), seededKey));
+// primary on a seeded 'provided' edge keeps it 'provided'
+const providedKey = d2.sources.find(x => x.status === 'provided').key;
+const provCard = `#margin .mcard[data-key="${providedKey}"]`;
+await page.locator(`${provCard} [data-flag="is_primary"]`).check(); await page.waitForTimeout(100);
+const provEdge = await page.evaluate(k => window.__desk.toCuratorState(window.__desk.SEED, window.__desk.store.list()).receptorSources.find(e => e.receptor_id === 'd2' && e.source === k), providedKey);
+ok('primary on a seeded provided source exports provided, and the card says so', provEdge && provEdge.status === 'provided' && provEdge.is_primary === 1 && (await page.locator(`${provCard} [data-st]`).innerText()) === 'provided', JSON.stringify(provEdge));
+await page.locator(`${provCard} [data-flag="is_primary"]`).uncheck(); await page.waitForTimeout(100);
+ok('primary toggled back leaves no record', await page.evaluate(k => !(k in window.__desk.store.get('d2').sources.set), providedKey));
 // an overlapping selection is refused
 await selectIn('[data-path="archive.abstract"] .cite', 0, 4);
 ok('a selection inside a bracket is refused', (await page.locator('#pop').count()) === 0 && /overlaps/.test(await page.locator('.toast').innerText().catch(() => '')));
+await page.evaluate(() => { document.querySelector('#toastRoot').innerHTML = ''; document.querySelector('[data-path="archive.abstract"]').dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowRight', shiftKey: true, bubbles: true })); });
+ok('a refused selection grown by keyboard does not toast again', (await page.locator('.toast').count()) === 0);
 // a chip cites an attached source; the body is one <p data-field> per paragraph
 ok('the body has one <p data-field="archive.body.n"> per paragraph', (await page.locator('[data-paragraphs] p[data-field="archive.body.0"]').count()) === 1);
 await selectIn('[data-paragraphs] p[data-field="archive.body.0"]', 4, 14);
@@ -164,14 +174,43 @@ ok('clicking a bracket opens its card and dims the others', (await page.locator(
 await abstractEl.evaluate(el => { el.focus(); el.insertBefore(document.createTextNode('New. '), el.firstChild); el.dispatchEvent(new InputEvent('input', { bubbles: true })); });
 await page.waitForTimeout(450); await page.locator('[data-note]').focus(); await page.waitForTimeout(100);
 const moved = await page.evaluate(() => window.__desk.store.get('d2').spans.find(s => s.field === 'archive.abstract'));
-ok('an edit before a bracket moves the bracket with its text', moved && moved.start === 5 && moved.end === 16 && moved.text === 'Walkthrough' && (await page.locator('[data-path="archive.abstract"] .cite').innerText()) === 'Walkthrough', JSON.stringify(moved));
+const movedOk =  moved && moved.start === 5 && moved.end === 16 && moved.text === 'Walkthrough' && (await page.locator('[data-path="archive.abstract"] .cite').innerText()) === 'Walkthrough';
+ok('an edit before a bracket moves the bracket with its text', movedOk, JSON.stringify(moved));
+// typing the bracket's own first letter just before it: the caret places the edit, the bracket stays exact
+await abstractEl.evaluate(el => { el.focus(); const t = el.firstChild; const r = document.createRange(); r.setStart(t, t.length); r.collapse(true); const s = getSelection(); s.removeAllRanges(); s.addRange(r); });
+await page.keyboard.type('W'); await page.waitForTimeout(450); await page.locator('[data-note]').focus(); await page.waitForTimeout(100);
+const w1 = await page.evaluate(() => window.__desk.store.get('d2').spans.find(s => s.field === 'archive.abstract'));
+ok('typing W before [Walkthrough] leaves the bracket reading exactly Walkthrough', w1 && w1.text === 'Walkthrough' && w1.start === 6 && (await page.locator('[data-path="archive.abstract"] .cite').innerText()) === 'Walkthrough' && (await page.evaluate(() => window.__desk.view().archive.abstract)) === 'New. WWalkthrough abstract.', JSON.stringify(w1));
+// the same edit with no caret to go by (the ambiguous prefix/suffix fallback)
+await abstractEl.evaluate(el => { el.focus(); getSelection().removeAllRanges(); el.firstChild.data += 'W'; el.dispatchEvent(new InputEvent('input', { bubbles: true })); });
+await page.waitForTimeout(450); await page.locator('[data-note]').focus(); await page.waitForTimeout(100);
+const w2 = await page.evaluate(() => window.__desk.store.get('d2').spans.find(s => s.field === 'archive.abstract'));
+ok('without a caret an ambiguous edit keeps the bracket text rather than re-scoping it', w2 && w2.text === 'Walkthrough' && w2.start === 7 && (await page.evaluate(() => window.__desk.view().archive.abstract)) === 'New. WWWalkthrough abstract.', JSON.stringify(w2));
 // a stored span whose text is gone is dropped on load, with a toast
 await page.evaluate(() => { const k = 'atlas-desk-changes-v1'; const all = JSON.parse(localStorage.getItem(k)); all.d2.spans.push({ field: 'archive.abstract', start: 0, end: 4, text: 'Nope', sourceKey: 'pmid:999999', at: '2026-09-26T00:00:00.000Z' }); localStorage.setItem(k, JSON.stringify(all)); });
 await page.reload(); await ready('d2');
 ok('a span that no longer matches is dropped on load with a toast', (await page.locator('.toast').innerText().catch(() => '')) === '1 span no longer matches the text and was removed' && await page.evaluate(() => window.__desk.store.get('d2').spans.length === 2) && (await page.locator('#editor .cite').count()) === 2);
+// a span whose source is not attached (a re-seed took it) is dropped on load too
+await page.evaluate(() => { const k = 'atlas-desk-changes-v1'; const all = JSON.parse(localStorage.getItem(k)); all.d2.spans.push({ field: 'archive.abstract', start: 0, end: 3, text: 'New', sourceKey: 'pmid:0', at: '2026-09-26T00:00:00.000Z' }); localStorage.setItem(k, JSON.stringify(all)); });
+await page.reload(); await ready('d2');
+ok('a span whose source has no card is dropped on load with a toast', (await page.locator('.toast').innerText().catch(() => '')) === '1 span no longer matches the text and was removed' && await page.evaluate(() => !window.__desk.store.get('d2').spans.some(s => s.sourceKey === 'pmid:0')));
 // detaching an added source takes its card and its brackets
 await page.click('#margin .mcard[data-key="pmid:999999"] [data-detach]'); await page.waitForTimeout(100);
 ok('Detach removes the card and its brackets', (await page.locator('#margin .mcard[data-key="pmid:999999"]').count()) === 0 && (await page.locator('[data-path="archive.abstract"] .cite').count()) === 0 && await page.evaluate(() => !window.__desk.store.get('d2').sources.add.length));
+// focus moving from the abstract into the body leaves the caret where it was clicked
+const absBefore = await page.evaluate(() => window.__desk.view().archive.abstract);
+const body0Before = await page.evaluate(() => window.__desk.view().archive.body[0]);
+await abstractEl.click();
+const at = 30;
+const pt = await page.locator('[data-paragraphs] p[data-field="archive.body.0"]').evaluate((p, at) => {
+  const w = document.createTreeWalker(p, NodeFilter.SHOW_TEXT); let n, left = at;
+  while ((n = w.nextNode()) && left > n.length) left -= n.length;
+  const r = document.createRange(); r.setStart(n, left); r.setEnd(n, left + 1); const b = r.getBoundingClientRect(); return { x: b.left + 1, y: b.top + b.height / 2 };
+}, at);
+await page.mouse.click(pt.x, pt.y); await page.waitForTimeout(50);
+await page.keyboard.type('ZZ'); await page.waitForTimeout(450); await page.locator('[data-note]').focus(); await page.waitForTimeout(100);
+const after = await page.evaluate(() => ({ abs: window.__desk.view().archive.abstract, b0: window.__desk.view().archive.body[0] }));
+ok('clicking from the abstract into the body types where clicked; the abstract is untouched', after.b0 === body0Before.slice(0, at) + 'ZZ' + body0Before.slice(at) && after.abs === absBefore, JSON.stringify({ b0: after.b0.slice(0, 50) }));
 ok('no page errors in the Provenance layer', errors.length === 0, errors.join(' | '));
 
 // --- simulated claude.ai frame: a fake window.claude with db + downloads, same page from disk ---

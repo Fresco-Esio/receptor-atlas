@@ -82,9 +82,19 @@ export function setSourceFlags(changes, seed, key, flags, at) {
   const r = seedReceptorOf(seed, c.receptorId);
   const seeded = (r.sources || []).find(s => s.key === key);
   if (!seeded) throw new Error('unknown source');
-  const prev = c.sources.set[key] || { is_primary: seeded.is_primary, conflicting: seeded.status === 'conflicting', correction_note: seeded.correction_note };
+  // conflicting stays undefined until the caller gives it: an untouched flag keeps the seed's own status (see edgeStatus)
+  const prev = c.sources.set[key] || { is_primary: seeded.is_primary, conflicting: undefined, correction_note: seeded.correction_note };
   c.sources.set[key] = { is_primary: given(flags, 'is_primary') ? flags.is_primary : prev.is_primary, conflicting: given(flags, 'conflicting') ? flags.conflicting : prev.conflicting, correction_note: given(flags, 'correction_note') ? flags.correction_note : prev.correction_note, at, publishedAs: null };
   return c;
+}
+
+/** The status of a SEEDED edge under a sources.set record: conflicting given true → 'conflicting'; given false
+ *  on an edge the seed has as 'conflicting' → 'verified' (clearing a conflict asserts the source agrees);
+ *  never given (undefined), or false on any other edge → the seed's own status ('provided' stays 'provided'). */
+export function edgeStatus(seedStatus, set) {
+  if (!set || set.conflicting === undefined || set.conflicting === null) return seedStatus;
+  if (set.conflicting) return 'conflicting';
+  return seedStatus === 'conflicting' ? 'verified' : seedStatus;
 }
 
 /** Stores only the keys the caller passed (plus at/publishedAs), merged over any previously
@@ -105,7 +115,7 @@ export function viewOf(seedReceptor, changes) {
   }
   const sources = (v.sources || []).map(s => {
     const set = changes.sources.set[s.key];
-    return set ? { ...s, is_primary: set.is_primary, status: set.conflicting ? 'conflicting' : 'verified', correction_note: set.correction_note } : s;
+    return set ? { ...s, is_primary: set.is_primary, status: edgeStatus(s.status, set), correction_note: set.correction_note } : s;
   });
   for (const a of changes.sources.add) sources.push({ key: a.key, is_primary: a.is_primary, status: a.conflicting ? 'conflicting' : 'verified', correction_note: a.correction_note, added: true });
   v.sources = sources;
@@ -169,8 +179,9 @@ export function toCuratorState(seed, changesList) {
     for (const [key, meta] of Object.entries(c.library)) { const pr = P.sources[key]; if (pr && SOURCE_COLS.every(k => eq(meta[k], pr[k]))) dropSource(key); else upsertSource(key, meta); }
     for (const a of c.sources.add) { upsertEdge({ receptor_id: id, source: a.key, status: a.conflicting ? 'conflicting' : 'verified', is_primary: a.is_primary ? 1 : 0, correction_note: a.correction_note ?? null }); stamp(id, 'archive', a.at); }
     for (const [key, s] of Object.entries(c.sources.set)) {
-      const edge = { receptor_id: id, source: key, status: s.conflicting ? 'conflicting' : 'verified', is_primary: s.is_primary ? 1 : 0, correction_note: s.correction_note ?? null };
       const pr = P.receptorSources[`${id}|${key}`];
+      const seeded = (r.sources || []).find(x => x.key === key);
+      const edge = { receptor_id: id, source: key, status: edgeStatus(seeded ? seeded.status : (pr ? pr.status : 'verified'), s), is_primary: s.is_primary ? 1 : 0, correction_note: s.correction_note ?? null };
       if (pr && pr.status === edge.status && (pr.is_primary ? 1 : 0) === edge.is_primary && eq(pr.correction_note, edge.correction_note)) dropEdge(id, key); else upsertEdge(edge);
       stamp(id, 'archive', s.at);
     }

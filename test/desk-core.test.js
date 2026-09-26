@@ -298,3 +298,43 @@ test('an empty list over a pristine null column exports nothing (published-then-
   c = core.setField(c, 'clinical.onset', '', AT);
   assert.deepEqual(core.toCuratorState(s, [c]).content.clinical, { 3: { onset: '' } }, 'scalars keep the strict rule');
 });
+
+// --- Task 6 review, fix round 1: a seeded edge keeps its own status unless conflicting is given ---
+
+function providedSeed() {
+  const s = seed();
+  s.receptors[0].sources.push({ key: 'pmid:111', is_primary: 0, status: 'provided', correction_note: null }, { key: 'pmid:222', is_primary: 0, status: 'conflicting', correction_note: 'wrong year' });
+  s.pristine.receptorSources['d2|pmid:111'] = { status: 'provided', is_primary: 0, correction_note: null };
+  s.pristine.receptorSources['d2|pmid:222'] = { status: 'conflicting', is_primary: 0, correction_note: 'wrong year' };
+  return s;
+}
+
+test('primary-only toggle on a seeded provided edge exports provided, with is_primary 1', () => {
+  const s = providedSeed(); let c = core.emptyChanges('d2', s.commit);
+  c = core.setSourceFlags(c, s, 'pmid:111', { is_primary: 1 }, AT);
+  assert.equal(c.sources.set['pmid:111'].conflicting, undefined, 'conflicting is not stored when not given');
+  const out = core.toCuratorState(s, [c]);
+  assert.deepEqual(out.receptorSources, [{ receptor_id: 'd2', source: 'pmid:111', status: 'provided', is_primary: 1, correction_note: null }]);
+  assert.equal(core.viewOf(s.receptors[0], c).sources.find(x => x.key === 'pmid:111').status, 'provided');
+  c = core.setSourceFlags(c, s, 'pmid:111', { is_primary: 0 }, AT);
+  assert.deepEqual(core.toCuratorState(s, [c]).receptorSources, [], 'back to the seed: no line');
+});
+
+test('conflicting true on a seeded provided edge exports conflicting; explicit false returns it to provided', () => {
+  const s = providedSeed(); let c = core.emptyChanges('d2', s.commit);
+  c = core.setSourceFlags(c, s, 'pmid:111', { conflicting: true, correction_note: 'n' }, AT);
+  assert.deepEqual(core.toCuratorState(s, [c]).receptorSources, [{ receptor_id: 'd2', source: 'pmid:111', status: 'conflicting', is_primary: 0, correction_note: 'n' }]);
+  assert.equal(core.viewOf(s.receptors[0], c).sources.find(x => x.key === 'pmid:111').status, 'conflicting');
+  c = core.setSourceFlags(c, s, 'pmid:111', { conflicting: false, correction_note: null }, AT);
+  assert.deepEqual(core.toCuratorState(s, [c]).receptorSources, []);
+  assert.equal(core.viewOf(s.receptors[0], c).sources.find(x => x.key === 'pmid:111').status, 'provided');
+});
+
+test('explicit false on a seeded conflicting edge exports verified; an untouched one keeps conflicting', () => {
+  const s = providedSeed(); let c = core.emptyChanges('d2', s.commit);
+  c = core.setSourceFlags(c, s, 'pmid:222', { is_primary: 1 }, AT);
+  assert.deepEqual(core.toCuratorState(s, [c]).receptorSources, [{ receptor_id: 'd2', source: 'pmid:222', status: 'conflicting', is_primary: 1, correction_note: 'wrong year' }], 'primary only: still conflicting');
+  c = core.setSourceFlags(c, s, 'pmid:222', { conflicting: false, correction_note: null }, AT);
+  assert.deepEqual(core.toCuratorState(s, [c]).receptorSources, [{ receptor_id: 'd2', source: 'pmid:222', status: 'verified', is_primary: 1, correction_note: null }]);
+  assert.equal(core.viewOf(s.receptors[0], c).sources.find(x => x.key === 'pmid:222').status, 'verified');
+});

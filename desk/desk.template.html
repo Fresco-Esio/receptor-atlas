@@ -367,16 +367,17 @@ function render() {
   html += `<section class="review"><span class="tiny">reviewed:</span>` + REVIEW_MARKS.map(m => `<label><input type="checkbox" data-mark="${m}" ${r[m] ? 'checked' : ''}> ${m}</label>`).join('') + `<input type="text" data-note aria-label="Review note" placeholder="note" value="${esc(r.note)}"></section>`;
   ed.innerHTML = html;
   // wiring — every handler is bound to the receptor it was rendered for, not to whatever is current when it fires
-  ed.querySelectorAll('[data-path]').forEach(el => el.addEventListener('input', debounce(() => el.dataset.path === 'archive.abstract' ? editProse(id, 'archive.abstract', textOf(el)) : editField(id, el.dataset.path, textOf(el), false), 300)));
+  ed.querySelectorAll('[data-path]').forEach(el => el.addEventListener('input', debounce(() => el.dataset.path === 'archive.abstract' ? editProse(id, 'archive.abstract', textOf(el), el) : editField(id, el.dataset.path, textOf(el), false), 300)));
   const body = ed.querySelector('[data-paragraphs]');
-  if (body) body.addEventListener('input', debounce(() => editProse(id, 'archive.body', linesOf(body.innerText)), 300));
+  if (body) body.addEventListener('input', debounce(() => editProse(id, 'archive.body', linesOf(body.innerText), body), 300));
   // the spannable prose: a selection offers the sources; a click on a bracket opens its card
   ed.querySelectorAll('[data-path="archive.abstract"], [data-paragraphs]').forEach(el => {
     el.addEventListener('mouseup', e => onProseSelect(id, e));
     el.addEventListener('keyup', e => onProseSelect(id, e));
-    el.addEventListener('input', queueFlow);
-    // typing is not re-drawn under the caret; once focus leaves, the field is re-drawn from what was stored
-    el.addEventListener('focusout', () => setTimeout(() => { if (document.activeElement === el) return; flush(); rerenderProse(id); }, 0));
+    // where the caret is after each input: the save uses it to place the edit (and so the brackets) exactly
+    el.addEventListener('input', () => { caretAfter.set(el, textAfterCaret(el)); queueFlow(); });
+    // typing is not re-drawn under the caret; once focus leaves, this field (only) is re-drawn from what was stored
+    el.addEventListener('focusout', () => setTimeout(() => { if (document.activeElement === el) return; flush(); rerenderProse(id, el); }, 0));
   });
   ed.querySelectorAll('[data-scalar]').forEach(el => el.addEventListener('input', debounce(() => editField(id, el.dataset.scalar, el.value, false), 300)));
   ed.querySelectorAll('[data-list]').forEach(el => el.addEventListener('input', debounce(() => editField(id, el.dataset.list, linesOf(el.value), true), 300)));
@@ -422,41 +423,80 @@ const bodyHTML = (id, v) => (v.archive.body || []).map((p, n) => `<p data-field=
 const spanToast = n => toast(n === 1 ? '1 span no longer matches the text and was removed' : `${n} spans no longer match the text and were removed`, 4000);
 function dropStaleSpans(id) {
   const v = viewFor(id); const c = store.get(id); const before = c.spans || [];
-  const kept = before.filter(s => { const t = fieldText(v, s.field); return t != null && t.slice(s.start, s.end) === s.text; });
+  const attached = new Set(v.sources.map(s => s.key));   // a span whose source is gone (a re-seed) goes too
+  const kept = before.filter(s => { const t = fieldText(v, s.field); return t != null && t.slice(s.start, s.end) === s.text && attached.has(s.sourceKey); });
   if (kept.length !== before.length) { store.put({ ...c, spans: kept }); spanToast(before.length - kept.length); }
 }
-/** After an edit of one prose field: move each span with its text. The edit is the region between the
- *  common prefix and suffix of the old and new text (paragraphs joined by \n): a span before it stays,
- *  one after it shifts, one that contains it grows or shrinks, one it cuts into is dropped. */
-function rebaseSpans(spans, group, oldParas, newParas) {
-  const starts = ps => { const o = []; let i = 0; for (const p of ps) { o.push(i); i += p.length + 1; } return o; };
-  const A = oldParas.join('\n'), B = newParas.join('\n'), sa = starts(oldParas), sb = starts(newParas);
-  const m = Math.min(A.length, B.length); let p = 0, s = 0;
-  while (p < m && A[p] === B[p]) p++;
-  while (s < m - p && A[A.length - 1 - s] === B[B.length - 1 - s]) s++;
-  const oEnd = A.length - s, delta = B.length - A.length, out = new Map();
-  for (const sp of spans) {
-    const n = group === 'archive.abstract' ? 0 : Number(sp.field.split('.')[2]);
-    if (!(n < sa.length)) continue;
-    let gs = sa[n] + sp.start, ge = sa[n] + sp.end;
-    if (A.slice(gs, ge) !== sp.text) continue;
-    if (ge <= p) { /* before the edit */ } else if (gs >= oEnd) { gs += delta; ge += delta; } else if (gs <= p && oEnd <= ge) { ge += delta; } else continue;
-    const text = B.slice(gs, ge);
-    if (ge <= gs || (group === 'archive.body' && text.includes('\n'))) continue;
-    let k = 0; if (group === 'archive.body') while (k + 1 < sb.length && sb[k + 1] <= gs) k++;
-    out.set(sp, { ...sp, field: group === 'archive.abstract' ? group : `archive.body.${k}`, start: gs - sb[k], end: ge - sb[k], text });
+/** Where the text after the caret (`after`, read from the DOM, block breaks absent) begins in B, the saved
+ *  text (paragraphs joined by \n, lines trimmed). Walks both from the end; null when they cannot be matched. */
+function caretIndex(B, after) {
+  let i = B.length, j = after.length;
+  while (j > 0) {
+    if (i > 0 && B[i - 1] === after[j - 1]) { i--; j--; }
+    else if (/\s/.test(after[j - 1])) j--;
+    else if (i > 0 && B[i - 1] === '\n') i--;
+    else return null;
   }
-  return out;
+  return i;
+}
+/** Place every span given one placement of the edit: old [p, oEnd) became new [p, oEnd + delta). A span before
+ *  it stays, one after it shifts; one containing it grows or shrinks only when `resize`; any other is dropped.
+ *  intact: every span kept with its text unchanged. */
+function placeSpans(spans, group, A, B, p, oEnd, resize) {
+  const starts = s => { const o = [0]; for (let i = 0; i < s.length; i++) if (s[i] === '\n') o.push(i + 1); return o; };
+  const body = group === 'archive.body', sa = body ? starts(A) : [0], sb = body ? starts(B) : [0];
+  const delta = B.length - A.length, out = new Map(); let intact = true;
+  for (const sp of spans) {
+    const n = body ? Number(sp.field.split('.')[2]) : 0;
+    if (!(n < sa.length)) { intact = false; continue; }
+    let gs = sa[n] + sp.start, ge = sa[n] + sp.end;
+    if (A.slice(gs, ge) !== sp.text) { intact = false; continue; }
+    if (ge <= p) { /* before the edit */ } else if (gs >= oEnd) { gs += delta; ge += delta; } else if (resize && gs <= p && oEnd <= ge) { ge += delta; } else { intact = false; continue; }
+    const text = B.slice(gs, ge);
+    if (ge <= gs || (body && text.includes('\n'))) { intact = false; continue; }
+    if (text !== sp.text) intact = false;
+    let k = 0; if (body) while (k + 1 < sb.length && sb[k + 1] <= gs) k++;
+    out.set(sp, { ...sp, field: body ? `archive.body.${k}` : group, start: gs - sb[k], end: ge - sb[k], text });
+  }
+  return { out, intact };
+}
+/** After an edit of one prose field: move each span with its text. The edit is anchored at the caret when
+ *  the input left one (`after` = the text after it): the unchanged tail is what follows the caret, so typing
+ *  just before a bracket never widens it. Without a caret, the prefix/suffix diff places it; if that placement
+ *  is ambiguous (prefix and suffix overlap), the placement that keeps every bracket's text wins, and failing
+ *  that a bracket the edit touches is dropped (with the toast), never re-scoped. */
+function rebaseSpans(spans, group, oldParas, newParas, after) {
+  const A = oldParas.join('\n'), B = newParas.join('\n'), m = Math.min(A.length, B.length);
+  let p0 = 0; while (p0 < m && A[p0] === B[p0]) p0++;
+  let s0 = 0; while (s0 < m && A[A.length - 1 - s0] === B[B.length - 1 - s0]) s0++;
+  const ci = after == null ? null : caretIndex(B, after);
+  if (ci != null && B.length - ci <= A.length && A.endsWith(B.slice(ci))) {
+    const oEnd = A.length - (B.length - ci);
+    return placeSpans(spans, group, A, B, Math.min(p0, oEnd, ci), oEnd, true).out;
+  }
+  if (p0 + s0 <= m) return placeSpans(spans, group, A, B, p0, A.length - s0, true).out;
+  const len = A.length - m;   // ambiguous: a pure insertion or deletion that fits at every p in [m - s0, p0]
+  for (let p = p0; p >= Math.max(0, m - s0); p--) { const r = placeSpans(spans, group, A, B, p, p + len, false); if (r.intact) return r.out; }
+  return placeSpans(spans, group, A, B, p0, p0 + len, false).out;
+}
+/** The text after the caret in el, when the selection is a caret inside it; else null. */
+const caretAfter = new WeakMap();
+function textAfterCaret(el) {
+  const sel = getSelection(); if (!sel || sel.rangeCount === 0 || !sel.isCollapsed) return null;
+  const r = sel.getRangeAt(0); if (!el.contains(r.startContainer)) return null;
+  const a = document.createRange(); a.selectNodeContents(el); a.setStart(r.startContainer, r.startOffset);
+  return a.toString();
 }
 /** The abstract and the body save through here: the Task 5 field edit, then the spans follow the text.
  *  Spans are taken from before the edit, so a field that goes back to the seed (clearField drops its
  *  spans) keeps the ones whose text is still there. */
-function editProse(id, group, value) {
+function editProse(id, group, value, el) {
+  const after = el && caretAfter.has(el) ? caretAfter.get(el) : null; if (el) caretAfter.delete(el);
   const old = proseOf(viewFor(id), group), before = spansOf(id);
   editField(id, group, value, group === 'archive.body');
   const nu = proseOf(viewFor(id), group), c = store.get(id);
   const mine = before.filter(s => groupOf(s.field) === group);
-  const moved = same(old, nu) ? new Map(mine.map(s => [s, s])) : rebaseSpans(mine, group, old, nu);
+  const moved = same(old, nu) ? new Map(mine.map(s => [s, s])) : rebaseSpans(mine, group, old, nu, after);
   const next = before.flatMap(s => groupOf(s.field) !== group ? [s] : moved.has(s) ? [moved.get(s)] : []);
   if (!same(next, c.spans || [])) store.put({ ...c, spans: next });
   if (mine.length > moved.size) spanToast(mine.length - moved.size);
@@ -473,20 +513,24 @@ function selectionOffsets(el) {
   while (end > start && /\s/.test(text[end - 1])) end--;
   return end > start ? { start, end, text: text.slice(start, end) } : null;
 }
-function rerenderProse(id) {
-  if (id !== current) return;
+/** Re-draw one prose editor (the abstract, or the whole body) from what is stored, unless it already shows exactly that. */
+function rerenderProse(id, el) {
+  if (id !== current || !el || !el.isConnected) return;
   const v = viewFor(id); if (!v.archive) return;
-  const ab = $('#editor [data-path="archive.abstract"]'); if (ab) ab.innerHTML = spanHTML(id, 'archive.abstract', v.archive.abstract || '');
-  const body = $('#editor [data-paragraphs]'); if (body) body.innerHTML = bodyHTML(id, v);
-  applyOpen(); queueFlow();
+  const html = el.matches('[data-paragraphs]') ? bodyHTML(id, v) : spanHTML(id, 'archive.abstract', v.archive.abstract || '');
+  const t = document.createElement('div'); t.innerHTML = html;
+  if (t.innerHTML === el.innerHTML) return;
+  el.innerHTML = html; applyOpen(); queueFlow();
 }
 // ---------- selection → popover ----------
 let pendingSel = null;   // { id, field, start, end, text } the popover and the source form act on
+let refusedThisSelection = false;   // Shift+Arrow grows a refused selection key by key: toast once, not per key
+function refuse(e, msg) { hidePop(); if (e.type === 'mouseup' || !refusedThisSelection) toast(msg); refusedThisSelection = true; }
 function onProseSelect(id, e) {
   if (e.type === 'keyup' && e.key === 'Escape') { hidePop(); return; }
   const sel = getSelection();
   if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
-    hidePop();
+    hidePop(); refusedThisSelection = false;
     if (e.type === 'mouseup') { const cite = e.target.closest && e.target.closest('.cite[data-span]'); openCard(cite ? cite.dataset.span.slice(0, cite.dataset.span.lastIndexOf('|')) : null); }
     return;
   }
@@ -495,11 +539,11 @@ function onProseSelect(id, e) {
   const el = start && start.closest('[data-field]');
   if (!el || !e.currentTarget.contains(el)) { hidePop(); return; }
   const off = selectionOffsets(el);
-  if (!off) { hidePop(); toast('Select within one paragraph to cite it.'); return; }
+  if (!off) { refuse(e, 'Select within one paragraph to cite it.'); return; }
   flush();   // a pending edit is stored first, so the offsets are against the stored text
   const text = fieldText(viewFor(id), el.dataset.field);
-  if (text == null || el.textContent !== text || text.slice(off.start, off.end) !== off.text) { hidePop(); rerenderProse(id); toast('The text changed under the selection; select it again.'); return; }
-  if (spansFor(id, el.dataset.field).some(s => s.start < off.end && off.start < s.end)) { hidePop(); toast('That overlaps a bracket already there; brackets cannot overlap.'); return; }
+  if (text == null || el.textContent !== text || text.slice(off.start, off.end) !== off.text) { hidePop(); rerenderProse(id, e.currentTarget); toast('The text changed under the selection; select it again.'); return; }
+  if (spansFor(id, el.dataset.field).some(s => s.start < off.end && off.start < s.end)) { refuse(e, 'That overlaps a bracket already there; brackets cannot overlap.'); return; }
   pendingSel = { id, field: el.dataset.field, ...off };
   showPop(id, range.getBoundingClientRect());
 }
@@ -594,19 +638,22 @@ function labelsFor(id) {
   const n = {}, seen = {}; keys.forEach(k => { n[base[k]] = (n[base[k]] || 0) + 1; });
   return Object.fromEntries(keys.map(k => [k, n[base[k]] > 1 ? base[k] + String.fromCharCode(97 + (seen[base[k]] = (seen[base[k]] || 0) + 1) - 1) : base[k]]));
 }
-const flagsOf = s => ({ is_primary: s.is_primary ? 1 : 0, conflicting: s.status === 'conflicting', correction_note: s.correction_note ?? null });
-/** A real change only; a seeded source's flags set back to the seed's drop the unpublished record. */
+/** A real change only. The patch carries just what the curator touched (a seeded edge keeps its own status
+ *  unless "conflicts" was changed; see edgeStatus in the core); unchecking "conflicts" also clears the note.
+ *  A seeded source's flags set back to what the seed shows drop the unpublished record. */
+const shown = s => ({ is_primary: s.is_primary ? 1 : 0, status: s.status, correction_note: s.correction_note ?? null });
 function editFlags(id, key, patch) {
   const src = viewFor(id).sources.find(s => s.key === key); if (!src) return;
-  const cur = flagsOf(src), next = { ...cur, ...patch };
-  if (!next.conflicting) next.correction_note = null;   // unchecking "conflicts with the text" clears the note
-  if (same(next, cur)) return;
-  const seeded = (seedOf(id).sources || []).find(s => s.key === key), rec = store.get(id).sources.set[key];
-  if (seeded && rec && !rec.publishedAs && same(next, flagsOf(seeded))) {
+  const p = { ...patch }; if (p.conflicting === false) p.correction_note = null;
+  const c0 = store.get(id), cand = setSourceFlags(c0, SEED, key, p, now());
+  const next = viewOf(seedOf(id), cand).sources.find(s => s.key === key);
+  if (same(shown(next), shown(src))) return;
+  const seeded = (seedOf(id).sources || []).find(s => s.key === key), rec = c0.sources.set[key];
+  if (seeded && rec && !rec.publishedAs && same(shown(next), shown(seeded))) {
     commit(id, c => ({ ...c, sources: { ...c.sources, set: Object.fromEntries(Object.entries(c.sources.set).filter(([k]) => k !== key)) } }));
     return;
   }
-  commit(id, c => setSourceFlags(c, SEED, key, next, now()));
+  commit(id, () => cand);
 }
 function renderMargin(id) {
   const m = $('#margin'); const v = viewFor(id), c = store.get(id), labels = labelsFor(id);
