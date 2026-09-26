@@ -252,3 +252,49 @@ test('two receptors in one changesList produce entries for both', () => {
   const out = core.toCuratorState(s, [c1, c2]);
   assert.deepEqual(out.content.archive, { d2: { abstract: 'D2 new abstract.' }, mu: { abstract: 'Mu new abstract.' } });
 });
+
+// --- Task 5 review, fix round 1 ---
+
+test('countPublished mirrors countUnpublished across fields, added sources, flagged sources and review', () => {
+  const s = seed(); let c = core.emptyChanges('d2', s.commit);
+  c = core.setField(c, 'archive.abstract', 'New', AT);
+  c = core.attachSource(c, s, { kind: 'article', authors: 'K', year: 2003, title: 'T', journal: 'J', pmid: '12505794', doi: null, url: null, notes: null }, { is_primary: 0 }, AT);
+  c = core.setSourceFlags(c, s, 'pmid:24463000', { conflicting: true }, AT);
+  c = core.setReview(c, { affinity: 1 }, AT);
+  assert.equal(core.countPublished([c]), 0);
+  assert.equal(core.countUnpublished([c]), 4);
+  const p = core.markPublished(c, 'deadbee');
+  assert.equal(core.countPublished([p]), 4);
+  assert.equal(core.countUnpublished([p]), 0);
+  const q = core.setField(p, 'claim', 'x', AT);
+  assert.equal(core.countPublished([q]), 4);
+  assert.equal(core.countUnpublished([q]), 1);
+});
+
+test('clearField drops the field record and the spans on it, and nothing else', () => {
+  const s = seed(); let c = core.emptyChanges('d2', s.commit);
+  c = core.setField(c, 'archive.abstract', 'New', AT);
+  c = core.setField(c, 'archive.body', ['x'], AT);
+  c.spans = [{ field: 'archive.abstract', sourceKey: 'k' }, { field: 'archive.body.0', sourceKey: 'k' }, { field: 'archive.abstractish', sourceKey: 'k' }, { field: 'archive.body', sourceKey: 'k' }];
+  const a = core.clearField(c, 'archive.abstract');
+  assert.deepEqual(Object.keys(a.fields), ['archive.body']);
+  assert.deepEqual(a.spans.map(sp => sp.field), ['archive.body.0', 'archive.abstractish', 'archive.body']);
+  const b = core.clearField(c, 'archive.body');
+  assert.deepEqual(b.spans.map(sp => sp.field), ['archive.abstract', 'archive.abstractish']);
+  assert.equal(Object.keys(c.fields).length, 2, 'the input is not mutated');
+  assert.deepEqual(core.toCuratorState(s, [a]).content.archive, { d2: { body_json: '["x"]' } });
+});
+
+test('an empty list over a pristine null column exports nothing (published-then-reverted list)', () => {
+  const s = seed(); let c = core.emptyChanges('d2', s.commit);
+  c = core.setField(c, 'clinical.monitoring', ['ECG'], AT);
+  c = core.markPublished(c, 'deadbee');
+  c = core.setField(c, 'clinical.monitoring', [], AT);
+  assert.deepEqual(core.toCuratorState(s, [c]).content.clinical, {}, 'monitoring_json pristine null, "[]" is no change');
+  c = core.setField(c, 'clinical.risk_factors', null, AT);
+  assert.deepEqual(core.toCuratorState(s, [c]).content.clinical, {});
+  c = core.setField(c, 'clinical.agonists', [], AT);
+  assert.deepEqual(core.toCuratorState(s, [c]).content.clinical, {}, "a pristine '[]' still equals '[]'");
+  c = core.setField(c, 'clinical.onset', '', AT);
+  assert.deepEqual(core.toCuratorState(s, [c]).content.clinical, { 3: { onset: '' } }, 'scalars keep the strict rule');
+});

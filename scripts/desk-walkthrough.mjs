@@ -40,7 +40,7 @@ await page.goto(PAGE); await ready();
 ok('load without errors', errors.length === 0, errors.join(' | '));
 ok('picker lists 24 receptors', await page.locator('#rx option').count() === 24);
 const banner0 = await page.locator('#banner').innerText();
-ok('banner reads seed <date> · 0 unpublished · store: this browser', banner0 === `seed ${SEED.builtAt.slice(0, 10)} · 0 unpublished · store: this browser`, banner0);
+ok('banner reads seed <date> · 0 published since · 0 unpublished · store: this browser', banner0 === `seed ${SEED.builtAt.slice(0, 10)} · 0 published since · 0 unpublished · store: this browser`, banner0);
 
 // --- fields: Archive + Ledger for d2, claim (cabinet), nothing that is not there ---
 await ready('d2');
@@ -71,7 +71,7 @@ await page.reload(); await ready('d2');
 ok('abstract edit persists across reload', (await page.locator('[data-path="archive.abstract"]').innerText()) === 'Walkthrough abstract.');
 ok('changed field is marked', await page.locator('[data-f="archive.abstract"] label.changed').count() === 1);
 const banner1 = await page.locator('#banner').innerText();
-ok('banner counts the unpublished edit', / · 1 unpublished · store: this browser$/.test(banner1), banner1);
+ok('banner counts the unpublished edit', / · 0 published since · 1 unpublished · store: this browser$/.test(banner1), banner1);
 ok('picker marks the edited receptor', (await page.locator('#rx option[value="d2"]').innerText()).startsWith('● '));
 
 // --- a pending edit is flushed on receptor switch, onto the receptor it was typed in ---
@@ -86,8 +86,18 @@ ok('d2 mechanism mark comes from the seed', await page.locator('[data-mark="mech
 await page.locator('[data-mark="affinity"]').check(); await page.locator('[data-mark="mechanism"]').uncheck(); await page.waitForTimeout(300);
 await page.reload(); await ready('d2');
 ok('review marks persist', await page.locator('[data-mark="affinity"]').isChecked() && !(await page.locator('[data-mark="mechanism"]').isChecked()));
+await ready('d1');
+await page.locator('[data-mark="clinical"]').check(); await page.waitForTimeout(100); await page.locator('[data-mark="clinical"]').uncheck(); await page.waitForTimeout(100);
+ok('marks toggled back to the seed leave no review record', await page.evaluate(() => window.__desk.store.get('d1').review === null));
+
+// --- a stored record for a receptor the seed lacks is hidden, never deleted ---
+const stray = core.setField(core.emptyChanges('zz', SEED.commit), 'claim', 'stray', '2026-09-26T00:00:00.000Z');
+await page.evaluate(z => { const k = 'atlas-desk-changes-v1'; const all = JSON.parse(localStorage.getItem(k)); all.zz = z; localStorage.setItem(k, JSON.stringify(all)); }, stray);
+await page.reload(); await ready('d2');
 ok('citation and mastery are not shown', (await page.locator('[data-mark="citation"], [data-mark="mastery"]').count()) === 0 && !/citation|mastery/i.test(await page.locator('.review').innerText()) && !/citation|mastery/i.test(await page.locator('.top').innerText()));
 await page.locator('[data-note]').fill('walkthrough note'); await page.waitForTimeout(450);
+const strayState = await page.evaluate(() => ({ kept: !!JSON.parse(localStorage.getItem('atlas-desk-changes-v1')).zz, listed: window.__desk.store.list().some(c => c.receptorId === 'zz') }));
+ok('unknown-receptor record survives a write but is not listed', strayState.kept && !strayState.listed, JSON.stringify(strayState));
 
 // --- download equals the converter ---
 const [download] = await Promise.all([page.waitForEvent('download'), page.click('#dl')]);
@@ -101,4 +111,68 @@ ok('download carries the edit', got.content.archive.d2 && got.content.archive.d2
 ok('download carries the review', got.review.d2 && got.review.d2.affinity === 1 && got.review.d2.mechanism === 0 && got.review.d2.note === 'walkthrough note');
 ok('download has no spurious Ledger columns', JSON.stringify(Object.keys(got.content.clinical[d2.clinicalNo] || {}).filter(k => k !== 'baseline' && !(k in (SEED.baseState.content.clinical[d2.clinicalNo] || {})))) === '[]', JSON.stringify(got.content.clinical[d2.clinicalNo]));
 ok('no page errors during the walkthrough', errors.length === 0, errors.join(' | '));
+
+// --- simulated claude.ai frame: a fake window.claude with db + downloads, same page from disk ---
+async function framePage(cfg) {
+  const fctx = await browser.newContext({ acceptDownloads: true });
+  await fctx.addInitScript(cfg => {
+    const L = window.__fakeLog = { sets: [], inflight: 0, maxInflight: 0, reads: 0, saves: [] };
+    window.claude = { use: async name => {
+      if (name === 'db') {
+        if (cfg.db === 'none') return null;
+        return {
+          collection: () => ({ get: async () => { L.reads++; if (cfg.db === 'down' || (cfg.db === 'flaky' && L.reads === 1)) throw { code: 'unavailable', message: 'x' }; return { docs: Object.entries(cfg.docs || {}).map(([id, d]) => ({ id, data: () => d })) }; } }),
+          doc: path => ({ set: async obj => { L.inflight++; L.maxInflight = Math.max(L.maxInflight, L.inflight); await new Promise(r => setTimeout(r, 80)); L.inflight--; L.sets.push({ path, obj }); } }),
+        };
+      }
+      if (name === 'downloads') {
+        if (cfg.dl === 'none') return null;
+        return { save: async req => { L.saves.push(req.filename); if (cfg.dl === 'unavailable') throw { code: 'unavailable', message: 'x' }; return { status: 'saved' }; } };
+      }
+      return null;
+    } };
+  }, cfg);
+  const p = await fctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
+  let downloads = 0; p.on('download', () => downloads++);
+  await p.goto(PAGE); await p.waitForFunction(() => window.__desk, null, { timeout: 15000 });
+  return { p, fctx, errs, downloads: () => downloads, log: () => p.evaluate(() => window.__fakeLog) };
+}
+{ // db never answers: retried once, then this browser, with a toast
+  const f = await framePage({ db: 'down', dl: 'ok' });
+  const toastText = await f.p.locator('.toast').innerText().catch(() => '');
+  ok('frame: a failing store read is retried once, then the page works in this browser',
+    (await f.log()).reads === 2 && / · store: this browser$/.test(await f.p.locator('#banner').innerText()) && toastText === 'claude.ai store did not answer; working in this browser', toastText);
+  await f.p.selectOption('#rx', 'd2'); await f.p.locator('[data-path="archive.abstract"]').fill('Local.'); await f.p.waitForTimeout(450);
+  ok('frame: after the fallback no write goes to the store', (await f.log()).sets.length === 0 && await f.p.evaluate(() => !!JSON.parse(localStorage.getItem('atlas-desk-changes-v1')).d2));
+  await f.fctx.close();
+}
+{ // db answers on the retry: claude.ai mode with the stored documents; writes serialised; download via the capability
+  const stored = core.setField(core.emptyChanges('d2', SEED.commit), 'archive.abstract', 'From the store.', '2026-09-26T00:00:00.000Z');
+  const f = await framePage({ db: 'flaky', dl: 'ok', docs: { d2: stored } });
+  await f.p.selectOption('#rx', 'd2');
+  ok('frame: store mode shows the stored documents', / · store: claude\.ai$/.test(await f.p.locator('#banner').innerText()) && (await f.p.locator('[data-path="archive.abstract"]').innerText()) === 'From the store.');
+  for (const m of ['mechanism', 'affinity', 'clinical']) await f.p.locator(`[data-mark="${m}"]`).click();
+  await f.p.locator('[data-note]').fill('burst'); await f.p.evaluate(() => window.__desk.flush());
+  await f.p.waitForTimeout(600);
+  const L = await f.log(); const last = L.sets.filter(s => s.path === 'changes/d2').pop();
+  ok('frame: a burst of edits is written one at a time and the last write carries the newest state',
+    L.maxInflight === 1 && L.sets.length < 5 && last && last.obj.review.note === 'burst' && last.obj.review.mechanism === 0 && last.obj.review.affinity === 1 && last.obj.review.clinical === 1,
+    `sets=${L.sets.length} maxInflight=${L.maxInflight}`);
+  await f.p.click('#dl'); await f.p.waitForTimeout(300);
+  ok('frame: Download goes through the downloads capability, never <a download>', (await f.log()).saves.join() === 'curator-state.json' && f.downloads() === 0);
+  ok('frame: no page errors', f.errs.length === 0, f.errs.join(' | '));
+  await f.fctx.close();
+}
+{ // downloads capability absent: the button is hidden
+  const f = await framePage({ db: 'none', dl: 'none' });
+  await f.p.waitForTimeout(100);
+  ok('frame: Download is hidden when the downloads capability is absent', !(await f.p.locator('#dl').isVisible()));
+  await f.fctx.close();
+}
+{ // downloads capability rejects unavailable: hidden after the attempt, no fallback download
+  const f = await framePage({ db: 'none', dl: 'unavailable' });
+  await f.p.click('#dl'); await f.p.waitForTimeout(300);
+  ok('frame: Download hides itself on "unavailable" and does not fall back', !(await f.p.locator('#dl').isVisible()) && f.downloads() === 0);
+  await f.fctx.close();
+}
 await browser.close();

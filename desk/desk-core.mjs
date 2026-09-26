@@ -34,6 +34,14 @@ export function setField(changes, path, value, at) {
   return c;
 }
 
+/** Drop a field's change record (the page's "back to the seed value") and any spans on that field. */
+export function clearField(changes, path) {
+  const c = clone(changes);
+  delete c.fields[path];
+  c.spans = (c.spans || []).filter(sp => !(sp.field === path || (typeof sp.field === 'string' && sp.field.startsWith(path + '.'))));
+  return c;
+}
+
 const seededSource = (seedReceptor, key) => (seedReceptor.sources || []).some(s => s.key === key);
 const seedReceptorOf = (seed, id) => seed.receptors.find(r => r.id === id);
 /** Was this key explicitly passed? Distinguishes "clear it to null" from "leave it alone" —
@@ -115,6 +123,8 @@ export function viewOf(seedReceptor, changes) {
 }
 
 const eq = (a, b) => (a ?? null) === (b ?? null);
+/** A list column: the router writes '[]' for an empty list, and a pristine null is also "no items". */
+const eqList = (raw, pristine) => eq(raw, pristine) || (raw === '[]' && pristine == null);
 const pickOrdered = (obj, cols) => Object.fromEntries(cols.filter(k => k in obj).map(k => [k, obj[k]]));
 
 /** changes (one per receptor) → a format-1 edits file, a delta from the pristine seed. */
@@ -144,12 +154,12 @@ export function toCuratorState(seed, changesList) {
       const [vol, field] = path.split('.');
       if (vol === 'archive') {
         const col = ARCHIVE_LIST[field] || field; const raw = ARCHIVE_LIST[field] ? JSON.stringify(f.value ?? []) : f.value;
-        if (eq(raw, (P.archive[id] || {})[col])) delete arch[col]; else arch[col] = raw;
+        if ((ARCHIVE_LIST[field] ? eqList : eq)(raw, (P.archive[id] || {})[col])) delete arch[col]; else arch[col] = raw;
         stamp(id, 'archive', f.at);
       } else {
         if (no == null) throw new Error('receptor has no Ledger row: ' + id);
         const col = CLINICAL_LIST[field] || field; const raw = CLINICAL_LIST[field] ? JSON.stringify(f.value ?? []) : f.value;
-        if (eq(raw, (P.clinical[no] || {})[col])) delete clin[col]; else clin[col] = raw;
+        if ((CLINICAL_LIST[field] ? eqList : eq)(raw, (P.clinical[no] || {})[col])) delete clin[col]; else clin[col] = raw;
         stamp(id, 'ledger', f.at);
       }
     }
@@ -205,6 +215,15 @@ export function countUnpublished(changesList) {
   let n = 0;
   for (const c of changesList) {
     n += Object.values(c.fields).filter(f => !f.publishedAs).length + c.sources.add.filter(a => !a.publishedAs).length + Object.values(c.sources.set).filter(s => !s.publishedAs).length + (c.review && !c.review.publishedAs ? 1 : 0);
+  }
+  return n;
+}
+
+/** The mirror of countUnpublished: records already carried by a published edits file. */
+export function countPublished(changesList) {
+  let n = 0;
+  for (const c of changesList) {
+    n += Object.values(c.fields).filter(f => f.publishedAs).length + c.sources.add.filter(a => a.publishedAs).length + Object.values(c.sources.set).filter(s => s.publishedAs).length + (c.review && c.review.publishedAs ? 1 : 0);
   }
   return n;
 }

@@ -222,27 +222,52 @@ const BUILT_AT = '__BUILT_AT__';
 const LS = 'atlas-desk-changes-v1';
 const STORE_LABEL = { browser: 'this browser', 'claude.ai': 'claude.ai' };
 const KNOWN = new Set(SEED.receptors.map(r => r.id));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 const store = {
   mode: 'browser', db: null, all: {},          // all: receptorId -> changes
+  queues: {}, waiting: {},                     // per-document write chain, and "a write for this id is already queued"
   async init() {
-    try {
-      if (window.claude && typeof window.claude.use === 'function') {
-        const db = await Promise.race([window.claude.use('db'), new Promise(r => setTimeout(() => r(null), 8000))]);
-        if (db) { this.db = db; this.mode = 'claude.ai'; const snap = await db.collection('changes').get(); (snap.docs || []).forEach(d => { const data = typeof d.data === 'function' ? d.data() : d.data; if (data) this.all[d.id] = data; }); this.prune(); return; }
+    if (window.claude && typeof window.claude.use === 'function') {
+      let db = null;
+      try { db = await Promise.race([window.claude.use('db'), sleep(8000).then(() => null)]); } catch (e) { db = null; }
+      if (db) {
+        // claude.ai mode only once the stored documents are in hand: a half-open store would show
+        // this browser's data and then overwrite the stored documents with it on the next edit.
+        const read = () => db.collection('changes').get();
+        let snap = null;
+        try { snap = await read(); }
+        catch (e) { if (e && e.code === 'unavailable') { await sleep(800); try { snap = await read(); } catch (e2) { snap = null; } } }
+        if (snap) {
+          const all = {};
+          (snap.docs || []).forEach(d => { const data = typeof d.data === 'function' ? d.data() : d.data; if (data) all[d.id] = data; });
+          this.all = all; this.db = db; this.mode = 'claude.ai';
+          return;
+        }
+        toast('claude.ai store did not answer; working in this browser', 5000);
       }
-    } catch (e) { /* fall through to the browser */ }
-    try { const raw = localStorage.getItem(LS); if (raw) this.all = JSON.parse(raw) || {}; } catch (e) { this.all = {}; }
-    this.prune();
+    }
+    try { const raw = localStorage.getItem(LS); const all = raw ? JSON.parse(raw) : null; this.all = all && typeof all === 'object' ? all : {}; } catch (e) { this.all = {}; }
   },
-  // A record for a receptor the seed no longer has would make toCuratorState throw; keep it out of view.
-  prune() { for (const id of Object.keys(this.all)) if (!KNOWN.has(id)) delete this.all[id]; },
-  get(id) { return this.all[id] || emptyChanges(id, SEED.commit); },
+  // A record for a receptor the seed no longer has would make toCuratorState throw, so it is kept out of
+  // view here — but never deleted: the whole map is what gets written back to this browser.
+  get(id) { return (KNOWN.has(id) && this.all[id]) || emptyChanges(id, SEED.commit); },
   put(changes) {
-    this.all[changes.receptorId] = changes;
-    if (this.db) { this.db.doc('changes/' + changes.receptorId).set(JSON.parse(JSON.stringify(changes))).catch(e => toast('Save failed (' + ((e && e.code) || 'unknown') + ').')); }
+    const id = changes.receptorId;
+    this.all[id] = changes;
+    if (this.db) {
+      // One write at a time per document. A burst collapses: while a write for this id is still queued,
+      // further puts only update this.all, and the queued write sends whatever is newest when it runs.
+      if (this.waiting[id]) return;
+      this.waiting[id] = true;
+      const db = this.db;
+      this.queues[id] = (this.queues[id] || Promise.resolve()).then(() => {
+        this.waiting[id] = false;
+        return db.doc('changes/' + id).set(JSON.parse(JSON.stringify(this.all[id])));
+      }).catch(e => { this.waiting[id] = false; toast('Save failed (' + ((e && e.code) || 'unknown') + ').', 4000); });
+    }
     else { try { localStorage.setItem(LS, JSON.stringify(this.all)); } catch (e) { toast('This browser refused to store the change.'); } }
   },
-  list() { return Object.values(this.all); },
+  list() { return Object.entries(this.all).filter(([id]) => KNOWN.has(id)).map(([, c]) => c); },
 };
 // ---------- helpers ----------
 const $ = s => document.querySelector(s);
@@ -271,21 +296,24 @@ function editField(id, path, value, isList) {
   if (!isList && value === '' && seedVal === null) value = null;   // emptied, and empty in the seed too
   if (same(norm(value), norm(valueAt(viewFor(id), path)))) return;
   const rec = store.get(id).fields[path];
-  if (rec && !rec.publishedAs && same(norm(value), seedVal)) { commit(id, c => { const n = JSON.parse(JSON.stringify(c)); delete n.fields[path]; return n; }); return; }
+  if (rec && !rec.publishedAs && same(norm(value), seedVal)) { commit(id, c => clearField(c, path)); return; }
   commit(id, c => setField(c, path, value, now()));
 }
-function marksFor(id) { const r = viewFor(id).review || {}; return { mechanism: r.mechanism | 0, affinity: r.affinity | 0, clinical: r.clinical | 0, note: r.note || '' }; }
+const marksOf = r => ({ mechanism: (r || {}).mechanism | 0, affinity: (r || {}).affinity | 0, clinical: (r || {}).clinical | 0, note: (r || {}).note || '' });
+const marksFor = id => marksOf(viewFor(id).review);
 function editReview(id, patch) {
   const cur = marksFor(id), next = { ...cur, ...patch };
   if (same(next, cur)) return;
+  const rec = store.get(id).review;
+  // Back to the seed's own marks with nothing published yet: drop the record rather than store an equal update.
+  if (rec && !rec.publishedAs && same(next, marksOf(seedOf(id).review))) { commit(id, c => ({ ...c, review: null })); return; }
   commit(id, c => setReview(c, next, now()));
 }
 // ---------- banner + picker ----------
 function renderBanner() {
-  const all = store.list(); const unpub = countUnpublished(all);
-  const published = all.reduce((n, c) => n + Object.values(c.fields).filter(f => f.publishedAs).length + c.sources.add.filter(a => a.publishedAs).length, 0);
-  $('#banner').innerHTML = `seed <b>${esc(SEED.builtAt.slice(0, 10))}</b> · ${published ? published + ' published since · ' : ''}<b>${unpub} unpublished</b> · <span class="${store.mode === 'claude.ai' ? 'cloud' : ''}">store: ${esc(STORE_LABEL[store.mode])}</span>`;
-  const sel = $('#rx'); for (const o of sel.options) { const c = store.all[o.value]; o.textContent = (c && countUnpublished([c]) ? '● ' : '') + seedOf(o.value).label; }
+  const all = store.list(); const unpub = countUnpublished(all), published = countPublished(all);
+  $('#banner').innerHTML = `seed <b>${esc(SEED.builtAt.slice(0, 10))}</b> · ${published} published since · <b>${unpub} unpublished</b> · <span class="${store.mode === 'claude.ai' ? 'cloud' : ''}">store: ${esc(STORE_LABEL[store.mode])}</span>`;
+  const sel = $('#rx'); for (const o of sel.options) { const c = KNOWN.has(o.value) && store.all[o.value]; o.textContent = (c && countUnpublished([c]) ? '● ' : '') + seedOf(o.value).label; }
 }
 function renderPicker() {
   $('#rx').innerHTML = SEED.receptors.map(r => `<option value="${esc(r.id)}">${esc(r.label)}</option>`).join('');
@@ -342,16 +370,27 @@ function render() {
 }
 function renderMargin() { /* Task 6 */ }
 // ---------- download ----------
+// Inside the claude.ai frame the page may only offer files through the downloads capability; the
+// <a download> path is for the file opened from disk (no window.claude at all).
+const IN_FRAME = !!window.claude;
+const dlReady = IN_FRAME ? Promise.resolve().then(() => typeof window.claude.use === 'function' ? window.claude.use('downloads') : null).catch(() => null) : null;
+const DL_GONE = new Set(['unavailable', 'not_granted', 'capability_disabled', 'capability_removed']);
+const hideDownload = () => { $('#dl').classList.add('hidden'); };
+if (dlReady) dlReady.then(dl => { if (!dl) hideDownload(); });
 $('#dl').addEventListener('click', async () => {
   flush();
   let text;
   try { text = JSON.stringify(toCuratorState(SEED, store.list()), null, 1) + '\n'; }
   catch (e) { toast('Could not build the edits file: ' + (e && e.message || e), 5000); return; }
-  let dl = null;
-  try { if (window.claude && typeof window.claude.use === 'function') dl = await window.claude.use('downloads'); } catch (e) { dl = null; }
-  if (dl) {
+  if (dlReady) {
+    const dl = await dlReady;
+    if (!dl) { hideDownload(); return; }
     try { await dl.save({ filename: 'curator-state.json', data: text }); }
-    catch (e) { const code = e && e.code; if (code !== 'declined') toast('Download failed (' + (code || 'unknown') + ').', 4000); }
+    catch (e) {
+      const code = e && e.code;
+      if (DL_GONE.has(code)) hideDownload();
+      else if (code !== 'declined') toast('Download failed (' + (code || 'unknown') + ').', 4000);
+    }
     return;
   }
   const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
