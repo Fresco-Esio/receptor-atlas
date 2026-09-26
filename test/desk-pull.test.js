@@ -133,6 +133,33 @@ test('every record kind edited again after a publish; after markPublishedFrom th
   assert.equal(three.state.content.claims.d2, 'Claim 3');
 });
 
+test('publish, type before the marking, mark: the next publish is accepted', () => {
+  const base = exportState(fresh());
+  const seed = buildSeed({ baseState: base, commit: 'x' });
+  const pulled = core.setField(core.setField(core.emptyChanges('d2', 'x'), 'claim', 'Pulled claim', AT), 'archive.abstract', 'Pulled abstract', AT);
+  const repoState = JSON.parse(JSON.stringify(pull({ seed, changes: [pulled], repoState: base }).state));
+  const typed = core.setField(pulled, 'claim', 'Typed during the publish', T2);
+  const marked = core.markPublishedFrom(typed, pulled, 'sha1');
+  const two = pull({ seed, changes: [marked], repoState });
+  assert.equal(two.ok, true, JSON.stringify(two.diff));
+  assert.equal(two.state.content.claims.d2, 'Typed during the publish');
+  assert.equal(two.state.content.archive.d2.abstract, 'Pulled abstract');
+});
+
+test('publish, delete a pulled field before the marking, mark: the next publish is accepted and takes it out', () => {
+  const base = exportState(fresh());
+  const seed = buildSeed({ baseState: base, commit: 'x' });
+  const pulled = core.setField(core.setField(core.emptyChanges('d2', 'x'), 'claim', 'Pulled claim', AT), 'archive.abstract', 'Pulled abstract', AT);
+  const repoState = JSON.parse(JSON.stringify(pull({ seed, changes: [pulled], repoState: base }).state));
+  const deleted = core.clearField(pulled, 'claim', T2);   // unpublished yet: the record simply goes
+  assert.equal('claim' in deleted.fields, false);
+  const marked = core.markPublishedFrom(deleted, pulled, 'sha1');
+  const two = pull({ seed, changes: [marked], repoState });
+  assert.equal(two.ok, true, JSON.stringify(two.diff));
+  assert.equal(two.state.content.claims.d2, undefined);
+  assert.equal(two.state.content.archive.d2.abstract, 'Pulled abstract');
+});
+
 test('loadChanges reads an array file or a directory of documents, skips unknown receptors, and rejects other shapes', async () => {
   const { mkdtempSync, writeFileSync } = await import('node:fs');
   const { tmpdir } = await import('node:os');

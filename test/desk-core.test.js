@@ -560,7 +560,48 @@ test('markPublishedFrom drops the predecessor of the records it marks, and only 
   const m = core.markPublishedFrom(cur, pulled, 'sha2');
   assert.deepEqual(m.fields['archive.abstract'], { value: 'Q', at: T2, publishedAs: 'sha2' });
   assert.equal(m.fields.claim.publishedAs, null);
-  assert.deepEqual(m.fields.claim.published, { value: 'C', at: AT, publishedAs: 'sha1' }, 'typed after the pull: keeps the older published state');
+  assert.deepEqual(m.fields.claim.published, { value: 'D', at: T2, publishedAs: 'sha2' }, 'typed after the pull: the pulled record, which the repo now holds, is its predecessor');
+});
+
+test('markPublishedFrom re-creates pulled records deleted before marking, so publishedOnly reproduces the repo', () => {
+  const s = seed(); const T2 = '2026-09-26T14:00:00.000Z';
+  let pulled = core.emptyChanges('d2', s.commit);
+  pulled = core.setField(pulled, 'archive.abstract', 'New', AT);
+  pulled = core.attachSource(pulled, s, KAPUR, { is_primary: 0 }, AT);
+  pulled = core.setSourceFlags(pulled, s, 'pmid:24463000', { conflicting: true, correction_note: 'n' }, AT);
+  pulled = core.setReview(pulled, { mechanism: 1 }, AT);
+  // before the marking: every one of them is undone (unpublished, so each record simply goes)
+  let cur = core.clearField(pulled, 'archive.abstract', T2);
+  cur = core.detachSource(cur, s, 'pmid:12505794', T2);
+  cur = { ...cur, sources: { ...cur.sources, set: {} }, review: null };
+  assert.deepEqual(core.countUnpublished([cur]), 0);
+  const m = core.markPublishedFrom(cur, pulled, 'sha1');
+  assert.deepEqual(m.fields['archive.abstract'], { cleared: true, at: AT, publishedAs: null, published: { value: 'New', at: AT, publishedAs: 'sha1' } });
+  assert.equal(m.sources.remove[0].key, 'pmid:12505794'); assert.equal(m.sources.remove[0].published.publishedAs, 'sha1');
+  assert.ok(m.library['pmid:12505794'], 'the library row comes back with it');
+  assert.equal(m.sources.set['pmid:24463000'].cleared, true);
+  assert.equal(m.review.cleared, true);
+  assert.deepEqual(core.toCuratorState(s, [core.publishedOnly(m)]), core.toCuratorState(s, [pulled]), 'the published state is exactly what was pulled');
+  const back = core.toCuratorState(s, [m]);
+  assert.deepEqual([back.content.archive, back.receptorSources, back.sources, back.review], [{}, [], [], {}], 'and the next publish takes all of it back out');
+  assert.equal(core.viewOf(s.receptors[0], m).sources.find(x => x.key === 'pmid:24463000').status, 'verified', 'a cleared flag set shows the seed');
+  const again = core.setSourceFlags(m, s, 'pmid:24463000', { is_primary: 0 }, T2);
+  assert.deepEqual([again.sources.set['pmid:24463000'].correction_note, again.sources.set['pmid:24463000'].published.correction_note], [null, 'n'], 'a cleared set edited again starts from the seed and keeps the published state');
+});
+
+test('mergeChanges keeps the later published state when both records carry one', () => {
+  const s = seed(); const T2 = '2026-09-26T14:00:00.000Z', T3 = '2026-09-26T15:00:00.000Z', T4 = '2026-09-26T16:00:00.000Z';
+  const p1 = core.markPublished(core.setField(core.emptyChanges('d2', s.commit), 'archive.abstract', 'P1', AT), 'sha1');
+  const winner = core.setField(p1, 'archive.abstract', 'W', T4);                                   // carries P1
+  const p2 = core.markPublished(core.setField(p1, 'archive.abstract', 'P2', T2), 'sha2');           // published later, loses on at
+  let m = core.mergeChanges(winner, p2);
+  assert.equal(m.fields['archive.abstract'].value, 'W');
+  assert.equal(m.fields['archive.abstract'].published.value, 'P2', 'the later published state');
+  const loserWithPred = core.setField(p2, 'archive.abstract', 'L', T3);                           // carries P2
+  m = core.mergeChanges(loserWithPred, winner);
+  assert.equal(m.fields['archive.abstract'].published.value, 'P2');
+  m = core.mergeChanges(core.setField(p1, 'archive.abstract', 'L', T2), core.setField(p2, 'archive.abstract', 'W', T4));
+  assert.equal(m.fields['archive.abstract'].published.value, 'P2', "the winner's own, when it is the later");
 });
 
 test('mergeChanges hands the published state to a winner that overwrote it unseen', () => {

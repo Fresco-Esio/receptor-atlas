@@ -27,10 +27,31 @@ export function publishedShas(changes) {
   return [...shas];
 }
 
+/** Unpublished reverts (tombstones) and detaches (removes), per receptor. They mean "take the published
+ *  state back out"; once rekey folds that published state into the seed, a tombstone would be read as
+ *  "back to the NEW seed" and silently keep what it was meant to remove. */
+export function unpublishedReverts(changes) {
+  const out = [];
+  for (const c of changes) {
+    const src = c.sources || {};
+    const n = [...Object.values(c.fields || {}), ...Object.values(src.set || {}), ...(c.review ? [c.review] : [])].filter(r => r && r.cleared && !r.publishedAs).length
+      + (src.remove || []).filter(r => !r.publishedAs).length;
+    if (n) out.push({ receptorId: c.receptorId, n });
+  }
+  return out;
+}
+
 /** isAncestor(sha) → boolean is the git seam. */
 export function rekeyAll(seed, changes, isAncestor) {
+  const reverts = unpublishedReverts(changes);
+  if (reverts.length) {
+    const n = reverts.reduce((a, r) => a + r.n, 0);
+    return { ok: false, reason: 'unpublished reverts', n, receptors: reverts.map(r => r.receptorId),
+      message: `publish or discard ${n} unpublished reverts/detaches before re-seeding: ${reverts.map(r => r.receptorId).join(', ')}` };
+  }
   const missing = publishedShas(changes).filter(sha => !isAncestor(sha));
-  if (missing.length) return { ok: false, missing };
+  if (missing.length) return { ok: false, reason: 'not in history', missing,
+    message: `published as ${missing.join(', ')}, which ${missing.length === 1 ? 'is' : 'are'} not in the history of HEAD, so the new seed (${seed.commit}) may not carry ${missing.length === 1 ? 'it' : 'them'}. Pull, re-seed, and run this again.` };
   return { ok: true, docs: changes.map(c => rekey(c, seed)) };
 }
 
@@ -46,6 +67,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   let changes;
   try { changes = loadChanges(file, seed); } catch (e) { console.error('desk:rekey: ' + e.message); process.exit(1); }
   const r = rekeyAll(seed, changes, gitIsAncestor);
-  if (!r.ok) { console.error(`refusing: published as ${r.missing.join(', ')}, which ${r.missing.length === 1 ? 'is' : 'are'} not in the history of HEAD, so the new seed (${seed.commit}) may not carry ${r.missing.length === 1 ? 'it' : 'them'}. Pull, re-seed, and run this again.`); process.exit(2); }
+  if (!r.ok) { console.error('refusing: ' + r.message); process.exit(2); }
   process.stdout.write(JSON.stringify(r.docs, null, 1) + '\n');
 }

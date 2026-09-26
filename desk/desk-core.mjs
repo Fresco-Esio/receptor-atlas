@@ -106,7 +106,8 @@ export function setSourceFlags(changes, seed, key, flags, at) {
   const seeded = (r.sources || []).find(s => s.key === key);
   if (!seeded) throw new Error('unknown source');
   // conflicting stays undefined until the caller gives it: an untouched flag keeps the seed's own status (see edgeStatus)
-  const prev = c.sources.set[key] || { is_primary: seeded.is_primary, conflicting: undefined, correction_note: seeded.correction_note };
+  const cur = c.sources.set[key];   // a cleared set record (a re-created revert) is the seed's own flags
+  const prev = cur && !cur.cleared ? cur : { is_primary: seeded.is_primary, conflicting: undefined, correction_note: seeded.correction_note };
   const pred = predecessorOf(c.sources.set[key]);
   c.sources.set[key] = withPredecessor({ is_primary: given(flags, 'is_primary') ? flags.is_primary : prev.is_primary, conflicting: given(flags, 'conflicting') ? flags.conflicting : prev.conflicting, correction_note: given(flags, 'correction_note') ? flags.correction_note : prev.correction_note, at, publishedAs: null }, pred);
   return c;
@@ -126,7 +127,8 @@ export function edgeStatus(seedStatus, set) {
 export function setReview(changes, marks, at) {
   const c = clone(changes);
   const pred = predecessorOf(c.review);
-  c.review = withPredecessor({ ...(c.review || {}), ...marks, at, publishedAs: null }, pred);
+  const { cleared: _c, published: _p, ...before } = c.review && !c.review.cleared ? c.review : {};
+  c.review = withPredecessor({ ...before, ...marks, at, publishedAs: null }, pred);
   return c;
 }
 
@@ -142,11 +144,11 @@ export function viewOf(seedReceptor, changes) {
   const removed = new Set(((changes.sources || {}).remove || []).map(x => x.key));
   const sources = (v.sources || []).filter(s => !removed.has(s.key)).map(s => {
     const set = changes.sources.set[s.key];
-    return set ? { ...s, is_primary: set.is_primary, status: edgeStatus(s.status, set), correction_note: set.correction_note } : s;
+    return set && !set.cleared ? { ...s, is_primary: set.is_primary, status: edgeStatus(s.status, set), correction_note: set.correction_note } : s;
   });
   for (const a of changes.sources.add) sources.push({ key: a.key, is_primary: a.is_primary, status: a.conflicting ? 'conflicting' : 'verified', correction_note: a.correction_note, added: true });
   v.sources = sources;
-  if (changes.review) {
+  if (changes.review && !changes.review.cleared) {
     const base = v.review || { mechanism: 0, affinity: 0, clinical: 0, citation: 0, mastery: 0, note: '' };
     v.review = {
       ...base,
@@ -211,6 +213,7 @@ export function toCuratorState(seed, changesList) {
     for (const a of c.sources.add) { upsertEdge({ receptor_id: id, source: a.key, status: a.conflicting ? 'conflicting' : 'verified', is_primary: a.is_primary ? 1 : 0, correction_note: a.correction_note ?? null }); stamp(id, 'archive', a.at); }
     for (const x of c.sources.remove || []) { dropEdge(id, x.key); removedKeys.add(x.key); stamp(id, 'archive', x.at); }
     for (const [key, s] of Object.entries(c.sources.set)) {
+      if (s.cleared) { stamp(id, 'archive', s.at); continue; }   // back to the seed's edge: out already has it
       const pr = P.receptorSources[`${id}|${key}`];
       const seeded = (r.sources || []).find(x => x.key === key);
       const edge = { receptor_id: id, source: key, status: edgeStatus(seeded ? seeded.status : (pr ? pr.status : 'verified'), s), is_primary: s.is_primary ? 1 : 0, correction_note: s.correction_note ?? null };
@@ -219,7 +222,8 @@ export function toCuratorState(seed, changesList) {
     }
     // --- review: only the keys the caller actually set override the base; citation/mastery
     // are Desk-only fields with no setter here, so they always come from the base. ---
-    if (c.review) {
+    if (c.review && c.review.cleared) { for (const vol of r.volumes || VOLUMES) stamp(id, vol, null, c.review.at); }
+    else if (c.review) {
       const base = out.review[id] || P.review[id] || { mechanism: 0, affinity: 0, clinical: 0, citation: 0, mastery: 0, note: '' };
       const rv = {
         mechanism: (has(c.review, 'mechanism') ? c.review.mechanism : base.mechanism) | 0,
@@ -299,19 +303,42 @@ const stable = v => Array.isArray(v) ? '[' + v.map(stable).join(',') + ']'
   : JSON.stringify(v === undefined ? null : v);
 const sameRecord = (a, b) => { if (!a || !b) return false; const { publishedAs: _a, published: _c, ...x } = a, { publishedAs: _b, published: _d, ...y } = b; return stable(x) === stable(y); };
 
-/** markPublished for a store that may have moved since the pull: marks only the unpublished records of
- *  `current` that are deep-equal (publishedAs aside) to the same record in `pulled`, the document as it was
- *  converted. A record typed after the pull stays unpublished, so the next publish carries it. */
+/** markPublished for a store that may have moved since the pull. `pulled` is the document as it was
+ *  converted and committed, so each of its records is now what the repo holds. Per record of `current`:
+ *  - deep-equal (publishedAs and predecessor aside) to its pulled counterpart: marked published with sha;
+ *  - changed since the pull: stays unpublished, with the pulled record as its predecessor
+ *    (`published = { ...pulled, publishedAs: sha }`);
+ *  - pulled but gone from `current` (deleted before marking): re-created as the published form of "back to
+ *    the seed" — a tombstone for a field, flag set or review, a sources.remove for an add — carrying the
+ *    pulled record, so publishedOnly still reproduces the repo. */
 export function markPublishedFrom(current, pulled, sha) {
   const c = clone(current);
   if (!pulled) return c;
-  const p = pulled, ps = p.sources || {};
+  const p = clone(pulled), ps = p.sources || {};
+  c.sources.remove = c.sources.remove || [];
   const mark = r => { r.publishedAs = sha; delete r.published; };   // it is now the published state
-  for (const [k, f] of Object.entries(c.fields)) if (!f.publishedAs && sameRecord(f, (p.fields || {})[k])) mark(f);
-  for (const a of c.sources.add) if (!a.publishedAs && sameRecord(a, (ps.add || []).find(x => x.key === a.key))) mark(a);
-  for (const r of c.sources.remove || []) if (!r.publishedAs && sameRecord(r, (ps.remove || []).find(x => x.key === r.key))) mark(r);
-  for (const [k, s] of Object.entries(c.sources.set)) if (!s.publishedAs && sameRecord(s, (ps.set || {})[k])) mark(s);
-  if (c.review && !c.review.publishedAs && sameRecord(c.review, p.review)) mark(c.review);
+  const asPublished = r => { const { published: _p, ...own } = r; return { ...own, publishedAs: sha }; };
+  const settle = (cur, pr) => {       // cur and pr both present
+    if (cur.publishedAs) return;
+    if (sameRecord(cur, pr)) mark(cur); else cur.published = asPublished(pr);
+  };
+  const tombstone = pr => pr.cleared ? asPublished(pr) : { cleared: true, at: pr.at, publishedAs: null, published: asPublished(pr) };
+  // fields
+  for (const [k, pr] of Object.entries(p.fields || {})) { if (c.fields[k]) settle(c.fields[k], pr); else c.fields[k] = tombstone(pr); }
+  // a source's add or remove, one record per key
+  const pulledEdges = [...(ps.add || []), ...(ps.remove || [])];
+  for (const pr of pulledEdges) {
+    const cur = c.sources.add.find(x => x.key === pr.key) || c.sources.remove.find(x => x.key === pr.key);
+    if (cur) { settle(cur, pr); continue; }
+    if ('is_primary' in pr) {            // an add, since deleted: a remove carrying it (and its library row)
+      c.sources.remove.push({ key: pr.key, at: pr.at, publishedAs: null, published: asPublished(pr) });
+      if (p.library && p.library[pr.key] && !c.library[pr.key]) c.library[pr.key] = p.library[pr.key];
+    } else c.sources.remove.push(asPublished(pr));
+  }
+  // flag sets
+  for (const [k, pr] of Object.entries(ps.set || {})) { if (c.sources.set[k]) settle(c.sources.set[k], pr); else c.sources.set[k] = tombstone(pr); }
+  // review
+  if (p.review) { if (c.review) settle(c.review, p.review); else c.review = tombstone(p.review); }
   return c;
 }
 
@@ -347,9 +374,13 @@ export function mergeChanges(local, remote) {
   // (the loser itself when published, else its predecessor): that is the same published state, which the
   // winner overwrote without having seen it.
   const pick = (l, r) => !l ? r : !r ? l : String(l.at || '') > String(r.at || '') ? l : r;
+  // When both carry a published state, the later one (by that published record's own `at`) is kept.
   const later = (l, r) => {
     const w = pick(l, r); if (!w || !l || !r) return w;
-    if (!w.publishedAs && !w.published) { const p = predecessorOf(w === l ? r : l); if (p) w.published = p; }
+    if (!w.publishedAs) {
+      const p = predecessorOf(w === l ? r : l);
+      if (p && (!w.published || String(p.at || '') > String(w.published.at || ''))) w.published = p;
+    }
     return w;
   };
   const out = emptyChanges(R.receptorId ?? L.receptorId, R.seedCommit ?? L.seedCommit);
