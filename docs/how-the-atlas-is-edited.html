@@ -1,0 +1,722 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0"><title>How the Atlas Is Edited</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --paper:#FFFFFF; --paper-2:#F3F4F3; --ink:#000000; --ink-2:#3D444C; --ink-3:#7A828A;
+    --line:#E3E5E7; --line-2:#EEF0F1; --grid:#ECEEF0; --grid-2:#DDE0E3;
+    --ok:#2E7D5B; --ok-soft:#E4F1EA; --warn:#B9831F; --warn-soft:#F8EFDB; --info:#2F6F8F;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --disp:"Archivo","Inter",system-ui,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    color-scheme:dark;
+    --paper:#0F1113; --paper-2:#181B1E; --ink:#F2F3F4; --ink-2:#C2C8CE; --ink-3:#8A929A;
+    --line:#2A2F34; --line-2:#22262A; --grid:#1B1F23; --grid-2:#272C31;
+    --ok:#4FB08A; --ok-soft:#173026; --warn:#D9A441; --warn-soft:#3A3018; --info:#6FB0D8;
+  } }
+  :root[data-theme="dark"] {
+    color-scheme:dark;
+    --paper:#0F1113; --paper-2:#181B1E; --ink:#F2F3F4; --ink-2:#C2C8CE; --ink-3:#8A929A;
+    --line:#2A2F34; --line-2:#22262A; --grid:#1B1F23; --grid-2:#272C31;
+    --ok:#4FB08A; --ok-soft:#173026; --warn:#D9A441; --warn-soft:#3A3018; --info:#6FB0D8;
+  }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--paper); color:var(--ink); font:15px/1.55 var(--sans); padding-block:28px 72px; padding-inline:clamp(16px,4vw,40px); }
+  a { color:var(--info); text-decoration-thickness:1px; text-underline-offset:2px }
+  :focus-visible { outline:2px solid var(--ink-2); outline-offset:2px }
+  .wrap { max-width:1060px; margin:0 auto; display:grid; gap:56px }
+  .mono { font-family:var(--mono) }
+
+  /* ---- masthead ---- */
+  .mast { display:grid; gap:14px; border-bottom:1px solid var(--ink); padding-bottom:18px }
+  .mast .rule { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; font:500 11px/1 var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3) }
+  .mast h1 { margin:0; font-family:var(--disp); font-weight:900; font-stretch:112%; font-size:clamp(38px,7vw,84px); line-height:.92; letter-spacing:-.025em; text-wrap:balance }
+  .mast h1 .hw { display:inline-block; overflow:hidden; vertical-align:bottom; padding-bottom:.06em }
+  .mast h1 .hw > span { display:inline-block; transform:translateY(110%) }
+  .mast p { margin:0; max-width:62ch; color:var(--ink-2) }
+  .index { display:flex; gap:6px; flex-wrap:wrap }
+  .index a { font:500 12px/1 var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ink); text-decoration:none; border:1px solid var(--line); border-radius:7px; padding:8px 10px }
+  .index a:hover { background:var(--paper-2) }
+
+  /* ---- sheet ---- */
+  .sheet { display:grid; gap:12px; scroll-margin-top:12px }
+  .tb { display:grid; grid-template-columns:auto 1fr auto; gap:14px; align-items:baseline; font:500 11px/1 var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); border-top:1px solid var(--ink); padding-top:10px }
+  .tb b { color:var(--ink); font-weight:600 } .tb span:last-child { text-transform:none }
+  .stage { position:relative; aspect-ratio:4/3; max-width:100%; border:1px solid var(--ink); background:var(--paper); overflow:hidden; touch-action:pan-y; user-select:none }
+  .stage svg { position:absolute; left:0; right:0; top:22%; width:100%; height:78%; display:block; font-family:var(--mono); }
+  .stage svg text { fill:var(--ink); font-size:13px }
+  .stage svg .l2 { fill:var(--ink-2) } .stage svg .l3 { fill:var(--ink-3); font-size:11px }
+  .stage svg .big { font-family:var(--disp); font-weight:800; font-size:22px; letter-spacing:-.01em }
+  .stage svg .part { opacity:0 }
+  .stage svg .box { fill:var(--paper); stroke:var(--ink); stroke-width:1.5 }
+  .stage svg .box.ok { stroke:var(--ok); fill:var(--ok-soft) }
+  .stage svg .box.warn { stroke:var(--warn); fill:var(--warn-soft) }
+  .stage svg .box.soft { fill:var(--paper-2) }
+  .stage svg .box.dash { stroke-dasharray:6 5; fill:none }
+  .stage svg .ln { stroke:var(--ink); stroke-width:1.5; fill:none }
+  .stage svg .ln.ok { stroke:var(--ok) } .stage svg .ln.warn { stroke:var(--warn) } .stage svg .ln.dim { stroke:var(--ink-3); stroke-dasharray:4 4 }
+  .stage svg .dim { stroke:var(--ink-3); stroke-width:1; fill:none }
+  .stage svg .tick { stroke:var(--ink); stroke-width:1.5 }
+  .stage svg .okt { fill:var(--ok) } .stage svg .warnt { fill:var(--warn) }
+  .stage svg .chip { fill:var(--ink) } .stage svg .chipt { fill:var(--paper); font-weight:600 }
+  .stage svg .held { opacity:.35 }
+  /* headline overlay */
+  .hl { position:absolute; left:3.2%; top:3%; max-width:78%; height:19%; display:flex; align-items:flex-end; flex-wrap:wrap; align-content:flex-end; margin:0; font-family:var(--disp); font-weight:900; font-stretch:110%; font-size:clamp(19px,3.3vw,42px); line-height:.95; letter-spacing:-.02em; pointer-events:none; text-wrap:balance }
+  .hl .hw { display:inline-block; overflow:hidden; vertical-align:bottom; padding:0 .02em .08em 0; margin-right:.22em }
+  .hl .hw > span { display:inline-block; will-change:transform }
+  .hl .k { color:var(--ok); font-size:1.18em }
+  .hl .k.w { color:var(--warn) }
+  .stamp { position:absolute; right:14px; top:12px; font-family:var(--disp); font-weight:900; font-stretch:115%; font-size:clamp(14px,2.2vw,26px); letter-spacing:.06em; padding:4px 12px; border:2px solid currentColor; border-radius:4px; opacity:0; pointer-events:none; transform-origin:center }
+  .stamp.warn { color:var(--warn) } .stamp.ok { color:var(--ok) } .stamp.ink { color:var(--ink) }
+  .counter { position:absolute; right:14px; bottom:12px; font:600 clamp(18px,3vw,40px)/1 var(--disp); font-stretch:110%; letter-spacing:-.02em; pointer-events:none; font-variant-numeric:tabular-nums }
+  .counter small { font:500 11px/1 var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); display:block; margin-top:6px; text-align:right }
+  .rail { position:absolute; left:0; right:0; bottom:0; height:4px; display:flex; gap:2px; padding:0 2px 2px }
+  .rail i { flex:1; background:var(--line); transform-origin:left; }
+  .rail i.on { background:var(--ink) }
+  /* caption + controls */
+  .capw { min-height:3.2em; overflow:hidden }
+  .cap { margin:0; max-width:66ch; color:var(--ink-2); font-size:16px; line-height:1.5; will-change:clip-path }
+  .cap b { color:var(--ink); font-weight:600 }
+  .cap code { font-family:var(--mono); font-size:.86em; background:var(--paper-2); padding:1px 5px; border-radius:4px }
+  .ctl { display:flex; align-items:center; gap:10px; flex-wrap:wrap }
+  .btn { display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:7px; border:1px solid var(--line); background:transparent; cursor:pointer; font:500 .92rem var(--sans); color:var(--ink); white-space:nowrap }
+  .btn:hover { background:var(--paper-2) } .btn.primary { background:var(--ink); color:var(--paper); border-color:var(--ink) } .btn.primary:hover { opacity:.9; background:var(--ink) }
+  .btn:disabled { opacity:.35; cursor:default; background:transparent }
+  .step { font:500 12px/1 var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-variant-numeric:tabular-nums; margin-left:auto }
+  .step b { color:var(--ink) }
+  .hint { font-size:12px; color:var(--ink-3) }
+  footer { border-top:1px solid var(--line); padding-top:14px; font-size:13px; color:var(--ink-3); max-width:70ch }
+  @media (max-width:640px) {
+    .tb { grid-template-columns:1fr; gap:4px }
+    .hl { max-width:88%; }
+    .stage svg text { font-size:15px } .stage svg .l3 { font-size:13px } .stage svg .big { font-size:26px }
+  }
+  @media (prefers-reduced-motion: reduce) { .hl .hw > span, .mast h1 .hw > span { transform:none } .stage svg .part { opacity:1 } }
+</style>
+
+<div class="wrap">
+  <header class="mast">
+    <div class="rule"><span>Receptor Atlas · working drawing</span><span>Rev 290bc19 · 27 Sep 2026</span></div>
+    <h1 id="mastH">How the Atlas is edited.</h1>
+    <p>Five sheets. Each one steps through a mechanism, one cut at a time. Next and Back, the arrow keys, or a swipe on the picture.</p>
+    <nav class="index" aria-label="Sheets">
+      <a href="#lives">1 · Where it lives</a><a href="#editing">2 · Editing</a><a href="#publish">3 · Publish</a><a href="#after">4 · After the rebuild</a><a href="#copies">5 · The other copies</a>
+    </nav>
+  </header>
+
+  <!-- ================= SHEET 1 ================= -->
+  <section class="sheet" id="lives" data-sheet="1">
+    <div class="tb"><span>Sheet <b>1</b> / 5</span><span><b>Where the atlas lives</b></span><span>rev 290bc19</span></div>
+    <div class="stage" tabindex="0" aria-label="Sheet 1, animated diagram">
+      <svg viewBox="0 0 1200 675" role="img" aria-label="One repository on GitHub holds the page literals and the edits file; GitHub Actions rebuilds the public site from them on every push; the Desk is one file served at /desk/ and also run as a claude.ai artifact.">
+        <defs>
+          <pattern id="g1a" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="var(--grid)" stroke-width="1"/></pattern>
+          <pattern id="g1b" width="100" height="100" patternUnits="userSpaceOnUse"><rect width="100" height="100" fill="url(#g1a)"/><path d="M100 0H0V100" fill="none" stroke="var(--grid-2)" stroke-width="1"/></pattern>
+          <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker>
+        </defs>
+        <rect x="-2400" y="-1350" width="6000" height="3400" fill="url(#g1b)"/>
+        <g class="part" data-part="repo">
+          <rect class="box ok" x="60" y="120" width="340" height="420" rx="2"/>
+          <path class="tick" d="M60 108v12h12M400 108v12h-12M60 552v-12h12M400 552v-12h-12"/>
+          <text x="80" y="150" class="big okt">GITHUB · main</text>
+          <text x="80" y="170" class="l3">Fresco-Esio/receptor-atlas · the copy that counts</text>
+          <rect class="box" x="90" y="200" width="280" height="110" rx="2"/>
+          <text x="104" y="226" font-weight="600">public/*.html</text>
+          <text x="104" y="246" class="l2">the page literals</text>
+          <text x="104" y="266" class="l3">the atlas as written: three volumes</text>
+          <rect class="box" x="90" y="340" width="280" height="110" rx="2"/>
+          <text x="104" y="366" font-weight="600">db/curator-state.json</text>
+          <text x="104" y="386" class="l2">the edits file</text>
+          <text x="104" y="406" class="l3">every change made since · 10.7 KB</text>
+          <path class="dim" d="M90 470v20M370 470v20M90 486h280"/><text x="230" y="512" text-anchor="middle" class="l3">two kinds of file · nothing else is a source</text>
+        </g>
+        <g class="part" data-part="push">
+          <path class="ln" d="M400 330H470" marker-end="url(#a1)"/>
+          <text x="436" y="318" text-anchor="middle" class="l3">push to main</text>
+        </g>
+        <g class="part" data-part="actions">
+          <rect class="box soft" x="480" y="290" width="170" height="80" rx="2"/>
+          <circle cx="510" cy="330" r="12" class="ln"/><circle cx="510" cy="330" r="4" class="ln"/>
+          <text x="534" y="326" font-weight="600">Actions</text>
+          <text x="534" y="346" class="l3">migrate · seed · build</text>
+        </g>
+        <g class="part" data-part="deploy">
+          <path class="ln" d="M650 330H720" marker-end="url(#a1)"/>
+          <text x="686" y="318" text-anchor="middle" class="l3">deploys dist/</text>
+          <text x="686" y="352" text-anchor="middle" class="l3">~2 min</text>
+        </g>
+        <g class="part" data-part="site">
+          <rect class="box" x="720" y="120" width="420" height="420" rx="2"/>
+          <path class="tick" d="M720 108v12h12M1140 108v12h-12M720 552v-12h12M1140 552v-12h-12"/>
+          <text x="740" y="150" class="big">THE SITE</text>
+          <text x="740" y="170" class="l3">fresco-esio.github.io/receptor-atlas · static, read-only</text>
+          <rect class="box soft" x="740" y="196" width="380" height="44" rx="2"/><text x="754" y="223">Cabinet</text><text x="1106" y="223" text-anchor="end" class="l3">the-receptor-atlas.html</text>
+          <rect class="box soft" x="740" y="248" width="380" height="44" rx="2"/><text x="754" y="275">Archive</text><text x="1106" y="275" text-anchor="end" class="l3">receptor-function.html</text>
+          <rect class="box soft" x="740" y="300" width="380" height="44" rx="2"/><text x="754" y="327">Ledger</text><text x="1106" y="327" text-anchor="end" class="l3">neuroreceptor_clinical_table.html</text>
+          <text x="754" y="370" class="l3">data/*.json · served fresh on every load · data/build.json names the commit</text>
+        </g>
+        <g class="part" data-part="desk">
+          <rect class="box ok" x="740" y="400" width="380" height="120" rx="2"/>
+          <text x="754" y="428" class="big okt">/desk/</text>
+          <text x="754" y="450" font-weight="600">the Desk · one file</text>
+          <text x="754" y="470" class="l3">the editor · your notes stay in this browser</text>
+          <rect class="chip" x="754" y="484" width="72" height="24" rx="4"/><text x="790" y="501" text-anchor="middle" class="chipt">Publish</text>
+          <text x="836" y="501" class="l3">commits straight to main</text>
+        </g>
+        <g class="part" data-part="cloud">
+          <rect class="box dash" x="440" y="560" width="300" height="90" rx="2"/>
+          <text x="460" y="590" font-weight="600">claude.ai artifact</text>
+          <text x="460" y="610" class="l3">the same file · its own store · PubMed</text>
+          <text x="460" y="630" class="l3">publishes through a Claude session</text>
+          <path class="ln dim" d="M740 605H760a20 20 0 0 0 20-20V520"/>
+          <text x="790" y="590" class="l3">same file</text>
+          <path class="ln dim" d="M440 605H230a20 20 0 0 1-20-20V540"/>
+        </g>
+      </svg>
+      <h2 class="hl" aria-live="polite"></h2>
+      <div class="stamp" aria-hidden="true"></div>
+      <div class="counter" aria-hidden="true"></div>
+      <div class="rail" aria-hidden="true"></div>
+    </div>
+    <div class="capw"><p class="cap"></p></div>
+    <div class="ctl"><button class="btn" data-back type="button">← Back</button><button class="btn primary" data-next type="button">Next →</button><span class="hint">or ← → keys</span><span class="step"></span></div>
+  </section>
+
+  <!-- ================= SHEET 2 ================= -->
+  <section class="sheet" id="editing" data-sheet="2">
+    <div class="tb"><span>Sheet <b>2</b> / 5</span><span><b>Editing</b></span><span>rev 290bc19</span></div>
+    <div class="stage" tabindex="0" aria-label="Sheet 2, animated diagram">
+      <svg viewBox="0 0 1200 675" role="img" aria-label="The Desk starts from a snapshot of the atlas; each edit is a note kept in this browser; the editor shows the snapshot with the notes laid over it; the banner counts unpublished notes.">
+        <defs>
+          <pattern id="g2a" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="var(--grid)" stroke-width="1"/></pattern>
+          <pattern id="g2b" width="100" height="100" patternUnits="userSpaceOnUse"><rect width="100" height="100" fill="url(#g2a)"/><path d="M100 0H0V100" fill="none" stroke="var(--grid-2)" stroke-width="1"/></pattern>
+          <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker>
+        </defs>
+        <rect x="-2400" y="-1350" width="6000" height="3400" fill="url(#g2b)"/>
+        <g class="part" data-part="snap">
+          <rect class="box" x="60" y="140" width="400" height="400" rx="2"/>
+          <path class="tick" d="M60 128v12h12M460 128v12h-12M60 552v-12h12M460 552v-12h-12"/>
+          <text x="80" y="172" class="big">SNAPSHOT</text>
+          <text x="80" y="192" class="l3">seed 2026-09-27 · built from 290bc19 · 24 receptors</text>
+          <text x="80" y="232" font-weight="600">Dopamine D1 · abstract</text>
+          <text x="80" y="256" class="l2">D1 activity follows an inverted-U relationship</text>
+          <text x="80" y="276" class="l2">with performance: insufficient tone impairs</text>
+          <text x="80" y="296" class="l2">sustained firing in task-relevant circuits…</text>
+          <text x="80" y="336" font-weight="600">Ledger · onset</text><text x="80" y="356" class="l3">(empty)</text>
+          <text x="80" y="396" font-weight="600">Sources</text><text x="80" y="416" class="l2">Jones-Tabah 2022 · verified · primary</text><text x="80" y="436" class="l2">Stahl 2021a · provided</text>
+          <path class="dim" d="M80 470v14M440 470v14M80 480h360"/><text x="260" y="506" text-anchor="middle" class="l3">what the atlas was when this page was built</text>
+        </g>
+        <g class="part" data-part="note1">
+          <rect class="box ok" x="540" y="200" width="300" height="88" rx="6"/>
+          <text x="556" y="226" class="okt" font-weight="600">note · archive.abstract</text>
+          <text x="556" y="248" class="l2">value: “D1 activity follows…”</text>
+          <text x="556" y="270" class="l3">at 23:43:20 · unpublished</text>
+        </g>
+        <g class="part" data-part="note2">
+          <rect class="box ok" x="560" y="304" width="300" height="88" rx="6"/>
+          <text x="576" y="330" class="okt" font-weight="600">note · source attached</text>
+          <text x="576" y="352" class="l2">pmid:35110997 · primary</text>
+          <text x="576" y="374" class="l3">at 23:44:02 · unpublished</text>
+        </g>
+        <g class="part" data-part="note3">
+          <rect class="box ok" x="580" y="408" width="300" height="88" rx="6"/>
+          <text x="596" y="434" class="okt" font-weight="600">note · bracket</text>
+          <text x="596" y="456" class="l2">⌜inverted-U relationship⌝ → Jones-Tabah</text>
+          <text x="596" y="478" class="l3">at 23:45:10 · unpublished</text>
+        </g>
+        <g class="part" data-part="store">
+          <path class="dim" d="M520 190v320M900 190v320M520 200h380"/>
+          <text x="710" y="180" text-anchor="middle" class="l3">this browser's storage · atlas-desk-changes-v1 · nowhere else yet</text>
+        </g>
+        <g class="part" data-part="plus">
+          <path class="ln ok" d="M460 340H530" marker-end="url(#a2)"/>
+          <text x="495" y="328" text-anchor="middle" class="okt" font-weight="600">+</text>
+        </g>
+        <g class="part" data-part="view">
+          <rect class="box" x="940" y="140" width="200" height="400" rx="2"/>
+          <text x="960" y="172" class="big">VIEW</text>
+          <text x="960" y="192" class="l3">snapshot + notes</text>
+          <text x="960" y="232" font-weight="600">what you see</text>
+          <text x="960" y="256" class="l2">never stale</text>
+          <text x="960" y="276" class="l2">never sent</text>
+          <text x="960" y="296" class="l2">until you say so</text>
+          <path class="ln" d="M900 340H930" marker-end="url(#a2)"/>
+        </g>
+        <g class="part" data-part="banner">
+          <rect class="box soft" x="60" y="580" width="1080" height="50" rx="2"/>
+          <text x="80" y="611" class="l2">seed 2026-09-27 · 0 published since · <tspan font-weight="600" fill="var(--ink)">3 unpublished</tspan> · store: this browser</text>
+          <text x="1120" y="611" text-anchor="end" class="l3">● Dopamine D1 in the picker</text>
+        </g>
+      </svg>
+      <h2 class="hl" aria-live="polite"></h2>
+      <div class="stamp" aria-hidden="true"></div>
+      <div class="counter" aria-hidden="true"></div>
+      <div class="rail" aria-hidden="true"></div>
+    </div>
+    <div class="capw"><p class="cap"></p></div>
+    <div class="ctl"><button class="btn" data-back type="button">← Back</button><button class="btn primary" data-next type="button">Next →</button><span class="hint">or ← → keys</span><span class="step"></span></div>
+  </section>
+
+  <!-- ================= SHEET 3 ================= -->
+  <section class="sheet" id="publish" data-sheet="3">
+    <div class="tb"><span>Sheet <b>3</b> / 5</span><span><b>Publish</b></span><span>rev 290bc19</span></div>
+    <div class="stage" tabindex="0" aria-label="Sheet 3, animated diagram">
+      <svg viewBox="0 0 1200 675" role="img" aria-label="Publish reads the edits file on main, stops if it has moved, confirms the commit subject, writes one commit with the blob id as a guard, marks the notes published only after GitHub answers, and then watches the site until the commit is live.">
+        <defs>
+          <pattern id="g3a" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="var(--grid)" stroke-width="1"/></pattern>
+          <pattern id="g3b" width="100" height="100" patternUnits="userSpaceOnUse"><rect width="100" height="100" fill="url(#g3a)"/><path d="M100 0H0V100" fill="none" stroke="var(--grid-2)" stroke-width="1"/></pattern>
+          <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker>
+        </defs>
+        <rect x="-2400" y="-1350" width="6000" height="3400" fill="url(#g3b)"/>
+        <g class="part" data-part="desk">
+          <rect class="box" x="60" y="120" width="360" height="300" rx="2"/>
+          <path class="tick" d="M60 108v12h12M420 108v12h-12M60 432v-12h12M420 432v-12h-12"/>
+          <text x="80" y="150" class="big">THE DESK</text>
+          <text x="80" y="170" class="l3">/desk/ · this browser · 3 unpublished</text>
+          <rect class="chip" x="80" y="196" width="88" height="30" rx="5"/><text x="124" y="216" text-anchor="middle" class="chipt">Publish</text>
+          <text x="184" y="216" class="l3">one click</text>
+          <text x="80" y="262" font-weight="600">token</text>
+          <text x="80" y="282" class="l2">fine-grained · this repo only</text>
+          <text x="80" y="302" class="l2">Contents: read and write</text>
+          <text x="80" y="322" class="l3">remembered in this browser, or session only</text>
+          <text x="80" y="342" class="l3">sent to api.github.com and nowhere else</text>
+          <text x="80" y="380" class="l3">Forget clears it · revoke on github.com</text>
+        </g>
+        <g class="part" data-part="repo">
+          <rect class="box ok" x="780" y="120" width="360" height="300" rx="2"/>
+          <path class="tick" d="M780 108v12h12M1140 108v12h-12M780 432v-12h12M1140 432v-12h-12"/>
+          <text x="800" y="150" class="big okt">MAIN</text>
+          <text x="800" y="170" class="l3">db/curator-state.json · blob e4c32f0</text>
+          <rect class="box" x="800" y="196" width="320" height="120" rx="2"/>
+          <text x="816" y="222" class="l2">{ "format": 1,</text>
+          <text x="816" y="242" class="l2">  "review": …, "sources": …,</text>
+          <text x="816" y="262" class="l2">  "content": { "archive": { "d1": … } } }</text>
+          <text x="816" y="296" class="l3">the file as it is right now</text>
+          <text x="800" y="350" class="l3">read fresh every time (cache: no-store)</text>
+        </g>
+        <g class="part" data-part="get">
+          <path class="ln" d="M770 250H430" marker-end="url(#a3)"/>
+          <text x="600" y="238" text-anchor="middle" class="l3">GET the file + its blob id</text>
+        </g>
+        <g class="part" data-part="gate">
+          <rect class="box warn" x="500" y="280" width="200" height="110" rx="2"/>
+          <text x="600" y="312" text-anchor="middle" class="warnt" font-weight="600">stale-seed check</text>
+          <text x="600" y="334" text-anchor="middle" class="l2">is the file the snapshot's,</text>
+          <text x="600" y="352" text-anchor="middle" class="l2">or what this page published?</text>
+          <text x="600" y="376" text-anchor="middle" class="l3">no → nothing written, notes kept</text>
+        </g>
+        <g class="part" data-part="confirm">
+          <rect class="box" x="460" y="440" width="280" height="110" rx="8"/>
+          <text x="480" y="470" font-weight="600">Publish to GitHub</text>
+          <text x="480" y="494" class="l2">curate: 3 content edits,</text>
+          <text x="480" y="512" class="l2">1 source attached</text>
+          <rect class="box" x="590" y="518" width="60" height="22" rx="4"/><text x="620" y="534" text-anchor="middle" class="l3">Cancel</text>
+          <rect class="chip" x="660" y="518" width="66" height="22" rx="4"/><text x="693" y="534" text-anchor="middle" class="chipt">Publish</text>
+        </g>
+        <g class="part" data-part="put">
+          <path id="putPath" class="ln ok" d="M430 400C560 400 640 470 770 400" marker-end="url(#a3)"/>
+          <text x="600" y="418" text-anchor="middle" class="l3">PUT · content + blob id + branch main</text>
+        </g>
+        <g class="part" data-part="chip">
+          <g id="commitChip"><rect class="chip" x="-46" y="-13" width="92" height="26" rx="5"/><text x="0" y="5" text-anchor="middle" class="chipt">84ba133</text></g>
+        </g>
+        <g class="part" data-part="marked">
+          <rect class="box ok" x="80" y="454" width="300" height="86" rx="6"/>
+          <text x="96" y="480" class="okt" font-weight="600">note · archive.abstract</text>
+          <text x="96" y="502" class="l2">publishedAs: 84ba133</text>
+          <text x="96" y="524" class="l3">stamped only after GitHub answered</text>
+        </g>
+        <g class="part" data-part="receipt">
+          <rect class="box soft" x="60" y="580" width="1080" height="50" rx="2"/>
+          <text x="80" y="611" class="l2">store: this browser · published <tspan font-weight="600" fill="var(--ink)">84ba133</tspan> · <tspan id="rcpt">site rebuilding…</tspan></text>
+          <text x="1120" y="611" text-anchor="end" class="l3">polls data/build.json every 15 s</text>
+        </g>
+        <g class="part" data-part="live">
+          <text x="80" y="655" class="okt" font-weight="600">live on the site 84ba133 · open Dopamine D1 ↗</text>
+          <text x="1120" y="655" text-anchor="end" class="l3">built from your commit, or a later one on top of it</text>
+        </g>
+      </svg>
+      <h2 class="hl" aria-live="polite"></h2>
+      <div class="stamp" aria-hidden="true"></div>
+      <div class="counter" aria-hidden="true"></div>
+      <div class="rail" aria-hidden="true"></div>
+    </div>
+    <div class="capw"><p class="cap"></p></div>
+    <div class="ctl"><button class="btn" data-back type="button">← Back</button><button class="btn primary" data-next type="button">Next →</button><span class="hint">or ← → keys</span><span class="step"></span></div>
+  </section>
+
+  <!-- ================= SHEET 4 ================= -->
+  <section class="sheet" id="after" data-sheet="4">
+    <div class="tb"><span>Sheet <b>4</b> / 5</span><span><b>After the site rebuilds</b></span><span>rev 290bc19</span></div>
+    <div class="stage" tabindex="0" aria-label="Sheet 4, animated diagram">
+      <svg viewBox="0 0 1200 675" role="img" aria-label="After a rebuild the snapshot moves; Publish is held until the browser's notes are re-keyed onto it at the next load; published notes fold in and unpublished ones carry over; a rare refusal shows a notice with two ways out.">
+        <defs>
+          <pattern id="g4a" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="var(--grid)" stroke-width="1"/></pattern>
+          <pattern id="g4b" width="100" height="100" patternUnits="userSpaceOnUse"><rect width="100" height="100" fill="url(#g4a)"/><path d="M100 0H0V100" fill="none" stroke="var(--grid-2)" stroke-width="1"/></pattern>
+          <marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker>
+        </defs>
+        <rect x="-2400" y="-1350" width="6000" height="3400" fill="url(#g4b)"/>
+        <g class="part" data-part="old">
+          <rect class="box soft" x="60" y="140" width="300" height="150" rx="2"/>
+          <text x="80" y="172" class="big l3">OLD SNAPSHOT</text>
+          <text x="80" y="196" class="l3">built from 6d28c54</text>
+          <text x="80" y="230" class="l2">abstract: “The primary dopamine…”</text>
+          <text x="80" y="254" class="l3">what your notes were written against</text>
+        </g>
+        <g class="part" data-part="new">
+          <rect class="box ok" x="60" y="330" width="300" height="150" rx="2"/>
+          <path class="tick" d="M60 318v12h12M360 318v12h-12M60 492v-12h12M360 492v-12h-12"/>
+          <text x="80" y="362" class="big okt">NEW SNAPSHOT</text>
+          <text x="80" y="386" class="l3">built from 84ba133 · your publish</text>
+          <text x="80" y="420" class="l2">abstract: “D1 activity follows…”</text>
+          <text x="80" y="444" class="l3">/desk/ rebuilt from the new edits file</text>
+        </g>
+        <g class="part" data-part="shift">
+          <path class="ln" d="M210 300v20" marker-end="url(#a4)"/>
+          <text x="232" y="316" class="l3">the snapshot moves</text>
+        </g>
+        <g class="part" data-part="notes">
+          <rect class="box" x="440" y="140" width="300" height="72" rx="6"/>
+          <text x="456" y="166" font-weight="600">note · archive.abstract</text>
+          <text x="456" y="188" class="l3">keyed to 6d28c54 · publishedAs 84ba133</text>
+          <rect class="box" x="440" y="226" width="300" height="72" rx="6"/>
+          <text x="456" y="252" font-weight="600">note · clinical.onset</text>
+          <text x="456" y="274" class="l3">keyed to 6d28c54 · unpublished</text>
+          <path class="dim" d="M420 130v180M760 130v180"/>
+          <text x="590" y="120" text-anchor="middle" class="l3">your notes · still in this browser</text>
+        </g>
+        <g class="part" data-part="hold">
+          <rect class="chip held" x="440" y="330" width="88" height="30" rx="5"/><text x="484" y="350" text-anchor="middle" class="chipt held">Publish</text>
+          <text x="544" y="350" class="warnt" font-weight="600">held</text>
+          <text x="544" y="372" class="l3">until the notes are re-keyed</text>
+        </g>
+        <g class="part" data-part="rekey">
+          <rect class="box" x="820" y="140" width="320" height="160" rx="2"/>
+          <text x="840" y="172" class="big">RE-KEY</text>
+          <text x="840" y="192" class="l3">at the next load · under a second</text>
+          <text x="840" y="226" class="l2">is 84ba133 in this snapshot's history?</text>
+          <text x="840" y="246" class="l3">GitHub compare · asked without the token</text>
+          <text x="840" y="276" class="l2">yes → fold in · carry over · lift the hold</text>
+          <path class="ln" d="M740 176H810" marker-end="url(#a4)"/>
+        </g>
+        <g class="part" data-part="folded">
+          <rect class="box ok" x="820" y="330" width="320" height="60" rx="6"/>
+          <text x="836" y="356" class="okt" font-weight="600">archive.abstract</text>
+          <text x="836" y="376" class="l3">published → folded into the snapshot, note dropped</text>
+          <rect class="box" x="820" y="404" width="320" height="60" rx="6"/>
+          <text x="836" y="430" font-weight="600">clinical.onset</text>
+          <text x="836" y="450" class="l3">unpublished → keyed to 84ba133, unchanged</text>
+          <rect class="chip" x="820" y="484" width="88" height="30" rx="5"/><text x="864" y="504" text-anchor="middle" class="chipt">Publish</text>
+          <text x="924" y="504" class="okt" font-weight="600">ready</text>
+        </g>
+        <g class="part" data-part="refuse">
+          <rect class="box warn" x="440" y="404" width="300" height="130" rx="2"/>
+          <text x="456" y="432" class="warnt" font-weight="600">refused (rare)</text>
+          <text x="456" y="456" class="l2">an undo of something already published,</text>
+          <text x="456" y="476" class="l2">or a publish this history does not know</text>
+          <text x="456" y="504" class="l3">the new snapshot shows the published value;</text>
+          <text x="456" y="522" class="l3">an undo here would put old text back silently</text>
+        </g>
+        <g class="part" data-part="notice">
+          <rect class="box soft" x="60" y="560" width="1080" height="50" rx="2"/>
+          <text x="80" y="591" class="warnt">1 document is keyed to an older snapshot and not re-keyed: d1 holds 1 unpublished revert … <tspan font-weight="600" fill="var(--ink)">Discard those older-snapshot changes</tspan></text>
+        </g>
+        <g class="part" data-part="ways">
+          <text x="80" y="648" class="l2"><tspan font-weight="600" fill="var(--ink)">1</tspan>  set the field to the value you want on this snapshot, reload      <tspan font-weight="600" fill="var(--ink)">2</tspan>  Discard: lists what each old note holds, drops only those; current work untouched</text>
+        </g>
+      </svg>
+      <h2 class="hl" aria-live="polite"></h2>
+      <div class="stamp" aria-hidden="true"></div>
+      <div class="counter" aria-hidden="true"></div>
+      <div class="rail" aria-hidden="true"></div>
+    </div>
+    <div class="capw"><p class="cap"></p></div>
+    <div class="ctl"><button class="btn" data-back type="button">← Back</button><button class="btn primary" data-next type="button">Next →</button><span class="hint">or ← → keys</span><span class="step"></span></div>
+  </section>
+
+  <!-- ================= SHEET 5 ================= -->
+  <section class="sheet" id="copies" data-sheet="5">
+    <div class="tb"><span>Sheet <b>5</b> / 5</span><span><b>The other copies</b></span><span>rev 290bc19</span></div>
+    <div class="stage" tabindex="0" aria-label="Sheet 5, animated diagram">
+      <svg viewBox="0 0 1200 675" role="img" aria-label="Three copies of the Desk: the site copy with the Publish button, the claude.ai artifact with its own store and PubMed, and a clone's desk.html; Import changes moves notes between them; one place at a time.">
+        <defs>
+          <pattern id="g5a" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="var(--grid)" stroke-width="1"/></pattern>
+          <pattern id="g5b" width="100" height="100" patternUnits="userSpaceOnUse"><rect width="100" height="100" fill="url(#g5a)"/><path d="M100 0H0V100" fill="none" stroke="var(--grid-2)" stroke-width="1"/></pattern>
+          <marker id="a5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker>
+        </defs>
+        <rect x="-2400" y="-1350" width="6000" height="3400" fill="url(#g5b)"/>
+        <g class="part" data-part="site">
+          <rect class="box ok" x="60" y="140" width="330" height="300" rx="2"/>
+          <path class="tick" d="M60 128v12h12M390 128v12h-12M60 452v-12h12M390 452v-12h-12"/>
+          <text x="80" y="172" class="big okt">/desk/ ON THE SITE</text>
+          <text x="80" y="192" class="l3">the everyday door</text>
+          <text x="80" y="228" class="l2">notes: this browser</text>
+          <text x="80" y="252" class="l2">sources: typed by hand</text>
+          <text x="80" y="276" class="l2">publish: the Publish button</text>
+          <text x="80" y="300" class="l2">rebuilt with every push</text>
+          <rect class="chip" x="80" y="330" width="88" height="30" rx="5"/><text x="124" y="350" text-anchor="middle" class="chipt">Publish</text>
+          <text x="80" y="400" class="l3">no Claude in the loop</text>
+        </g>
+        <g class="part" data-part="cloud">
+          <rect class="box dash" x="435" y="140" width="330" height="300" rx="2"/>
+          <text x="455" y="172" class="big">CLAUDE.AI COPY</text>
+          <text x="455" y="192" class="l3">the same file, as a private artifact</text>
+          <text x="455" y="228" class="l2">notes: the artifact's store, follows you</text>
+          <text x="455" y="252" class="l2">sources: PubMed lookup by PMID/DOI</text>
+          <text x="455" y="276" class="l2">publish: “publish the atlas”, via Claude</text>
+          <text x="455" y="300" class="l2">snapshot moves only on “re-seed”</text>
+          <text x="455" y="340" class="warnt">after a button publish: re-seed first</text>
+          <text x="455" y="400" class="l3">cannot reach GitHub itself</text>
+        </g>
+        <g class="part" data-part="clone">
+          <rect class="box" x="810" y="140" width="330" height="300" rx="2"/>
+          <text x="830" y="172" class="big">A CLONE'S desk.html</text>
+          <text x="830" y="192" class="l3">opened from disk</text>
+          <text x="830" y="228" class="l2">notes: that browser</text>
+          <text x="830" y="252" class="l2">publish: the Publish button</text>
+          <text x="830" y="276" class="l2">snapshot: your last desk:build</text>
+          <text x="830" y="316" class="l3">after any publish made elsewhere:</text>
+          <text x="830" y="338" class="l2">git pull</text>
+          <text x="830" y="360" class="l2">npm run desk:seed &amp;&amp; npm run desk:build</text>
+        </g>
+        <g class="part" data-part="import">
+          <path class="ln" d="M435 480H390" marker-end="url(#a5)"/>
+          <path class="ln" d="M765 480H810" marker-end="url(#a5)"/>
+          <rect class="box soft" x="435" y="460" width="330" height="40" rx="2"/>
+          <text x="600" y="486" text-anchor="middle" class="l2">Download changes → Import changes</text>
+          <text x="600" y="530" text-anchor="middle" class="l3">an imported file keyed to an older snapshot is re-keyed first · all or none</text>
+        </g>
+        <g class="part" data-part="rule">
+          <rect class="box" x="60" y="570" width="1080" height="60" rx="2"/>
+          <text x="600" y="608" text-anchor="middle" class="big">ONE PLACE AT A TIME BETWEEN PUBLISHES</text>
+        </g>
+        <g class="part" data-part="never">
+          <text x="600" y="660" text-anchor="middle" class="l3">Claude never holds your token, your notes in this browser, or the button's commits · the page works with claude.ai gone</text>
+        </g>
+      </svg>
+      <h2 class="hl" aria-live="polite"></h2>
+      <div class="stamp" aria-hidden="true"></div>
+      <div class="counter" aria-hidden="true"></div>
+      <div class="rail" aria-hidden="true"></div>
+    </div>
+    <div class="capw"><p class="cap"></p></div>
+    <div class="ctl"><button class="btn" data-back type="button">← Back</button><button class="btn primary" data-next type="button">Next →</button><span class="hint">or ← → keys</span><span class="step"></span></div>
+  </section>
+
+  <footer>Exact token steps, commands and edge cases: the README section “The Publish button” in <a href="https://github.com/Fresco-Esio/receptor-atlas#the-publish-button" target="_blank" rel="noopener">Fresco-Esio/receptor-atlas</a>. The Desk itself: <a href="https://fresco-esio.github.io/receptor-atlas/desk/" target="_blank" rel="noopener">fresco-esio.github.io/receptor-atlas/desk/</a>.</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/animejs@4.5.0/dist/bundles/anime.umd.min.js"></script>
+<script>
+(function () {
+  const A = window.anime;
+  const RM = matchMedia('(prefers-reduced-motion: reduce)').matches || !A;
+  const D = RM ? 0 : 1;   // duration multiplier
+  const WIDE = [0, 0, 1200, 675];
+
+  /* ---------- the shots: headline, caption, camera, parts ---------- */
+  const SHOTS = {
+    1: [
+      { h: 'One <k>copy</k> counts.', cap: 'Everything the atlas shows comes from one repository on GitHub. Nothing else is a source.', view: WIDE, show: ['repo', 'push', 'actions', 'deploy', 'site'], stamp: { t: 'SOURCE', k: 'ok' } },
+      { h: 'Two kinds of <k>file.</k>', cap: 'The page literals are the atlas as written. The edits file holds every change made since. The site is built from both, every time.', view: [20, 130, 640, 360], show: ['repo'] },
+      { h: 'Push. <k>Rebuild.</k> Two minutes.', cap: 'A commit to main starts a rebuild: the runner imports the edits file, freezes the three volumes to static pages, and deploys them.', view: [380, 180, 800, 450], show: ['repo', 'push', 'actions', 'deploy', 'site'], count: { to: 2, unit: 'min', label: 'push to live' } },
+      { h: 'The Desk is <k>one file.</k>', cap: 'Served at /desk/ on the site, it is the editor. It keeps your notes in this browser and publishes them itself, straight to main.', view: [640, 380, 560, 315], show: ['site', 'desk'] },
+      { h: 'The same file, <k>twice.</k>', cap: 'The same page also runs as a private claude.ai artifact, with its own store and PubMed lookup. Two doors, one repository.', view: WIDE, show: ['repo', 'push', 'actions', 'deploy', 'site', 'desk', 'cloud'] },
+    ],
+    2: [
+      { h: 'Start from a <k>snapshot.</k>', cap: 'When the page is built it takes a snapshot of the atlas as it is: every field, source and review mark. That is the starting point for everything you do here.', view: [0, 100, 720, 405], show: ['snap'] },
+      { h: 'Every edit is a <k>note.</k>', cap: 'Change a field and the page writes a note: which field, the new value, when. Notes live in this browser’s storage, nowhere else yet.', view: [360, 120, 640, 360], show: ['snap', 'plus', 'store', 'note1'] },
+      { h: 'Sources and brackets are <k>notes too.</k>', cap: 'Attaching a source, marking a conflict, drawing a citation bracket over a sentence: each is a note of its own, published with the rest.', view: [360, 120, 640, 360], show: ['snap', 'plus', 'store', 'note1', 'note2', 'note3'] },
+      { h: 'You see <k>snapshot + notes.</k>', cap: 'The editor shows the snapshot with your notes laid over it. Nothing you type can look stale, and nothing leaves this browser until you say so.', view: WIDE, show: ['snap', 'plus', 'store', 'note1', 'note2', 'note3', 'view'] },
+      { h: 'The banner <k>counts.</k>', cap: '“3 unpublished” is three notes not yet in the repository. The receptor gets a dot in the picker. That number is what Publish will send.', view: [0, 300, 1200, 675], show: ['snap', 'plus', 'store', 'note1', 'note2', 'note3', 'view', 'banner'], count: { to: 3, unit: 'unpublished', label: 'in the banner' } },
+    ],
+    3: [
+      { h: 'One button. <k>One commit.</k>', cap: 'Publish turns your notes into one commit on main, made in your name, from the page. No terminal, no Claude.', view: WIDE, show: ['desk', 'repo'] },
+      { h: 'The <k>token,</k> once.', cap: 'A fine-grained GitHub token scoped to this one repository, Contents read and write. Remembered in this browser or held for the session; sent to api.github.com and nowhere else.', view: [40, 100, 480, 270], show: ['desk'] },
+      { h: 'Read the file <k>as it is.</k>', cap: 'The page fetches db/curator-state.json from main, past every cache, together with its blob id.', view: [380, 100, 800, 450], show: ['desk', 'repo', 'get'] },
+      { h: '<k class="w">STOP</k> if it moved.', cap: 'The file must be the snapshot’s, or what this page already published. Anything else means something else changed it: nothing is written and your notes are kept.', view: [400, 220, 400, 225], show: ['desk', 'repo', 'get', 'gate'], stamp: { t: 'STOP', k: 'warn' } },
+      { h: 'Confirm the <k>subject.</k>', cap: 'curate: 3 content edits, 1 source attached. The same words the old Desk’s commits used, so the history reads without opening a diff.', view: [380, 380, 440, 248], show: ['desk', 'repo', 'gate', 'confirm'] },
+      { h: 'One commit, <k>thrown at main.</k>', cap: 'The converter builds the whole edits file, byte-identical to what desk:pull writes. The PUT carries the blob id, so a change that landed meanwhile is refused, never overwritten.', view: WIDE, show: ['desk', 'repo', 'put', 'chip'], run: 'throw' },
+      { h: 'Only then: <k>marked.</k>', cap: 'Every note in that commit is stamped with its id. Nothing is marked before GitHub answers, so a failure leaves your notes exactly as they were.', view: [0, 380, 640, 360], show: ['desk', 'repo', 'put', 'marked'] },
+      { h: 'The receipt <k>watches the site.</k>', cap: '“site rebuilding…” asks the site every 15 seconds which commit it was built from. Yours, or a later one on top of it: “live on the site · open Dopamine D1 ↗”.', view: [0, 400, 1200, 675], show: ['desk', 'repo', 'put', 'marked', 'receipt', 'live'], stamp: { t: 'LIVE', k: 'ok' }, run: 'live' },
+    ],
+    4: [
+      { h: 'The snapshot <k>moves.</k>', cap: 'Each rebuild also rebuilds /desk/ from the new edits file. Your notes, still in this browser, are keyed to the old snapshot.', view: [0, 100, 800, 450], show: ['old', 'new', 'shift', 'notes'] },
+      { h: '<k class="w">HELD</k> until re-keyed.', cap: 'Publish waits. Notes keyed to an older snapshot could put old text back. The hold lifts by itself, usually within a second of the next load.', view: [380, 100, 480, 270], show: ['old', 'new', 'shift', 'notes', 'hold'], stamp: { t: 'HELD', k: 'warn' } },
+      { h: 'Next load: <k>re-key.</k>', cap: 'The page asks GitHub whether each publish it remembers is in the new snapshot’s history. Published notes fold in; unpublished notes ride over unchanged.', view: [400, 100, 800, 450], show: ['old', 'new', 'shift', 'notes', 'hold', 'rekey', 'folded'], stamp: { t: 'READY', k: 'ok' } },
+      { h: 'Ordinary days <k>end here.</k>', cap: 'This is what happened between your two publishes tonight, and you never saw it. The bottom row exists for one rare case.', view: WIDE, show: ['old', 'new', 'shift', 'notes', 'rekey', 'folded'] },
+      { h: 'The rare <k class="w">refusal.</k>', cap: 'An undo of something already published, or a publish this site’s history does not know. The new snapshot shows the published value, so a line under the header says what is stuck and why.', view: [380, 380, 800, 450], show: ['old', 'new', 'notes', 'hold', 'refuse', 'notice'], stamp: { t: 'REFUSED', k: 'warn' } },
+      { h: 'Two <k>ways out.</k>', cap: 'Set the field to the value you want on this snapshot, then reload. Or Discard those older-snapshot changes: it lists what each old note holds and drops only those. Current work is untouched.', view: [0, 340, 1200, 675], show: ['old', 'new', 'notes', 'hold', 'refuse', 'notice', 'ways'] },
+    ],
+    5: [
+      { h: 'Three doors, <k>one rule.</k>', cap: 'The site copy, the claude.ai copy, a clone’s desk.html. Edit in one place at a time between publishes; two places between publishes is the one thing still on you.', view: WIDE, show: ['site', 'cloud', 'clone', 'rule'], stamp: { t: 'ONE AT A TIME', k: 'ink' } },
+      { h: 'The <k>site copy.</k>', cap: 'The everyday door. Notes in this browser, sources typed by hand, the Publish button, rebuilt with every push. Nothing here needs Claude.', view: [20, 100, 480, 270], show: ['site'] },
+      { h: 'The <k>claude.ai copy.</k>', cap: 'Its notes follow you between devices and PubMed lookup works. Publishing is “publish the atlas”, asked of a Claude session. After a button publish it needs a re-seed before its own next one.', view: [400, 100, 480, 270], show: ['cloud'] },
+      { h: 'A <k>clone’s</k> copy.', cap: 'Built from its own checkout, so it lags. After any publish made elsewhere: git pull, then npm run desk:seed && npm run desk:build.', view: [780, 100, 480, 270], show: ['clone'] },
+      { h: '<k>Import</k> changes.', cap: 'Download changes on one copy, Import on another. A file keyed to an older snapshot is re-keyed first, all or none, so an old starting point can never sneak in.', view: [300, 300, 640, 360], show: ['site', 'cloud', 'clone', 'import'] },
+      { h: 'What Claude <k>never touches.</k>', cap: 'Your token, your notes in this browser, and the button’s commits. The page works with claude.ai gone; the copy that counts is still the repository.', view: [0, 500, 1200, 675], show: ['site', 'cloud', 'clone', 'import', 'rule', 'never'] },
+    ],
+  };
+
+  const EASE_CUT = 'outExpo', EASE_IN = 'outBack(1.4)';
+  const escHtml = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+
+  /* ---------- headline: words slam in through clip wrappers ---------- */
+  function setHeadline(el, html) {
+    // split on spaces but keep <k>…</k> spans intact per word
+    const out = [];
+    const re = /<k( class="w")?>(.*?)<\/k>|(\S+)/g; let m;
+    while ((m = re.exec(html))) {
+      if (m[3]) out.push(`<span class="hw"><span>${escHtml(m[3])}</span></span>`);
+      else for (const w of m[2].split(' ')) out.push(`<span class="hw"><span class="k${m[1] ? ' w' : ''}">${escHtml(w)}</span></span>`);
+    }
+    el.innerHTML = out.join('');
+    const words = el.querySelectorAll('.hw > span');
+    A && A.remove(words);
+    if (!D) { words.forEach(w => { w.style.transform = 'none'; }); return; }
+    A.animate(words, { translateY: ['112%', '0%'], duration: 520, delay: A.stagger(42), ease: EASE_CUT });
+  }
+
+  /* ---------- caption wipe ---------- */
+  function setCaption(el, text) {
+    el.textContent = text;
+    A && A.remove(el);
+    if (!D) { el.style.clipPath = 'none'; return; }
+    el.style.clipPath = 'inset(0 100% 0 0)';
+    A.animate(el, { clipPath: ['inset(0 100% 0 0)', 'inset(0 0% 0 0)'], duration: 420, delay: 160, ease: 'outQuart' });
+  }
+
+  /* ---------- camera: animate the viewBox ---------- */
+  function cut(svg, cam, to) {
+    const set = () => svg.setAttribute('viewBox', `${cam.x} ${cam.y} ${cam.w} ${cam.h}`);
+    A && A.remove(cam);
+    if (!D) { Object.assign(cam, { x: to[0], y: to[1], w: to[2], h: to[3] }); set(); return; }
+    A.animate(cam, { x: to[0], y: to[1], w: to[2], h: to[3], duration: 380, ease: EASE_CUT, onUpdate: set });
+  }
+
+  /* ---------- stamp: slams in at centre, docks top-right ---------- */
+  function stamp(el, stage, spec) {
+    A && A.remove(el);
+    if (!spec) { el.style.opacity = 0; el.style.transform = 'none'; el.textContent = ''; el.className = 'stamp'; return; }
+    el.className = 'stamp ' + spec.k; el.textContent = spec.t;
+    if (!D) { el.style.opacity = 1; el.style.transform = 'none'; return; }
+    const r = stage.getBoundingClientRect(), e = el.getBoundingClientRect();
+    const cx = -(r.width / 2 - 14 - e.width / 2), cy = (r.height / 2 - 12 - e.height / 2);
+    A.animate(el, {
+      keyframes: [
+        { translateX: cx, translateY: cy, scale: 3.2, opacity: 0, duration: 0 },
+        { translateX: cx, translateY: cy, scale: 1.25, opacity: 1, duration: 260, ease: 'outExpo' },
+        { translateX: cx, translateY: cy, scale: 1.25, opacity: 1, duration: 320 },
+        { translateX: 0, translateY: 0, scale: 1, opacity: 1, duration: 360, ease: 'inOutQuart' },
+      ],
+    });
+  }
+
+  /* ---------- counter: a number counts up ---------- */
+  function counter(el, spec) {
+    if (!spec) { el.innerHTML = ''; return; }
+    const v = { n: 0 };
+    const draw = () => { el.innerHTML = `${spec.prefix || ''}${Math.round(v.n)} <span style="font-size:.5em;font-weight:500">${escHtml(spec.unit)}</span><small>${escHtml(spec.label)}</small>`; };
+    if (!D) { v.n = spec.to; draw(); return; }
+    A.animate(v, { n: spec.to, duration: 700, ease: 'outCubic', onUpdate: draw, delay: 200 });
+  }
+
+  /* ---------- custom runs ---------- */
+  const RUNS = {
+    throw(sheet) {
+      const chip = sheet.svg.querySelector('#commitChip'), path = sheet.svg.querySelector('#putPath');
+      if (!chip || !path) return;
+      if (!D) { chip.setAttribute('transform', 'translate(770 400)'); return; }
+      const mp = A.svg.createMotionPath(path);
+      chip.removeAttribute('transform');
+      A.animate(chip, { translateX: mp.translateX, translateY: mp.translateY, rotate: mp.rotate, duration: 900, delay: 350, ease: 'inOutQuart' });
+    },
+    live(sheet) {
+      const t = sheet.svg.querySelector('#rcpt'); if (!t) return;
+      t.textContent = 'site rebuilding…';
+      const liveG = sheet.svg.querySelector('[data-part="live"]');
+      if (!D) { t.textContent = 'live on the site'; return; }
+      setTimeout(() => { t.textContent = 'site rebuilding… ·'; }, 500);
+      setTimeout(() => { t.textContent = 'site rebuilding… · ·'; }, 900);
+      setTimeout(() => { t.textContent = 'live on the site'; if (liveG) A.animate(liveG, { opacity: [0, 1], scale: [.96, 1], duration: 360, ease: EASE_IN }); }, 1300);
+      liveG.style.opacity = 0;
+    },
+  };
+
+  /* ---------- a sheet ---------- */
+  function makeSheet(section) {
+    const n = +section.dataset.sheet, shots = SHOTS[n];
+    const stage = section.querySelector('.stage'), svg = stage.querySelector('svg');
+    const parts = {}; svg.querySelectorAll('[data-part]').forEach(p => { parts[p.dataset.part] = p; });
+    const hl = stage.querySelector('.hl'), st = stage.querySelector('.stamp'), ct = stage.querySelector('.counter'), rail = stage.querySelector('.rail');
+    const cap = section.querySelector('.cap'), stepEl = section.querySelector('.step');
+    const back = section.querySelector('[data-back]'), next = section.querySelector('[data-next]');
+    rail.innerHTML = shots.map(() => '<i></i>').join('');
+    const cam = { x: 0, y: 0, w: 1200, h: 675 };
+    const sheet = { n, svg, stage, i: -1, busy: false };
+    let visible = new Set();
+
+    function go(i, dir) {
+      i = Math.max(0, Math.min(shots.length - 1, i));
+      if (i === sheet.i) return;
+      const shot = shots[i]; sheet.i = i;
+      const want = new Set(shot.show);
+      // exit: parts no longer shown fall away fast
+      const leaving = [...visible].filter(p => !want.has(p)).map(p => parts[p]);
+      const entering = shot.show.filter(p => !visible.has(p)).map(p => parts[p]);
+      visible = want;
+      if (A) A.remove([...leaving, ...entering]);
+      if (D) {
+        if (leaving.length) A.animate(leaving, { opacity: 0, scale: .96, duration: 120, ease: 'inQuad' });
+        cut(svg, cam, shot.view);
+        if (entering.length) {
+          entering.forEach(el => { el.style.opacity = 0; });
+          A.animate(entering, { opacity: [0, 1], scale: [.9, 1], translateY: [dir < 0 ? -10 : 14, 0], duration: 460, delay: A.stagger(70, { start: 140 }), ease: EASE_IN });
+        }
+      } else {
+        leaving.forEach(el => { el.style.opacity = 0; }); entering.forEach(el => { el.style.opacity = 1; el.style.transform = 'none'; });
+        cut(svg, cam, shot.view);
+      }
+      setHeadline(hl, shot.h); setCaption(cap, shot.cap); stamp(st, stage, shot.stamp); counter(ct, shot.count);
+      if (shot.run && RUNS[shot.run]) RUNS[shot.run](sheet);
+      rail.querySelectorAll('i').forEach((el, k) => el.classList.toggle('on', k <= i));
+      stepEl.innerHTML = `<b>${i + 1}</b> / ${shots.length}`;
+      back.disabled = i === 0; next.disabled = i === shots.length - 1;
+      next.textContent = i === shots.length - 1 ? 'End of sheet' : 'Next →';
+    }
+    back.addEventListener('click', () => go(sheet.i - 1, -1));
+    next.addEventListener('click', () => go(sheet.i + 1, 1));
+    stage.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') { e.preventDefault(); go(sheet.i + 1, 1); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); go(sheet.i - 1, -1); }
+    });
+    stage.addEventListener('click', e => { if (e.target.closest('button')) return; stage.focus({ preventScroll: true }); });
+    // swipe
+    let sx = null, sy = null;
+    stage.addEventListener('pointerdown', e => { sx = e.clientX; sy = e.clientY; });
+    stage.addEventListener('pointerup', e => { if (sx == null) return; const dx = e.clientX - sx, dy = e.clientY - sy; sx = null; if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.5) go(sheet.i + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1); });
+    go(0, 1);
+    return sheet;
+  }
+
+  const sheets = [...document.querySelectorAll('.sheet')].map(makeSheet);
+
+  // global arrows drive the sheet nearest the middle of the viewport when nothing else has focus
+  addEventListener('keydown', e => {
+    if (e.target !== document.body || (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft')) return;
+    const mid = innerHeight / 2;
+    const s = sheets.map(sh => ({ sh, d: Math.abs(sh.stage.getBoundingClientRect().top + sh.stage.getBoundingClientRect().height / 2 - mid) })).sort((a, b) => a.d - b.d)[0];
+    if (s) { s.sh.stage.focus({ preventScroll: true }); s.sh.stage.dispatchEvent(new KeyboardEvent('keydown', { key: e.key })); e.preventDefault(); }
+  });
+
+  // masthead: the title slams in once
+  const mh = document.getElementById('mastH');
+  mh.innerHTML = mh.textContent.split(' ').map(w => `<span class="hw"><span>${escHtml(w)}</span></span>`).join(' ');
+  if (D) A.animate(mh.querySelectorAll('.hw > span'), { translateY: ['110%', '0%'], duration: 700, delay: A.stagger(60, { start: 80 }), ease: 'outExpo' });
+  else mh.querySelectorAll('.hw > span').forEach(w => { w.style.transform = 'none'; });
+})();
+</script>
+</body></html>
