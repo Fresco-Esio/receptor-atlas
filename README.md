@@ -38,11 +38,12 @@ To stop it, close the black terminal window (or press `Ctrl+C` in it).
 ## The hosted Desk
 
 There is a second way to edit the atlas that needs no terminal, no port, and no machine of
-your own: the hosted Desk, a private claude.ai artifact. That is the normal place to edit.
-The same single file is also reachable without claude.ai — at `/desk/` on the public site,
-and as `desk/desk.html` in a clone. That fallback keeps your edits in the browser's own
-storage instead of the artifact's store, and publishes itself rather than going through
-"publish the atlas" (see "the Publish button" below).
+your own: the hosted Desk, one single-file page served in two places. At `/desk/` on the
+public site (or `desk/desk.html` in a clone) it keeps your edits in the browser's own
+storage and publishes them itself with its **Publish** button — no Claude in the loop (see
+"the Publish button" below); this is the everyday route. The same file also runs as a
+private claude.ai artifact, where edits live in the artifact's store, PubMed lookup is
+available, and publishing is "publish the atlas", asked of a Claude session.
 
 **Edit here:** <https://claude.ai/artifact/PkCQ5RJx4KXxppbTwXqaRg> (private to the owner).
 
@@ -53,7 +54,7 @@ storage instead of the artifact's store, and publishes itself rather than going 
 | `npm run desk:pull [--check] <changes.json \| dir>` | Turns a `changes.json` (what the page's store holds) into `db/curator-state.json`. `--check` reports what would change without writing it, and refuses unless the repo's edits file is the snapshot's, or what this Desk already published. |
 | `npm run -s desk:rekey -- <changes.json \| dir> > rekeyed.json` | After a re-seed: prints the stored documents re-keyed onto the new `desk/seed.json` (published records dropped, since the seed now carries them); `-s` keeps npm's own lines out of the output. Refuses (exit 2) while any document holds an unpublished revert or detach, and unless every publish they record is an ancestor of HEAD. |
 
-**Publishing** is "publish the atlas", asked of any Claude session: it reads the changes
+**Publishing from the claude.ai copy** is "publish the atlas", asked of any Claude session: it reads the changes
 out of the page's store, runs `desk:pull`, commits, and pushes. A publish marks those
 changes published in the store; it never clears them; the editor always shows the seed
 plus every change, published or not, so an old snapshot never looks stale.

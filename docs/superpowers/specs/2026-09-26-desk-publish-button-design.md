@@ -78,3 +78,36 @@ same rule as today for any publish it did not make.
   sha, receipt in the banner; a moved repo file → refusal, no PUT; a stored document keyed
   to an older seed with `publishedAs` in history → re-keyed on load; not in history → left,
   notice shown; Import merges a changes.json.
+
+## Rulings made during implementation (the code follows these, not the sections above)
+
+- **Publish is held while any stored document is keyed to an older snapshot, or while a
+  re-key or an Import is running.** Reason: a tombstone ("back to the seed") converts as
+  "leave it as the seed has it", and after a rebuild the seed already holds the published
+  value the revert meant to remove — publishing would silently re-publish it and mark the
+  revert published. The hold lifts when the load-time re-key succeeds.
+- **The load-time re-key** checks for unpublished reverts/detaches before any request,
+  asks GitHub's compare anonymously (never with the token), treats a 404 for a sha as "not
+  in history", re-reads the store after its last network wait and writes nothing while a
+  publish is committing, and never redraws under the caret. A refusal shows a notice with
+  the page's own advice and a **Discard those older-snapshot changes** action (per
+  document, after a confirm listing unpublished/published counts and, for the
+  not-in-history case, advising Download changes first). Only stale documents can be
+  discarded; `store.drop` is the one extra write path, browser mode only.
+- **Import** re-keys older-snapshot documents by the same rule before merging (all or none;
+  current-snapshot documents still merge), never merges into a local document that is
+  itself older, and refuses while a publish is committing.
+- **The repo-file GET is uncached** (`cache: 'no-store'`); GitHub caches API answers for
+  60 s and the PUT URL does not invalidate the GET URL.
+- **A dialog closed by any path settles its promise** (Escape, backdrop, receptor switch,
+  another modal) so Publish can never stay disabled.
+- **The receipt watches the rebuild.** `scripts/publish.js` writes `data/build.json`
+  (`{commit, builtAt}`) and its fetch shim asks for data with `cache: 'no-store'`, so a
+  reload shows the current text. After a publish the receipt reads
+  `published <sha7> · site rebuilding…`, polls `build.json` every 15 s (24 tries), and
+  turns into `live on the site <sha7> · open <Label> ↗` (link to the edited Archive entry,
+  or the atlas root) when the site's commit is the publish or a descendant of it (compare,
+  anonymous, one call per distinct build commit). A receipt still unconfirmed is checked
+  once at each load. The publish date is no longer shown in the banner.
+- **Stale-seed refusal reports every differing key** of the published comparison (not an
+  intersection with the snapshot comparison), exactly as `desk:pull` does.
