@@ -59,10 +59,10 @@ reader who wrote a number down needs to know it moved.
 - **Import changes** merges a `changes.json` from another copy of the Desk.
 - The published site carries `data/build.json` (`{ commit, builtAt }`), naming the commit
   it was built from.
-- After a Publish, the Desk watches the rebuild: the receipt reads "site rebuilding…" until
-  the site reports the new commit, then "live on the site" with a link to the edited
-  Archive entry and a "Live on the site." toast. A receipt left "rebuilding" gets one more
-  look when the page next loads.
+- After a Publish, the Desk watches the rebuild: the receipt reads "site rebuilding…"
+  until the site reports the new commit or a later one built on it, then "live on the
+  site" with a link to the edited Archive entry and a "Live on the site." toast. A receipt
+  left "rebuilding" gets one more look when the page next loads.
 
 ### Changed
 

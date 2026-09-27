@@ -253,7 +253,8 @@ async function fakeGitHub(context, cfg) {
   await context.route('https://fresco-esio.github.io/receptor-atlas/data/build.json', async route => {
     if (cfg.siteAbort) { log.siteAborts++; return route.abort(); }
     log.builds++;
-    const commit = cfg.siteFlip != null && log.builds > cfg.siteFlip ? 'c0ffee1234567890c0ffee1234567890c0ffee12' : (cfg.siteCommit || 'e14bd39e14bd39e14bd39e14bd39e14bd39e14b');
+    // after the flip: the PUT's commit, or `siteAfter` (a later commit; the compare route says whether it descends from the publish)
+    const commit = cfg.siteFlip != null && log.builds > cfg.siteFlip ? (cfg.siteAfter || 'c0ffee1234567890c0ffee1234567890c0ffee12') : (cfg.siteCommit || 'e14bd39e14bd39e14bd39e14bd39e14bd39e14b');
     return route.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ commit, builtAt: '2026-09-26T12:00:00.000Z' }) });
   });
   await context.route('https://api.github.com/**', async route => {
@@ -336,6 +337,30 @@ async function fakeGitHub(context, cfg) {
   ok('after a rejected token the Publish button is back and enabled', await p.evaluate(() => document.querySelector('#pub').textContent === 'Publish' && !document.querySelector('#pub').disabled));
   await pctx.close();
 }
+for (const [label, ancestors, live] of [['a descendant of the publish', ['c0ffee1234567890c0ffee1234567890c0ffee12'], true], ['a commit that does not descend from the publish', [], false]]) { // the site reports a later commit
+  const pctx = await browser.newContext(); const p = await pctx.newPage();
+  const perrs = []; p.on('pageerror', e => perrs.push(e.message));
+  const gh = await fakeGitHub(pctx, { repoState: SEED.baseState, siteFlip: 0, siteAfter: 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef', ancestors });
+  await p.goto(PAGE); await p.waitForFunction(() => window.__desk); await p.evaluate(() => { localStorage.setItem('atlas-desk-github-token', 't'); window.__desk.setPollMs?.(150); });
+  await p.selectOption('#rx', 'd2'); await p.locator('[data-path="archive.abstract"]').fill('Published, then overtaken.'); await p.waitForTimeout(500);
+  await p.locator('#pub').click(); await p.waitForFunction(() => document.querySelector('#modalBg #pc-h')); await p.locator('#modalBg [data-go]').click();
+  await p.waitForFunction(() => document.querySelector('#pub').textContent === 'Publish' && !document.querySelector('#pub').disabled);
+  let b;
+  if (live) {
+    const went = await p.waitForFunction(() => document.querySelector('#banner').innerText.includes('live on the site c0ffee1'), null, { timeout: 1500 }).then(() => true, () => false);
+    b = await p.locator('#banner').innerText();
+    ok(`site at ${label}: live on the site c0ffee1, after exactly one anonymous compare with the publish as base`,
+      went && gh.compares.length === 1 && gh.compares[0] === 'c0ffee1234567890c0ffee1234567890c0ffee12' && gh.auth[gh.auth.length - 1] === '' && await p.evaluate(() => JSON.parse(localStorage.getItem('atlas-desk-last-publish')).live === true) && perrs.length === 0,
+      JSON.stringify({ b, compares: gh.compares, builds: gh.builds, perrs }));
+  } else {
+    await p.waitForTimeout(700); const builds1 = gh.builds; await p.waitForTimeout(500);
+    b = await p.locator('#banner').innerText();
+    ok(`site at ${label}: stays "site rebuilding…", one compare for that commit, polling continues`,
+      / · published c0ffee1 · site rebuilding…$/.test(b) && gh.compares.length === 1 && gh.compares[0] === 'c0ffee1234567890c0ffee1234567890c0ffee12' && gh.builds > builds1 && builds1 >= 2 && perrs.length === 0,
+      JSON.stringify({ b, compares: gh.compares, builds1, builds: gh.builds, perrs }));
+  }
+  await pctx.close();
+}
 { // the site cannot be reached (the request fails outright): one try, then silence; the receipt stays "rebuilding"
   const pctx = await browser.newContext(); const p = await pctx.newPage();
   const perrs = []; p.on('pageerror', e => perrs.push(e.message));
@@ -351,10 +376,10 @@ async function fakeGitHub(context, cfg) {
     JSON.stringify({ b, builds: gh.builds, aborts: gh.siteAborts, perrs }));
   await pctx.close();
 }
-for (const [label, siteCommit, live] of [['already at the receipt\'s commit', 'c0ffee1234567890c0ffee1234567890c0ffee12', true], ['still at an older commit', null, false]]) { // boot: one check of a stored "rebuilding" receipt
+for (const [label, siteCommit, live, ancestors] of [['already at the receipt\'s commit', 'c0ffee1234567890c0ffee1234567890c0ffee12', true], ['at a newer commit that descends from it', 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef', true, ['c0ffee1234567890c0ffee1234567890c0ffee12']], ['still at an older commit', null, false]]) { // boot: one check of a stored "rebuilding" receipt
   const pctx = await browser.newContext();
   await pctx.addInitScript(() => { if (!sessionStorage.getItem('seeded')) { sessionStorage.setItem('seeded', '1'); localStorage.setItem('atlas-desk-last-publish', JSON.stringify({ sha: 'c0ffee1234567890c0ffee1234567890c0ffee12', at: '2026-09-26T12:00:00.000Z', url: '', live: false, ids: ['d2'] })); } });
-  const gh = await fakeGitHub(pctx, { repoState: SEED.baseState, siteCommit });
+  const gh = await fakeGitHub(pctx, { repoState: SEED.baseState, siteCommit, ancestors });
   const p = await pctx.newPage(); const perrs = []; p.on('pageerror', e => perrs.push(e.message));
   await p.goto(PAGE); await p.waitForFunction(() => window.__desk); await p.waitForTimeout(600);
   const b = await p.locator('#banner').innerText(); const r = await p.evaluate(() => JSON.parse(localStorage.getItem('atlas-desk-last-publish')));

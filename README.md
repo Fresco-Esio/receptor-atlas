@@ -116,11 +116,12 @@ attached`) for a Publish/Cancel; writes the converter's output — byte-identica
 `desk:pull` writes — as one commit on `main` in your name; and only then marks those
 changes published and keeps a receipt in the banner. GitHub Actions rebuilds the site in a
 minute or two: the receipt reads `published a1b2c3d · site rebuilding…` until the site's
-`data/build.json` reports the new commit, then `live on the site a1b2c3d` with a link to
-the edited entry (a clone's `desk/desk.html` makes the same check, since Pages answers any
-origin; where the site cannot be reached at all, the receipt stays at "site rebuilding…").
-The site asks for its data past the browser cache, so a reload then shows the new text. If
-anything fails before the commit, nothing is marked. Publish is held while stored changes are keyed to an older
+`data/build.json` reports the new commit or a later one built on it (GitHub's compare says
+which), then `live on the site a1b2c3d` with a link to the edited entry (a clone's
+`desk/desk.html` makes the same check, since Pages answers any origin; where the site
+cannot be reached at all, the receipt stays at "site rebuilding…"). The site asks for its
+data past the browser cache, so a reload then shows the new text. If anything fails before
+the commit, nothing is marked. Publish is held while stored changes are keyed to an older
 snapshot (until they re-key on load) or while a re-key is running.
 
 **"The repo has moved."** The file on `main` is neither the snapshot's nor what this page

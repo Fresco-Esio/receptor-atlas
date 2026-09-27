@@ -5235,7 +5235,7 @@ const SEED = {
   }
  }
 };
-const BUILT_AT = '2026-09-26T23:55:21.879Z';
+const BUILT_AT = '2026-09-27T00:00:59.078Z';
 // ---------- storage: claude.ai db when it answers, else this browser ----------
 const LS = 'atlas-desk-changes-v1';
 const STORE_LABEL = { browser: 'this browser', 'claude.ai': 'claude.ai' };
@@ -5917,11 +5917,14 @@ async function siteFetch(path) {
 // After a publish the site rebuilds (a minute or two); its data/build.json names the commit it was built from.
 let POLL_MS = 15000, watchRun = 0;
 const POLL_TRIES = 24;   // ~6 minutes at 15 s
-/** Watch the site until it reports `sha`, then mark the receipt live. One watcher at a time: a newer call stops an
- *  older one. A request that fails outright (offline, or the site unreadable from here) stops it silently; an HTTP
- *  error or an unreadable answer counts as "not yet". `tries: 1, now: true` is the single check at boot. */
+/** Watch the site until it reports `sha` or a commit that descends from it (another commit may reach the site
+ *  first), then mark the receipt live. Descent is GitHub's anonymous compare (`sha...commit` answers "ahead" or
+ *  "identical"), asked once per build commit that answered. One watcher at a time: a newer call stops an older one.
+ *  A site request that fails outright (offline, or the site unreadable from here) stops it silently; an HTTP error,
+ *  an unreadable answer or a failed compare counts as "not yet". `tries: 1, now: true` is the single check at boot. */
 async function watchSite(sha, { tries = POLL_TRIES, now: atOnce = false } = {}) {
   const run = ++watchRun, sha7 = sha.slice(0, 7);
+  let compared = '';   // the last build commit GitHub answered a compare for
   for (let i = 0; i < tries; i++) {
     if (i || !atOnce) await sleep(POLL_MS);
     if (run !== watchRun) return;
@@ -5930,7 +5933,15 @@ async function watchSite(sha, { tries = POLL_TRIES, now: atOnce = false } = {}) 
     catch (e) { if (e && e.code === 'network') return; continue; }
     if (run !== watchRun) return;
     const commit = build && typeof build.commit === 'string' ? build.commit : '';
-    if (commit !== sha && !commit.startsWith(sha7)) continue;
+    if (commit !== sha && !commit.startsWith(sha7)) {
+      if (!/^[0-9a-f]{7,40}$/i.test(commit) || commit === compared) continue;
+      let cmp;
+      try { cmp = await gh('GET', `/repos/${GH.owner}/${GH.repo}/compare/${encodeURIComponent(sha)}...${encodeURIComponent(commit)}`, null, { anon: true }); }
+      catch (e) { continue; }   // not yet; asked again on the next poll
+      compared = commit;
+      if (run !== watchRun) return;
+      if (!cmp || (cmp.status !== 'ahead' && cmp.status !== 'identical')) continue;
+    }
     const stored = readReceipt();
     if (!lastReceipt || lastReceipt.sha !== sha || (stored && stored.sha !== sha)) return;   // another publish took over
     saveReceipt({ ...lastReceipt, live: true });
