@@ -1,0 +1,1320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>html,body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>The Operable Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fragment+Mono&family=Marcellus&family=Schibsted+Grotesk:wght@400;500;700&display=swap">
+<style>
+/* Layout: a gallery walk. One reading column (~70ch) between full-width plates; each room holds one instrument. Tokens follow the Receptor Cabinet design system (single dark theme by design). */
+:root{
+  --wall-atrium:oklch(17% 0.012 75); --wall-panel:oklch(20% 0.013 75); --wall-recess:oklch(14% 0.011 75);
+  --wall-normal:oklch(18% 0.030 158); --wall-over:oklch(23% 0.060 28); --wall-under:oklch(18% 0.045 255);
+  --bone:oklch(93% 0.012 85); --bone-read:oklch(86% 0.013 85); --bone-dim:oklch(72% 0.015 85); --bone-faint:oklch(63% 0.013 85);
+  --vermilion:oklch(62% 0.19 35); --brass:oklch(70% 0.055 80);
+  --brass-line:oklch(70% 0.055 80 / 0.28); --brass-faint:oklch(70% 0.055 80 / 0.14);
+  --st-normal:oklch(78% 0.085 158); --st-over:oklch(66% 0.185 38); --st-under:oklch(72% 0.10 245);
+  --f-display:"Marcellus", "Trajan Pro", "Iowan Old Style", Georgia, serif;
+  --f-body:"Schibsted Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"Fragment Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --ease:cubic-bezier(0.16,1,0.3,1);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--wall-atrium)}
+body{background:var(--wall-atrium);color:var(--bone-read);font-family:var(--f-body);font-size:16px;line-height:1.65;padding-inline:16px;padding-block:0 72px}
+::selection{background:var(--vermilion);color:var(--wall-recess)}
+:focus-visible{outline:1px solid var(--brass);outline-offset:3px}
+a{color:var(--bone);text-decoration-color:var(--brass-line);text-underline-offset:3px}
+a:hover{text-decoration-color:var(--brass)}
+.wrap{max-width:1120px;margin:0 auto}
+.col{max-width:70ch}
+h1,h2{font-family:var(--f-display);font-weight:400;text-transform:uppercase;letter-spacing:.04em;line-height:1.05;color:var(--bone);text-wrap:balance;margin:0}
+h1{font-size:clamp(2.1rem,5.4vw,3.6rem)}
+h2{font-size:clamp(1.55rem,3.4vw,2.4rem);margin:.2em 0 .45em}
+h3{font-family:var(--f-display);font-weight:400;font-size:1.125rem;letter-spacing:.03em;color:var(--bone);margin:1.4em 0 .4em;text-wrap:balance}
+p{margin:.6em 0}
+.lbl,.kicker{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--bone-faint)}
+.dim{color:var(--bone-dim)}
+.small{font-size:.9rem}
+
+/* masthead */
+.mast{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;background:var(--wall-recess);border-bottom:1px solid var(--brass-line);margin-inline:-16px;padding-inline:16px}
+.mast .in{max-width:1120px;margin:0 auto;display:flex;align-items:center;gap:14px;padding-block:10px;overflow-x:auto;scrollbar-width:none}
+.mast .in::-webkit-scrollbar{display:none}
+.brand{display:flex;align-items:center;gap:10px;flex:none;font-family:var(--f-display);text-transform:uppercase;letter-spacing:.07em;font-size:.95rem;color:var(--bone);text-decoration:none}
+.brand svg{width:20px;height:20px;flex:none}
+.mast nav{display:flex;gap:2px;margin-left:auto}
+.mast nav a{flex:none;font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--bone-faint);text-decoration:none;padding:6px 8px;border-radius:2px}
+.mast nav a:hover{color:var(--bone)}
+
+/* hero */
+.hero{padding-block:56px 12px}
+.hero .lede{font-size:1.12rem;max-width:64ch;color:var(--bone-read);margin-top:18px}
+.axis{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:22px;padding-top:14px;border-top:1px solid var(--brass-line);max-width:64ch}
+.axis span{display:inline-flex;align-items:center;gap:8px;font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--bone-dim)}
+.sw{width:10px;height:10px;border-radius:50%;flex:none;display:inline-block}
+.sw.over{background:var(--st-over)} .sw.normal{background:var(--st-normal)} .sw.under{background:var(--st-under)}
+
+/* rooms */
+section.room{padding-block:56px 8px;border-top:1px solid var(--brass-line);margin-top:44px}
+.room-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.room-head .no{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;color:var(--brass)}
+
+/* plates & wells */
+.plate{background:var(--wall-panel);border:1px solid var(--brass-line);border-radius:3px;padding:clamp(1rem,2.6vw,1.9rem);margin-block:22px;transition:background-color .8s var(--ease)}
+.plate[data-state="over"]{background:var(--wall-over)}
+.plate[data-state="normal"]{background:var(--wall-normal)}
+.plate[data-state="under"]{background:var(--wall-under)}
+.well{background:var(--wall-recess);border-radius:2px;padding:12px 14px}
+.plate-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 16px;margin-bottom:12px}
+.plate-head h3{margin:0}
+.split{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:22px;align-items:start}
+.split > *{min-width:0}
+.split.lean{grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr)}
+.split.even{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+@media (max-width:880px){.split,.split.lean,.split.even{grid-template-columns:1fr}}
+.cap{max-width:780px;margin-inline:auto}
+.scroll{overflow-x:auto;scrollbar-color:var(--brass-line) transparent}
+svg{display:block}
+.fig{width:100%;height:auto}
+
+/* controls */
+.ctrl{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center;margin-block:10px}
+.ctrl-label{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--bone-faint);min-width:9ch}
+.seg{display:inline-flex;flex-wrap:wrap;gap:4px}
+.seg button,.btn,.chipbtn{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;background:var(--wall-recess);color:var(--bone-faint);border:1px solid var(--brass-line);border-radius:2px;padding:.6rem .85rem;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:color .2s,border-color .2s,transform .12s}
+.seg button::before{content:"";width:6px;height:6px;transform:rotate(45deg);border:1px solid var(--brass-line);flex:none}
+.seg button:hover,.btn:hover,.chipbtn:hover{color:var(--bone);border-color:var(--brass)}
+.seg button[aria-pressed="true"]{color:var(--bone);border-color:var(--brass)}
+.seg button[aria-pressed="true"]::before{background:var(--vermilion);border-color:var(--vermilion)}
+.seg button:disabled{opacity:.35;cursor:not-allowed}
+.seg button:active,.btn:active,.chipbtn:active{transform:scale(.96)}
+.chipbtn .g{font-size:12px}
+.chipbtn[aria-pressed="true"]{color:var(--bone);border-color:var(--brass)}
+.chipbtn[aria-pressed="true"].over .g{color:var(--st-over)}
+.chipbtn[aria-pressed="true"].under .g{color:var(--st-under)}
+.range{display:flex;align-items:center;gap:12px;flex:1 1 260px;min-width:0}
+.range input{flex:1;min-width:0;accent-color:var(--brass)}
+.read{font-family:var(--f-mono);font-size:12px;font-variant-numeric:tabular-nums;color:var(--bone)}
+
+/* state tags & lists */
+.tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:.28rem .5rem;border-radius:2px;background:var(--wall-recess);border:1px solid var(--brass-faint);color:var(--bone-dim);white-space:nowrap}
+.tag.over{color:var(--st-over);border-color:color-mix(in oklch,var(--st-over) 45%,transparent)}
+.tag.normal{color:var(--st-normal);border-color:color-mix(in oklch,var(--st-normal) 45%,transparent)}
+.tag.under{color:var(--st-under);border-color:color-mix(in oklch,var(--st-under) 45%,transparent)}
+ul.pres{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:6px}
+ul.pres li{display:grid;grid-template-columns:14px 1fr;gap:8px;align-items:baseline}
+ul.pres li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--bone-faint);transform:translateY(-2px)}
+ul.pres.over li::before{background:var(--st-over)} ul.pres.under li::before{background:var(--st-under)} ul.pres.normal li::before{background:var(--st-normal)}
+.stagger > *{animation:rise .5s var(--ease) both}
+.stagger > *:nth-child(2){animation-delay:.04s}.stagger > *:nth-child(3){animation-delay:.08s}.stagger > *:nth-child(4){animation-delay:.12s}.stagger > *:nth-child(5){animation-delay:.16s}.stagger > *:nth-child(6){animation-delay:.2s}
+@keyframes rise{from{opacity:.001;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* gauge */
+.gauge{position:relative;height:56px;margin-top:6px}
+.gauge .band{position:absolute;top:18px;height:14px;border-radius:1px}
+.gauge .b-under{left:0;width:40%;background:color-mix(in oklch,var(--st-under) 30%,transparent)}
+.gauge .b-normal{left:40%;width:20%;background:color-mix(in oklch,var(--st-normal) 30%,transparent)}
+.gauge .b-over{left:60%;width:40%;background:color-mix(in oklch,var(--st-over) 30%,transparent)}
+.gauge .mid{position:absolute;left:50%;top:12px;height:26px;border-left:1px dashed var(--bone-faint)}
+.gauge .mk{position:absolute;top:2px;width:0;transition:left .9s var(--ease)}
+.gauge .mk::after{content:"";position:absolute;left:-7px;top:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:12px solid var(--vermilion)}
+.gauge .mk.before::after{border-top-color:var(--bone-faint)}
+.gauge .link{position:absolute;top:24px;height:2px;background:var(--bone);transition:left .9s var(--ease),width .9s var(--ease);opacity:.8}
+.gauge .ticks{position:absolute;left:0;right:0;top:38px;display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;color:var(--bone-faint);text-transform:uppercase}
+.legend-row{display:flex;flex-wrap:wrap;gap:6px 18px;font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--bone-dim);margin-top:8px}
+.legend-row span{display:inline-flex;align-items:center;gap:7px}
+
+/* occupancy gauge */
+.occ{position:relative;height:64px;margin-top:8px}
+.occ .track{position:absolute;left:0;right:0;top:20px;height:12px;background:var(--wall-recess);border:1px solid var(--brass-faint);border-radius:1px}
+.occ .fill{position:absolute;left:0;top:20px;height:12px;background:var(--st-under);transition:width .6s var(--ease),background-color .4s;border-radius:1px}
+.occ .th{position:absolute;top:10px;height:30px;border-left:1px solid var(--bone-dim)}
+.occ .th span{position:absolute;top:34px;left:-14px;font-family:var(--f-mono);font-size:11px;color:var(--bone-dim);white-space:nowrap}
+.occ.partial .th{opacity:.3}
+.rows{display:grid;gap:6px;margin-top:6px}
+.rows > div{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 10px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--brass-faint)}
+.rows .tag{white-space:normal}
+.rows > div:last-child{border-bottom:0}
+
+/* tables */
+.tbl{overflow-x:auto;border:1px solid var(--brass-line);border-radius:3px;margin-block:14px}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--brass-faint)}
+th{font-family:var(--f-mono);font-size:11px;font-weight:400;letter-spacing:.12em;text-transform:uppercase;color:var(--bone-faint);background:var(--wall-recess);position:sticky;top:0}
+tr:last-child td{border-bottom:0}
+td.num{font-family:var(--f-mono);color:var(--brass);white-space:nowrap}
+#cmp th.sel{color:var(--bone);box-shadow:inset 0 -2px 0 var(--vermilion)}
+#cmp td.sel{background:color-mix(in oklch,var(--bone) 4%,transparent);color:var(--bone)}
+#cmp td:first-child{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--bone-faint);white-space:nowrap}
+#idx-table td:nth-child(2){color:var(--bone);font-family:var(--f-display);letter-spacing:.03em;white-space:nowrap}
+.tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
+.tools input[type=search]{font:inherit;font-size:.92rem;padding:.55rem .75rem;border:1px solid var(--brass-line);border-radius:2px;background:var(--wall-recess);color:var(--bone);flex:1 1 220px;min-width:0}
+.tools input[type=search]:focus{border-color:var(--brass);outline:none}
+
+/* engraving */
+.eng{fill:none;stroke:var(--bone-dim);stroke-width:1.1;stroke-linecap:round;stroke-linejoin:round}
+.eng-faint{fill:none;stroke:var(--brass-line);stroke-width:1}
+.draw{stroke-dasharray:1;stroke-dashoffset:0;transition:stroke-dashoffset 1.5s var(--ease)}
+.draw.pre{stroke-dashoffset:1;transition:none}
+.t-lbl{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;fill:var(--bone-faint)}
+.t-ink{font-family:var(--f-body);font-size:13px;fill:var(--bone)}
+.t-num{font-family:var(--f-mono);font-size:11px;fill:var(--bone)}
+
+/* dial receptors */
+.glow{fill:var(--brass);transition:opacity .7s var(--ease)}
+.lig{transition:opacity .45s var(--ease),transform .55s var(--ease);transform-box:fill-box;transform-origin:center}
+.lig.off{opacity:0;transform:translateY(-10px)}
+.endo{fill:var(--bone);transition:opacity .6s}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.endo.live{animation:bob 2.6s ease-in-out infinite}
+
+/* pathways */
+.pw{fill:none;stroke-width:3;stroke-linecap:round;transition:stroke .6s}
+.pw.over{stroke:var(--st-over)} .pw.normal{stroke:var(--st-normal)} .pw.under{stroke:var(--st-under)}
+.node{fill:var(--wall-recess);stroke:var(--bone-dim);stroke-width:1.1}
+.ring{fill:none;stroke-width:1.5;transition:stroke .6s,opacity .6s;transform-box:fill-box;transform-origin:center}
+.ring.over{stroke:var(--st-over);animation:pulse 1.1s ease-out infinite}
+.ring.normal{stroke:var(--st-normal);animation:pulse 2.2s ease-out infinite}
+.ring.under{stroke:var(--st-under);opacity:.55}
+@keyframes pulse{0%{transform:scale(.8);opacity:.9}100%{transform:scale(1.7);opacity:0}}
+.flowdot{fill:var(--bone)}
+ol.pwl{list-style:none;padding:0;margin:0;display:grid}
+ol.pwl li{padding:12px 0;border-bottom:1px solid var(--brass-faint);display:grid;grid-template-columns:28px 1fr;gap:4px 10px}
+ol.pwl li:last-child{border-bottom:0}
+ol.pwl .n{font-family:var(--f-mono);font-size:11px;color:var(--brass);padding-top:4px}
+ol.pwl .nm{font-family:var(--f-display);color:var(--bone);letter-spacing:.03em}
+ol.pwl .rt{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;color:var(--bone-faint)}
+ol.pwl .tx{grid-column:2;font-size:.94rem}
+ol.pwl li.hi .nm{color:var(--vermilion)}
+
+/* body map */
+.mk-reg circle.m{fill:var(--wall-recess);stroke:var(--brass-line);stroke-width:1;transition:stroke .4s,fill .4s}
+.mk-reg text{font-family:var(--f-mono);font-size:11px;fill:var(--bone-faint);text-anchor:middle;dominant-baseline:central}
+.mk-reg.on circle.m{stroke-width:1.6}
+.mk-reg.on.over circle.m{stroke:var(--st-over);fill:color-mix(in oklch,var(--st-over) 22%,var(--wall-recess))}
+.mk-reg.on.under circle.m{stroke:var(--st-under);fill:color-mix(in oklch,var(--st-under) 22%,var(--wall-recess))}
+.mk-reg.on.mixed circle.m{stroke:var(--brass);fill:color-mix(in oklch,var(--brass) 22%,var(--wall-recess))}
+.mk-reg.on text{fill:var(--bone)}
+.mk-reg circle.halo{fill:none;stroke-width:1.2;opacity:0}
+.mk-reg.pop circle.halo{animation:pulse .9s ease-out 1}
+.mk-reg.over circle.halo{stroke:var(--st-over)} .mk-reg.under circle.halo{stroke:var(--st-under)} .mk-reg.mixed circle.halo{stroke:var(--brass)}
+ol.regs{list-style:none;padding:0;margin:0;display:grid;gap:0}
+ol.regs li{display:grid;grid-template-columns:28px 1fr;gap:2px 10px;padding:10px 0;border-bottom:1px solid var(--brass-faint)}
+ol.regs li:last-child{border-bottom:0}
+ol.regs .n{font-family:var(--f-mono);font-size:11px;color:var(--brass);padding-top:3px}
+ol.regs .nm{font-family:var(--f-display);color:var(--bone);letter-spacing:.03em}
+ol.regs .f{grid-column:2;font-size:.92rem;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline;min-width:0}
+ol.regs .f > span:last-child{min-width:0;flex:1 1 180px}
+ol.regs .f .tag{flex:none}
+.empty{color:var(--bone-faint);font-size:.94rem;padding:10px 0}
+
+/* patient */
+.pt-sclera{fill:color-mix(in oklch,var(--bone) 82%,transparent);stroke:none}
+.pt-iris{fill:color-mix(in oklch,var(--brass) 35%,var(--wall-recess));stroke:var(--brass);stroke-width:.8}
+.pt-pupil{fill:var(--wall-recess);transform-box:fill-box;transform-origin:center;transition:transform .9s var(--ease)}
+.pt-flush{fill:var(--st-over);transition:opacity .8s}
+.pt-drop{fill:color-mix(in oklch,var(--st-under) 70%,var(--bone))}
+.pt-sweat,.pt-drool,.pt-tears{transition:opacity .5s}
+.pt-sweat .pt-drop{animation:drip 1.9s ease-in infinite;transform-box:fill-box}
+.pt-sweat .pt-drop:nth-child(2){animation-delay:.6s}.pt-sweat .pt-drop:nth-child(3){animation-delay:1.2s}
+.pt-drool .pt-drop,.pt-tears .pt-drop{animation:drip 2.3s ease-in infinite;transform-box:fill-box}
+@keyframes drip{0%{transform:translateY(-3px);opacity:0}20%{opacity:1}100%{transform:translateY(12px);opacity:0}}
+#pt-chest{animation:breathe var(--rr,4s) ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes breathe{0%,100%{transform:scale(1)}45%{transform:scale(1.04,1.06)}}
+#pt-heart{fill:var(--st-over);animation:beat var(--hr,1s) ease-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes beat{0%{transform:scale(1)}10%{transform:scale(1.28)}22%{transform:scale(1)}32%{transform:scale(1.12)}48%,100%{transform:scale(1)}}
+.pt-bowel{fill:none;stroke:var(--bone-dim);stroke-width:1;transition:opacity .4s}
+.pt-bowel.on{animation:fadepulse 1.2s ease-in-out infinite}
+@keyframes fadepulse{0%,100%{opacity:.25}50%{opacity:1}}
+.tremor{animation:tremor .14s linear infinite alternate}
+@keyframes tremor{from{transform:translate(-1.3px,0)}to{transform:translate(1.3px,.5px)}}
+.clonus{animation:clonus .19s ease-in-out infinite alternate;transform-box:view-box}
+@keyframes clonus{from{transform:rotate(-8deg)}to{transform:rotate(8deg)}}
+#patient .limb{transition:stroke-width .5s,stroke .5s}
+#patient.rigid .limb{stroke-width:3.4;stroke:var(--st-under)}
+#pt-merc{transition:y .9s var(--ease),height .9s var(--ease),fill .6s}
+.vit{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px}
+.vit > div{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--brass-faint)}
+.vit dt{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--bone-faint)}
+.vit dd{margin:0;color:var(--bone);text-align:right;font-size:.94rem}
+.vit dd .ar{font-family:var(--f-mono);margin-left:4px}
+.vit dd .ar.up{color:var(--st-over)} .vit dd .ar.dn{color:var(--st-under)}
+.vit .wide{grid-column:1 / -1}
+.vit .wide dd{text-align:left}
+@media (max-width:520px){.vit{grid-template-columns:1fr}}
+.hunter{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px 16px;margin-top:10px}
+.hunter label{display:flex;gap:9px;align-items:center;font-size:.94rem;cursor:pointer;padding:4px 0}
+.hunter input{accent-color:var(--brass);width:16px;height:16px;margin:0}
+.verdict{margin-top:12px;font-size:1rem;color:var(--bone)}
+
+/* timeline & adaptation */
+.bar{transition:opacity .35s}
+.bar.dimmed{opacity:.28}
+#tl-marker{transition:transform .25s linear}
+.sigline{fill:none;stroke-width:2.4;stroke-linecap:round}
+.respline{fill:none;stroke:var(--brass);stroke-width:1.4;stroke-dasharray:5 5}
+
+/* quiz */
+.q{border-top:1px solid var(--brass-line);padding-block:18px}
+.q .stem{margin:0 0 10px;color:var(--bone);max-width:78ch}
+.q .stem b{font-family:var(--f-mono);font-weight:400;font-size:11px;letter-spacing:.14em;color:var(--brass);margin-right:10px}
+.q fieldset{border:0;padding:0;margin:0;display:grid;gap:6px;max-width:82ch}
+.q legend{position:absolute;left:-9999px}
+.q label.opt{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:9px 12px;border:1px solid var(--brass-faint);border-radius:2px;background:var(--wall-recess);cursor:pointer}
+.q label.opt:hover{border-color:var(--brass-line)}
+.q label.opt input{margin-top:5px;accent-color:var(--brass)}
+.q label.opt .why{display:block;font-size:.88rem;color:var(--bone-dim);margin-top:3px}
+.q label.opt.right{border-color:var(--st-normal)}
+.q label.opt.wrong{border-color:var(--st-over)}
+.q .qfoot{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:10px}
+.q .err{font-size:.86rem;color:var(--st-over)}
+.q .vd{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.q .vd.ok{color:var(--st-normal)} .q .vd.no{color:var(--st-over)}
+
+ol.refs{padding-left:1.3em;font-size:.92rem;color:var(--bone-dim)}
+ol.refs li{margin:.45em 0}
+ol.refs i{color:var(--bone-read)}
+footer.disc{margin-top:48px;padding-top:14px;border-top:1px solid var(--brass-line)}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <div class="in">
+    <a class="brand" href="#top"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.5" fill="none" stroke="oklch(70% 0.055 80)" stroke-width="1"/><circle cx="10" cy="10" r="3.2" fill="oklch(62% 0.19 35)"/></svg><span>The Operable Ledger</span></a>
+    <nav aria-label="Rooms">
+      <a href="#direction">I Direction</a>
+      <a href="#occupancy">II Occupancy</a>
+      <a href="#pathways">III Pathways</a>
+      <a href="#offtarget">IV Off-target</a>
+      <a href="#toxidromes">V Toxidromes</a>
+      <a href="#time">VI Time</a>
+      <a href="#adaptation">VII Adaptation</a>
+      <a href="#index">VIII Index</a>
+      <a href="#quiz">IX Self-check</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap" id="top">
+  <section class="hero">
+    <div class="kicker">Volume III · Clinical · a format study</div>
+    <h1 style="margin-top:14px">The Operable Ledger</h1>
+    <p class="lede">The Clinical Ledger records what a receptor's excess or deficit looks like at the bedside. This version asks what puts a patient on one side of that line: which way the drug pushes, how much of the receptor it holds, how long it has been there, and how the brain has adapted. Each room is an instrument. Move it and watch the presentation change.</p>
+    <div class="axis" aria-label="State key">
+      <span><i class="sw over"></i>Excess ▲</span>
+      <span><i class="sw normal"></i>Steady</span>
+      <span><i class="sw under"></i>Deficit ▼</span>
+      <span style="color:var(--bone-faint)">Colours mean state, nothing else</span>
+    </div>
+  </section>
+
+  <!-- I DIRECTION -->
+  <section class="room" id="direction">
+    <div class="room-head"><span class="no">ROOM I</span><span class="kicker">Intrinsic activity</span></div>
+    <h2>Direction depends on what was already there</h2>
+    <div class="col">
+      <p>Whether a drug produces excess or deficit is not a property of the drug alone. It is the drug's own efficacy weighed against the activation the receptor already had, in proportion to how many receptors the drug holds. An antagonist has nothing to remove when tone is low. A partial agonist lowers signaling when tone is high and raises it when tone is low. A dependent patient's set point has moved, so the same dose that intoxicates a naive patient barely registers.</p>
+    </div>
+    <div class="plate" id="dial" data-state="normal">
+      <div class="plate-head"><h3>The dial</h3><span class="lbl">Model · relative units</span></div>
+      <div class="ctrl" role="group" aria-label="Receptor"><span class="ctrl-label">Receptor</span><div class="seg" id="d-rx"></div></div>
+      <div class="ctrl" role="group" aria-label="Patient state"><span class="ctrl-label">Patient</span><div class="seg" id="d-sc"></div></div>
+      <div class="ctrl" role="group" aria-label="Drug action"><span class="ctrl-label">Drug</span><div class="seg" id="d-stop"></div></div>
+      <div class="ctrl"><span class="ctrl-label">Occupancy</span><div class="range"><input type="range" id="d-occ" min="0" max="100" step="5" value="85" aria-label="Receptor occupancy"><span class="read" id="d-occv">85%</span></div></div>
+      <div class="split" style="margin-top:14px">
+        <div>
+          <div class="scroll"><svg class="fig" id="d-svg" viewBox="0 0 600 190" role="img" aria-labelledby="d-t d-d" style="min-width:420px"><title id="d-t">Ten receptors with drug and endogenous ligand</title><desc id="d-d">A row of ten receptors in a membrane. Receptors held by the drug carry a brass drug marker; the rest carry endogenous ligand. The glow below each receptor shows how strongly it signals.</desc></svg></div>
+          <div class="legend-row" aria-hidden="true">
+            <span><svg width="14" height="14" viewBox="-7 -7 14 14"><circle r="5.5" fill="oklch(70% 0.055 80)"/></svg>Full agonist</span>
+            <span><svg width="14" height="14" viewBox="-7 -7 14 14"><circle r="5" fill="none" stroke="oklch(70% 0.055 80)" stroke-width="1.2"/><path d="M0 -5 A5 5 0 0 0 0 5 Z" fill="oklch(70% 0.055 80)"/></svg>Partial</span>
+            <span><svg width="14" height="14" viewBox="-7 -7 14 14"><rect x="-5" y="-5" width="10" height="10" fill="oklch(70% 0.055 80)"/></svg>Antagonist</span>
+            <span><svg width="14" height="14" viewBox="-7 -7 14 14"><path d="M-6 -4 L6 -4 L0 6 Z" fill="oklch(70% 0.055 80)"/></svg>Inverse</span>
+            <span><svg width="14" height="14" viewBox="-7 -7 14 14"><circle r="3.5" fill="oklch(93% 0.012 85)"/></svg>Endogenous</span>
+          </div>
+          <div style="margin-top:18px">
+            <div class="lbl">Signal against this patient's set point</div>
+            <div class="gauge" id="d-gauge" aria-hidden="true">
+              <div class="band b-under"></div><div class="band b-normal"></div><div class="band b-over"></div>
+              <div class="mid"></div><div class="link" id="d-link"></div>
+              <div class="mk before" id="d-mk0"></div><div class="mk" id="d-mk1"></div>
+              <div class="ticks"><span>▼ Deficit</span><span>Set point</span><span>Excess ▲</span></div>
+            </div>
+            <div class="legend-row" aria-hidden="true"><span><svg width="12" height="10"><path d="M0 0 L12 0 L6 10 Z" fill="oklch(63% 0.013 85)"/></svg>Before drug</span><span><svg width="12" height="10"><path d="M0 0 L12 0 L6 10 Z" fill="oklch(62% 0.19 35)"/></svg>With drug</span></div>
+          </div>
+        </div>
+        <div class="well" aria-live="polite" id="d-read"></div>
+      </div>
+      <p class="small dim" style="margin-top:14px">Net signal = (1 − occupancy) × existing activation + occupancy × the drug's efficacy, judged against the patient's set point (steady band ±0.3). Efficacy values are placed so each drug class lands in a recognisable direction; they are not measured intrinsic activities. For GABA-A the stops are allosteric modulators at the benzodiazepine site, so "antagonist" means flumazenil, which returns the receptor to GABA-only signaling.</p>
+    </div>
+  </section>
+
+  <!-- II OCCUPANCY -->
+  <section class="room" id="occupancy">
+    <div class="room-head"><span class="no">ROOM II</span><span class="kicker">D2 occupancy</span></div>
+    <h2>One receptor, three thresholds</h2>
+    <div class="col">
+      <p>Kapur and colleagues randomised 22 patients with first-episode schizophrenia to low-dose haloperidol and measured striatal D2 occupancy with [¹¹C]raclopride PET. Occupancy ranged from 38% to 87%. The likelihood of clinical response, hyperprolactinemia and extrapyramidal symptoms rose significantly once occupancy passed 65%, 72% and 78%. The therapeutic window is the narrow strip between the first and the last.</p>
+    </div>
+    <div class="plate" id="occ-plate" data-state="normal">
+      <div class="plate-head"><h3>Striatal synapse</h3>
+        <div class="seg" id="o-mode" role="group" aria-label="Drug type">
+          <button type="button" data-m="ant" aria-pressed="true">Antagonist</button>
+          <button type="button" data-m="par" aria-pressed="false">Partial agonist</button>
+        </div>
+      </div>
+      <div class="scroll cap"><svg class="fig" id="o-svg" viewBox="0 0 600 214" role="img" aria-labelledby="o-t o-d" style="min-width:460px"><title id="o-t">Dopamine release onto D2 receptors</title><desc id="o-d">A presynaptic terminal releases dopamine across the cleft onto sixteen D2 receptors. Receptors held by the drug carry a brass marker and cannot bind dopamine.</desc>
+        <path class="eng" d="M92 18 L508 18 C536 18 548 34 548 54 L548 64 C548 82 532 90 508 90 L92 90 C68 90 52 82 52 64 L52 54 C52 34 64 18 92 18 Z"/>
+        <g id="o-ves"></g>
+        <text class="t-lbl" x="14" y="58">PRE</text>
+        <text class="t-lbl" x="14" y="184">POST</text>
+        <rect x="52" y="176" width="496" height="18" fill="oklch(70% 0.055 80 / 0.14)"/>
+        <line x1="52" y1="176" x2="548" y2="176" class="eng-faint"/><line x1="52" y1="194" x2="548" y2="194" class="eng-faint"/>
+        <g id="o-rec"></g><g id="o-da"></g>
+      </svg></div>
+      <div class="ctrl"><span class="ctrl-label">Occupancy</span><div class="range"><input type="range" id="o-occ" min="0" max="100" step="1" value="70" aria-label="D2 occupancy"><span class="read" id="o-occv">70%</span></div></div>
+      <div class="occ" id="o-gauge" aria-hidden="true"><div class="track"></div><div class="fill" id="o-fill"></div>
+        <div class="th" style="left:65%"><span>65</span></div><div class="th" style="left:72%"><span>72</span></div><div class="th" style="left:78%"><span>78</span></div>
+      </div>
+      <div class="rows" id="o-rows" aria-live="polite"></div>
+      <p class="small dim" id="o-note" style="margin-top:12px"></p>
+    </div>
+  </section>
+
+  <!-- III PATHWAYS -->
+  <section class="room" id="pathways">
+    <div class="room-head"><span class="no">ROOM III</span><span class="kicker">Dopamine pathways</span></div>
+    <h2>Same receptor, four presentations</h2>
+    <div class="col"><p>A D2 antagonist cannot choose where it binds. The antipsychotic effect in the mesolimbic pathway arrives together with motor effects in the nigrostriatal pathway and prolactin release from the pituitary. Raising dopamine produces the mirror image. Release continues in every mode below; what changes is what the target receptor does with it.</p></div>
+    <div class="plate" id="pw-plate" data-state="normal">
+      <div class="plate-head"><h3>Sagittal schematic</h3>
+        <div class="seg" id="pw-mode" role="group" aria-label="Dopamine condition">
+          <button type="button" data-m="base" aria-pressed="false">Baseline</button>
+          <button type="button" data-m="block" aria-pressed="true">D2 blocked</button>
+          <button type="button" data-m="raise" aria-pressed="false">Dopamine raised</button>
+        </div>
+      </div>
+      <div class="split">
+        <div class="scroll"><svg class="fig" id="pw-svg" viewBox="0 0 600 360" role="img" aria-labelledby="pw-t pw-d" style="min-width:480px"><title id="pw-t">Four dopamine pathways</title><desc id="pw-d">A sagittal brain schematic with the mesolimbic, mesocortical, nigrostriatal and tuberoinfundibular pathways, coloured by the state at their target.</desc>
+          <path class="eng draw" pathLength="1" d="M96 222 C76 150 128 66 240 52 C340 40 460 52 526 104 C576 144 580 206 548 238 C522 262 470 262 440 250 C400 234 362 236 332 246 C282 262 200 268 150 256 C124 249 106 240 96 222 Z"/>
+          <path class="eng draw" pathLength="1" d="M394 240 C398 280 404 312 410 350 M434 246 C436 284 440 316 446 350"/>
+          <ellipse class="eng draw" pathLength="1" cx="500" cy="282" rx="46" ry="26"/>
+          <path class="pw draw" pathLength="1" id="pw-ml" d="M390 258 Q300 252 214 216"/>
+          <path class="pw draw" pathLength="1" id="pw-mc" d="M390 258 Q300 118 156 146"/>
+          <path class="pw draw" pathLength="1" id="pw-ns" d="M424 238 Q382 168 286 164"/>
+          <path class="pw draw" pathLength="1" id="pw-ti" d="M300 250 Q298 270 286 290"/>
+          <g id="pw-dots"></g>
+          <circle class="ring" id="r-ml" cx="214" cy="216" r="12"/><circle class="node" cx="214" cy="216" r="7"/>
+          <circle class="ring" id="r-mc" cx="156" cy="146" r="12"/><circle class="node" cx="156" cy="146" r="7"/>
+          <circle class="ring" id="r-ns" cx="286" cy="164" r="12"/><circle class="node" cx="286" cy="164" r="7"/>
+          <circle class="ring" id="r-ti" cx="286" cy="296" r="12"/><ellipse class="node" cx="286" cy="296" rx="10" ry="7"/>
+          <circle class="node" cx="390" cy="258" r="5"/><circle class="node" cx="424" cy="238" r="5"/><circle class="node" cx="300" cy="250" r="4"/>
+          <text class="t-lbl" x="132" y="124">PREFRONTAL</text>
+          <text class="t-lbl" x="160" y="244">N. ACCUMBENS</text>
+          <text class="t-lbl" x="262" y="142">STRIATUM</text>
+          <text class="t-lbl" x="232" y="326">PITUITARY</text>
+          <text class="t-lbl" x="438" y="232">SNc</text>
+          <text class="t-lbl" x="356" y="288">VTA</text>
+          <text class="t-lbl" x="310" y="268">ARC</text>
+        </svg></div>
+        <ol class="pwl" id="pw-list" aria-live="polite"></ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- IV OFF-TARGET -->
+  <section class="room" id="offtarget">
+    <div class="room-head"><span class="no">ROOM IV</span><span class="kicker">Off-target presentations</span></div>
+    <h2>Read a side-effect profile as a set of receptors</h2>
+    <div class="col"><p>Most psychotropic side effects are predictable once you know which targets a drug reaches. Switch targets on and the body map collects their presentations. Which drugs reach which targets, and at what affinity, is the Cabinet's question; this room only answers what each one looks like once engaged.</p></div>
+    <div class="plate">
+      <div class="ctrl" role="group" aria-label="Targets engaged"><span class="ctrl-label">Engaged</span><div class="seg" id="b-tg" style="gap:6px"></div></div>
+      <div class="ctrl" role="group" aria-label="Patterns"><span class="ctrl-label">Patterns</span><div class="seg" id="b-pre" style="gap:6px"></div></div>
+      <div class="split lean" style="margin-top:12px">
+        <div><svg class="fig" id="b-svg" viewBox="0 0 300 520" role="img" aria-labelledby="b-t b-d" style="max-width:320px;margin-inline:auto"><title id="b-t">Body map of side effects</title><desc id="b-d">An outline figure with eleven numbered regions. Regions light in the state colour of the targets that affect them.</desc>
+          <g id="b-fig">
+            <circle class="eng draw" pathLength="1" cx="150" cy="60" r="34"/>
+            <path class="eng draw" pathLength="1" d="M140 94 L140 108 M160 94 L160 108"/>
+            <path class="eng draw" pathLength="1" d="M100 116 C120 108 180 108 200 116 C206 170 204 230 196 300 L104 300 C96 230 94 170 100 116 Z"/>
+            <path class="eng draw" pathLength="1" d="M100 122 C82 162 74 222 66 290 M200 122 C218 162 226 222 234 290"/>
+            <circle class="eng" cx="64" cy="298" r="7"/><circle class="eng" cx="236" cy="298" r="7"/>
+            <path class="eng draw" pathLength="1" d="M110 300 L116 498 M148 304 L140 498 M190 300 L184 498 M152 304 L160 498 M116 498 L98 506 M184 498 L202 506"/>
+          </g>
+          <g id="b-marks"></g>
+        </svg></div>
+        <div><ol class="regs" id="b-list" aria-live="polite"></ol></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- V TOXIDROMES -->
+  <section class="room" id="toxidromes">
+    <div class="room-head"><span class="no">ROOM V</span><span class="kicker">Toxidromes</span></div>
+    <h2>Tell the syndromes apart at the bedside</h2>
+    <div class="col"><p>Excess and deficit states are easiest to recognise in their extreme forms. Several look alike from the doorway: hot, fast and agitated. The discriminators are in the eyes, the skin, the bowel sounds, the muscle tone and the clock.</p></div>
+    <div class="plate" id="tx-plate" data-state="over">
+      <div class="ctrl" role="group" aria-label="Syndrome"><div class="seg" id="tx-seg" style="gap:6px"></div></div>
+      <div class="split lean" style="margin-top:12px">
+        <div><svg class="fig" id="patient" viewBox="0 0 360 470" role="img" aria-labelledby="pt-t pt-d" style="max-width:360px;margin-inline:auto"><title id="pt-t">Patient figure</title><desc id="pt-d">An outline patient whose pupils, skin, breathing, heart rate, bowel sounds, tremor, clonus and rigidity change with the selected syndrome. A thermometer shows temperature.</desc>
+          <circle class="eng" cx="180" cy="80" r="46"/>
+          <ellipse class="pt-flush" id="pt-fl1" cx="152" cy="98" rx="12" ry="7" opacity="0"/>
+          <ellipse class="pt-flush" id="pt-fl2" cx="208" cy="98" rx="12" ry="7" opacity="0"/>
+          <g transform="translate(162 74)"><ellipse class="pt-sclera" rx="12" ry="7.5"/><circle class="pt-iris" r="7"/><circle class="pt-pupil" id="pt-p1" r="3.2"/></g>
+          <g transform="translate(198 74)"><ellipse class="pt-sclera" rx="12" ry="7.5"/><circle class="pt-iris" r="7"/><circle class="pt-pupil" id="pt-p2" r="3.2"/></g>
+          <path class="eng" d="M168 106 Q180 112 192 106"/>
+          <g class="pt-sweat" id="pt-sweat" opacity="0">
+            <path class="pt-drop" d="M158 42 c-3 5 -3 8 0 8 c3 0 3 -3 0 -8 z"/>
+            <path class="pt-drop" d="M204 46 c-3 5 -3 8 0 8 c3 0 3 -3 0 -8 z"/>
+            <path class="pt-drop" d="M224 74 c-3 5 -3 8 0 8 c3 0 3 -3 0 -8 z"/>
+          </g>
+          <g class="pt-tears" id="pt-tears" opacity="0"><path class="pt-drop" d="M156 84 c-2.5 4 -2.5 7 0 7 c2.5 0 2.5 -3 0 -7 z"/><path class="pt-drop" d="M204 84 c-2.5 4 -2.5 7 0 7 c2.5 0 2.5 -3 0 -7 z"/></g>
+          <g class="pt-drool" id="pt-drool" opacity="0"><path class="pt-drop" d="M186 112 c-2.5 4 -2.5 7 0 7 c2.5 0 2.5 -3 0 -7 z"/></g>
+          <path class="eng" d="M168 124 L168 138 M192 124 L192 138"/>
+          <path class="eng" d="M122 146 C150 136 210 136 238 146 C244 200 242 260 234 318 L126 318 C118 260 116 200 122 146 Z"/>
+          <g id="pt-chest"><path class="eng" d="M146 168 Q180 160 214 168 M144 184 Q180 176 216 184 M146 200 Q180 192 214 200" style="stroke:var(--brass-line)"/></g>
+          <path id="pt-heart" d="M162 188 c-6 -8 -16 -2 -10 6 l10 10 l10 -10 c6 -8 -4 -14 -10 -6 z"/>
+          <path class="eng" d="M160 262 c8 -10 16 10 24 0 s16 10 24 0" style="stroke:var(--bone-faint)"/>
+          <path class="pt-bowel" id="pt-b1" d="M150 254 q-6 8 0 16"/><path class="pt-bowel" id="pt-b2" d="M142 250 q-8 12 0 24"/>
+          <path class="pt-bowel" id="pt-b3" d="M218 254 q6 8 0 16"/><path class="pt-bowel" id="pt-b4" d="M226 250 q8 12 0 24"/>
+          <path class="eng limb" d="M122 152 C104 196 98 246 92 300"/><path class="eng limb" d="M238 152 C256 196 262 246 268 300"/>
+          <g id="pt-h1"><circle class="eng" cx="90" cy="308" r="8"/></g><g id="pt-h2"><circle class="eng" cx="270" cy="308" r="8"/></g>
+          <path class="eng limb" d="M146 318 L142 420 M214 318 L218 420"/>
+          <g id="pt-f1" style="transform-origin:142px 420px"><path class="eng limb" d="M142 420 L122 432"/></g>
+          <g id="pt-f2" style="transform-origin:218px 420px"><path class="eng limb" d="M218 420 L238 432"/></g>
+          <rect x="314" y="118" width="16" height="180" rx="8" class="eng"/>
+          <circle cx="322" cy="308" r="14" class="eng"/>
+          <circle cx="322" cy="308" r="10" id="pt-bulb" fill="var(--st-over)"/>
+          <rect id="pt-merc" x="318" y="200" width="8" height="100" rx="4" fill="var(--st-over)"/>
+          <line x1="306" y1="173" x2="312" y2="173" class="eng"/><text class="t-lbl" x="286" y="177">40</text>
+          <line x1="306" y1="242" x2="312" y2="242" class="eng"/><text class="t-lbl" x="286" y="246">37</text>
+          <text class="t-num" id="pt-tread" x="322" y="350" text-anchor="middle"></text>
+          <text class="t-lbl" x="322" y="366" text-anchor="middle">°C</text>
+        </svg></div>
+        <div>
+          <div class="plate-head" style="margin-bottom:6px"><h3 id="tx-name" style="margin:0"></h3><span id="tx-tag"></span></div>
+          <dl class="vit" id="tx-vit"></dl>
+          <p style="margin-top:12px"><span class="lbl">Discriminator</span><br><span id="tx-key" style="color:var(--bone)"></span></p>
+          <p><span class="lbl">Mechanism</span><br><span id="tx-mech"></span></p>
+          <p><span class="lbl">First moves</span><br><span id="tx-rx"></span></p>
+        </div>
+      </div>
+      <p class="small dim" style="margin-top:8px">Vital signs are typical illustrative values, not thresholds. Heart rate and respiratory rate drive the animation speed.</p>
+    </div>
+
+    <div class="plate">
+      <div class="plate-head"><h3>Hunter serotonin toxicity criteria</h3><span class="lbl">Dunkley 2003</span></div>
+      <p class="small" style="max-width:75ch">In 2,222 serotonergic overdoses, five findings (clonus, agitation, diaphoresis, tremor, hyperreflexia) predicted a toxicologist's diagnosis; hypertonia and temperature above 38 °C were added for life-threatening cases. Sensitivity 84% and specificity 97%, against 75% and 96% for Sternbach's criteria.</p>
+      <div class="hunter" id="hunter"></div>
+      <div class="verdict" id="h-verdict" aria-live="polite"></div>
+    </div>
+
+    <h3>Side by side</h3>
+    <div class="tbl"><table id="cmp"></table></div>
+  </section>
+
+  <!-- VI TIME -->
+  <section class="room" id="time">
+    <div class="room-head"><span class="no">ROOM VI</span><span class="kicker">Onset</span></div>
+    <h2>The clock is part of the diagnosis</h2>
+    <div class="col"><p>Serotonin toxicity arrives in hours; neuroleptic malignant syndrome builds over days. Acute dystonia comes first among the extrapyramidal syndromes and tardive dyskinesia last. Drag the marker, or play the sweep, to see which presentations are in their usual window.</p></div>
+    <div class="plate">
+      <div class="scroll cap"><svg class="fig" id="tl-svg" viewBox="0 0 640 318" role="img" aria-labelledby="tl-t tl-d" style="min-width:600px"><title id="tl-t">Typical onset windows</title><desc id="tl-d">Horizontal bars on a logarithmic time axis from one hour to five years showing the usual onset windows of serotonin toxicity, acute dystonia, alcohol withdrawal seizures, delirium tremens, akathisia, neuroleptic malignant syndrome, drug-induced parkinsonism and tardive dyskinesia.</desc></svg></div>
+      <div class="ctrl"><button class="btn" id="tl-play" type="button">Play sweep</button><div class="range"><input type="range" id="tl-t-in" min="0" max="1000" value="380" aria-label="Time since exposure"><span class="read" id="tl-read"></span></div></div>
+      <div class="well" id="tl-now" aria-live="polite" style="margin-top:6px"></div>
+      <p class="small dim" style="margin-top:10px">Hours since starting or raising the drug; for alcohol withdrawal, since the last drink. Windows are typical, not limits: each syndrome can appear outside its bar.</p>
+    </div>
+    <div class="tbl"><table>
+      <thead><tr><th>Syndrome</th><th>Who is at risk</th><th>First moves</th></tr></thead>
+      <tbody>
+        <tr><td>Acute dystonia</td><td>Young men, high-potency D2 antagonists, early in treatment</td><td>IM or IV benztropine or diphenhydramine</td></tr>
+        <tr><td>Akathisia</td><td>Any D2 antagonist or partial agonist, including aripiprazole; also SSRIs</td><td>Lower the dose or switch; propranolol; low-dose mirtazapine or a benzodiazepine</td></tr>
+        <tr><td>Drug-induced parkinsonism</td><td>Older adults, women, high D2 occupancy</td><td>Lower the dose or switch; benztropine or amantadine</td></tr>
+        <tr><td>Tardive dyskinesia</td><td>Long exposure, older age, earlier EPS, mood disorders</td><td>VMAT2 inhibitor (valbenazine, deutetrabenazine); anticholinergics can worsen it</td></tr>
+        <tr><td>NMS</td><td>Rapid titration, high-potency or depot agents, dehydration, agitation</td><td>Stop the D2 antagonist; cooling, fluids, benzodiazepines; dantrolene, bromocriptine or ECT if severe</td></tr>
+        <tr><td>Serotonin toxicity</td><td>Combined serotonergic drugs, MAOI interactions, overdose</td><td>Stop serotonergic agents; benzodiazepines, cooling; cyproheptadine</td></tr>
+      </tbody>
+    </table></div>
+    <p class="small dim">In KINECT 3, valbenazine 80 mg/day reduced the AIMS dyskinesia score by 3.2 points at six weeks against 0.1 with placebo (Hauser 2017).</p>
+  </section>
+
+  <!-- VII ADAPTATION -->
+  <section class="room" id="adaptation">
+    <div class="room-head"><span class="no">ROOM VII</span><span class="kicker">Adaptation</span></div>
+    <h2>Stopping a drug flips the sign</h2>
+    <div class="col"><p>A brain exposed to a drug for weeks adjusts its own responsiveness to bring signaling back toward the set point. That adjustment is tolerance while the drug is present. When the drug is removed the adjustment is still there, and the patient swings to the opposite state: deficit after a chronic agonist, excess after a chronic antagonist.</p></div>
+    <div class="plate" id="ad-plate" data-state="normal">
+      <div class="plate-head"><h3>Exposure and withdrawal</h3>
+        <div class="seg" id="ad-seg" role="group" aria-label="Chronic drug type">
+          <button type="button" data-k="ago" aria-pressed="true">Chronic agonist</button>
+          <button type="button" data-k="ant" aria-pressed="false">Chronic antagonist</button>
+          <button type="button" data-k="rui" aria-pressed="false">Reuptake inhibitor</button>
+        </div>
+      </div>
+      <div class="scroll cap"><svg class="fig" id="ad-svg" viewBox="0 0 600 262" role="img" aria-labelledby="ad-t ad-d" style="min-width:520px"><title id="ad-t">Signal and responsiveness over time</title><desc id="ad-d">Net signal and receptor responsiveness plotted across a baseline period, weeks of drug exposure, and the period after the drug is stopped. The signal line is coloured by state.</desc></svg></div>
+      <div class="legend-row" aria-hidden="true"><span><svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="oklch(93% 0.012 85)" stroke-width="2.4"/></svg>Net signal</span><span><svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="oklch(70% 0.055 80)" stroke-width="1.4" stroke-dasharray="5 5"/></svg>Responsiveness</span></div>
+      <div class="split even" style="margin-top:14px" id="ad-text"></div>
+      <p class="small dim" style="margin-top:10px">One variable stands in for many adaptations: receptor number, coupling, downstream signaling and gene expression. The curves are illustrative and not fitted to any drug.</p>
+    </div>
+  </section>
+
+  <!-- VIII INDEX -->
+  <section class="room" id="index">
+    <div class="room-head"><span class="no">ROOM VIII</span><span class="kicker">Bedside index</span></div>
+    <h2>The Archive's specimens at the bedside</h2>
+    <div class="col"><p>The 23 specimens held in the Receptor Archive, each with what excess and deficit look like in a patient and the agents that usually produce them. For transporters, excess means the reuptake inhibitor's effect: more transmitter in the synapse.</p></div>
+    <div class="tools">
+      <div class="seg" id="i-hall" role="group" aria-label="Filter by hall">
+        <button type="button" data-h="all" aria-pressed="true">All</button>
+        <button type="button" data-h="Serotonin" aria-pressed="false">Serotonin</button>
+        <button type="button" data-h="Dopamine" aria-pressed="false">Dopamine</button>
+        <button type="button" data-h="Noradrenergic" aria-pressed="false">Noradrenergic</button>
+        <button type="button" data-h="Glutamate & GABA" aria-pressed="false">Glutamate &amp; GABA</button>
+        <button type="button" data-h="Neuromodulators" aria-pressed="false">Neuromodulators</button>
+      </div>
+      <input type="search" id="i-q" placeholder="Search a sign, receptor or drug, e.g. priapism" aria-label="Search the index">
+      <span class="read" id="i-count" style="color:var(--bone-faint)"></span>
+    </div>
+    <div class="tbl"><table id="idx-table">
+      <thead><tr><th>№</th><th>Specimen</th><th>Excess ▲</th><th>Deficit ▼</th><th>Usual agents</th></tr></thead>
+      <tbody id="i-body"></tbody>
+    </table></div>
+  </section>
+
+  <!-- IX QUIZ -->
+  <section class="room" id="quiz">
+    <div class="room-head"><span class="no">ROOM IX</span><span class="kicker">Self-check</span></div>
+    <h2>Vignettes</h2>
+    <div class="col"><p>PRITE-style items. Each answer explains every option. Your answers stay in this browser.</p></div>
+    <div class="tools"><span class="read" id="q-score"></span><button class="btn" type="button" id="q-reset">Reset answers</button></div>
+    <div id="q-list" style="margin-top:10px"></div>
+  </section>
+
+  <!-- SOURCES -->
+  <section class="room" id="sources">
+    <div class="room-head"><span class="no">PROVENANCE</span></div>
+    <h2>Sources</h2>
+    <div class="col">
+      <p class="small dim">Primary papers were checked against PubMed when this page was built; DOIs are linked. Textbook-level statements were not re-verified line by line.</p>
+      <ol class="refs">
+        <li>Kapur S, Zipursky R, Jones C, Remington G, Houle S. Relationship between dopamine D2 occupancy, clinical response, and side effects: a double-blind PET study of first-episode schizophrenia. <i>Am J Psychiatry</i>. 2000;157:514–520. <a href="https://doi.org/10.1176/appi.ajp.157.4.514">doi:10.1176/appi.ajp.157.4.514</a></li>
+        <li>Kapur S, Seeman P. Does fast dissociation from the dopamine D2 receptor explain the action of atypical antipsychotics? A new hypothesis. <i>Am J Psychiatry</i>. 2001;158:360–369. <a href="https://doi.org/10.1176/appi.ajp.158.3.360">doi:10.1176/appi.ajp.158.3.360</a></li>
+        <li>Yokoi F, Gründer G, Biziere K, et al. Dopamine D2 and D3 receptor occupancy in normal humans treated with the antipsychotic drug aripiprazole (OPC 14597). <i>Neuropsychopharmacology</i>. 2002;27:248–259. <a href="https://doi.org/10.1016/S0893-133X(02)00304-4">doi:10.1016/S0893-133X(02)00304-4</a></li>
+        <li>Dunkley EJC, Isbister GK, Sibbritt D, Dawson AH, Whyte IM. The Hunter Serotonin Toxicity Criteria: simple and accurate diagnostic decision rules for serotonin toxicity. <i>QJM</i>. 2003;96:635–642. <a href="https://doi.org/10.1093/qjmed/hcg109">doi:10.1093/qjmed/hcg109</a></li>
+        <li>Boyer EW, Shannon M. The serotonin syndrome. <i>N Engl J Med</i>. 2005;352:1112–1120. <a href="https://doi.org/10.1056/NEJMra041867">doi:10.1056/NEJMra041867</a></li>
+        <li>Strawn JR, Keck PE, Caroff SN. Neuroleptic malignant syndrome. <i>Am J Psychiatry</i>. 2007;164:870–876. <a href="https://doi.org/10.1176/ajp.2007.164.6.870">doi:10.1176/ajp.2007.164.6.870</a></li>
+        <li>Krystal JH, Karper LP, Seibyl JP, et al. Subanesthetic effects of the noncompetitive NMDA antagonist, ketamine, in humans. <i>Arch Gen Psychiatry</i>. 1994;51:199–214. <a href="https://doi.org/10.1001/archpsyc.1994.03950030035004">doi:10.1001/archpsyc.1994.03950030035004</a></li>
+        <li>Vollenweider FX, Vollenweider-Scherpenhuyzen MF, Bäbler A, Vogel H, Hell D. Psilocybin induces schizophrenia-like psychosis in humans via a serotonin-2 agonist action. <i>Neuroreport</i>. 1998;9:3897–3902. <a href="https://doi.org/10.1097/00001756-199812010-00024">doi:10.1097/00001756-199812010-00024</a></li>
+        <li>Cummings J, Isaacson S, Mills R, et al. Pimavanserin for patients with Parkinson's disease psychosis: a randomised, placebo-controlled phase 3 trial. <i>Lancet</i>. 2014;383:533–540. <a href="https://doi.org/10.1016/S0140-6736(13)62106-6">doi:10.1016/S0140-6736(13)62106-6</a></li>
+        <li>Hauser RA, Factor SA, Marder SR, et al. KINECT 3: a phase 3 randomized, double-blind, placebo-controlled trial of valbenazine for tardive dyskinesia. <i>Am J Psychiatry</i>. 2017;174:476–484. <a href="https://doi.org/10.1176/appi.ajp.2017.16091037">doi:10.1176/appi.ajp.2017.16091037</a></li>
+        <li>Dahan A, Yassen A, Romberg R, et al. Buprenorphine induces ceiling in respiratory depression but not in analgesia. <i>Br J Anaesth</i>. 2006;96:627–632. <a href="https://doi.org/10.1093/bja/ael051">doi:10.1093/bja/ael051</a></li>
+        <li>Nishino S, Ripley B, Overeem S, Lammers GJ, Mignot E. Hypocretin (orexin) deficiency in human narcolepsy. <i>Lancet</i>. 2000;355:39–40. <a href="https://doi.org/10.1016/S0140-6736(99)05582-8">doi:10.1016/S0140-6736(99)05582-8</a></li>
+        <li>Burns MJ, Linden CH, Graudins A, Brown RM, Fletcher KE. A comparison of physostigmine and benzodiazepines for the treatment of anticholinergic poisoning. <i>Ann Emerg Med</i>. 2000;35:374–381. <a href="https://doi.org/10.1016/S0196-0644(00)70057-6">doi:10.1016/S0196-0644(00)70057-6</a></li>
+        <li>Moore TJ, Glenmullen J, Mattison DR. Reports of pathological gambling, hypersexuality, and compulsive shopping associated with dopamine receptor agonist drugs. <i>JAMA Intern Med</i>. 2014;174:1930–1933. <a href="https://doi.org/10.1001/jamainternmed.2014.5262">doi:10.1001/jamainternmed.2014.5262</a></li>
+        <li>Weintraub D, Koester J, Potenza MN, et al. Impulse control disorders in Parkinson disease: a cross-sectional study of 3090 patients. <i>Arch Neurol</i>. 2010;67:589–595. <a href="https://doi.org/10.1001/archneurol.2010.65">doi:10.1001/archneurol.2010.65</a></li>
+        <li>Drachman DA, Leavitt J. Human memory and the cholinergic system: a relationship to aging? <i>Arch Neurol</i>. 1974;30:113–121. <a href="https://doi.org/10.1001/archneur.1974.00490320001001">doi:10.1001/archneur.1974.00490320001001</a></li>
+        <li>Stahl SM. <i>Stahl's Essential Psychopharmacology</i>. 5th ed. Cambridge University Press; 2021.</li>
+      </ol>
+    </div>
+    <footer class="disc"><span class="lbl">An educational reference for clinicians and trainees, not a dosing or treatment guide.</span></footer>
+  </section>
+</main>
+
+<script>
+(function(){
+"use strict";
+const RM = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const NS = "http://www.w3.org/2000/svg";
+const $ = (s,r=document)=>r.querySelector(s), $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+function el(tag, a, p){ const e=document.createElementNS(NS,tag); for (const k in a){ if(k==="text") e.textContent=a[k]; else e.setAttribute(k,a[k]); } if(p) p.appendChild(e); return e; }
+const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+function replay(nodes, root){ if (RM) return; nodes.forEach(n=>n.classList.add("pre")); void (root||document.body).getBoundingClientRect(); nodes.forEach(n=>n.classList.remove("pre")); }
+function segWire(box, attr, onPick){ $$("button", box).forEach(b=>b.addEventListener("click", ()=>{ if (b.disabled) return; $$("button",box).forEach(x=>x.setAttribute("aria-pressed", x===b?"true":"false")); onPick(b.dataset[attr]); })); }
+const GLYPH = {over:"▲", under:"▼", normal:"●"};
+const WORD = {over:"Excess", under:"Deficit", normal:"Steady"};
+const tag = st => `<span class="tag ${st}">${GLYPH[st]} ${WORD[st]}</span>`;
+
+/* ================= I. DIAL ================= */
+(function(){
+  const STOPS = ["none","inverse","antagonist","partial","full"];
+  const STOPNAME = {none:"No drug", inverse:"Inverse agonist", antagonist:"Antagonist", partial:"Partial agonist", full:"Full agonist"};
+  const RX = {
+    d2:{label:"D2", eff:{inverse:-0.2, antagonist:0, partial:0.75, full:1.9},
+      ex:{inverse:"Most antipsychotics behave as inverse agonists in vitro; clinically they are treated as antagonists.", antagonist:"Haloperidol, risperidone, olanzapine", partial:"Aripiprazole, brexpiprazole, cariprazine", full:"Pramipexole, ropinirole, bromocriptine"},
+      sc:[{id:"t",label:"Typical tone",A:1,S:1,note:"Dopamine signaling at its set point."},{id:"p",label:"Acute psychosis",A:1.8,S:1,note:"Mesolimbic dopamine signaling well above set point."},{id:"pd",label:"Parkinson disease",A:0.3,S:1,note:"Nigrostriatal dopamine loss leaves signaling far below set point."}],
+      over:["Hallucinations and paranoid delusions","Impulse control disorders: gambling, hypersexuality, compulsive buying, binge eating","Peak-dose dyskinesias with levodopa","Nausea and vomiting (area postrema)","Sleep attacks and orthostasis with D2/D3 agonists; prolactin falls"],
+      under:["Antipsychotic and antimanic effect (therapeutic)","Acute dystonia, akathisia, parkinsonism","Hyperprolactinemia: galactorrhea, amenorrhea, gynecomastia, sexual dysfunction","Blunted reward and secondary negative symptoms","Neuroleptic malignant syndrome (rare)"],
+      def:{sc:"p", stop:"partial", occ:85}},
+    mu:{label:"μ-opioid", eff:{antagonist:0, partial:0.9, full:2.6},
+      ex:{antagonist:"Naloxone, naltrexone", partial:"Buprenorphine", full:"Morphine, fentanyl, methadone, heroin"},
+      sc:[{id:"n",label:"Opioid-naive",A:0.25,S:0.25,note:"Low endogenous tone; the set point sits low."},{id:"r",label:"Dependent, recent full agonist",A:1.8,S:1.4,note:"Tolerance has raised the set point; a full agonist is still bound."},{id:"w",label:"Dependent, in withdrawal",A:0.5,S:1.4,note:"Hours after the last dose: signaling has fallen well below the adapted set point."}],
+      over:["Euphoria and sedation","Respiratory depression, the lethal effect","Miosis","Constipation, nausea, pruritus, urinary retention","Tolerance develops to euphoria and respiratory depression, little to miosis or constipation"],
+      under:["In dependence this is withdrawal: dysphoria, craving, anxiety, insomnia","Yawning, lacrimation, rhinorrhea, piloerection","Mydriasis, diarrhea, cramps, myalgias","Tachycardia, hypertension; rarely life-threatening in healthy adults"],
+      def:{sc:"r", stop:"partial", occ:80}},
+    gaba:{label:"GABA-A", eff:{inverse:0.6, antagonist:1.0, partial:1.35, full:1.8},
+      ex:{inverse:"β-carbolines such as FG-7142 (research only): anxiogenic and proconvulsant", antagonist:"Flumazenil (benzodiazepine site)", partial:"Partial benzodiazepine-site modulators (investigational)", full:"Benzodiazepines and Z-drugs (positive modulators)"},
+      sc:[{id:"t",label:"Typical",A:1,S:1,note:"GABA alone, no modulator bound."},{id:"o",label:"Sedative overdose",A:2.1,S:1,note:"Benzodiazepine with alcohol: modulation far above set point."},{id:"d",label:"Dependent, usual dose",A:1.8,S:1.8,note:"Months of benzodiazepine use: the set point has moved up and the patient feels normal."},{id:"s",label:"Abrupt stop",A:1,S:1.8,note:"The modulator is gone; the adapted set point is not."}],
+      over:["Sedation and anxiolysis","Anterograde amnesia","Ataxia, dysarthria, nystagmus","Paradoxical disinhibition or agitation, more often in older adults and children","Respiratory depression, mainly with alcohol, opioids or barbiturates"],
+      under:["Anxiety, insomnia, irritability","Tremor, diaphoresis, tachycardia, hypertension","Hyperreflexia and seizures","Delirium tremens with hallucinations in severe alcohol withdrawal"],
+      def:{sc:"d", stop:"antagonist", occ:80}},
+    ht2a:{label:"5-HT2A", eff:{inverse:-0.3, antagonist:0, full:2.4},
+      ex:{inverse:"Pimavanserin", antagonist:"Most second-generation antipsychotics, trazodone, mirtazapine, cyproheptadine", full:"Psilocybin (as psilocin), LSD, DMT"},
+      sc:[{id:"t",label:"Typical tone",A:1,S:1,note:"Serotonergic tone at set point."},{id:"x",label:"Serotonin toxicity",A:2.1,S:1,note:"High synaptic serotonin, for example two serotonergic drugs combined."},{id:"pd",label:"Parkinson disease psychosis",A:1.6,S:1,note:"5-HT2A overactivity is proposed in this psychosis; the target of pimavanserin."}],
+      over:["Altered perception: illusions, visual hallucinations, synesthesia","Altered sense of self, emotional lability, anxiety or panic","Psilocybin's effects in humans were blocked by ketanserin and risperidone","Contributes to hyperthermia and agitation in severe serotonin toxicity; the rationale for cyproheptadine"],
+      under:["Antipsychotic effect in Parkinson disease psychosis without motor worsening (pimavanserin)","Sleep consolidation, one proposed part of trazodone's hypnotic effect","Proposed to temper EPS from D2 blockade, though Kapur and Seeman argue D2 kinetics explain it","Few adverse effects of its own"],
+      def:{sc:"pd", stop:"inverse", occ:80}},
+    a2:{label:"α2", eff:{antagonist:0, full:2.0},
+      ex:{antagonist:"Yohimbine, mirtazapine", full:"Clonidine, guanfacine, lofexidine, dexmedetomidine"},
+      sc:[{id:"t",label:"Typical",A:1,S:1,note:"Autoreceptor brake at set point."},{id:"h",label:"Withdrawal hyperarousal",A:0.45,S:1,note:"Locus coeruleus firing outruns the α2 brake."}],
+      over:["Sedation","Hypotension and bradycardia","Dry mouth","Calms withdrawal hyperarousal (therapeutic)","Better prefrontal regulation of attention in ADHD (guanfacine, clonidine extended release)"],
+      under:["Anxiety and panic in susceptible patients (yohimbine)","Tachycardia, raised blood pressure, tremor","More norepinephrine and serotonin release, part of mirtazapine's antidepressant mechanism"],
+      def:{sc:"h", stop:"full", occ:60}},
+    nic:{label:"nAChR α4β2", eff:{antagonist:0, partial:1.2, full:2.4},
+      ex:{antagonist:"Mecamylamine (non-selective, little clinical use)", partial:"Varenicline, cytisine", full:"Nicotine"},
+      sc:[{id:"n",label:"Never smoker",A:1,S:1,note:"No adaptation to nicotine."},{id:"c",label:"Smoking a cigarette",A:2.2,S:1.4,note:"A smoker's set point is raised; a cigarette pushes above it, which is the reward."},{id:"q",label:"Recently quit",A:0.7,S:1.4,note:"No nicotine against an adapted set point: withdrawal."}],
+      over:["Alertness and sharper attention","Reward through dopamine release in the nucleus accumbens","Nausea and dizziness in the nicotine-naive","Toxic doses: vomiting, salivation, tremor, seizures (ganglionic and muscle receptors join in)"],
+      under:["Nicotine withdrawal: irritability, anxiety, poor concentration, craving","Increased appetite and weight gain","Dysphoric mood, insomnia"],
+      def:{sc:"c", stop:"partial", occ:80}},
+    m:{label:"Muscarinic", eff:{antagonist:0, full:2.0},
+      ex:{antagonist:"Scopolamine, benztropine, diphenhydramine; burden from TCAs, clozapine, olanzapine, paroxetine", full:"Xanomeline (M1/M4-preferring); cholinesterase inhibitors raise tone indirectly"},
+      sc:[{id:"t",label:"Typical",A:1,S:1,note:"Cholinergic tone at set point."},{id:"o",label:"Older adult, low reserve",A:0.72,S:1,note:"Reduced cholinergic reserve: already near the lower edge."},{id:"op",label:"Organophosphate exposure",A:2.2,S:1,note:"Acetylcholinesterase inhibited: acetylcholine accumulates."}],
+      over:["Nausea, vomiting, diarrhea, salivation, sweating (M3)","Bradycardia (M2)","Vivid dreams and insomnia with cholinesterase inhibitors","Bronchorrhea, miosis and seizures in organophosphate poisoning","Antipsychotic effect through M1/M4 (xanomeline)"],
+      under:["Delirium, especially in older adults","Impaired memory and attention (the scopolamine model)","Dry mouth, constipation, urinary retention, blurred vision, tachycardia, flushing, hyperthermia","Fewer extrapyramidal symptoms, which is why benztropine treats dystonia"],
+      def:{sc:"o", stop:"antagonist", occ:60}}
+  };
+  const CLASSIC = {
+    "mu|partial|r":"This is precipitated withdrawal: buprenorphine's high affinity displaces the full agonist and its lower efficacy drops net signaling.",
+    "mu|partial|w":"The same drug now raises signaling, which is why induction waits for objective withdrawal. Buprenorphine also shows a ceiling on respiratory depression (Dahan 2006).",
+    "mu|antagonist|n":"Naloxone in an opioid-naive person: little to block, so little to see.",
+    "mu|antagonist|r":"Naloxone in a dependent patient: abrupt, severe withdrawal.",
+    "nic|partial|c":"Varenicline in an active smoker: the cigarette no longer pushes above the set point, so the reward fades.",
+    "nic|partial|q":"Varenicline after quitting: it adds back some signaling and eases craving.",
+    "d2|partial|p":"A partial agonist in psychosis lowers excessive mesolimbic signaling toward the set point.",
+    "d2|partial|pd":"In a low-dopamine state the same drug adds signaling, a proposed reason partial agonists cause less EPS and prolactin elevation.",
+    "d2|full|p":"Dopamine agonists worsen psychosis.",
+    "gaba|antagonist|o":"Flumazenil reverses a benzodiazepine overdose by returning the receptor to GABA-only signaling.",
+    "gaba|antagonist|d":"Flumazenil in a dependent patient: the same move drops signaling below the adapted set point and can trigger seizures.",
+    "gaba|full|s":"A benzodiazepine treats sedative withdrawal by restoring modulation to the adapted set point.",
+    "m|antagonist|o":"Anticholinergic burden tips a low-reserve brain into delirium.",
+    "m|antagonist|op":"Atropine in organophosphate poisoning is titrated to dry secretions; too much overshoots into anticholinergic toxicity.",
+    "ht2a|inverse|pd":"Pimavanserin: antipsychotic effect in Parkinson disease without D2 blockade, so motor function is spared.",
+    "a2|full|h":"Clonidine and lofexidine restore the brake in withdrawal hyperarousal."
+  };
+  const svg = $("#d-svg");
+  el("rect",{x:0,y:96,width:600,height:22,fill:"oklch(70% 0.055 80 / 0.14)"},svg);
+  el("line",{x1:0,y1:96,x2:600,y2:96,class:"eng-faint"},svg); el("line",{x1:0,y1:118,x2:600,y2:118,class:"eng-faint"},svg);
+  const R = [];
+  for (let i=0;i<10;i++){
+    const x = 48 + i*56;
+    const g = el("g",{},svg);
+    const glow = el("ellipse",{cx:x,cy:152,rx:20,ry:12,class:"glow",opacity:.3},g);
+    el("path",{class:"eng draw",pathLength:1,d:`M${x-12} 62 C${x-12} 80 ${x-8} 90 ${x-8} 126 C${x-8} 136 ${x+8} 136 ${x+8} 126 C${x+8} 90 ${x+12} 80 ${x+12} 62`},g);
+    const endo = el("circle",{cx:x,cy:70,r:3.5,class:"endo"+(RM?"":" live"),style:`animation-delay:${(i*0.23).toFixed(2)}s`},g);
+    const lg = el("g",{class:"lig off"},el("g",{transform:`translate(${x} 70)`},g));
+    R.push({x,glow,endo,lg});
+  }
+  function glyph(stop){
+    const B = "oklch(70% 0.055 80)";
+    if (stop==="full") return `<circle r="6" fill="${B}"/>`;
+    if (stop==="partial") return `<circle r="5.6" fill="none" stroke="${B}" stroke-width="1.3"/><path d="M0 -5.6 A5.6 5.6 0 0 0 0 5.6 Z" fill="${B}"/>`;
+    if (stop==="antagonist") return `<rect x="-5.5" y="-5.5" width="11" height="11" fill="${B}"/>`;
+    if (stop==="inverse") return `<path d="M-6.5 -4.5 L6.5 -4.5 L0 6.5 Z" fill="${B}"/>`;
+    return "";
+  }
+  let rx="d2", sc=RX.d2.def.sc, stop=RX.d2.def.stop;
+  const occIn = $("#d-occ");
+  function buildRx(){
+    $("#d-rx").innerHTML = Object.entries(RX).map(([k,v])=>`<button type="button" data-k="${k}" aria-pressed="${k===rx}">${esc(v.label)}</button>`).join("");
+    segWire($("#d-rx"),"k",k=>{ rx=k; const d=RX[k].def; sc=d.sc; stop=d.stop; occIn.value=d.occ; buildSc(); buildStops(); render(true); });
+  }
+  function buildSc(){
+    $("#d-sc").innerHTML = RX[rx].sc.map(s=>`<button type="button" data-k="${s.id}" aria-pressed="${s.id===sc}">${esc(s.label)}</button>`).join("");
+    segWire($("#d-sc"),"k",k=>{ sc=k; render(); });
+  }
+  function buildStops(){
+    const e = RX[rx].eff;
+    $("#d-stop").innerHTML = STOPS.map(s=>{ const ok = s==="none" || e[s]!==undefined; return `<button type="button" data-k="${s}" aria-pressed="${s===stop}" ${ok?"":"disabled title=\"No clinical agent at this stop\""}>${STOPNAME[s]}</button>`; }).join("");
+    segWire($("#d-stop"),"k",k=>{ stop=k; render(); });
+  }
+  const pct = d => clamp((d+1.5)/3*100, 1, 99);
+  const state = d => d > 0.3 ? "over" : d < -0.3 ? "under" : "normal";
+  function teach(A,E,net){
+    if (stop==="none") return "No drug: the receptor sits at its existing activation.";
+    if (stop==="partial") return A > E + 0.05 ? "Existing activation is above the partial agonist's own ceiling, so it lowers the signal: a functional antagonist here." : A < E - 0.05 ? "Existing activation is below the partial agonist's ceiling, so it raises the signal: an agonist here." : "Existing activation is close to the partial agonist's ceiling, so little changes.";
+    if (stop==="antagonist") return A - E < 0.3 ? "Little existing activation to remove, so the antagonist changes little." : "The antagonist removes existing activation in proportion to occupancy.";
+    if (stop==="inverse") return "An inverse agonist pushes below an antagonist's floor by suppressing activity the receptor has even without agonist.";
+    return "A full agonist drives signaling toward its maximum whatever the existing activation.";
+  }
+  function render(redraw){
+    const r = RX[rx], s = r.sc.find(x=>x.id===sc) || r.sc[0];
+    const occ = +occIn.value/100; $("#d-occv").textContent = occIn.value+"%";
+    const E = stop==="none" ? null : r.eff[stop];
+    const net = stop==="none" ? s.A : (1-occ)*s.A + occ*E;
+    const d0 = s.A - s.S, d1 = net - s.S, st = state(d1);
+    $("#dial").dataset.state = st;
+    const k = stop==="none" ? 0 : Math.round(occ*10);
+    R.forEach((q,i)=>{
+      const held = i < k;
+      q.lg.innerHTML = held ? glyph(stop) : "";
+      q.lg.classList.toggle("off", !held);
+      q.endo.style.opacity = held ? 0 : clamp(0.25 + s.A/2.2, 0.25, 1);
+      const lvl = held ? E : s.A;
+      q.glow.setAttribute("opacity", clamp(lvl/2.4, 0.04, 0.95).toFixed(2));
+    });
+    const p0 = pct(d0), p1 = pct(d1);
+    $("#d-mk0").style.left = p0+"%"; $("#d-mk1").style.left = p1+"%";
+    const L = $("#d-link"); L.style.left = Math.min(p0,p1)+"%"; L.style.width = Math.abs(p1-p0)+"%";
+    const key = `${rx}|${stop}|${s.id}`;
+    const list = st==="over" ? r.over : st==="under" ? r.under : null;
+    const ex = stop==="none" ? "" : (r.ex[stop] ? esc(r.ex[stop]) : "No agent in clinical use at this stop.");
+    $("#d-read").innerHTML = `
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between"><span class="lbl">${esc(r.label)} · ${esc(s.label)}</span>${tag(st)}</div>
+      <p class="small dim" style="margin:.5em 0 .2em">${esc(s.note)}</p>
+      ${stop!=="none"?`<p style="margin:.4em 0"><span class="lbl">${STOPNAME[stop]}</span><br><span style="color:var(--bone)">${ex}</span></p>`:""}
+      <p style="margin:.6em 0;color:var(--bone)">${esc(CLASSIC[key] || teach(s.A, E, net))}</p>
+      <div class="lbl" style="margin-top:12px">${list ? (st==="over"?"What excess looks like":"What deficit looks like") : "Within the steady band"}</div>
+      ${list ? `<ul class="pres ${st} stagger">${list.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>` : `<p class="small" style="margin:.4em 0">No new presentation from this receptor. Try a different occupancy or patient.</p>`}
+      <p class="read" style="margin-top:12px;color:var(--bone-faint)">before ${d0>=0?"+":""}${d0.toFixed(2)} · with drug ${d1>=0?"+":""}${d1.toFixed(2)} vs set point</p>`;
+    if (redraw) replay($$("#d-svg .draw"), svg);
+  }
+  occIn.addEventListener("input", ()=>render());
+  buildRx(); buildSc(); buildStops(); occIn.value = RX.d2.def.occ; render(true);
+})();
+
+/* ================= II. OCCUPANCY ================= */
+(function(){
+  const svg = $("#o-svg"), recG = $("#o-rec"), daG = $("#o-da"), vesG = $("#o-ves");
+  const VES = [[130,52],[196,62],[262,46],[330,60],[398,48],[466,60]];
+  VES.forEach(([x,y])=>{ el("circle",{cx:x,cy:y,r:11,class:"eng"},vesG); for(let j=0;j<3;j++) el("circle",{cx:x-4+j*4,cy:y+(j%2?2:-2),r:1.6,fill:"oklch(93% 0.012 85)"},vesG); });
+  const N = 16, xs = Array.from({length:N},(_,i)=>75+i*30);
+  const ORDER = [3,11,7,14,0,9,5,12,2,15,6,10,1,13,4,8];
+  const rec = xs.map(x=>{
+    const g = el("g",{},recG);
+    el("path",{class:"eng",d:`M${x-8} 150 C${x-8} 164 ${x-5} 168 ${x-5} 178 M${x+8} 150 C${x+8} 164 ${x+5} 168 ${x+5} 178`},g);
+    const lg = el("g",{class:"lig off"},el("g",{transform:`translate(${x} 158)`},g));
+    const hit = el("circle",{cx:x,cy:158,r:4,fill:"oklch(93% 0.012 85)",opacity:0},g);
+    return {x,lg,hit,held:false};
+  });
+  let mode="ant";
+  const occIn = $("#o-occ");
+  function render(){
+    const o = +occIn.value; $("#o-occv").textContent = o+"%";
+    const k = Math.round(o/100*N);
+    const set = new Set(ORDER.slice(0,k));
+    rec.forEach((r,i)=>{ r.held = set.has(i); r.lg.innerHTML = r.held ? (mode==="ant" ? `<rect x="-5" y="-5" width="10" height="10" fill="oklch(70% 0.055 80)"/>` : `<circle r="5.4" fill="none" stroke="oklch(70% 0.055 80)" stroke-width="1.3"/><path d="M0 -5.4 A5.4 5.4 0 0 0 0 5.4 Z" fill="oklch(70% 0.055 80)"/>`) : ""; r.lg.classList.toggle("off", !r.held); });
+    $("#o-fill").style.width = o+"%";
+    $("#o-gauge").classList.toggle("partial", mode==="par");
+    let st="normal", rows;
+    if (mode==="ant"){
+      const resp=o>=65, prl=o>=72, eps=o>=78;
+      st = eps ? "under" : o < 50 ? "normal" : "under";
+      $("#o-fill").style.background = eps ? "var(--st-under)" : resp ? "color-mix(in oklch, var(--st-under) 70%, var(--st-normal))" : "var(--st-normal)";
+      $("#occ-plate").dataset.state = eps ? "under" : resp ? "normal" : "normal";
+      rows = [
+        ["Clinical response", resp, "Likely above 65%", "Less likely below 65%"],
+        ["Hyperprolactinemia", prl, "Likely above 72%", "Less likely below 72%"],
+        ["Extrapyramidal symptoms", eps, "Likely above 78%", "Less likely below 78%"]
+      ].map(([n,on,a,b])=>`<div><span>${n}</span><span class="tag ${on?"under":""}" style="${on?"":"color:var(--bone-faint)"}">${on?"▼ "+a:b}</span></div>`).join("");
+      $("#o-note").innerHTML = "Thresholds are from haloperidol in first-episode patients after two weeks, read as the occupancy where risk rose significantly. They are not hard cutoffs, and they describe one drug. Kapur and Seeman later argued that fast dissociation from D2, rather than 5-HT2 blockade, is what lets some atypical agents work with fewer motor effects.";
+    } else {
+      $("#o-fill").style.background = "var(--brass)";
+      $("#occ-plate").dataset.state = "normal";
+      rows = [
+        ["Clinical response", o>=80, "Expected at high occupancy", "Partial agonists need high occupancy"],
+        ["Hyperprolactinemia", false, "", "Usually not raised; prolactin may fall"],
+        ["Extrapyramidal symptoms", false, "", o>=90?"None seen above 90% in healthy men":"Uncommon; akathisia remains common"]
+      ].map(([n,on,a,b])=>`<div><span>${n}</span><span class="tag ${on?"normal":""}" style="${on?"":"color:var(--bone-faint)"}">${on?"● "+a:b}</span></div>`).join("");
+      $("#o-note").innerHTML = "With a partial agonist the 72% and 78% thresholds do not transfer, because each held receptor still signals at the drug's own level. Yokoi and colleagues measured aripiprazole occupancy of 40% to 95% across 0.5 to 30 mg/day in 15 healthy men and saw no extrapyramidal symptoms even above 90%.";
+    }
+    $("#o-rows").innerHTML = rows;
+  }
+  segWire($("#o-mode"),"m",m=>{ mode=m; render(); });
+  occIn.addEventListener("input", render);
+  render();
+  // dopamine particles
+  const P = [];
+  for (let i=0;i<5;i++){ const c = el("circle",{r:3,cx:150+i*80,cy:110+i*8,fill:"oklch(93% 0.012 85)",opacity:.8},daG); P.push({c,alive:false}); }
+  for (let i=0;i<19;i++){ const c = el("circle",{r:3,cx:-10,cy:-10,fill:"oklch(93% 0.012 85)",opacity:0},daG); P.push({c,alive:false}); }
+  if (RM) return;
+  P.forEach(p=>p.c.setAttribute("opacity",0));
+  let last=null, acc=0;
+  function spawn(){
+    const p = P.find(q=>!q.alive); if (!p) return;
+    const [vx,vy] = VES[Math.floor(Math.random()*VES.length)];
+    const t = rec[Math.floor(Math.random()*N)];
+    Object.assign(p,{alive:true,t:0,x0:vx+(Math.random()*10-5),y0:vy+12,x1:t.x,y1:150,target:t,bounced:false});
+  }
+  function tick(ts){
+    if (last===null) last=ts; const dt=Math.min(60,ts-last)/1000; last=ts;
+    acc += dt*9; while (acc>=1){ acc-=1; spawn(); }
+    P.forEach(p=>{
+      if (!p.alive) return;
+      p.t += dt/1.5;
+      if (p.t>=1){
+        if (!p.target.held && !p.bounced){ p.target.hit.setAttribute("opacity",.9); setTimeout(()=>p.target.hit.setAttribute("opacity",0),260); }
+        p.alive=false; p.c.setAttribute("opacity",0); return;
+      }
+      let x = p.x0+(p.x1-p.x0)*p.t, y = p.y0+(p.y1-p.y0)*p.t;
+      if (p.target.held && p.t>0.82){ p.bounced=true; y = p.y0+(p.y1-p.y0)*0.82 - (p.t-0.82)*60; }
+      p.c.setAttribute("cx",x.toFixed(1)); p.c.setAttribute("cy",y.toFixed(1));
+      p.c.setAttribute("opacity", p.bounced ? Math.max(0,0.8-(p.t-0.82)*4).toFixed(2) : 0.85);
+    });
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
+
+/* ================= III. PATHWAYS ================= */
+(function(){
+  const PW = [
+    {id:"ml", n:"01", name:"Mesolimbic", route:"VTA → nucleus accumbens", base:"Reward prediction and salience.", block:["under","Antipsychotic effect on hallucinations and delusions. Can also blunt reward and motivation."], raise:["over","Positive symptoms: aberrant salience, hallucinations, delusions. Compulsive reward-seeking."]},
+    {id:"mc", n:"02", name:"Mesocortical", route:"VTA → prefrontal cortex", base:"Working memory and executive control; cortical dopamine acts mostly through D1.", block:["under","Proposed to worsen negative and cognitive symptoms. A hypothesis, since cortical D2 density is low."], raise:["over","Inverted U: modest increases sharpen attention; larger ones degrade working memory."]},
+    {id:"ns", n:"03", name:"Nigrostriatal", route:"SNc → dorsal striatum", base:"Initiation and smoothing of movement.", block:["under","Extrapyramidal symptoms: acute dystonia, akathisia, parkinsonism. Tardive dyskinesia after long exposure."], raise:["over","Dyskinesias and chorea (levodopa peak dose), tics, stereotypy and punding with stimulants."]},
+    {id:"ti", n:"04", name:"Tuberoinfundibular", route:"Arcuate nucleus → anterior pituitary", base:"Dopamine tonically inhibits prolactin release.", block:["under","Hyperprolactinemia: galactorrhea, amenorrhea, gynecomastia, sexual dysfunction, reduced bone density."], raise:["over","Prolactin falls. The basis for bromocriptine and cabergoline in prolactinoma."]}
+  ];
+  const dots = $("#pw-dots");
+  let mode = "block";
+  function setDots(){
+    dots.innerHTML = "";
+    if (RM) return;
+    const n = mode==="raise" ? 4 : 2, dur = mode==="raise" ? 1.5 : 2.6;
+    PW.forEach(p=>{
+      for (let i=0;i<n;i++){
+        const c = el("circle",{r:2.6,class:"flowdot"},dots);
+        const am = el("animateMotion",{dur:dur+"s",repeatCount:"indefinite",begin:(-i*dur/n).toFixed(2)+"s"},c);
+        el("mpath",{href:"#pw-"+p.id},am);
+      }
+    });
+  }
+  function render(first){
+    PW.forEach(p=>{
+      const st = mode==="base" ? "normal" : mode==="block" ? p.block[0] : p.raise[0];
+      const path = $("#pw-"+p.id); path.setAttribute("class","pw draw "+st);
+      $("#r-"+p.id).setAttribute("class","ring "+st);
+    });
+    $("#pw-list").innerHTML = PW.map(p=>{
+      const st = mode==="base" ? "normal" : mode==="block" ? p.block[0] : p.raise[0];
+      const tx = mode==="base" ? p.base : mode==="block" ? p.block[1] : p.raise[1];
+      return `<li><span class="n">${p.n}</span><div><div class="nm">${p.name}</div><div class="rt">${esc(p.route)}</div></div><div class="tx">${tag(st)} <span style="margin-left:6px">${esc(tx)}</span></div></li>`;
+    }).join("");
+    $("#pw-plate").dataset.state = mode==="base" ? "normal" : mode==="block" ? "under" : "over";
+    setDots();
+    replay($$("#pw-svg .pw"), $("#pw-svg"));
+    if (first) replay($$("#pw-svg .draw"), $("#pw-svg"));
+  }
+  segWire($("#pw-mode"),"m",m=>{ mode=m; render(); });
+  render(true);
+})();
+
+/* ================= IV. BODY MAP ================= */
+(function(){
+  const TG = [
+    {id:"h1", label:"H1 block", st:"under"},
+    {id:"mus", label:"Muscarinic block", st:"under"},
+    {id:"a1", label:"α1 block", st:"under"},
+    {id:"d2", label:"D2 block", st:"under"},
+    {id:"c2", label:"5-HT2C block", st:"under"},
+    {id:"sert", label:"SERT inhibition", st:"over"},
+    {id:"net", label:"NET inhibition", st:"over"}
+  ];
+  const REG = [
+    {id:"cns", n:1, name:"Brain", x:150, y:36},
+    {id:"eye", n:2, name:"Eyes", x:132, y:64},
+    {id:"mouth", n:3, name:"Mouth and nose", x:162, y:88},
+    {id:"heart", n:4, name:"Heart and vessels", x:134, y:152},
+    {id:"wt", n:5, name:"Weight and metabolism", x:178, y:186},
+    {id:"gut", n:6, name:"Gut", x:148, y:222},
+    {id:"bl", n:7, name:"Bladder", x:136, y:268},
+    {id:"sex", n:8, name:"Sexual and endocrine", x:168, y:284},
+    {id:"skin", n:9, name:"Skin and temperature", x:226, y:206},
+    {id:"blood", n:10, name:"Blood and electrolytes", x:74, y:232},
+    {id:"mv", n:11, name:"Movement", x:128, y:420}
+  ];
+  const F = {
+    h1:{cns:"Sedation, slowed psychomotor performance", wt:"Increased appetite and weight gain"},
+    mus:{cns:"Confusion, impaired memory, delirium (M1)", eye:"Mydriasis and blurred near vision; can precipitate acute angle-closure glaucoma", mouth:"Dry mouth (M3)", heart:"Tachycardia (M2)", gut:"Constipation, ileus (M3)", bl:"Urinary retention (M3)", skin:"Reduced sweating, flushing, hyperthermia", mv:"Fewer extrapyramidal symptoms, a benefit"},
+    a1:{heart:"Orthostatic hypotension, dizziness, falls, reflex tachycardia", mouth:"Nasal congestion", sex:"Priapism; ejaculatory dysfunction", cns:"Contributes to sedation"},
+    d2:{mv:"Extrapyramidal symptoms; tardive dyskinesia with long exposure", sex:"Hyperprolactinemia: galactorrhea, amenorrhea, gynecomastia, sexual dysfunction", cns:"Antipsychotic effect; possible blunted motivation", gut:"Antiemetic effect (area postrema)", wt:"Reduced bone density with prolonged hyperprolactinemia"},
+    c2:{wt:"Increased appetite and weight gain, compounding H1 blockade"},
+    sert:{gut:"Nausea and loose stools, early and often transient", sex:"Delayed orgasm, anorgasmia, reduced libido", cns:"Activation or somnolence, insomnia, emotional blunting", blood:"Bleeding risk from platelet serotonin depletion; hyponatremia (SIADH), especially in older adults", mv:"Tremor; akathisia-like restlessness"},
+    net:{heart:"Tachycardia, raised blood pressure", skin:"Sweating", bl:"Urinary hesitancy", mv:"Tremor", cns:"Insomnia, anxiety or activation", mouth:"Dry mouth"}
+  };
+  const PRE = [
+    {label:"Tertiary tricyclic", on:["h1","mus","a1","sert","net"]},
+    {label:"High-potency D2 antagonist", on:["d2"]},
+    {label:"Weight-gain pattern", on:["h1","c2"]},
+    {label:"SSRI", on:["sert"]},
+    {label:"Clear", on:[]}
+  ];
+  const on = new Set(["h1","mus","a1","sert","net"]);
+  const tgBox = $("#b-tg"), preBox = $("#b-pre");
+  tgBox.innerHTML = TG.map(t=>`<button type="button" class="chipbtn ${t.st}" data-k="${t.id}" aria-pressed="${on.has(t.id)}"><span class="g">${GLYPH[t.st]}</span>${esc(t.label)}</button>`).join("");
+  preBox.innerHTML = PRE.map((p,i)=>`<button type="button" data-i="${i}" aria-pressed="false">${esc(p.label)}</button>`).join("");
+  const marks = $("#b-marks");
+  const M = REG.map(r=>{
+    const g = el("g",{class:"mk-reg"},marks);
+    el("circle",{class:"halo",cx:r.x,cy:r.y,r:11},g);
+    el("circle",{class:"m",cx:r.x,cy:r.y,r:10},g);
+    el("text",{x:r.x,y:r.y+0.5,text:r.n},g);
+    return {r,g,prev:false};
+  });
+  function render(pop){
+    $$("button",tgBox).forEach(b=>b.setAttribute("aria-pressed", on.has(b.dataset.k)?"true":"false"));
+    const list = [];
+    M.forEach(m=>{
+      const items = TG.filter(t=>on.has(t.id) && F[t.id][m.r.id]).map(t=>({t, text:F[t.id][m.r.id]}));
+      const sts = new Set(items.map(i=>i.t.st));
+      const active = items.length>0;
+      m.g.setAttribute("class","mk-reg"+(active?" on "+(sts.size>1?"mixed":[...sts][0]):""));
+      if (active && !m.prev && pop){ m.g.classList.remove("pop"); void m.g.getBoundingClientRect(); m.g.classList.add("pop"); }
+      m.prev = active;
+      if (active) list.push({m,items});
+    });
+    $("#b-list").innerHTML = list.length ? list.map(({m,items})=>`<li><span class="n">${String(m.r.n).padStart(2,"0")}</span><span class="nm">${esc(m.r.name)}</span>${items.map(i=>`<div class="f"><span class="tag ${i.t.st}">${GLYPH[i.t.st]} ${esc(i.t.label)}</span><span>${esc(i.text)}</span></div>`).join("")}</li>`).join("")
+      : `<li class="empty" style="display:block">No targets engaged. Switch one on above.</li>`;
+  }
+  $$("button",tgBox).forEach(b=>b.addEventListener("click",()=>{ const k=b.dataset.k; on.has(k)?on.delete(k):on.add(k); $$("button",preBox).forEach(x=>x.setAttribute("aria-pressed","false")); render(true); }));
+  $$("button",preBox).forEach(b=>b.addEventListener("click",()=>{ on.clear(); PRE[+b.dataset.i].on.forEach(k=>on.add(k)); $$("button",preBox).forEach(x=>x.setAttribute("aria-pressed", x===b && PRE[+b.dataset.i].on.length?"true":"false")); render(true); }));
+  $$("button",preBox)[0].setAttribute("aria-pressed","true");
+  render(false);
+  replay($$("#b-svg .draw"), $("#b-svg"));
+})();
+
+/* ================= V. TOXIDROMES ================= */
+const SYN = [
+  {id:"ach", name:"Anticholinergic", st:"under", rx2:"Muscarinic", onset:"Within hours of ingestion", temp:38.9, hr:125, bp:"145/90", rr:18, pupil:1.7, pupilTx:"Dilated, sluggish", skin:"Dry, hot, flushed", sweat:0, flush:.55, bowel:0, bowelTx:"Reduced or absent", tone:"Normal; myoclonic jerks possible", refl:"Normal", mental:"Agitated delirium: picking at the air, mumbling, visual hallucinations; urinary retention",
+    key:"Dry skin with dilated pupils. Sympathomimetic toxicity looks similar from the doorway, but that patient sweats.", mech:"Muscarinic antagonism: diphenhydramine, tricyclics, benztropine, scopolamine, Datura.", rx:"Supportive care and benzodiazepines for agitation. Physostigmine reversed delirium in 87% in one retrospective series (Burns 2000); avoid it when the QRS is wide."},
+  {id:"sym", name:"Sympathomimetic", st:"over", rx2:"Adrenergic", onset:"Minutes to hours", temp:38.6, hr:138, bp:"175/105", rr:22, pupil:1.6, pupilTx:"Dilated, reactive", skin:"Diaphoretic", sweat:1, flush:.3, bowel:1, bowelTx:"Normal", tone:"Normal or increased; tremor", refl:"Brisk", tremor:1, mental:"Agitation, paranoia, psychosis; seizures possible",
+    key:"Diaphoresis separates it from anticholinergic toxicity. Clonus points instead to serotonin toxicity.", mech:"Raised synaptic norepinephrine and dopamine: cocaine, amphetamines, synthetic cathinones.", rx:"Benzodiazepines, active cooling, supportive care."},
+  {id:"ser", name:"Serotonin toxicity", st:"over", rx2:"Serotonin", onset:"Rapid: usually within 24 hours of a new agent, a dose increase or an overdose", temp:38.8, hr:125, bp:"160/95", rr:22, pupil:1.6, pupilTx:"Dilated", skin:"Diaphoretic", sweat:1, flush:.25, bowel:3, bowelTx:"Hyperactive; diarrhea", tone:"Increased, legs more than arms", refl:"Hyperreflexia with inducible, ocular or spontaneous clonus", clonus:1, tremor:1, mental:"Agitation, anxiety, restlessness",
+    key:"Clonus and hyperreflexia, worst in the legs, with fast onset and hyperactive bowel sounds.", mech:"Excess serotonin signaling (5-HT2A and 5-HT1A implicated), usually from combined serotonergic drugs.", rx:"Stop serotonergic agents; benzodiazepines, cooling, cyproheptadine; sedation, paralysis and intubation if severe."},
+  {id:"nms", name:"Neuroleptic malignant syndrome", st:"under", rx2:"D2", onset:"Develops over days, usually in the first weeks after starting or raising a D2 antagonist", temp:40.1, hr:122, bp:"Labile", rr:24, pupil:1, pupilTx:"Normal", skin:"Diaphoretic, pale", sweat:1, flush:0, bowel:1, bowelTx:"Normal or reduced", tone:"Generalized lead-pipe rigidity", refl:"Normal or reduced", rigid:1, mental:"Altered consciousness, mutism, catatonic features",
+    key:"Rigidity without clonus, slower onset, raised creatine kinase and white count.", mech:"D2 blockade, or abrupt withdrawal of dopaminergic drugs in Parkinson disease.", rx:"Stop the D2 antagonist; cooling, fluids, benzodiazepines; dantrolene, bromocriptine or ECT if severe."},
+  {id:"opi", name:"Opioid", st:"over", rx2:"μ-opioid", onset:"Minutes to hours", temp:36.2, hr:56, bp:"100/60", rr:6, pupil:.35, pupilTx:"Pinpoint", skin:"Normal or cool", sweat:0, flush:0, bowel:0, bowelTx:"Reduced", tone:"Reduced", refl:"Reduced", mental:"Stupor or coma",
+    key:"Slow, shallow breathing with pinpoint pupils. Pupils may not be pinpoint with co-ingestants or hypoxia.", mech:"μ-opioid agonism.", rx:"Airway and ventilation; naloxone."},
+  {id:"sed", name:"Sedative-hypnotic", st:"over", rx2:"GABA-A", onset:"Minutes to hours", temp:36.5, hr:76, bp:"110/70", rr:12, pupil:1, pupilTx:"Normal", skin:"Normal", sweat:0, flush:0, bowel:1, bowelTx:"Normal or reduced", tone:"Reduced", refl:"Reduced", mental:"Drowsy, slurred speech, ataxia, nystagmus; coma if severe",
+    key:"Near-normal vital signs with depressed consciousness. A benzodiazepine alone rarely stops breathing; alcohol or opioids change that.", mech:"GABA-A positive modulation: benzodiazepines, Z-drugs, barbiturates, alcohol.", rx:"Supportive care. Flumazenil only rarely, because it can provoke seizures in dependent patients."},
+  {id:"wd", name:"Sedative withdrawal", st:"under", rx2:"GABA-A", onset:"Tremor from about 6 hours, seizures 6 to 48 hours, delirium tremens 48 to 96 hours after the last drink", temp:38.2, hr:124, bp:"165/100", rr:22, pupil:1.5, pupilTx:"Dilated", skin:"Diaphoretic", sweat:1, flush:.25, bowel:1, bowelTx:"Normal", tone:"Normal; coarse tremor", refl:"Hyperreflexia", tremor:1, mental:"Anxious and tremulous; visual and tactile hallucinations; delirium in DTs",
+    key:"Looks sympathomimetic, but the history is a stop rather than a dose, and the timing follows the last drink.", mech:"Loss of GABA-A modulation after adaptation, with NMDA upregulation.", rx:"Benzodiazepines with symptom-triggered dosing, phenobarbital as an alternative, thiamine."},
+  {id:"cho", name:"Cholinergic", st:"over", rx2:"Muscarinic and nicotinic", onset:"Minutes to hours after organophosphate or carbamate exposure", temp:37, hr:48, bp:"Variable", rr:26, pupil:.35, pupilTx:"Pinpoint", skin:"Diaphoretic", sweat:1, flush:0, bowel:3, bowelTx:"Hyperactive; diarrhea", drool:1, tears:1, tone:"Fasciculations, then weakness", refl:"Variable", mental:"Confusion, seizures",
+    key:"Wet everywhere: salivation, lacrimation, bronchorrhea, diarrhea, with miosis and bradycardia.", mech:"Acetylcholinesterase inhibition: excess muscarinic and nicotinic signaling.", rx:"Atropine titrated to dry bronchial secretions; pralidoxime; benzodiazepines for seizures."}
+];
+(function(){
+  const box = $("#tx-seg");
+  let cur = "ser";
+  box.innerHTML = SYN.map(s=>`<button type="button" data-k="${s.id}" aria-pressed="${s.id===cur}">${esc(s.name)}</button>`).join("");
+  const pt = $("#patient");
+  const arrow = (v,hi,lo)=> v>hi?`<span class="ar up">↑</span>`:v<lo?`<span class="ar dn">↓</span>`:"";
+  function render(){
+    const s = SYN.find(x=>x.id===cur);
+    $("#tx-plate").dataset.state = s.st;
+    ["#pt-p1","#pt-p2"].forEach(q=>$(q).style.transform = `scale(${s.pupil})`);
+    $("#pt-fl1").setAttribute("opacity", s.flush*0.6); $("#pt-fl2").setAttribute("opacity", s.flush*0.6);
+    $("#pt-sweat").setAttribute("opacity", s.sweat?1:0);
+    $("#pt-drool").setAttribute("opacity", s.drool?1:0);
+    $("#pt-tears").setAttribute("opacity", s.tears?1:0);
+    pt.style.setProperty("--rr", (60/s.rr).toFixed(2)+"s");
+    pt.style.setProperty("--hr", (60/s.hr).toFixed(2)+"s");
+    const lv = s.bowel;
+    $("#pt-b1").classList.toggle("on", lv>=1); $("#pt-b3").classList.toggle("on", lv>=1);
+    $("#pt-b2").classList.toggle("on", lv>=3); $("#pt-b4").classList.toggle("on", lv>=3);
+    ["#pt-b1","#pt-b2","#pt-b3","#pt-b4"].forEach(q=>{ if(!$(q).classList.contains("on")) $(q).style.opacity = 0; else $(q).style.opacity = ""; });
+    ["#pt-h1","#pt-h2"].forEach(q=>$(q).classList.toggle("tremor", !!s.tremor && !RM));
+    ["#pt-f1","#pt-f2"].forEach(q=>$(q).classList.toggle("clonus", !!s.clonus && !RM));
+    pt.classList.toggle("rigid", !!s.rigid);
+    const t = clamp(s.temp,35,41.5), top=128, bot=300, y = bot - (t-35)/(41.5-35)*(bot-top);
+    $("#pt-merc").setAttribute("y", y.toFixed(1)); $("#pt-merc").setAttribute("height", (bot-y+4).toFixed(1));
+    const tc = s.temp>=38 ? "var(--st-over)" : s.temp<36.5 ? "var(--st-under)" : "var(--st-normal)";
+    $("#pt-merc").setAttribute("fill", tc); $("#pt-bulb").setAttribute("fill", tc);
+    $("#pt-tread").textContent = s.temp.toFixed(1);
+    $("#tx-name").textContent = s.name;
+    $("#tx-tag").innerHTML = `<span class="tag ${s.st}">${GLYPH[s.st]} ${esc(s.rx2)} ${s.st==="over"?"excess":"deficit"}</span>`;
+    $("#tx-vit").innerHTML = [
+      ["Temp", `${s.temp.toFixed(1)} °C${arrow(s.temp,37.9,36.4)}`],
+      ["Heart rate", `${s.hr}/min${arrow(s.hr,100,60)}`],
+      ["Blood pressure", esc(s.bp)],
+      ["Respiration", `${s.rr}/min${arrow(s.rr,20,12)}`],
+      ["Pupils", esc(s.pupilTx)],
+      ["Skin", esc(s.skin)],
+      ["Bowel sounds", esc(s.bowelTx)],
+      ["Reflexes", esc(s.refl)],
+      ["Tone", esc(s.tone), true],
+      ["Mental status", esc(s.mental), true],
+      ["Onset", esc(s.onset), true]
+    ].map(([k,v,w])=>`<div class="${w?"wide":""}"><dt>${k}</dt><dd>${v}</dd></div>`).join("");
+    $("#tx-key").textContent = s.key; $("#tx-mech").textContent = s.mech; $("#tx-rx").textContent = s.rx;
+    $$("#cmp th, #cmp td").forEach(c=>c.classList.toggle("sel", c.dataset.k===cur));
+  }
+  segWire(box,"k",k=>{ cur=k; render(); });
+  // comparison table
+  const ROWS = [["Onset","onset"],["Temp",s=>s.temp.toFixed(1)+" °C"],["Heart rate",s=>s.hr+"/min"],["Pupils","pupilTx"],["Skin","skin"],["Bowel","bowelTx"],["Tone","tone"],["Reflexes","refl"],["Mental status","mental"],["Mechanism","mech"],["First moves","rx"]];
+  $("#cmp").innerHTML = `<thead><tr><th></th>${SYN.map(s=>`<th data-k="${s.id}">${esc(s.name)}</th>`).join("")}</tr></thead><tbody>${ROWS.map(([lab,f])=>`<tr><td>${lab}</td>${SYN.map(s=>`<td data-k="${s.id}" style="min-width:170px">${esc(typeof f==="function"?f(s):s[f])}</td>`).join("")}</tr>`).join("")}</tbody>`;
+  render();
+})();
+
+/* Hunter criteria */
+(function(){
+  const F = [["agent","Serotonergic agent taken"],["sc","Spontaneous clonus"],["ic","Inducible clonus"],["oc","Ocular clonus"],["ag","Agitation"],["di","Diaphoresis"],["tr","Tremor"],["hr","Hyperreflexia"],["ht","Hypertonia"],["t38","Temperature above 38 °C"]];
+  const box = $("#hunter");
+  box.innerHTML = F.map(([k,l])=>`<label for="h-${k}"><input type="checkbox" id="h-${k}" ${k==="agent"||k==="ic"||k==="di"?"checked":""}>${l}</label>`).join("");
+  function ev(){
+    const v = k=>$("#h-"+k).checked;
+    let rule = null;
+    if (v("sc")) rule = "spontaneous clonus";
+    else if (v("ic") && (v("ag")||v("di"))) rule = "inducible clonus with agitation or diaphoresis";
+    else if (v("oc") && (v("ag")||v("di"))) rule = "ocular clonus with agitation or diaphoresis";
+    else if (v("tr") && v("hr")) rule = "tremor with hyperreflexia";
+    else if (v("ht") && v("t38") && (v("oc")||v("ic"))) rule = "hypertonia, temperature above 38 °C and ocular or inducible clonus";
+    const out = $("#h-verdict");
+    if (!v("agent")) out.innerHTML = `<span class="tag">Criteria not applicable</span> <span class="small dim">The rules apply only after a serotonergic agent.</span>`;
+    else if (rule) out.innerHTML = `<span class="tag over">▲ Meets Hunter criteria</span> <span style="margin-left:8px">Rule satisfied: ${rule}.</span>`;
+    else out.innerHTML = `<span class="tag normal">● Does not meet criteria</span> <span class="small dim" style="margin-left:8px">No decision rule is satisfied.</span>`;
+  }
+  box.addEventListener("change", ev); ev();
+})();
+
+/* ================= VI. TIMELINE ================= */
+(function(){
+  const svg = $("#tl-svg"), X0=200, X1=626, Hmin=1, Hmax=43800, LR=Math.log10(Hmax/Hmin);
+  const X = h => X0 + Math.log10(h/Hmin)/LR*(X1-X0);
+  const B = [
+    {n:"Serotonin toxicity", a:1, b:24, st:"over"},
+    {n:"Acute dystonia", a:2, b:120, st:"under"},
+    {n:"Withdrawal seizures", a:6, b:48, st:"under"},
+    {n:"Delirium tremens", a:48, b:96, st:"under"},
+    {n:"Akathisia", a:24, b:1008, st:"under"},
+    {n:"NMS", a:24, b:720, st:"under"},
+    {n:"Parkinsonism", a:168, b:2160, st:"under"},
+    {n:"Tardive dyskinesia", a:2160, b:43800, st:"over"}
+  ];
+  const COL = {over:"oklch(66% 0.185 38)", under:"oklch(72% 0.10 245)"};
+  const ticks = [[1,"1 h"],[6,"6 h"],[24,"1 d"],[72,""],[168,"1 wk"],[720,"1 mo"],[2160,"3 mo"],[8760,"1 y"],[43800,"5 y"]];
+  ticks.forEach(([h,l])=>{ const x=X(h); el("line",{x1:x,y1:10,x2:x,y2:270,stroke:"oklch(70% 0.055 80 / 0.14)"},svg); el("text",{x:x,y:290,class:"t-lbl","text-anchor":h===43800?"end":"middle",text:l.toUpperCase()},svg); });
+  el("line",{x1:X0,y1:272,x2:X1,y2:272,class:"eng-faint"},svg);
+  const bars = B.map((b,i)=>{
+    const y = 16 + i*31;
+    el("text",{x:X0-12,y:y+13,class:"t-ink","text-anchor":"end",text:b.n},svg);
+    const r = el("rect",{x:X(b.a),y:y,width:Math.max(6,X(b.b)-X(b.a)),height:18,rx:2,fill:COL[b.st],class:"bar"},svg);
+    return {b,r};
+  });
+  el("text",{x:X0,y:312,class:"t-lbl",text:"HOURS SINCE EXPOSURE (LOG SCALE)"},svg);
+  const mk = el("g",{id:"tl-marker"},svg);
+  el("line",{x1:0,y1:8,x2:0,y2:274,stroke:"oklch(62% 0.19 35)","stroke-width":1.5},mk);
+  el("path",{d:"M-6 2 L6 2 L0 10 Z",fill:"oklch(62% 0.19 35)"},mk);
+  const inp = $("#tl-t-in");
+  const hOf = v => Hmin*Math.pow(10, v/1000*LR);
+  function fmt(h){ if (h<24) return h.toFixed(h<10?1:0)+" hours"; const d=h/24; if (d<14) return d.toFixed(d<3?1:0)+" days"; if (d<60) return (d/7).toFixed(1)+" weeks"; if (d<730) return (d/30.4).toFixed(1)+" months"; return (d/365).toFixed(1)+" years"; }
+  function render(){
+    const h = hOf(+inp.value); mk.setAttribute("transform",`translate(${X(h).toFixed(1)} 0)`);
+    $("#tl-read").textContent = fmt(h);
+    const act = bars.filter(({b,r})=>{ const on = h>=b.a && h<=b.b; r.classList.toggle("dimmed", !on); return on; });
+    $("#tl-now").innerHTML = act.length ? `<span class="lbl">In the usual window at ${fmt(h)}</span><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">${act.map(({b})=>`<span class="tag ${b.st}">${GLYPH[b.st]} ${esc(b.n)}</span>`).join("")}</div>` : `<span class="lbl">Nothing in its usual window at ${fmt(h)}</span>`;
+  }
+  inp.addEventListener("input", render); render();
+  let anim=null;
+  $("#tl-play").addEventListener("click", e=>{
+    if (RM){ inp.value = (+inp.value+120)%1000; render(); return; }
+    if (anim){ cancelAnimationFrame(anim); anim=null; e.target.textContent="Play sweep"; return; }
+    e.target.textContent="Pause"; let last=null; if (+inp.value>=995) inp.value=0;
+    const step = ts=>{ if(last===null) last=ts; const dt=ts-last; last=ts; inp.value = Math.min(1000, +inp.value + dt*0.11); render(); if (+inp.value<1000) anim=requestAnimationFrame(step); else { anim=null; e.target.textContent="Play sweep"; } };
+    anim=requestAnimationFrame(step);
+  });
+})();
+
+/* ================= VII. ADAPTATION ================= */
+(function(){
+  const svg = $("#ad-svg"), PX0=56, PX1=588, PY0=22, PY1=222, VMAX=2.4;
+  const px = t=>PX0+t/100*(PX1-PX0), py = v=>PY1-clamp(v,0,VMAX)/VMAX*(PY1-PY0);
+  const defs = el("defs",{},svg);
+  [["cl-over",py(VMAX),py(1.3)],["cl-normal",py(1.3),py(0.7)],["cl-under",py(0.7),py(0)]].forEach(([id,a,b])=>{ const c=el("clipPath",{id},defs); el("rect",{x:0,y:a,width:600,height:b-a},c); });
+  el("rect",{x:PX0,y:py(VMAX),width:PX1-PX0,height:py(1.3)-py(VMAX),fill:"oklch(66% 0.185 38 / 0.10)"},svg);
+  el("rect",{x:PX0,y:py(1.3),width:PX1-PX0,height:py(0.7)-py(1.3),fill:"oklch(78% 0.085 158 / 0.10)"},svg);
+  el("rect",{x:PX0,y:py(0.7),width:PX1-PX0,height:py(0)-py(0.7),fill:"oklch(72% 0.10 245 / 0.10)"},svg);
+  el("line",{x1:PX0,y1:py(1),x2:PX1,y2:py(1),stroke:"oklch(63% 0.013 85)","stroke-dasharray":"2 4"},svg);
+  el("text",{x:PX0-8,y:py(1)+4,class:"t-lbl","text-anchor":"end",text:"SET"},svg);
+  el("text",{x:PX0-8,y:py(1.85)+4,class:"t-lbl","text-anchor":"end",text:"▲"},svg);
+  el("text",{x:PX0-8,y:py(0.3)+4,class:"t-lbl","text-anchor":"end",text:"▼"},svg);
+  const ON=14, OFF=62;
+  [[ON,"DRUG STARTED"],[OFF,"DRUG STOPPED"]].forEach(([t,l])=>{ el("line",{x1:px(t),y1:PY0-6,x2:px(t),y2:PY1,stroke:"oklch(70% 0.055 80 / 0.28)"},svg); el("text",{x:px(t)+6,y:PY0+4,class:"t-lbl",text:l},svg); });
+  el("text",{x:px(0)+2,y:PY1+24,class:"t-lbl",text:"BASELINE"},svg);
+  el("text",{x:px(ON+4),y:PY1+24,class:"t-lbl",text:"EXPOSURE"},svg);
+  el("text",{x:px(OFF+4),y:PY1+24,class:"t-lbl",text:"AFTER STOPPING"},svg);
+  const lines = {};
+  ["over","normal","under"].forEach(st=>{ lines[st] = el("path",{class:"sigline draw","clip-path":`url(#cl-${st})`,pathLength:1,stroke:`var(--st-${st})`},svg); });
+  const resp = el("path",{class:"respline"},svg);
+  const K = {
+    ago:{input:2.2, during:"Effect fades as responsiveness falls. This is tolerance; dose escalation chases the original effect.", after:["Opioids: yawning, rhinorrhea, mydriasis, piloerection, diarrhea, dysphoria","Alcohol and benzodiazepines: tremor, autonomic overactivity, seizures, delirium tremens","Clonidine: rebound hypertension, agitation, tachycardia"], st:"under"},
+    ant:{input:0.3, during:"Responsiveness rises as receptors become supersensitive, so the same block yields a little less effect over time.", after:["D2 antagonists: withdrawal-emergent dyskinesia; rebound psychosis (dopamine supersensitivity hypothesis)","Anticholinergics, clozapine included: cholinergic rebound with nausea, vomiting, diaphoresis, diarrhea, insomnia, agitation","β-blockers: rebound tachycardia and hypertension"], st:"over"},
+    rui:{input:1.85, during:"More serotonin in the synapse is offset downstream; desensitization of 5-HT1A autoreceptors is one proposed component.", after:["Discontinuation syndrome: dizziness, paresthesias (\"brain zaps\"), nausea, flu-like symptoms, irritability, insomnia, vivid dreams","Worst with short half-life agents such as paroxetine and venlafaxine; uncommon with fluoxetine","Usually begins within days of stopping; a taper prevents most of it"], st:"under"}
+  };
+  function sim(k){
+    const inp=K[k].input, rt = clamp(1/inp, 0.45, 2.0);
+    let r=1; const S=[], Rr=[];
+    for (let t=0;t<=100;t+=0.5){
+      const on = t>=ON && t<OFF;
+      const target = on ? rt : 1, kk = on ? 0.085 : 0.07;
+      r += (target-r)*kk*0.5*2;
+      const s = r*(on?inp:1);
+      S.push([t,s]); Rr.push([t,r]);
+    }
+    return {S,Rr};
+  }
+  const d = arr => arr.map(([t,v],i)=>(i?"L":"M")+px(t).toFixed(1)+" "+py(v).toFixed(1)).join(" ");
+  function render(k){
+    const {S,Rr} = sim(k);
+    Object.values(lines).forEach(p=>p.setAttribute("d", d(S)));
+    resp.setAttribute("d", d(Rr));
+    replay(Object.values(lines), svg);
+    const st = K[k].st;
+    $("#ad-plate").dataset.state = st;
+    $("#ad-text").innerHTML = `<div><div class="lbl">During exposure</div><p style="margin:.4em 0;color:var(--bone)">${esc(K[k].during)}</p></div><div><div class="lbl">After stopping</div><div style="margin:.4em 0">${tag(st)}</div><ul class="pres ${st} stagger">${K[k].after.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`;
+  }
+  segWire($("#ad-seg"),"k",render);
+  render("ago");
+})();
+
+/* ================= VIII. INDEX ================= */
+(function(){
+  const D = [
+    ["5-HT1A","Serotonin","Gradual anxiolysis over weeks; dizziness, nausea, headache early (buspirone)","No established syndrome from blockade; pindolol augmentation of SSRIs gave mixed results","Buspirone, vilazodone (partial); vortioxetine (agonist); aripiprazole, brexpiprazole, cariprazine (partial)"],
+    ["5-HT2A","Serotonin","Illusions, visual hallucinations, altered self (psychedelics); hyperthermia in severe serotonin toxicity","Antipsychotic effect in Parkinson disease psychosis; sleep consolidation","Psilocybin, LSD (agonists); pimavanserin (inverse agonist); SGAs, trazodone, mirtazapine, cyproheptadine"],
+    ["5-HT2C","Serotonin","Reduced appetite (lorcaserin, withdrawn 2020); proposed role in early SSRI jitteriness","Increased appetite and weight gain, alongside H1 blockade","Olanzapine, clozapine (antagonism); agomelatine (antagonism, not US-approved)"],
+    ["5-HT3","Serotonin","Nausea, vomiting, diarrhea: early SSRI effects and chemotherapy emesis","Antiemetic effect; constipation, headache; QT prolongation with ondansetron","Ondansetron, granisetron; mirtazapine and vortioxetine also antagonize"],
+    ["SERT","Serotonin","Inhibition: nausea, sexual dysfunction, activation or somnolence, bleeding risk, hyponatremia; serotonin toxicity when combined","Low serotonin: relapse of depressive symptoms in tryptophan-depletion studies; discontinuation syndrome on abrupt stop","SSRIs, SNRIs, clomipramine; MDMA reverses the transporter"],
+    ["D1","Dopamine","Inverted U: modest stimulation improves working memory, excess degrades it; contributes to dyskinesia","Prefrontal cognitive impairment (proposed)","No selective agent in clinical use; apomorphine acts at D1 and D2"],
+    ["D2","Dopamine","Psychosis, impulse control disorders, dyskinesia, nausea, low prolactin","Antipsychotic effect; dystonia, akathisia, parkinsonism; hyperprolactinemia; NMS","Haloperidol, risperidone, olanzapine (antagonists); aripiprazole (partial); pramipexole, ropinirole (agonists)"],
+    ["D3","Dopamine","Impulse control disorders, strongest signal with D3-preferring agonists","Proposed effects on negative symptoms and reward (cariprazine)","Pramipexole, ropinirole (agonists); cariprazine (D3-preferring partial agonist)"],
+    ["DAT","Dopamine","Inhibition: euphoria, alertness, appetite suppression, insomnia; stereotypy and psychosis at high doses","Low dopamine tone: stimulant crash with hypersomnia, hyperphagia, anhedonia","Cocaine, methylphenidate, modafinil, bupropion (weak); amphetamine reverses DAT"],
+    ["α1","Noradrenergic","Vasoconstriction, hypertension, reflex bradycardia; arousal","Orthostatic hypotension, falls, priapism, nasal congestion, sedation","Prazosin (antagonist); trazodone, quetiapine, clozapine, risperidone, tricyclics (antagonism)"],
+    ["α2","Noradrenergic","Sedation, hypotension, bradycardia, dry mouth; calmer withdrawal hyperarousal; better attention in ADHD","Anxiety and panic in susceptible patients, raised blood pressure, more NE and 5-HT release","Clonidine, guanfacine, lofexidine, dexmedetomidine (agonists); yohimbine, mirtazapine (antagonists)"],
+    ["β","Noradrenergic","Tachycardia, tremor, somatic anxiety (β-agonists such as albuterol)","Less tremor and somatic anxiety, akathisia relief; bradycardia, fatigue, masked hypoglycemia, bronchospasm if non-selective","Propranolol (non-selective antagonist), metoprolol; albuterol (β2 agonist)"],
+    ["NET","Noradrenergic","Inhibition: tachycardia, raised BP, sweating, tremor, insomnia, urinary hesitancy, dry mouth; better attention","Low noradrenergic tone: fatigue and poor concentration (proposed in depression)","Atomoxetine, viloxazine; SNRIs; desipramine, nortriptyline; bupropion (weak)"],
+    ["NMDA","Glutamate & GABA","Excitotoxicity in stroke and status epilepticus; not a drug-induced syndrome in practice","Dissociation, perceptual change, positive and negative symptoms, impaired delayed recall (ketamine); PCP adds violence, nystagmus, hypertension; anti-NMDAR encephalitis","Ketamine, esketamine, PCP, dextromethorphan, memantine (channel blockers); glycine, D-serine (co-agonists)"],
+    ["AMPA","Glutamate & GABA","Seizures (domoic acid at AMPA and kainate receptors)","Dizziness, somnolence, ataxia; irritability, aggression and homicidal ideation (perampanel boxed warning)","Perampanel (antagonist); topiramate (AMPA/kainate)"],
+    ["GABA-A","Glutamate & GABA","Sedation, anterograde amnesia, ataxia, dysarthria, disinhibition; respiratory depression with co-ingestants","Anxiety, tremor, autonomic overactivity, seizures, delirium tremens","Benzodiazepines, Z-drugs, barbiturates, alcohol, neurosteroids (positive modulators); flumazenil (BZD-site antagonist)"],
+    ["GABA-B","Glutamate & GABA","Sedation, weakness, confusion; coma and respiratory depression in overdose (baclofen, GHB)","Baclofen withdrawal, worst with intrathecal pumps: hallucinations, seizures, hyperthermia, rebound spasticity","Baclofen, sodium oxybate (agonists)"],
+    ["nAChR","Neuromodulators","Alertness, reward; nausea and dizziness in the naive; vomiting, salivation, seizures in poisoning","Withdrawal: irritability, anxiety, poor concentration, craving, increased appetite","Nicotine (agonist); varenicline, cytisine (α4β2 partial agonists)"],
+    ["H1","Neuromodulators","Arousal and wakefulness; no central H1 agonist in psychiatric use","Sedation, increased appetite, weight gain, slowed psychomotor performance","Diphenhydramine, hydroxyzine, low-dose doxepin, mirtazapine, quetiapine, olanzapine"],
+    ["M1","Neuromodulators","Cholinergic effects (with M2/M3): nausea, diarrhea, sweating, bradycardia; antipsychotic effect with xanomeline","Delirium, impaired memory and attention; peripheral dry mouth, constipation, retention, blurred vision","Xanomeline (M1/M4-preferring agonist, with trospium); scopolamine, benztropine, diphenhydramine (antagonists)"],
+    ["μ-opioid","Neuromodulators","Euphoria, analgesia, miosis, respiratory depression, constipation","Withdrawal in dependence: dysphoria, yawning, rhinorrhea, mydriasis, piloerection, diarrhea","Morphine, fentanyl, methadone (agonists); buprenorphine (partial); naloxone, naltrexone (antagonists)"],
+    ["MT1/MT2","Neuromodulators","Earlier sleep onset and circadian phase shift; somnolence, headache","Reduced melatonin signaling (evening bright light) delays sleep onset","Melatonin, ramelteon, tasimelteon (agonists)"],
+    ["OX1/OX2","Neuromodulators","Stable wakefulness","Narcolepsy type 1 with orexin loss: sleepiness, cataplexy, sleep paralysis, hypnagogic hallucinations. Antagonists cause somnolence and are contraindicated in narcolepsy","Suvorexant, lemborexant, daridorexant (dual antagonists)"]
+  ];
+  let hall="all";
+  const q = $("#i-q");
+  function render(){
+    const t = q.value.trim().toLowerCase();
+    const rows = D.map((r,i)=>[i+1,...r]).filter(r=>(hall==="all"||r[2]===hall) && (!t || r.join(" ").toLowerCase().includes(t)));
+    $("#i-body").innerHTML = rows.length ? rows.map(r=>`<tr><td class="num">${String(r[0]).padStart(2,"0")}</td><td>${esc(r[1])}<div class="lbl" style="margin-top:2px">${esc(r[2])}</div></td><td style="min-width:200px">${esc(r[3])}</td><td style="min-width:200px">${esc(r[4])}</td><td style="min-width:180px" class="dim">${esc(r[5])}</td></tr>`).join("")
+      : `<tr><td colspan="5" class="dim">No specimen matches. Clear the search or set the hall back to All.</td></tr>`;
+    $("#i-count").textContent = `${rows.length} of ${D.length}`;
+  }
+  segWire($("#i-hall"),"h",h=>{ hall=h; render(); });
+  q.addEventListener("input", render); render();
+})();
+
+/* ================= IX. QUIZ ================= */
+(function(){
+  const Q = [
+    {s:"A 22-year-old man receives haloperidol in the emergency department. Two days later his neck twists to one side and his eyes deviate upward. Which mechanism and first move fit best?", a:0, o:[
+      ["Nigrostriatal D2 blockade; IM benztropine or diphenhydramine","Correct. Acute dystonia comes early, is most common in young men on high-potency agents, and responds to anticholinergic or antihistaminergic treatment within minutes."],
+      ["Mesolimbic D2 blockade; propranolol","Propranolol treats akathisia, and the motor syndrome comes from the nigrostriatal pathway."],
+      ["Serotonin excess; cyproheptadine","No serotonergic agent, no clonus, and dystonia is a dopaminergic syndrome."],
+      ["Dopamine receptor supersensitivity; valbenazine","That describes tardive dyskinesia, which takes months to years."]]},
+    {s:"A patient taking aripiprazole develops new compulsive gambling. Which explanation has the best support?", a:0, o:[
+      ["Partial agonism at D2 and D3 receptors","Correct. In FDA adverse-event reports the impulse-control signal was strongest for D3-preferring agonists (pramipexole, ropinirole) and also present for aripiprazole (Moore 2014)."],
+      ["5-HT2A antagonism","Not linked to impulse control disorders."],
+      ["H1 inverse agonism","Produces sedation and weight gain, not compulsive reward-seeking."],
+      ["α1 antagonism","Produces orthostasis and priapism."]]},
+    {s:"After an overdose a patient is hot, flushed and agitated, with large pupils, dry axillae, absent bowel sounds and a full bladder. Which single finding best separates this from sympathomimetic toxicity?", a:2, o:[
+      ["Dilated pupils","Both syndromes dilate the pupils."],
+      ["Tachycardia","Both raise the heart rate."],
+      ["Dry skin","Correct. Muscarinic blockade stops sweating; sympathomimetic patients are diaphoretic."],
+      ["Hyperthermia","Both can raise temperature."]]},
+    {s:"A patient on sertraline is given linezolid. Eight hours later there is agitation, diaphoresis, diarrhea and inducible ankle clonus, worse in the legs. The most likely diagnosis is:", a:1, o:[
+      ["Neuroleptic malignant syndrome","NMS builds over days with lead-pipe rigidity and normal or reduced reflexes, and needs a D2 antagonist."],
+      ["Serotonin toxicity","Correct. Linezolid is a weak MAO inhibitor. Rapid onset, clonus and hyperactive bowel sounds fit, and the Hunter criteria are met."],
+      ["Anticholinergic toxicity","The skin would be dry and bowel sounds reduced."],
+      ["Malignant hyperthermia","Requires volatile anesthetics or succinylcholine."]]},
+    {s:"In a patient who has taken a serotonergic drug, which finding alone satisfies the Hunter criteria?", a:0, o:[
+      ["Spontaneous clonus","Correct. It is the only feature sufficient by itself."],
+      ["Tremor","Needs hyperreflexia as well."],
+      ["Diaphoresis","Counts only alongside inducible or ocular clonus."],
+      ["Temperature above 38 °C","Counts only with hypertonia and inducible or ocular clonus."]]},
+    {s:"Two hours after using fentanyl, a patient is given buprenorphine and within an hour develops vomiting, piloerection and severe agitation. Why?", a:0, o:[
+      ["Buprenorphine's high affinity displaces the full agonist, and its lower intrinsic activity drops net μ signaling","Correct. This is precipitated withdrawal: a partial agonist lowers signaling when existing activation is above its own ceiling."],
+      ["Buprenorphine is a pure μ antagonist","It is a partial agonist, which is why it can also relieve withdrawal."],
+      ["Fentanyl is serotonergic","Some opioids are; this picture is opioid withdrawal."],
+      ["Buprenorphine has no ceiling on respiratory depression","The reverse: Dahan 2006 found a ceiling for respiratory depression but not analgesia."]]},
+    {s:"In Kapur's haloperidol PET study, the likelihood of extrapyramidal symptoms rose significantly once D2 occupancy passed about:", a:3, o:[
+      ["50%","Below the response threshold."],
+      ["65%","The threshold for clinical response."],
+      ["72%","The threshold for hyperprolactinemia."],
+      ["78%","Correct."]]},
+    {s:"A woman taking risperidone develops amenorrhea and galactorrhea. Blockade in which pathway explains it?", a:3, o:[
+      ["Mesolimbic","Mediates the antipsychotic effect."],
+      ["Mesocortical","Proposed link to negative and cognitive symptoms."],
+      ["Nigrostriatal","Mediates extrapyramidal symptoms."],
+      ["Tuberoinfundibular","Correct. Dopamine tonically inhibits prolactin release from lactotrophs; blocking it raises prolactin. Risperidone is among the agents most likely to do this."]]},
+    {s:"Two days after clozapine is stopped abruptly, a patient has nausea, vomiting, diaphoresis, diarrhea, insomnia and agitation. The most likely mechanism is:", a:0, o:[
+      ["Cholinergic rebound after prolonged muscarinic blockade","Correct. Chronic antagonism raises responsiveness; removing the drug unmasks it as excess signaling."],
+      ["Serotonin toxicity","No new serotonergic exposure and no clonus."],
+      ["Neuroleptic malignant syndrome","Follows D2 antagonist exposure, not its withdrawal (except dopaminergic drug withdrawal in Parkinson disease)."],
+      ["Early psychotic relapse","Possible later, but the autonomic and GI picture points to cholinergic rebound."]]},
+    {s:"Pimavanserin treats Parkinson disease psychosis without worsening motor function because it:", a:1, o:[
+      ["Blocks D2 with fast dissociation","That is Kapur and Seeman's account of atypical antipsychotics, not pimavanserin."],
+      ["Is a selective 5-HT2A inverse agonist without meaningful D2 activity","Correct. In the phase 3 trial it improved SAPS-PD scores without motor worsening (Cummings 2014)."],
+      ["Is an M1/M4 agonist","That is xanomeline."],
+      ["Is a D3-preferring partial agonist","That is cariprazine."]]},
+    {s:"In healthy volunteers, subanesthetic ketamine (0.5 mg/kg IV) produced which pattern?", a:1, o:[
+      ["Positive-symptom-like behavior alone","Negative-symptom-like behavior appeared as well."],
+      ["Behaviors resembling positive and negative symptoms, perceptual change, and impaired delayed recall with immediate recall spared","Correct (Krystal 1994)."],
+      ["A global decline on the MMSE","The MMSE did not change at these doses."],
+      ["Lower cortisol and prolactin","Both rose with dose."]]},
+    {s:"A patient with daytime sleepiness and emotion-triggered muscle weakness has undetectable CSF hypocretin. Which class is contraindicated?", a:1, o:[
+      ["Wake-promoting agents such as modafinil","Used to treat the sleepiness."],
+      ["Dual orexin receptor antagonists","Correct. Narcolepsy type 1 reflects orexin loss (Nishino 2000); blocking the remaining signal is contraindicated."],
+      ["Sodium oxybate","Treats cataplexy and sleepiness."],
+      ["SSRIs or SNRIs","Used off-label for cataplexy."]]},
+    {s:"Varenicline both eases withdrawal after quitting and blunts the reward of a cigarette because it:", a:2, o:[
+      ["Antagonizes α4β2 receptors completely","A full antagonist would not ease withdrawal."],
+      ["Is a full α4β2 agonist","A full agonist would not blunt the cigarette's reward."],
+      ["Is an α4β2 partial agonist","Correct. It raises signaling when nicotine is absent and caps it when nicotine is present."],
+      ["Inhibits nicotine metabolism","Its action is at the receptor."]]},
+    {s:"In KINECT 3, what did valbenazine 80 mg/day do to the AIMS dyskinesia score at six weeks?", a:1, o:[
+      ["No difference from placebo","The difference was significant."],
+      ["A fall of 3.2 points against 0.1 with placebo","Correct (Hauser 2017). It is a VMAT2 inhibitor, reducing presynaptic dopamine packaging."],
+      ["A fall of 3.2 points only when combined with benztropine","Anticholinergics can worsen tardive dyskinesia and were not part of the trial design."],
+      ["Improvement only after stopping the antipsychotic","Most participants continued antipsychotics."]]}
+  ];
+  const KEY="operable-ledger-quiz-v1";
+  let saved={}; try{ saved = JSON.parse(localStorage.getItem(KEY)||"{}")||{}; }catch(e){ saved={}; }
+  const save=()=>{ try{ localStorage.setItem(KEY, JSON.stringify(saved)); }catch(e){} };
+  const list=$("#q-list");
+  function score(){ const done=Object.keys(saved).length, right=Object.entries(saved).filter(([k,v])=>Q[k]&&Q[k].a===v).length; $("#q-score").textContent=`${right} correct · ${done} of ${Q.length} answered`; }
+  function reveal(card,i,c){ const q=Q[i]; $$("label.opt",card).forEach((l,j)=>{ l.classList.toggle("right", j===q.a); l.classList.toggle("wrong", j===c && j!==q.a); $(".why",l).hidden=false; }); const v=$(".vd",card); v.hidden=false; v.className="vd "+(c===q.a?"ok":"no"); v.textContent = c===q.a ? "Correct" : "Not this one. The answer is outlined"; }
+  Q.forEach((q,i)=>{
+    const card=document.createElement("div"); card.className="q";
+    card.innerHTML=`<p class="stem"><b>${String(i+1).padStart(2,"0")}</b>${esc(q.s)}</p><fieldset><legend>Question ${i+1}</legend>${q.o.map((o,j)=>`<label class="opt" for="q${i}o${j}"><input type="radio" name="q${i}" id="q${i}o${j}" value="${j}"><span>${esc(o[0])}<span class="why" hidden>${esc(o[1])}</span></span></label>`).join("")}</fieldset><div class="qfoot"><button type="button" class="btn">Check answer</button><span class="err" hidden>Choose an answer first.</span><span class="vd" hidden></span></div>`;
+    const err=$(".err",card);
+    $$("input",card).forEach(x=>x.addEventListener("change",()=>{ err.hidden=true; }));
+    $("button",card).addEventListener("click",()=>{ const c=$("input:checked",card); if(!c){ err.hidden=false; return; } const v=+c.value; saved[i]=v; save(); reveal(card,i,v); score(); });
+    list.appendChild(card);
+    if (saved[i]!==undefined){ const x=$(`#q${i}o${saved[i]}`,card); if(x){ x.checked=true; reveal(card,i,saved[i]); } }
+  });
+  $("#q-reset").addEventListener("click",()=>{ saved={}; save(); $$(".q",list).forEach(card=>{ $$("input",card).forEach(x=>x.checked=false); $$("label.opt",card).forEach(l=>{ l.classList.remove("right","wrong"); $(".why",l).hidden=true; }); $(".vd",card).hidden=true; $(".err",card).hidden=true; }); score(); });
+  score();
+})();
+})();
+</script>
+</body>
+</html>

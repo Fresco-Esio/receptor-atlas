@@ -35,6 +35,11 @@ reader who wrote a number down needs to know it moved.
 
 ### Added
 
+- **Two Ledger format studies in `docs/ledger-studies/`**, kept as reference for what to
+  bring into Volume III: a surface-receptor tutorial and "The Operable Ledger", which
+  traces receptor action to presentation through operable rooms (onset, adaptation and
+  withdrawal, toxidromes among them). Neither ships to the site; the README there says
+  which rooms are candidates and where the models simplify.
 - **The hosted Desk: a second way to edit the atlas, and the normal one.** A single-file
   editor, published as a private claude.ai artifact, that needs no terminal, no port, and
   no machine of your own. It edits the same ground the old Desk did — the Archive prose

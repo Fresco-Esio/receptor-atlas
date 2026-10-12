@@ -1,0 +1,1143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>html,body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Neuronal Surface Receptors</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap">
+<style>
+/* Layout: a single reading column (~70ch) with wider figure panels; sticky section rail; figures are instruments you operate. */
+:root{
+  --bg:#f1f4f6; --surface:#ffffff; --surface2:#e7ecf0; --ink:#13202a; --muted:#52626e; --rule:#d2dae0;
+  --accent:#3a49ad; --accent-ink:#2b378a;
+  --ion:#0b7680; --gpcr:#3a49ad; --rtk:#965c08;
+  --gs:#2a7744; --gi:#b3372b; --gq:#83379c;
+  --na:#c4561c; --k:#527c14; --cl:#17809f; --ca:#b72c6e; --mg:#68727c;
+  --mem:#e6dfcf; --memline:#b9ab8c;
+  --good:#2a7744; --bad:#b3372b;
+  --f-display:"Newsreader", "Iowan Old Style", Georgia, serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0d1318; --surface:#141c23; --surface2:#1b252e; --ink:#e3e9ee; --muted:#93a2ad; --rule:#28333d;
+  --accent:#95a0ff; --accent-ink:#b8bfff;
+  --ion:#43c1c9; --gpcr:#95a0ff; --rtk:#e0a347;
+  --gs:#5fc583; --gi:#f2806f; --gq:#cc8ce2;
+  --na:#f08d50; --k:#a2cf4f; --cl:#5fc4e6; --ca:#f170ab; --mg:#a9b3bc;
+  --mem:#2e2a20; --memline:#6a5f45;
+  --good:#5fc583; --bad:#f2806f; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0d1318; --surface:#141c23; --surface2:#1b252e; --ink:#e3e9ee; --muted:#93a2ad; --rule:#28333d;
+  --accent:#95a0ff; --accent-ink:#b8bfff;
+  --ion:#43c1c9; --gpcr:#95a0ff; --rtk:#e0a347;
+  --gs:#5fc583; --gi:#f2806f; --gq:#cc8ce2;
+  --na:#f08d50; --k:#a2cf4f; --cl:#5fc4e6; --ca:#f170ab; --mg:#a9b3bc;
+  --mem:#2e2a20; --memline:#6a5f45;
+  --good:#5fc583; --bad:#f2806f; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.65;padding-inline:16px;padding-block:0 64px}
+.wrap{max-width:1040px;margin:0 auto}
+.col{max-width:70ch}
+h1,h2,h3{font-family:var(--f-display);font-weight:500;text-wrap:balance;line-height:1.15;margin:0}
+h1{font-size:clamp(2.2rem,5vw,3.4rem);letter-spacing:-.01em}
+h2{font-size:clamp(1.6rem,3.2vw,2.15rem);margin-bottom:.4em}
+h3{font-size:1.28rem;margin:1.6em 0 .4em}
+p{margin:.6em 0}
+a{color:var(--accent-ink)}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,label:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+code,.mono{font-family:var(--f-mono);font-size:.9em}
+.eyebrow{font-family:var(--f-mono);font-size:.74rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)}
+small,.small{font-size:.86rem}
+
+/* nav */
+.rail{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--rule);margin-inline:-16px;padding-inline:16px}
+.rail .wrap{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding-block:8px}
+.rail .wrap::-webkit-scrollbar{display:none}
+.rail a{flex:none;font-family:var(--f-mono);font-size:.8rem;text-decoration:none;color:var(--muted);padding:6px 10px;border-radius:6px}
+.rail a:hover{background:var(--surface2);color:var(--ink)}
+.rail .brand{color:var(--ink);font-weight:500}
+
+header.hero{padding-block:48px 8px}
+header.hero .lede{font-size:1.14rem;max-width:62ch;color:var(--ink)}
+section{padding-block:44px 8px;border-top:1px solid var(--rule);margin-top:36px}
+section:first-of-type{border-top:0}
+
+/* family key */
+.fam{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:22px}
+.fam > div{min-width:0;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:14px 16px}
+.fam h3{margin:0 0 4px;font-size:1.12rem}
+.fam .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:8px;vertical-align:1px}
+.fam p{margin:.3em 0;font-size:.94rem}
+@media (max-width:760px){.fam{grid-template-columns:1fr}}
+
+/* figures */
+.fig{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:16px;margin-block:20px}
+.fig .scroll{overflow-x:auto}
+.fig svg{display:block;width:100%;min-width:600px;height:auto}
+.fig .cap{font-size:.9rem;color:var(--muted);margin-top:10px;max-width:80ch}
+.fig .figtitle{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 16px;margin-bottom:10px}
+.fig .figtitle h3{margin:0;font-size:1.12rem}
+svg text{font-family:var(--f-body)}
+svg .lab{font-size:12px;fill:var(--muted)}
+svg .lab-ink{font-size:13px;fill:var(--ink)}
+svg .lab-b{font-size:13px;fill:var(--ink);font-weight:700}
+svg .tick{font-family:var(--f-mono);font-size:11px;fill:var(--muted)}
+
+/* controls */
+.controls{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin-top:12px}
+.tog{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--rule);border-radius:999px;padding:6px 12px 6px 8px;cursor:pointer;user-select:none;font-size:.92rem;background:var(--surface)}
+.tog input{appearance:none;width:30px;height:18px;border-radius:9px;background:var(--rule);position:relative;margin:0;cursor:pointer;transition:background .15s}
+.tog input::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--surface);transition:transform .15s}
+.tog input:checked{background:var(--accent)}
+.tog input:checked::after{transform:translateX(12px)}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.seg button{font:inherit;font-size:.9rem;border:0;background:var(--surface);color:var(--ink);padding:7px 14px;cursor:pointer;border-right:1px solid var(--rule)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.btn{font:inherit;font-size:.9rem;border:1px solid var(--rule);background:var(--surface);color:var(--ink);padding:7px 14px;border-radius:8px;cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.range{display:flex;align-items:center;gap:10px;flex:1 1 280px;min-width:0}
+.range input{flex:1;min-width:0;accent-color:var(--accent)}
+.readout{font-family:var(--f-mono);font-size:.85rem;font-variant-numeric:tabular-nums}
+.status{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:12px;padding:10px 12px;border-radius:8px;background:var(--surface2);font-size:.92rem}
+.status b{font-weight:700}
+.dots{display:flex;gap:6px;align-items:center}
+.dots button{width:10px;height:10px;border-radius:50%;border:1px solid var(--muted);background:transparent;padding:0;cursor:pointer}
+.dots button[aria-current="true"]{background:var(--ink);border-color:var(--ink)}
+.stepcap{margin-top:12px;min-height:5.2em;font-size:.97rem;max-width:78ch}
+.stepcap b{font-weight:700}
+.twocol{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:820px){.twocol{grid-template-columns:1fr}}
+
+/* chips */
+.chip{display:inline-block;font-family:var(--f-mono);font-size:.74rem;font-weight:500;letter-spacing:.02em;padding:2px 8px;border-radius:999px;white-space:nowrap;border:1px solid currentColor}
+.chip.ion{color:var(--ion);background:color-mix(in srgb,var(--ion) 10%,transparent)}
+.chip.gs{color:var(--gs);background:color-mix(in srgb,var(--gs) 10%,transparent)}
+.chip.gi{color:var(--gi);background:color-mix(in srgb,var(--gi) 10%,transparent)}
+.chip.gq{color:var(--gq);background:color-mix(in srgb,var(--gq) 10%,transparent)}
+.chip.rtk{color:var(--rtk);background:color-mix(in srgb,var(--rtk) 10%,transparent)}
+
+/* tables */
+.tbl{overflow-x:auto;margin-block:14px;border:1px solid var(--rule);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--rule)}
+th{font-family:var(--f-mono);font-size:.74rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--surface2)}
+tr:last-child td{border-bottom:0}
+td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.finder-tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:10px}
+.finder-tools input[type=search],.finder-tools select{font:inherit;font-size:.92rem;padding:7px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--surface);color:var(--ink)}
+.finder-tools input[type=search]{flex:1 1 220px;min-width:0}
+#finder-table td:first-child{font-weight:700;white-space:nowrap}
+@media (max-width:640px){#finder-table td:first-child{white-space:normal}}
+
+/* callouts */
+.note{border-left:3px solid var(--accent);padding:8px 14px;margin-block:16px;background:var(--surface);border-radius:0}
+.note.warn{border-left-color:var(--rtk)}
+.mnemo{font-family:var(--f-mono);font-size:1.02rem;letter-spacing:.04em;display:flex;flex-wrap:wrap;gap:4px 14px;margin:8px 0}
+.mnemo span{white-space:nowrap}
+
+/* clinical cards */
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
+.cards article{min-width:0;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:14px 16px}
+.cards h3{margin:0 0 6px;font-size:1.08rem;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline}
+.cards p{margin:.35em 0;font-size:.93rem}
+@media (max-width:760px){.cards{grid-template-columns:1fr}}
+
+/* quiz */
+.qscore{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-top:10px}
+.q{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:16px;margin-block:12px}
+.q .stem{font-size:1rem;margin:0 0 10px}
+.q .stem b{font-family:var(--f-mono);font-weight:500;color:var(--muted);margin-right:6px}
+.q fieldset{border:0;padding:0;margin:0;display:grid;gap:6px}
+.q label.opt{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:8px 10px;border:1px solid var(--rule);border-radius:8px;cursor:pointer}
+.q label.opt:hover{border-color:var(--muted)}
+.q label.opt input{margin-top:5px;accent-color:var(--accent)}
+.q label.opt .why{display:block;font-size:.88rem;color:var(--muted);margin-top:3px}
+.q label.opt.right{border-color:var(--good);background:color-mix(in srgb,var(--good) 8%,transparent)}
+.q label.opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 7%,transparent)}
+.q .qfoot{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:10px}
+.q .err{font-size:.86rem;color:var(--bad)}
+.q .verdict{font-weight:700}
+.q .verdict.ok{color:var(--good)}
+.q .verdict.no{color:var(--bad)}
+
+ol.refs{padding-left:1.2em;font-size:.92rem}
+ol.refs li{margin:.4em 0}
+
+/* svg animation */
+.mv{transition:transform .9s cubic-bezier(.4,.1,.2,1), opacity .5s}
+.fade{transition:opacity .5s}
+@keyframes drift{from{transform:translate(0,0);opacity:0}15%{opacity:1}85%{opacity:1}to{transform:translate(var(--dx),var(--dy));opacity:0}}
+.flow circle{animation:drift var(--t,1.4s) linear infinite;animation-delay:var(--d,0s)}
+@media (prefers-reduced-motion: reduce){
+  .mv,.fade{transition:none}
+  .flow circle{animation:none;opacity:.9}
+}
+</style>
+</head>
+<body>
+
+<nav class="rail" aria-label="Sections">
+  <div class="wrap">
+    <a class="brand" href="#top">Surface receptors</a>
+    <a href="#overview">Overview</a>
+    <a href="#ionotropic">Ionotropic</a>
+    <a href="#gpcr">GPCRs</a>
+    <a href="#rtk">Tyrosine kinases</a>
+    <a href="#finder">Receptor finder</a>
+    <a href="#clinical">Clinical</a>
+    <a href="#quiz">Quiz</a>
+    <a href="#sources">Sources</a>
+  </div>
+</nav>
+
+<main class="wrap" id="top">
+<header class="hero">
+  <div class="eyebrow">PRITE review · neuroscience &amp; psychopharmacology</div>
+  <h1>Neuronal surface receptors</h1>
+  <p class="lede">A neurotransmitter is only a key. What it does depends on the lock: the same dopamine, serotonin or glutamate molecule opens a channel in a millisecond, starts a second-messenger cascade lasting minutes, or, through neurotrophin receptors, changes gene expression over hours. This tutorial walks through the three receptor families that sit on the neuronal surface, with working models you can operate.</p>
+</header>
+
+<section id="overview" style="margin-top:0">
+  <h2>Three families, three timescales</h2>
+  <div class="col">
+    <p>Every cell surface receptor converts an extracellular signal into an intracellular one. The families differ in <em>how many steps</em> lie between binding and effect, and each step adds both delay and amplification.</p>
+  </div>
+  <div class="fam">
+    <div><h3><span class="sw" style="background:var(--ion)"></span>Ligand-gated ion channels</h3><p>Binding site and pore are one protein. Effect is a change in membrane conductance.</p><p class="small muted">No amplification. Speed: ~1–100s ms.</p></div>
+    <div><h3><span class="sw" style="background:var(--gpcr)"></span>G-protein–coupled receptors</h3><p>Seven transmembrane helices. The receptor is a guanine-nucleotide exchange factor (GEF) for a heterotrimeric G protein.</p><p class="small muted">Amplifies at several steps. Speed: ~100 ms to minutes.</p></div>
+    <div><h3><span class="sw" style="background:var(--rtk)"></span>Receptor tyrosine kinases</h3><p>Single-pass receptors that dimerize and cross-phosphorylate. In neurons: the Trk family for neurotrophins.</p><p class="small muted">Kinase cascades to transcription. Speed: minutes to days.</p></div>
+  </div>
+
+  <div class="fig">
+    <div class="figtitle"><h3>When each family acts</h3><span class="eyebrow">log time axis, drawn to scale</span></div>
+    <div class="scroll"><svg id="timescale" viewBox="0 0 680 228" role="img" aria-labelledby="ts-t ts-d"><title id="ts-t">Signaling timescales by receptor family</title><desc id="ts-d">Horizontal bars on a logarithmic time axis from 1 millisecond to 1 day. Fast ionotropic currents last 1 to 50 milliseconds; NMDA currents 50 to 500 milliseconds; G-protein beta-gamma effects on GIRK channels 100 milliseconds to 1 second; second messenger cascades 1 second to 10 minutes; neurotrophin receptor effects on gene expression 10 minutes to 1 day.</desc></svg></div>
+    <p class="cap">Ranges are order-of-magnitude approximations for mammalian central synapses (Kandel et al., 2021). NMDA decay depends on GluN2 subunit: GluN2A-containing receptors deactivate faster than GluN2B-containing ones.</p>
+  </div>
+</section>
+
+<!-- ============================ IONOTROPIC ============================ -->
+<section id="ionotropic">
+  <div class="eyebrow">Family 1</div>
+  <h2>Ligand-gated ion channels</h2>
+  <div class="col">
+    <p>The receptor <em>is</em> the channel. Agonist binding to the extracellular domain shifts the transmembrane helices that line the pore, the gate opens, and ions move down their electrochemical gradients. Whether the result excites or inhibits depends entirely on which ions pass and where their reversal potential sits relative to threshold.</p>
+  </div>
+
+  <h3>Three structural superfamilies</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Superfamily</th><th>Assembly</th><th>Subunit topology</th><th>Members</th></tr></thead>
+    <tbody>
+      <tr><td><b>Cys-loop</b></td><td>Pentamer</td><td>4 transmembrane segments (M1–M4); M2 lines the pore</td><td>nAChR, GABA-A, glycine, 5-HT3</td></tr>
+      <tr><td><b>Ionotropic glutamate</b></td><td>Tetramer</td><td>3 transmembrane segments plus a re-entrant pore loop</td><td>AMPA (GluA1–4), NMDA (GluN1, GluN2A–D, GluN3), kainate (GluK1–5)</td></tr>
+      <tr><td><b>P2X</b></td><td>Trimer</td><td>2 transmembrane segments</td><td>ATP-gated cation channels (P2X7 on microglia)</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Excitatory or inhibitory is set by the reversal potential</h3>
+  <div class="col">
+    <p>A channel drives the membrane toward the reversal potential (E<sub>rev</sub>) of the ions it passes. Cation channels (nAChR, AMPA, NMDA, 5-HT3) have E<sub>rev</sub> near 0 mV, well above threshold, so they depolarize. Cl⁻ channels (GABA-A, glycine) have E<sub>rev</sub> near E<sub>Cl</sub>, at or below rest in mature neurons, so they hyperpolarize or shunt.</p>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Ion</th><th>Approx. E<sub>rev</sub>, mature mammalian neuron</th><th>Channels where it matters</th></tr></thead>
+    <tbody>
+      <tr><td><b style="color:var(--na)">Na⁺</b></td><td class="num">+55 to +60 mV</td><td>nAChR, AMPA, NMDA, 5-HT3</td></tr>
+      <tr><td><b style="color:var(--k)">K⁺</b></td><td class="num">−90 to −100 mV</td><td>Cation channels (outward component); GIRK via G<sub>i/o</sub></td></tr>
+      <tr><td><b style="color:var(--cl)">Cl⁻</b></td><td class="num">−65 to −75 mV</td><td>GABA-A, glycine</td></tr>
+      <tr><td><b style="color:var(--ca)">Ca²⁺</b></td><td class="num">+120 to +130 mV</td><td>NMDA, Ca²⁺-permeable AMPA (GluA2-lacking), α7 nAChR</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note warn"><b>Developmental exception.</b> Immature neurons express high NKCC1 (Cl⁻ importer) and little KCC2 (Cl⁻ exporter), so intracellular Cl⁻ is high, E<sub>Cl</sub> sits above rest, and GABA-A activation <em>depolarizes</em>. Delayed KCC2 expression shifts GABA to inhibitory (Ben-Ari, 2002).</div>
+
+  <!-- GABA-A single channel -->
+  <div class="fig" id="gaba-fig">
+    <div class="figtitle"><h3>GABA-A: frequency vs duration</h3><span class="eyebrow">simulated single-channel recording</span></div>
+    <canvas id="gaba-canvas" height="190" style="display:block;width:100%;height:190px" aria-label="Simulated single-channel current trace for a GABA-A receptor" role="img"></canvas>
+    <div class="controls" role="group" aria-label="GABA-A drug conditions">
+      <label class="tog"><input type="checkbox" id="g-gaba" checked> GABA</label>
+      <label class="tog"><input type="checkbox" id="g-bzd"> Benzodiazepine</label>
+      <label class="tog"><input type="checkbox" id="g-barb"> Barbiturate</label>
+      <button class="btn" id="g-pause" type="button">Pause</button>
+    </div>
+    <div class="status readout" id="g-status" aria-live="polite"></div>
+    <p class="cap">Downward deflections are channel openings, grouped into bursts. Turn on a benzodiazepine and bursts come more often; turn on a barbiturate and each burst lasts longer. Turn GABA off and the benzodiazepine does nothing, because it has no efficacy without the agonist. Parameters are chosen for visibility (playback slowed ~7×), not fitted to data. Twyman et al. (1989) found both drugs increased mean single-opening time; the frequency-vs-duration split appears at the burst level.</p>
+  </div>
+
+  <div class="col">
+    <h3>GABA-A in detail</h3>
+    <p>The typical synaptic receptor is two α, two β and one γ2 subunit. Different drugs bind different sites, which is why their effects add and why only some can be reversed by flumazenil:</p>
+  </div>
+  <div class="tbl"><table>
+    <thead><tr><th>Site</th><th>Ligands</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td><b>β–α interface</b> (×2)</td><td>GABA, muscimol; bicuculline (antagonist)</td><td>Orthosteric agonist site</td></tr>
+      <tr><td><b>α–γ2 interface</b></td><td>Benzodiazepines; zolpidem (α1-preferring); flumazenil (antagonist)</td><td>Positive allosteric modulation. ↑ burst frequency via ↑ apparent GABA affinity. Requires GABA. α4/α6-containing receptors are insensitive.</td></tr>
+      <tr><td><b>Transmembrane domain</b></td><td>Barbiturates, propofol, etomidate</td><td>↑ burst duration; direct gating at high concentrations (no ceiling)</td></tr>
+      <tr><td><b>Transmembrane domain</b></td><td>Neurosteroids: allopregnanolone, brexanolone (IV, 2019), zuranolone (oral, 2023)</td><td>PAM at synaptic and extrasynaptic δ-containing receptors (tonic inhibition)</td></tr>
+      <tr><td><b>Various</b></td><td>Ethanol, volatile anesthetics</td><td>Positive modulation; contributes to cross-tolerance with BZDs</td></tr>
+    </tbody>
+  </table></div>
+
+  <!-- NMDA -->
+  <div class="fig" id="nmda-fig">
+    <div class="figtitle"><h3>NMDA receptor: a coincidence detector</h3><span class="eyebrow">operable model</span></div>
+    <div class="twocol">
+      <div class="scroll"><svg id="nmda-svg" viewBox="0 0 680 320" role="img" aria-labelledby="nm-t nm-d" style="min-width:560px">
+        <title id="nm-t">NMDA receptor gating model</title>
+        <desc id="nm-d">An NMDA receptor in the membrane with a GluN1 subunit binding glycine or D-serine and a GluN2 subunit binding glutamate. A magnesium ion sits in the pore at resting potential and is expelled by depolarization. Ions flow through the pore when the channel is open and unblocked.</desc>
+        <rect x="0" y="128" width="680" height="64" style="fill:var(--mem)"/>
+        <line x1="0" y1="128" x2="680" y2="128" style="stroke:var(--memline)" stroke-width="1"/>
+        <line x1="0" y1="192" x2="680" y2="192" style="stroke:var(--memline)" stroke-width="1"/>
+        <text class="lab" x="16" y="24">Extracellular · ~1 mM Mg²⁺</text>
+        <text class="lab" x="16" y="312">Cytoplasm</text>
+        <text class="lab" x="16" y="164">Membrane</text>
+        <g id="nm-flow"></g>
+        <g id="nm-n1" class="mv">
+          <ellipse cx="290" cy="92" rx="44" ry="26" style="fill:color-mix(in srgb,var(--ion) 16%,var(--surface));stroke:var(--ion)" stroke-width="1.2"/>
+          <text class="lab-b" x="290" y="96" text-anchor="middle">GluN1</text>
+          <rect x="274" y="120" width="56" height="80" rx="10" style="fill:color-mix(in srgb,var(--ion) 30%,var(--surface));stroke:var(--ion)" stroke-width="1.2"/>
+        </g>
+        <g id="nm-n2" class="mv">
+          <ellipse cx="390" cy="92" rx="44" ry="26" style="fill:color-mix(in srgb,var(--ion) 16%,var(--surface));stroke:var(--ion)" stroke-width="1.2"/>
+          <text class="lab-b" x="390" y="96" text-anchor="middle">GluN2</text>
+          <rect x="350" y="120" width="56" height="80" rx="10" style="fill:color-mix(in srgb,var(--ion) 30%,var(--surface));stroke:var(--ion)" stroke-width="1.2"/>
+        </g>
+        <g id="nm-gly" class="mv">
+          <rect x="-26" y="-11" width="52" height="22" rx="11" style="fill:var(--surface);stroke:var(--ink)" stroke-width="1"/>
+          <text x="0" y="4" text-anchor="middle" style="font-size:11px;fill:var(--ink)">Gly/D-Ser</text>
+        </g>
+        <g id="nm-glu" class="mv">
+          <rect x="-20" y="-11" width="40" height="22" rx="11" style="fill:var(--ink)"/>
+          <text x="0" y="4" text-anchor="middle" style="font-size:11px;fill:var(--surface);font-weight:700">Glu</text>
+        </g>
+        <g id="nm-ket" class="mv">
+          <path d="M0 -12 L12 0 L0 12 L-12 0 Z" style="fill:var(--rtk)"/>
+          <text x="18" y="4" style="font-size:11px;fill:var(--rtk);font-weight:700">ketamine</text>
+        </g>
+        <g id="nm-mg" class="mv">
+          <circle r="11" style="fill:var(--mg)"/>
+          <text x="0" y="4" text-anchor="middle" style="font-size:10px;fill:var(--surface);font-weight:700">Mg²⁺</text>
+        </g>
+        <text class="lab" x="464" y="220">GluN1 binds glycine or D-serine</text>
+        <text class="lab" x="464" y="236">GluN2 binds glutamate</text>
+        <text class="lab" x="464" y="252">Mg²⁺ plugs the pore near rest</text>
+      </svg></div>
+      <div>
+        <svg id="nmda-iv" viewBox="0 0 300 230" role="img" aria-labelledby="iv-t iv-d" style="display:block;width:100%;min-width:0;max-width:420px;height:auto">
+          <title id="iv-t">NMDA current–voltage relationship</title>
+          <desc id="iv-d">Relative NMDA current plotted against membrane potential from minus 90 to plus 40 millivolts, with and without 1 millimolar magnesium. With magnesium the curve shows a region of negative slope between about minus 90 and minus 25 millivolts.</desc>
+        </svg>
+        <p class="small muted" style="margin-top:4px">I–V curve: g(V) = 1 / (1 + [Mg²⁺]/3.57 mM · e<sup>−0.062·V</sup>), the Jahr &amp; Stevens (1990) fit, × driving force (E<sub>rev</sub> ≈ 0 mV). Dashed line: Mg²⁺-free.</p>
+      </div>
+    </div>
+    <div class="controls" role="group" aria-label="NMDA receptor conditions">
+      <label class="tog"><input type="checkbox" id="n-glu"> Glutamate (GluN2)</label>
+      <label class="tog"><input type="checkbox" id="n-gly" checked> Glycine / D-serine (GluN1)</label>
+      <label class="tog"><input type="checkbox" id="n-ket"> Ketamine</label>
+      <label class="tog"><input type="checkbox" id="n-mgfree"> Mg²⁺-free bath</label>
+      <div class="range"><label for="n-v" class="small">V<sub>m</sub></label><input type="range" id="n-v" min="-90" max="40" step="5" value="-70"><span class="readout" id="n-vval">−70 mV</span></div>
+    </div>
+    <div class="status" id="n-status" aria-live="polite"></div>
+    <p class="cap">Try: glutamate on at −70 mV (almost no current), then slide toward −20 mV. That is the postsynaptic depolarization from coincident AMPA input. Ca²⁺ entering through the relieved channel is the trigger for LTP. Then add ketamine with the channel open, and turn the agonists off: ketamine stays trapped in the closed channel (use-dependent, trapping block). Voltage-dependent Mg²⁺ block: Nowak et al. (1984), Mayer et al. (1984). Glycine requirement: Johnson &amp; Ascher (1987).</p>
+  </div>
+
+  <div class="col">
+    <h3>Other ionotropic receptors worth knowing cold</h3>
+    <p><b>nAChR.</b> Muscle type is (α1)₂β1δε in adults (γ replaces ε in fetal muscle). Neuronal α4β2 is the main high-affinity nicotine site and the target of varenicline (partial agonist). Homomeric α7 is highly Ca²⁺-permeable.</p>
+    <p><b>AMPA.</b> Carries most fast excitatory current. Receptors containing Q/R-edited GluA2 are Ca²⁺-impermeable; GluA2-lacking receptors pass Ca²⁺. LTP expression involves inserting more AMPA receptors into the synapse. Perampanel is a non-competitive antagonist; topiramate antagonizes AMPA/kainate receptors among its actions.</p>
+    <p><b>Glycine receptor.</b> Cl⁻ channel mediating inhibition in spinal cord and brainstem. Strychnine blocks it. GLRA1 mutations cause hyperekplexia.</p>
+    <p><b>5-HT3.</b> The only ionotropic serotonin receptor (all others are GPCRs). Ondansetron blocks it; mirtazapine and vortioxetine also antagonize it, which is why they cause less nausea than SSRIs.</p>
+  </div>
+</section>
+
+<!-- ============================ GPCR ============================ -->
+<section id="gpcr">
+  <div class="eyebrow">Family 2</div>
+  <h2>G-protein–coupled receptors</h2>
+  <div class="col">
+    <p>A GPCR has no pore and no enzyme activity of its own. Agonist binding shifts transmembrane helices (especially TM6) outward, opening an intracellular pocket that the G protein's α subunit docks into. The receptor then acts as a guanine-nucleotide exchange factor: it pries GDP off Gα, GTP (abundant in cytoplasm) binds, and the heterotrimer splits into Gα-GTP and Gβγ, each of which regulates effectors. One receptor activates many G proteins before it is shut off, which is the first point of amplification.</p>
+  </div>
+
+  <div class="fig" id="gpcr-fig">
+    <div class="figtitle"><h3>The G-protein cycle</h3>
+      <div class="seg" role="group" aria-label="G-protein class">
+        <button type="button" data-g="s" aria-pressed="true">G<sub>s</sub></button>
+        <button type="button" data-g="i" aria-pressed="false">G<sub>i/o</sub></button>
+        <button type="button" data-g="q" aria-pressed="false">G<sub>q</sub></button>
+      </div>
+    </div>
+    <div class="scroll"><svg id="gpcr-svg" viewBox="0 0 680 300" role="img" aria-labelledby="gp-t gp-d">
+      <title id="gp-t">G-protein activation cycle</title>
+      <desc id="gp-d">A seven-transmembrane receptor in the membrane with a heterotrimeric G protein below it. The animation steps through agonist binding, GDP to GTP exchange, dissociation of G-alpha from G-beta-gamma, effector regulation, and termination by GTP hydrolysis, receptor phosphorylation and beta-arrestin binding.</desc>
+      <rect x="0" y="118" width="680" height="36" style="fill:var(--mem)"/>
+      <line x1="0" y1="118" x2="680" y2="118" style="stroke:var(--memline)"/>
+      <line x1="0" y1="154" x2="680" y2="154" style="stroke:var(--memline)"/>
+      <text class="lab" x="16" y="24">Extracellular</text>
+      <text class="lab" x="16" y="292">Cytoplasm</text>
+      <!-- receptor -->
+      <g id="gp-rec">
+        <path d="M116 106 C 108 90, 124 82, 112 66" fill="none" style="stroke:var(--gpcr)" stroke-width="2"/>
+        <path d="M190 166 C 194 178, 190 190, 196 202" fill="none" style="stroke:var(--gpcr)" stroke-width="2"/>
+        <rect class="hx" x="112" y="104" width="9" height="62" rx="4"/>
+        <rect class="hx" x="124" y="104" width="9" height="62" rx="4"/>
+        <rect class="hx" x="136" y="104" width="9" height="62" rx="4"/>
+        <rect class="hx" x="148" y="104" width="9" height="62" rx="4"/>
+        <rect class="hx" x="160" y="104" width="9" height="62" rx="4"/>
+        <rect class="hx mv" id="gp-tm6" x="172" y="104" width="9" height="62" rx="4"/>
+        <rect class="hx" x="184" y="104" width="9" height="62" rx="4"/>
+        <text class="lab" x="66" y="60">7-TM receptor</text>
+      </g>
+      <g id="gp-P" class="fade" style="opacity:0">
+        <circle cx="198" cy="212" r="8" style="fill:var(--rtk)"/>
+        <text x="198" y="216" text-anchor="middle" style="font-size:10px;fill:var(--surface);font-weight:700">P</text>
+        <text class="lab" x="70" y="216">GRK phosphorylates</text>
+      </g>
+      <g id="gp-arr" class="fade" style="opacity:0">
+        <rect x="214" y="222" width="64" height="24" rx="12" style="fill:color-mix(in srgb,var(--rtk) 22%,var(--surface));stroke:var(--rtk)"/>
+        <text x="246" y="238" text-anchor="middle" style="font-size:11px;fill:var(--ink);font-weight:700">β-arrestin</text>
+      </g>
+      <!-- ligand -->
+      <g id="gp-lig" class="mv">
+        <circle r="9" style="fill:var(--ink)"/>
+        <text id="gp-ligt" x="14" y="4" style="font-size:12px;fill:var(--ink);font-weight:700">DA</text>
+      </g>
+      <!-- effectors -->
+      <g id="gp-ac" class="fade">
+        <rect x="392" y="108" width="58" height="56" rx="10" id="gp-acbox" style="fill:color-mix(in srgb,var(--gs) 18%,var(--surface));stroke:var(--gs)" stroke-width="1.2"/>
+        <text x="421" y="140" text-anchor="middle" style="font-size:12px;fill:var(--ink);font-weight:700">AC</text>
+        <text class="lab" x="421" y="100" text-anchor="middle">adenylyl cyclase</text>
+      </g>
+      <g id="gp-girk" class="fade">
+        <rect id="gp-girkL" class="mv" x="560" y="110" width="18" height="52" rx="6" style="fill:color-mix(in srgb,var(--k) 25%,var(--surface));stroke:var(--k)"/>
+        <rect id="gp-girkR" class="mv" x="582" y="110" width="18" height="52" rx="6" style="fill:color-mix(in srgb,var(--k) 25%,var(--surface));stroke:var(--k)"/>
+        <text class="lab" x="580" y="100" text-anchor="middle">GIRK (K⁺)</text>
+      </g>
+      <g id="gp-plc" class="fade">
+        <ellipse cx="490" cy="184" rx="32" ry="18" style="fill:color-mix(in srgb,var(--gq) 18%,var(--surface));stroke:var(--gq)" stroke-width="1.2"/>
+        <text x="490" y="188" text-anchor="middle" style="font-size:12px;fill:var(--ink);font-weight:700">PLCβ</text>
+        <rect x="466" y="127" width="48" height="18" rx="9" style="fill:var(--surface);stroke:var(--gq)"/>
+        <text x="490" y="140" text-anchor="middle" style="font-size:11px;fill:var(--ink)">PIP₂</text>
+        <rect id="gp-dag" class="fade" x="538" y="127" width="44" height="18" rx="9" style="fill:var(--gq)"/>
+        <text id="gp-dagt" class="fade" x="560" y="140" text-anchor="middle" style="font-size:11px;fill:var(--surface);font-weight:700">DAG</text>
+        <rect id="gp-pkc" class="fade" x="590" y="172" width="48" height="22" rx="11" style="fill:var(--surface);stroke:var(--gq)"/>
+        <text id="gp-pkct" class="fade" x="614" y="187" text-anchor="middle" style="font-size:11px;fill:var(--ink);font-weight:700">PKC</text>
+        <rect x="520" y="244" width="130" height="40" rx="10" style="fill:color-mix(in srgb,var(--ca) 12%,var(--surface));stroke:var(--ca)"/>
+        <text x="585" y="262" text-anchor="middle" style="font-size:12px;fill:var(--ink);font-weight:700">ER · IP₃ receptor</text>
+        <text x="585" y="277" text-anchor="middle" style="font-size:11px;fill:var(--muted)">Ca²⁺ release</text>
+      </g>
+      <g id="gp-ds" class="fade" style="opacity:0">
+        <rect x="350" y="244" width="150" height="40" rx="10" style="fill:var(--surface2);stroke:var(--rule)"/>
+        <text id="gp-ds1" x="425" y="262" text-anchor="middle" style="font-size:12px;fill:var(--ink);font-weight:700"></text>
+        <text id="gp-ds2" x="425" y="277" text-anchor="middle" style="font-size:11px;fill:var(--muted)"></text>
+      </g>
+      <g id="gp-flow" class="flow fade" style="opacity:0"></g>
+      <!-- G protein -->
+      <g id="gp-gbg" class="mv">
+        <line x1="0" y1="-16" x2="0" y2="-32" style="stroke:var(--muted)" stroke-width="1.5"/>
+        <ellipse rx="24" ry="16" style="fill:var(--surface2);stroke:var(--muted)" stroke-width="1.2"/>
+        <text x="0" y="5" text-anchor="middle" style="font-size:13px;fill:var(--ink);font-weight:700">βγ</text>
+      </g>
+      <g id="gp-ga" class="mv">
+        <ellipse id="gp-gae" rx="34" ry="24" stroke-width="1.4"/>
+        <text id="gp-gat" x="0" y="-5" text-anchor="middle" style="font-size:13px;fill:var(--ink);font-weight:700">Gαs</text>
+        <rect id="gp-nucb" x="-19" y="3" width="38" height="15" rx="7.5"/>
+        <text id="gp-nuc" x="0" y="14" text-anchor="middle" style="font-size:10px;font-weight:700">GDP</text>
+      </g>
+    </svg></div>
+    <div class="controls">
+      <button class="btn" id="gp-prev" type="button" aria-label="Previous step">← Back</button>
+      <button class="btn primary" id="gp-play" type="button">Pause</button>
+      <button class="btn" id="gp-next" type="button" aria-label="Next step">Next →</button>
+      <div class="dots" id="gp-dots" aria-label="Steps"></div>
+      <span class="readout muted" id="gp-stepn"></span>
+    </div>
+    <div class="stepcap" id="gp-cap" aria-live="polite"></div>
+  </div>
+
+  <h3>The three classes at a glance</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Class</th><th>Gα effector</th><th>Messenger / result</th><th>Gβγ</th><th>Toxin</th></tr></thead>
+    <tbody>
+      <tr><td><span class="chip gs">Gs (and Golf)</span></td><td>Stimulates adenylyl cyclase</td><td>↑ cAMP → PKA → phosphorylates CREB (Ser133), DARPP-32, channels</td><td>Minor role</td><td>Cholera toxin ADP-ribosylates Gαs → locked active</td></tr>
+      <tr><td><span class="chip gi">Gi/o</span></td><td>Inhibits adenylyl cyclase</td><td>↓ cAMP → ↓ PKA</td><td><b>Major:</b> opens GIRK (K⁺ out → hyperpolarization); inhibits N- and P/Q-type Ca²⁺ channels (↓ release)</td><td>Pertussis toxin ADP-ribosylates Gαi/o → uncoupled from receptor</td></tr>
+      <tr><td><span class="chip gq">Gq/11</span></td><td>Stimulates PLCβ</td><td>PIP₂ → IP₃ (ER Ca²⁺ release) + DAG (with Ca²⁺ activates PKC)</td><td>Minor role</td><td>—</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note">
+    <b>High-yield coupling mnemonic.</b> The classic letter string is <span class="mono">QISS · QIQ · SIQ · SQS</span> ("kiss, kick, sick, sex"), read in the order α1 α2 β1 β2 · M1 M2 M3 · D1 D2 H1 · H2 V1 V2.
+    <div class="mnemo"><span>α1 <b style="color:var(--gq)">q</b> · α2 <b style="color:var(--gi)">i</b> · β1 <b style="color:var(--gs)">s</b> · β2 <b style="color:var(--gs)">s</b></span><span>M1 <b style="color:var(--gq)">q</b> · M2 <b style="color:var(--gi)">i</b> · M3 <b style="color:var(--gq)">q</b></span><span>D1 <b style="color:var(--gs)">s</b> · D2 <b style="color:var(--gi)">i</b></span><span>H1 <b style="color:var(--gq)">q</b> · H2 <b style="color:var(--gs)">s</b></span><span>V1 <b style="color:var(--gq)">q</b> · V2 <b style="color:var(--gs)">s</b></span></div>
+    Extend it: 5-HT1 and 5-HT5 are G<sub>i</sub>; 5-HT2 is G<sub>q</sub>; 5-HT4/6/7 are G<sub>s</sub>; 5-HT3 is an ion channel. D1-like (D1, D5) are G<sub>s</sub>; D2-like (D2, D3, D4) are G<sub>i</sub>. Odd muscarinics (M1, M3, M5) are G<sub>q</sub>, even (M2, M4) are G<sub>i</sub>.
+  </div>
+
+  <div class="col">
+    <h3>Turning the signal off</h3>
+    <p><b>GTP hydrolysis.</b> Gα has intrinsic GTPase activity; RGS proteins (regulators of G-protein signaling) accelerate it. Gα-GDP then reassociates with Gβγ. This sets the duration of each G-protein activation.</p>
+    <p><b>Homologous desensitization.</b> G-protein receptor kinases (GRKs) phosphorylate the agonist-occupied receptor's intracellular loops and tail. β-arrestin binds the phosphorylated receptor, sterically blocks further G-protein coupling, and recruits clathrin for internalization. Arrestins can also scaffold their own signaling (for example ERK), the basis of "biased agonism."</p>
+    <p><b>Why it matters clinically.</b> Desensitization and internalization underlie tolerance to opioids and other agonists. The delayed onset of SSRIs has been attributed in part to gradual desensitization of somatodendritic 5-HT1A autoreceptors in the raphe; that is a long-standing hypothesis rather than an established mechanism.</p>
+    <h3>Lithium and the inositol cycle</h3>
+    <p>IP₃ is recycled to free inositol by inositol polyphosphate 1-phosphatase and inositol monophosphatase (IMPase), and inositol is needed to rebuild PIP₂. Lithium inhibits both enzymes. Berridge, Downes &amp; Hanley (1989) proposed that this depletes inositol preferentially in neurons with the highest Gq activity, dampening overactive signaling. Lithium also inhibits GSK-3β directly. Neither mechanism is established as <em>the</em> therapeutic one.</p>
+  </div>
+</section>
+
+<!-- ============================ RTK ============================ -->
+<section id="rtk">
+  <div class="eyebrow">Family 3</div>
+  <h2>Receptor tyrosine kinases: the Trk family</h2>
+  <div class="col">
+    <p>Neurotrophins are dimeric growth factors. Each neurotrophin dimer bridges two Trk receptor monomers, bringing their intracellular kinase domains together so that each phosphorylates tyrosines on the other (trans-autophosphorylation). Phosphotyrosines become docking sites for adapter proteins that launch three cascades. These signals regulate survival, dendritic growth, spine formation and synaptic plasticity, mostly through changes in transcription and translation, which is why they act over hours.</p>
+  </div>
+
+  <div class="fig" id="rtk-fig">
+    <div class="figtitle"><h3>BDNF activating TrkB</h3><span class="eyebrow">step through or play</span></div>
+    <div class="scroll"><svg id="rtk-svg" viewBox="0 0 680 330" role="img" aria-labelledby="rk-t rk-d">
+      <title id="rk-t">Trk receptor activation by BDNF</title>
+      <desc id="rk-d">Two TrkB monomers in the membrane. A BDNF dimer binds and brings them together; the intracellular kinase domains cross-phosphorylate; three cascades follow: Ras to ERK, PI3K to Akt, and PLC-gamma to IP3 and DAG, leading to gene expression, survival and calcium signaling.</desc>
+      <rect x="0" y="118" width="680" height="34" style="fill:var(--mem)"/>
+      <line x1="0" y1="118" x2="680" y2="118" style="stroke:var(--memline)"/>
+      <line x1="0" y1="152" x2="680" y2="152" style="stroke:var(--memline)"/>
+      <text class="lab" x="16" y="24">Extracellular</text>
+      <text class="lab" x="16" y="140">Membrane</text>
+      <g id="rk-a" class="mv">
+        <rect x="-22" y="48" width="44" height="66" rx="14" style="fill:color-mix(in srgb,var(--rtk) 16%,var(--surface));stroke:var(--rtk)" stroke-width="1.2"/>
+        <text x="0" y="86" text-anchor="middle" style="font-size:11px;fill:var(--ink);font-weight:700">TrkB</text>
+        <rect x="-4" y="114" width="8" height="44" style="fill:var(--rtk)"/>
+        <rect x="-28" y="158" width="56" height="44" rx="10" style="fill:color-mix(in srgb,var(--rtk) 30%,var(--surface));stroke:var(--rtk)" stroke-width="1.2"/>
+        <text x="0" y="184" text-anchor="middle" style="font-size:11px;fill:var(--ink)">kinase</text>
+        <g class="rk-p fade" style="opacity:0"><circle cx="-16" cy="208" r="7" style="fill:var(--rtk)"/><text x="-16" y="212" text-anchor="middle" style="font-size:9px;fill:var(--surface);font-weight:700">P</text><circle cx="2" cy="210" r="7" style="fill:var(--rtk)"/><text x="2" y="214" text-anchor="middle" style="font-size:9px;fill:var(--surface);font-weight:700">P</text></g>
+      </g>
+      <g id="rk-b" class="mv">
+        <rect x="-22" y="48" width="44" height="66" rx="14" style="fill:color-mix(in srgb,var(--rtk) 16%,var(--surface));stroke:var(--rtk)" stroke-width="1.2"/>
+        <text x="0" y="86" text-anchor="middle" style="font-size:11px;fill:var(--ink);font-weight:700">TrkB</text>
+        <rect x="-4" y="114" width="8" height="44" style="fill:var(--rtk)"/>
+        <rect x="-28" y="158" width="56" height="44" rx="10" style="fill:color-mix(in srgb,var(--rtk) 30%,var(--surface));stroke:var(--rtk)" stroke-width="1.2"/>
+        <text x="0" y="184" text-anchor="middle" style="font-size:11px;fill:var(--ink)">kinase</text>
+        <g class="rk-p fade" style="opacity:0"><circle cx="16" cy="208" r="7" style="fill:var(--rtk)"/><text x="16" y="212" text-anchor="middle" style="font-size:9px;fill:var(--surface);font-weight:700">P</text><circle cx="-2" cy="210" r="7" style="fill:var(--rtk)"/><text x="-2" y="214" text-anchor="middle" style="font-size:9px;fill:var(--surface);font-weight:700">P</text></g>
+      </g>
+      <g id="rk-lig" class="mv">
+        <circle cx="340" cy="18" r="11" style="fill:var(--ink)"/>
+        <circle cx="340" cy="40" r="11" style="fill:var(--ink)"/>
+      </g>
+      <text x="360" y="26" style="font-size:12px;fill:var(--ink);font-weight:700">BDNF dimer</text>
+      <g id="rk-casc" class="fade" style="opacity:0">
+        <path d="M340 220 V230 H135 V246" fill="none" style="stroke:var(--muted)" stroke-width="1.2"/>
+        <path d="M340 220 V246" fill="none" style="stroke:var(--muted)" stroke-width="1.2"/>
+        <path d="M340 220 V230 H545 V246" fill="none" style="stroke:var(--muted)" stroke-width="1.2"/>
+        <rect x="40" y="246" width="190" height="40" rx="9" style="fill:var(--surface2);stroke:var(--rule)"/>
+        <text x="135" y="263" text-anchor="middle" style="font-size:12px;fill:var(--ink);font-weight:700">Ras → Raf → MEK → ERK</text>
+        <text x="135" y="278" text-anchor="middle" style="font-size:11px;fill:var(--muted)">via Shc–Grb2–SOS</text>
+        <rect x="245" y="246" width="190" height="40" rx="9" style="fill:var(--surface2);stroke:var(--rule)"/>
+        <text x="340" y="263" text-anchor="middle" style="font-size:12px;fill:var(--ink);font-weight:700">PI3K → Akt</text>
+        <text x="340" y="278" text-anchor="middle" style="font-size:11px;fill:var(--muted)">→ mTORC1</text>
+        <rect x="450" y="246" width="190" height="40" rx="9" style="fill:var(--surface2);stroke:var(--rule)"/>
+        <text x="545" y="263" text-anchor="middle" style="font-size:12px;fill:var(--ink);font-weight:700">PLCγ → IP₃ + DAG</text>
+        <text x="545" y="278" text-anchor="middle" style="font-size:11px;fill:var(--muted)">Ca²⁺ release, PKC</text>
+      </g>
+      <g id="rk-out" class="fade" style="opacity:0">
+        <text x="135" y="310" text-anchor="middle" style="font-size:12px;fill:var(--rtk);font-weight:700">CREB · gene expression, LTP</text>
+        <text x="340" y="310" text-anchor="middle" style="font-size:12px;fill:var(--rtk);font-weight:700">Survival · protein synthesis</text>
+        <text x="545" y="310" text-anchor="middle" style="font-size:12px;fill:var(--rtk);font-weight:700">Ca²⁺ signaling · plasticity</text>
+      </g>
+    </svg></div>
+    <div class="controls">
+      <button class="btn" id="rk-prev" type="button" aria-label="Previous step">← Back</button>
+      <button class="btn primary" id="rk-play" type="button">Pause</button>
+      <button class="btn" id="rk-next" type="button" aria-label="Next step">Next →</button>
+      <div class="dots" id="rk-dots" aria-label="Steps"></div>
+    </div>
+    <div class="stepcap" id="rk-cap" aria-live="polite"></div>
+  </div>
+
+  <div class="tbl"><table>
+    <thead><tr><th>Receptor</th><th>Preferred ligand</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><span class="chip rtk">TrkA</span></td><td>NGF</td><td>Nociceptive sensory neurons; basal forebrain cholinergic neurons</td></tr>
+      <tr><td><span class="chip rtk">TrkB</span></td><td>BDNF, NT-4/5</td><td>Cortex and hippocampus; activity-dependent plasticity; proposed downstream mediator of ketamine and antidepressant effects</td></tr>
+      <tr><td><span class="chip rtk">TrkC</span></td><td>NT-3</td><td>Proprioceptive afferents; NT-3 can weakly activate TrkA and TrkB</td></tr>
+      <tr><td><b>p75NTR</b></td><td>All mature neurotrophins; proneurotrophins (with sortilin)</td><td>Not a tyrosine kinase (TNF-receptor family). Pro-BDNF/pro-NGF via p75–sortilin can promote apoptosis and LTD, opposing Trk signaling.</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="col">
+    <h3>BDNF Val66Met</h3>
+    <p>The common Val66Met polymorphism (rs6265) sits in the BDNF prodomain. In Egan et al. (2003), Met-BDNF showed reduced <em>activity-dependent</em> secretion with normal constitutive secretion and failed to localize to secretory granules and synapses. In humans, the Met allele was associated with poorer episodic memory and abnormal hippocampal activation on fMRI.</p>
+    <h3>Ketamine: from an ion channel to a kinase (hypothesis)</h3>
+    <p>One widely cited model links the families on this page. NMDA blockade (preferentially on tonically active GABAergic interneurons) disinhibits pyramidal neurons, producing a glutamate burst that activates AMPA receptors. BDNF is released, TrkB signals through mTORC1, and new spine synapses form in prefrontal cortex. In rats, Li et al. (2010) showed ketamine rapidly activated mTOR and increased spine synapses, and blocking mTOR with rapamycin abolished both the synaptogenesis and the antidepressant-like behavior. Competing accounts (direct GluN2B effects, eEF2 kinase, the metabolite hydroxynorketamine) remain debated.</p>
+  </div>
+</section>
+
+<!-- ============================ FINDER ============================ -->
+<section id="finder">
+  <h2>Receptor finder</h2>
+  <div class="col"><p>Every receptor here with its coupling, the effector it reaches, and the drugs that make it testable. Filter by mechanism or search by drug name to check yourself.</p></div>
+  <div class="finder-tools">
+    <div class="seg" role="group" aria-label="Filter by mechanism" id="f-mech">
+      <button type="button" data-m="all" aria-pressed="true">All</button>
+      <button type="button" data-m="ion" aria-pressed="false">Ionotropic</button>
+      <button type="button" data-m="gs" aria-pressed="false">Gs</button>
+      <button type="button" data-m="gi" aria-pressed="false">Gi/o</button>
+      <button type="button" data-m="gq" aria-pressed="false">Gq</button>
+      <button type="button" data-m="rtk" aria-pressed="false">RTK</button>
+    </div>
+    <select id="f-fam" aria-label="Filter by transmitter group">
+      <option value="all">All transmitters</option>
+      <option value="ACh">Acetylcholine</option>
+      <option value="Monoamine">Monoamines</option>
+      <option value="Amino acid">Amino acids</option>
+      <option value="Peptide">Peptides &amp; neurotrophins</option>
+      <option value="Other">Purines, lipids, melatonin</option>
+    </select>
+    <input type="search" id="f-q" placeholder="Search receptor or drug, e.g. buspirone" aria-label="Search receptors and drugs">
+    <span class="readout muted" id="f-count"></span>
+  </div>
+  <div class="tbl"><table id="finder-table">
+    <thead><tr><th>Receptor</th><th>Mechanism</th><th>Effector / ions</th><th>Where &amp; why it matters</th><th>Drugs &amp; agents</th></tr></thead>
+    <tbody id="f-body"></tbody>
+  </table></div>
+</section>
+
+<!-- ============================ CLINICAL ============================ -->
+<section id="clinical">
+  <h2>Clinical correlates</h2>
+  <div class="col"><p>Where receptor mechanisms turn into PRITE vignettes.</p></div>
+  <div class="cards">
+    <article><h3>Anti-NMDA-receptor encephalitis <span class="chip ion">ionotropic</span></h3><p>IgG against the extracellular N-terminal domain of GluN1. Antibodies reduce surface NMDA receptors and synaptic clusters, an effect reversed by antibody removal. In Dalmau's 2008 series of 100 patients: median age 23, 91% women, 59% with tumors (most often ovarian teratoma). All had psychiatric symptoms or memory problems; most then developed seizures, dyskinesias, autonomic instability and hypoventilation.</p></article>
+    <article><h3>Myasthenia gravis vs Lambert–Eaton <span class="chip ion">ionotropic</span></h3><p><b>MG:</b> antibodies against the muscle nAChR (postsynaptic ligand-gated channel). Fatigable weakness, ptosis, diplopia.</p><p><b>LEMS:</b> antibodies against presynaptic P/Q-type <em>voltage-gated</em> Ca²⁺ channels, not a ligand-gated receptor. Associated with small-cell lung cancer; strength transiently improves with repeated effort.</p></article>
+    <article><h3>Strychnine, tetanus, hyperekplexia <span class="chip ion">ionotropic</span></h3><p>All three remove glycinergic inhibition. Strychnine blocks the glycine receptor; tetanus toxin cleaves synaptobrevin and blocks glycine and GABA release from spinal inhibitory interneurons; GLRA1 mutations cause hereditary hyperekplexia (exaggerated startle, neonatal stiffness), which responds to clonazepam.</p></article>
+    <article><h3>Benzodiazepine vs barbiturate overdose <span class="chip ion">ionotropic</span></h3><p>Benzodiazepines only modulate GABA's effect, so there is a ceiling. Barbiturates at high concentrations open the channel directly, so there is no ceiling, and combinations with alcohol or other depressants are dangerous. Flumazenil reverses BZD-site effects only and can precipitate seizures in dependent patients or in TCA co-ingestion.</p></article>
+    <article><h3>Neurosteroids for postpartum depression <span class="chip ion">ionotropic</span></h3><p>Brexanolone (IV allopregnanolone, approved 2019) and zuranolone (oral, approved 2023) are GABA-A positive allosteric modulators acting at synaptic and extrasynaptic δ-containing receptors, which benzodiazepines do not modulate.</p></article>
+    <article><h3>Bacterial toxins <span class="chip gs">Gs</span> <span class="chip gi">Gi/o</span></h3><p>Cholera toxin ADP-ribosylates Gαs, blocking GTP hydrolysis, so cAMP stays high. Pertussis toxin ADP-ribosylates Gαi/o, uncoupling it from receptors, so inhibition of adenylyl cyclase is lost and cAMP also rises. Pertussis-toxin sensitivity is the experimental test for Gi/o coupling.</p></article>
+    <article><h3>Lithium: inositol and the kidney <span class="chip gq">Gq</span> <span class="chip gs">Gs</span></h3><p>Brain: inhibits IMPase and inositol polyphosphate 1-phosphatase, limiting PIP₂ regeneration for Gq signaling (Berridge, 1989); also inhibits GSK-3β. Kidney: lithium enters collecting-duct principal cells through ENaC and reduces aquaporin-2 expression downstream of the V2 (Gs) receptor, causing nephrogenic diabetes insipidus. Amiloride blocks ENaC entry.</p></article>
+    <article><h3>5-HT2B agonism and valvulopathy <span class="chip gq">Gq</span></h3><p>5-HT2B agonists cause fibrotic valvular heart disease: fenfluramine (the fen-phen era) and the ergot-derived dopamine agonists pergolide and, at high doses, cabergoline. Relevant when cabergoline is used for antipsychotic-induced hyperprolactinemia, though doses there are low.</p></article>
+    <article><h3>Xanomeline–trospium <span class="chip gq">M1</span> <span class="chip gi">M4</span></h3><p>Xanomeline is an M1/M4-preferring muscarinic agonist without D2-blocking activity. Trospium is a peripherally restricted muscarinic antagonist added to blunt peripheral cholinergic effects. In the phase 2 EMERGENT-1 trial, PANSS total fell 17.4 vs 5.9 points with placebo at 5 weeks; common adverse events were constipation, nausea, dry mouth, dyspepsia and vomiting (Brannan et al., 2021). FDA-approved for schizophrenia in September 2024.</p></article>
+    <article><h3>Pitolisant and the H3 autoreceptor <span class="chip gi">Gi/o</span></h3><p>H3 receptors are Gi/o-coupled presynaptic autoreceptors that limit histamine release. Pitolisant, an H3 antagonist/inverse agonist, removes that brake and is approved for excessive daytime sleepiness and cataplexy in narcolepsy. Contrast with H1 antagonism (Gq), which sedates.</p></article>
+    <article><h3>α2 agonists <span class="chip gi">Gi/o</span></h3><p>Clonidine, guanfacine, lofexidine and dexmedetomidine activate α2A receptors. Somatodendritic and presynaptic α2 receptors on locus coeruleus neurons reduce firing and NE release, the basis for treating opioid withdrawal (lofexidine), ADHD (guanfacine, clonidine ER) and acute agitation (sublingual dexmedetomidine). Postsynaptic α2A in prefrontal cortex is thought to underlie guanfacine's cognitive effects.</p></article>
+    <article><h3>BDNF Val66Met <span class="chip rtk">TrkB</span></h3><p>Met allele: reduced activity-dependent BDNF secretion with normal constitutive secretion, poorer episodic memory, abnormal hippocampal activation (Egan et al., 2003). A frequently tested example of a functional polymorphism in a neurotrophin pathway.</p></article>
+  </div>
+</section>
+
+<!-- ============================ QUIZ ============================ -->
+<section id="quiz">
+  <h2>Self-check</h2>
+  <div class="col"><p>PRITE-style items. Pick an answer and check it to see why each option is right or wrong. Your answers are kept in this browser.</p></div>
+  <div class="qscore"><span class="readout" id="q-score"></span><button class="btn" type="button" id="q-reset">Reset quiz</button></div>
+  <div id="q-list"></div>
+</section>
+
+<!-- ============================ SOURCES ============================ -->
+<section id="sources">
+  <h2>Sources</h2>
+  <div class="col">
+    <p class="small muted">Primary papers were checked against PubMed for this page; DOIs are linked. Textbook statements are from standard references and were not re-verified page by page.</p>
+    <ol class="refs">
+      <li>Twyman RE, Rogers CJ, Macdonald RL. Differential regulation of γ-aminobutyric acid receptor channels by diazepam and phenobarbital. <i>Ann Neurol</i>. 1989;25:213–220. <a href="https://doi.org/10.1002/ana.410250302">doi:10.1002/ana.410250302</a></li>
+      <li>Nowak L, Bregestovski P, Ascher P, et al. Magnesium gates glutamate-activated channels in mouse central neurones. <i>Nature</i>. 1984;307:462–465. <a href="https://doi.org/10.1038/307462a0">doi:10.1038/307462a0</a></li>
+      <li>Mayer ML, Westbrook GL, Guthrie PB. Voltage-dependent block by Mg²⁺ of NMDA responses in spinal cord neurones. <i>Nature</i>. 1984;309:261–263. <a href="https://doi.org/10.1038/309261a0">doi:10.1038/309261a0</a></li>
+      <li>Johnson JW, Ascher P. Glycine potentiates the NMDA response in cultured mouse brain neurons. <i>Nature</i>. 1987;325:529–531. <a href="https://doi.org/10.1038/325529a0">doi:10.1038/325529a0</a></li>
+      <li>Jahr CE, Stevens CF. Voltage dependence of NMDA-activated macroscopic conductances predicted by single-channel kinetics. <i>J Neurosci</i>. 1990;10:3178–3182. <a href="https://doi.org/10.1523/JNEUROSCI.10-09-03178.1990">doi:10.1523/JNEUROSCI.10-09-03178.1990</a></li>
+      <li>Dalmau J, Gleichman AJ, Hughes EG, et al. Anti-NMDA-receptor encephalitis: case series and analysis of the effects of antibodies. <i>Lancet Neurol</i>. 2008;7:1091–1098. <a href="https://doi.org/10.1016/S1474-4422(08)70224-2">doi:10.1016/S1474-4422(08)70224-2</a></li>
+      <li>Ben-Ari Y. Excitatory actions of GABA during development: the nature of the nurture. <i>Nat Rev Neurosci</i>. 2002;3:728–739. <a href="https://doi.org/10.1038/nrn920">doi:10.1038/nrn920</a></li>
+      <li>Berridge MJ, Downes CP, Hanley MR. Neural and developmental actions of lithium: a unifying hypothesis. <i>Cell</i>. 1989;59:411–419. <a href="https://doi.org/10.1016/0092-8674(89)90026-3">doi:10.1016/0092-8674(89)90026-3</a></li>
+      <li>Egan MF, Kojima M, Callicott JH, et al. The BDNF val66met polymorphism affects activity-dependent secretion of BDNF and human memory and hippocampal function. <i>Cell</i>. 2003;112:257–269. <a href="https://doi.org/10.1016/s0092-8674(03)00035-7">doi:10.1016/s0092-8674(03)00035-7</a></li>
+      <li>Li N, Lee B, Liu RJ, et al. mTOR-dependent synapse formation underlies the rapid antidepressant effects of NMDA antagonists. <i>Science</i>. 2010;329:959–964. <a href="https://doi.org/10.1126/science.1190287">doi:10.1126/science.1190287</a></li>
+      <li>Brannan SK, Sawchak S, Miller AC, et al. Muscarinic cholinergic receptor agonist and peripheral antagonist for schizophrenia. <i>N Engl J Med</i>. 2021;384:717–726. <a href="https://doi.org/10.1056/NEJMoa2017015">doi:10.1056/NEJMoa2017015</a></li>
+      <li>Kandel ER, Koester JD, Mack SH, Siegelbaum SA, eds. <i>Principles of Neural Science</i>. 6th ed. McGraw Hill; 2021.</li>
+      <li>Stahl SM. <i>Stahl's Essential Psychopharmacology</i>. 5th ed. Cambridge University Press; 2021.</li>
+      <li>Brunton LL, Knollmann BC, eds. <i>Goodman &amp; Gilman's The Pharmacological Basis of Therapeutics</i>. 14th ed. McGraw Hill; 2023.</li>
+    </ol>
+  </div>
+</section>
+</main>
+
+<script>
+(function(){
+"use strict";
+const RM = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const NS = "http://www.w3.org/2000/svg";
+const $ = (s, r=document) => r.querySelector(s);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function el(tag, attrs, parent){ const e=document.createElementNS(NS, tag); for(const k in attrs){ if(k==="text") e.textContent=attrs[k]; else if(k==="style") e.setAttribute("style",attrs[k]); else e.setAttribute(k, attrs[k]); } if(parent) parent.appendChild(e); return e; }
+const mv = (node, x, y) => { node.style.transform = `translate(${x}px, ${y}px)`; };
+const fmtV = v => (v<0?"−":v>0?"+":"") + Math.abs(v) + " mV";
+
+/* ---------------- timescale ---------------- */
+(function(){
+  const svg = $("#timescale"); const x0=60, x1=640, LMAX=Math.log10(8.64e7);
+  const X = ms => x0 + Math.log10(ms)/LMAX*(x1-x0);
+  const bars = [
+    {lab:"Fast ionotropic (AMPA, GABA-A, nAChR)", a:1, b:50, c:"--ion"},
+    {lab:"NMDA receptor current", a:50, b:500, c:"--ion"},
+    {lab:"GPCR → Gβγ → GIRK (slow IPSP)", a:100, b:1000, c:"--gpcr"},
+    {lab:"Second messengers (cAMP, IP₃, PKC)", a:1000, b:6e5, c:"--gpcr"},
+    {lab:"Trk → gene expression, spine growth", a:6e5, b:8.64e7, c:"--rtk"}
+  ];
+  bars.forEach((b,i)=>{
+    const y = 18 + i*32, xa=X(b.a), xb=X(b.b);
+    el("rect",{x:xa, y:y, width:Math.max(4,xb-xa), height:20, rx:4, style:`fill:var(${b.c});opacity:.85`}, svg);
+    const est = b.lab.length*6.3;
+    if (xb + 8 + est < 672) el("text",{x:xb+8, y:y+14, class:"lab-ink", text:b.lab, style:"font-size:12px"}, svg);
+    else el("text",{x:xa-8, y:y+14, class:"lab-ink", "text-anchor":"end", text:b.lab, style:"font-size:12px"}, svg);
+  });
+  const ay = 186;
+  el("line",{x1:x0, y1:ay, x2:x1, y2:ay, style:"stroke:var(--muted)", "stroke-width":1}, svg);
+  [[1,"1 ms"],[10,"10 ms"],[100,"100 ms"],[1000,"1 s"],[1e4,"10 s"],[6e4,"1 min"],[6e5,"10 min"],[3.6e6,"1 h"],[8.64e7,"1 day"]].forEach(([ms,l])=>{
+    const x=X(ms);
+    el("line",{x1:x, y1:ay, x2:x, y2:ay+6, style:"stroke:var(--muted)"}, svg);
+    el("line",{x1:x, y1:14, x2:x, y2:ay, style:"stroke:var(--rule)", "stroke-dasharray":"2 4"}, svg);
+    el("text",{x:x, y:ay+20, class:"tick", "text-anchor": ms===8.64e7?"end":"middle", text:l}, svg);
+  });
+})();
+
+/* ---------------- GABA-A single channel ---------------- */
+(function(){
+  const cv = $("#gaba-canvas"), ctx = cv.getContext("2d");
+  const cb = {gaba:$("#g-gaba"), bzd:$("#g-bzd"), barb:$("#g-barb")};
+  const WIN = 400, DT = 0.25, N = Math.round(WIN/DT);
+  const BASE_R = 12, BASE_D = 6, OPEN_M = 2.2, GAP_M = 0.45, SPONT = 0.4;
+  let buf = new Uint8Array(N), head = 0, paused = false, last = null;
+  let st = {inBurst:false, burstEnd:0, open:false, nextToggle:0, t:0};
+  const expRand = m => -Math.log(1-Math.random())*m;
+  function params(){
+    let r = cb.gaba.checked ? BASE_R : SPONT, D = BASE_D;
+    if (cb.gaba.checked && cb.bzd.checked) r *= 2.5;
+    if (cb.gaba.checked && cb.barb.checked) D *= 3;
+    return {r, D};
+  }
+  function step(){
+    const p = params(); st.t += DT;
+    if (!st.inBurst){
+      if (Math.random() < p.r*DT/1000){ st.inBurst = true; st.burstEnd = st.t + expRand(p.D); st.open = true; st.nextToggle = st.t + expRand(OPEN_M); }
+    } else {
+      if (st.t >= st.burstEnd){ st.inBurst=false; st.open=false; }
+      else if (st.t >= st.nextToggle){ st.open = !st.open; st.nextToggle = st.t + expRand(st.open?OPEN_M:GAP_M); }
+    }
+    buf[head] = st.open ? 1 : 0; head = (head+1)%N;
+  }
+  function size(){
+    const dpr = window.devicePixelRatio||1, w = cv.clientWidth;
+    cv.width = Math.round(w*dpr); cv.height = Math.round(190*dpr); ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  function draw(){
+    const w = cv.clientWidth, h = 190, L = 64, R = w-12, yC = 54, yO = 128;
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle = css("--surface"); ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle = css("--rule"); ctx.lineWidth = 1; ctx.setLineDash([3,4]);
+    [yC,yO].forEach(y=>{ ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(R,y); ctx.stroke(); });
+    ctx.setLineDash([]);
+    ctx.fillStyle = css("--muted"); ctx.font = "11px " + css("--f-mono");
+    ctx.textAlign = "left"; ctx.fillText("closed", 6, yC+4); ctx.fillText("open", 6, yO+4);
+    ctx.strokeStyle = css("--cl"); ctx.lineWidth = 1.6; ctx.beginPath();
+    for (let i=0;i<N;i++){
+      const v = buf[(head+i)%N], x = L + (R-L)*i/(N-1), y = v ? yO : yC;
+      if (i===0) ctx.moveTo(x,y); else { const pv = buf[(head+i-1)%N]; if (pv!==v){ ctx.lineTo(x, pv?yO:yC); } ctx.lineTo(x,y); }
+    }
+    ctx.stroke();
+    const px = (R-L)/WIN*50; ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(R-px, 168); ctx.lineTo(R, 168); ctx.stroke();
+    ctx.fillStyle = css("--ink"); ctx.textAlign = "right"; ctx.fillText("50 ms", R-px-8, 172);
+    ctx.textAlign = "left"; ctx.fillStyle = css("--muted"); ctx.fillText("400 ms window · openings drawn downward", L, 172);
+  }
+  function status(){
+    const p = params(), g = cb.gaba.checked;
+    const rel = (p.r*p.D)/(BASE_R*BASE_D);
+    let note = "";
+    if (!g && (cb.bzd.checked||cb.barb.checked)) note = cb.barb.checked ? " · no GABA: BZD has no effect; barbiturates gate directly only at high (anesthetic/toxic) concentrations" : " · no GABA: benzodiazepine has no effect";
+    else if (!g) note = " · rare spontaneous openings";
+    $("#g-status").innerHTML = `<span><b>Burst frequency</b> ${p.r.toFixed(1)} /s</span><span><b>Mean burst duration</b> ${p.D.toFixed(0)} ms</span><span><b>Relative Cl⁻ charge</b> ${g?rel.toFixed(1)+"×":"≈0"}</span><span class="muted">${note.replace(/^ · /,"")}</span>`;
+  }
+  function prefill(){ for(let i=0;i<N;i++) step(); }
+  function frame(ts){
+    if (last===null) last = ts;
+    const real = Math.min(64, ts-last); last = ts;
+    if (!paused){ const simMs = real*0.15; const n = Math.round(simMs/DT); for (let i=0;i<n;i++) step(); draw(); }
+    requestAnimationFrame(frame);
+  }
+  Object.values(cb).forEach(c=>c.addEventListener("change", ()=>{ status(); if (RM||paused){ prefill(); draw(); } }));
+  $("#g-pause").addEventListener("click", e=>{ paused=!paused; e.target.textContent = paused?"Play":"Pause"; });
+  window.addEventListener("resize", ()=>{ size(); draw(); });
+  size(); prefill(); draw(); status();
+  if (RM){ paused = true; $("#g-pause").hidden = true; } else requestAnimationFrame(frame);
+  window.__redraw = (window.__redraw||[]).concat([draw]);
+})();
+
+/* ---------------- NMDA ---------------- */
+(function(){
+  const c = {glu:$("#n-glu"), gly:$("#n-gly"), ket:$("#n-ket"), mgf:$("#n-mgfree"), v:$("#n-v")};
+  const n1=$("#nm-n1"), n2=$("#nm-n2"), gly=$("#nm-gly"), glu=$("#nm-glu"), ket=$("#nm-ket"), mg=$("#nm-mg"), flow=$("#nm-flow");
+  let trapped = false, I = 0;
+  const u = V => 1/(1 + (1/3.57)*Math.exp(-0.062*V));
+  // I–V plot
+  const iv = $("#nmda-iv"); const P={l:44,r:290,t:14,b:180}, Vmin=-90, Vmax=40, Imin=-1, Imax=0.5;
+  const px = V => P.l + (V-Vmin)/(Vmax-Vmin)*(P.r-P.l), py = i => P.t + (Imax-i)/(Imax-Imin)*(P.b-P.t);
+  el("line",{x1:P.l,y1:py(0),x2:P.r,y2:py(0),style:"stroke:var(--muted)"},iv);
+  el("line",{x1:px(0),y1:P.t,x2:px(0),y2:P.b,style:"stroke:var(--rule)"},iv);
+  [-80,-40,0,40].forEach(V=>{ el("line",{x1:px(V),y1:P.b,x2:px(V),y2:P.b+4,style:"stroke:var(--muted)"},iv); el("text",{x:px(V),y:P.b+16,class:"tick","text-anchor":"middle",text:(V>0?"+":"")+V},iv); });
+  [-1,-0.5,0.5].forEach(i=>{ el("text",{x:P.l-6,y:py(i)+4,class:"tick","text-anchor":"end",text:i.toFixed(1)},iv); el("line",{x1:P.l,y1:py(i),x2:P.r,y2:py(i),style:"stroke:var(--rule)","stroke-dasharray":"2 4"},iv); });
+  el("text",{x:(P.l+P.r)/2,y:P.b+34,class:"lab","text-anchor":"middle",text:"Membrane potential (mV)"},iv);
+  el("text",{x:P.l,y:P.t-2,class:"lab",text:"Relative current (inward ↓)"},iv);
+  let d1="", d2="";
+  for (let V=Vmin; V<=Vmax; V+=1){ d1 += (V===Vmin?"M":"L")+px(V).toFixed(1)+" "+py(V/90).toFixed(1)+" "; d2 += (V===Vmin?"M":"L")+px(V).toFixed(1)+" "+py(u(V)*V/90).toFixed(1)+" "; }
+  el("path",{d:d1,fill:"none",style:"stroke:var(--muted)","stroke-dasharray":"5 4","stroke-width":1.4},iv);
+  el("path",{d:d2,fill:"none",style:"stroke:var(--ion)","stroke-width":2.2},iv);
+  el("text",{x:px(-40),y:py(-0.62),class:"lab",text:"0 Mg²⁺"},iv);
+  el("text",{x:px(-62),y:py(-0.25),class:"lab",text:"1 mM Mg²⁺",style:"fill:var(--ion)"},iv);
+  const dot = el("circle",{r:6,style:"fill:var(--ink);stroke:var(--surface)","stroke-width":2},iv);
+
+  function render(){
+    const V = +c.v.value, agon = c.glu.checked && c.gly.checked;
+    if (c.ket.checked && agon) trapped = true;
+    if (!c.ket.checked && trapped && agon) trapped = false;
+    const uu = c.mgf.checked ? 1 : u(V);
+    const open = agon && !trapped;
+    I = open ? uu*V/90 : 0;
+    $("#n-vval").textContent = fmtV(V);
+    // gate geometry
+    const gap = agon ? 12 : 0;
+    mv(n1, -gap, 0); mv(n2, gap, 0);
+    mv(gly, c.gly.checked ? 290 : 120, c.gly.checked ? 58 : 50);
+    mv(glu, c.glu.checked ? 390 : 560, c.glu.checked ? 58 : 50);
+    // ketamine
+    if (trapped) mv(ket, 340, 176); else mv(ket, c.ket.checked ? 520 : 760, c.ket.checked ? 90 : 90);
+    ket.style.opacity = (c.ket.checked||trapped) ? 1 : 0;
+    // Mg position: in pore when blocking, pushed out with depolarization or absent
+    if (c.mgf.checked){ mv(mg, 340, -30); mg.style.opacity = 0; }
+    else { mg.style.opacity = 1; const y = (trapped || !agon) ? 108 : 160 - u(V)*62; mv(mg, 340, y); }
+    // I-V dot
+    dot.setAttribute("cx", px(V)); dot.setAttribute("cy", py(I)); dot.style.opacity = open ? 1 : 0.25;
+    // status
+    let s;
+    if (trapped) s = agon ? "Ketamine bound in the open pore: channel blocked." : "Agonists gone, gate closed around ketamine: drug is trapped and leaves only when the channel reopens.";
+    else if (!c.glu.checked && !c.gly.checked) s = "Closed: neither agonist site occupied.";
+    else if (!c.glu.checked) s = "Closed: glutamate site on GluN2 is empty.";
+    else if (!c.gly.checked) s = "Closed: co-agonist site on GluN1 is empty. Glutamate alone cannot open it.";
+    else if (c.mgf.checked) s = "Open, no Mg²⁺: current follows driving force only (voltage-independent conductance).";
+    else if (uu < 0.15) s = "Gate open, but Mg²⁺ occupies the pore. Almost no current at this potential.";
+    else if (uu < 0.6) s = "Gate open, Mg²⁺ partly relieved by depolarization. Na⁺ and Ca²⁺ flowing in.";
+    else s = V > 0 ? "Gate open, Mg²⁺ expelled. Above E_rev (≈0 mV) net current is outward (K⁺)." : "Gate open, Mg²⁺ largely expelled. Strong Na⁺/Ca²⁺ influx.";
+    const dir = I < -0.005 ? "inward" : I > 0.005 ? "outward" : "≈ 0";
+    $("#n-status").innerHTML = `<span><b>${s}</b></span><span class="readout">Mg²⁺ unblock ${c.mgf.checked?"n/a":(u(V)*100).toFixed(0)+"%"}</span><span class="readout">net current ${dir}${I!==0?" ("+Math.abs(I).toFixed(2)+")":""}</span>`;
+    if (RM) staticFlow();
+  }
+  // particles
+  const parts = [];
+  for (let i=0;i<18;i++){ const p = el("circle",{r:4, cx:-20, cy:-20},flow); parts.push({e:p, alive:false, t:0, off:0, dir:1}); }
+  let acc = 0, lastT = null;
+  function tick(ts){
+    if (lastT===null) lastT = ts; const dt = Math.min(64, ts-lastT)/1000; lastT = ts;
+    const rate = Math.min(1, Math.abs(I)/0.3) * 22;
+    acc += rate*dt;
+    while (acc >= 1){ acc -= 1; const p = parts.find(q=>!q.alive); if (!p) break; p.alive = true; p.t = 0; p.off = (Math.random()*2-1)*110; p.dir = I < 0 ? 1 : -1; const inward = p.dir===1; p.e.setAttribute("style", `fill:var(${inward ? (Math.random()<0.3?"--ca":"--na") : "--k"})`); }
+    parts.forEach(p=>{
+      if (!p.alive) return;
+      p.t += dt/1.6; if (p.t >= 1){ p.alive=false; p.e.setAttribute("cx",-20); return; }
+      const prog = p.dir===1 ? p.t : 1-p.t; const y = 30 + prog*260;
+      const k = Math.min(1, Math.abs(y-160)/90); const x = 340 + p.off*k;
+      p.e.setAttribute("cx", x.toFixed(1)); p.e.setAttribute("cy", y.toFixed(1));
+    });
+    requestAnimationFrame(tick);
+  }
+  function staticFlow(){
+    parts.forEach(p=>p.e.setAttribute("cx",-20));
+    const n = Math.round(Math.min(1, Math.abs(I)/0.3)*8);
+    for (let i=0;i<n;i++){ const p = parts[i]; const y = I<0 ? 200 + i*10 : 40 + i*9; p.e.setAttribute("cx", 330 + (i%2)*20); p.e.setAttribute("cy", y); p.e.setAttribute("style", `fill:var(${I<0?"--na":"--k"})`); }
+  }
+  Object.values(c).forEach(x=>x.addEventListener("input", render));
+  Object.values(c).forEach(x=>x.addEventListener("change", render));
+  render();
+  if (!RM) requestAnimationFrame(tick);
+})();
+
+/* ---------------- stepper helper ---------------- */
+function stepper(o){
+  let i = 0, playing = !RM, timer = null;
+  const dots = $(o.dots);
+  o.steps.forEach((_,k)=>{ const b=document.createElement("button"); b.type="button"; b.setAttribute("aria-label","Step "+(k+1)); b.addEventListener("click",()=>{ go(k); stop(); }); dots.appendChild(b); });
+  function go(k){ i = (k+o.steps.length)%o.steps.length; o.render(i); [...dots.children].forEach((d,j)=>d.setAttribute("aria-current", j===i?"true":"false")); }
+  function stop(){ playing=false; clearInterval(timer); $(o.play).textContent="Play"; }
+  function start(){ playing=true; clearInterval(timer); timer=setInterval(()=>go(i+1), o.ms); $(o.play).textContent="Pause"; }
+  $(o.play).addEventListener("click", ()=> playing?stop():start());
+  $(o.prev).addEventListener("click", ()=>{ go(i-1); stop(); });
+  $(o.next).addEventListener("click", ()=>{ go(i+1); stop(); });
+  go(0); if (playing) start(); else $(o.play).textContent="Play";
+  return { go, get i(){ return i; } };
+}
+
+/* ---------------- GPCR ---------------- */
+(function(){
+  let G = "s";
+  const C = {
+    s:{col:"--gs", ga:"Gαs", lig:"DA", rec:"D1", ex:"Dopamine at D1 (Gαs; Gαolf in striatum)",
+       gaPos:[421,196], gbgPos:[262,196], ds:["cAMP ↑ → PKA","→ CREB (Ser133), DARPP-32"],
+       eff:"Gαs-GTP binds adenylyl cyclase and stimulates it. ATP → cAMP. cAMP frees the catalytic subunits of PKA, which phosphorylates CREB at Ser133, DARPP-32 and ion channels. Each AC makes many cAMP molecules: the second point of amplification."},
+    i:{col:"--gi", ga:"Gαi", lig:"DA", rec:"D2", ex:"Dopamine at D2 (Gαi/o)",
+       gaPos:[421,196], gbgPos:[581,190], ds:["cAMP ↓ → PKA ↓","less phosphorylation"],
+       eff:"Two arms. Gαi-GTP inhibits adenylyl cyclase, so cAMP and PKA activity fall. Gβγ binds GIRK channels and opens them: K⁺ leaves, the membrane hyperpolarizes (the slow IPSP). Presynaptically, Gβγ also inhibits N- and P/Q-type Ca²⁺ channels, reducing transmitter release, which is how D2, α2, 5-HT1A, μ-opioid and CB1 receptors act as brakes."},
+    q:{col:"--gq", ga:"Gαq", lig:"5-HT", rec:"5-HT2A", ex:"Serotonin at 5-HT2A (Gαq/11)",
+       gaPos:[434,196], gbgPos:[262,196], ds:null,
+       eff:"Gαq-GTP activates phospholipase Cβ, which cleaves membrane PIP₂ into two messengers. IP₃ diffuses to IP₃ receptors on the ER and releases Ca²⁺. DAG stays in the membrane and, together with Ca²⁺, activates protein kinase C. Lithium acts downstream, at inositol recycling."}
+  };
+  const caps = [
+    k => `<b>Rest.</b> Gα with GDP bound is complexed with Gβγ (γ is lipid-anchored to the membrane). Without agonist, the ${C[k].rec} receptor couples only weakly to the heterotrimer.`,
+    k => `<b>Agonist binds.</b> ${C[k].ex}. The orthosteric pocket sits within the transmembrane bundle; binding swings TM6 outward and opens an intracellular cavity that the Gα C-terminus inserts into.`,
+    k => `<b>Nucleotide exchange.</b> The receptor acts as a GEF: GDP leaves Gα and GTP, about 10-fold more abundant than GDP in cytoplasm, takes its place. This is the activating step and the one pertussis toxin prevents for Gαi/o.`,
+    k => `<b>Subunits separate.</b> Gα-GTP and Gβγ dissociate and move laterally in the membrane to their effectors. The agonist-bound receptor can now catalyze exchange on another G protein, so one receptor activates many.`,
+    k => `<b>Effector response.</b> ${C[k].eff}`,
+    k => `<b>Termination and desensitization.</b> Gα hydrolyzes GTP to GDP (accelerated by RGS proteins) and reassociates with Gβγ. Meanwhile GRK phosphorylates the agonist-occupied receptor and β-arrestin binds, blocking further coupling and targeting the receptor for clathrin-mediated internalization.`
+  ];
+  const ga=$("#gp-ga"), gbg=$("#gp-gbg"), lig=$("#gp-lig"), tm6=$("#gp-tm6");
+  const ac=$("#gp-ac"), acbox=$("#gp-acbox"), girk=$("#gp-girk"), plc=$("#gp-plc"), ds=$("#gp-ds"), flow=$("#gp-flow");
+  const P=$("#gp-P"), arr=$("#gp-arr"), nuc=$("#gp-nuc"), nucb=$("#gp-nucb"), gae=$("#gp-gae");
+  const dag=[ $("#gp-dag"), $("#gp-dagt"), $("#gp-pkc"), $("#gp-pkct") ];
+  function setFlow(k){
+    flow.innerHTML = "";
+    const add = (x,y,dx,dy,col,t,dl)=> el("circle",{cx:x,cy:y,r:4,style:`fill:var(${col});--dx:${dx}px;--dy:${dy}px;--t:${t}s;--d:${dl}s`},flow);
+    if (k==="s") for (let j=0;j<6;j++) add(462+(j%3)*8, 150, -22, 92, "--gs", 1.5, j*0.25);
+    if (k==="i"){ for (let j=0;j<5;j++) add(580, 150, (j%2?-8:8), -78, "--k", 1.3, j*0.26); }
+    if (k==="q"){ for (let j=0;j<5;j++) add(496, 202, 80, 46, "--gq", 1.5, j*0.3); for (let j=0;j<5;j++) add(585, 244, (j%2?-26:26), -22, "--ca", 1.2, j*0.24); }
+  }
+  function render(s){
+    const k = G, cl = C[k], col = `var(${cl.col})`;
+    $("#gp-cap").innerHTML = caps[s](k);
+    $("#gp-stepn").textContent = `Step ${s+1} of 6`;
+    $("#gp-ligt").textContent = cl.lig;
+    $("#gp-gat").textContent = cl.ga;
+    document.querySelectorAll("#gp-rec .hx").forEach(h=>h.setAttribute("style", `fill:color-mix(in srgb,var(--gpcr) ${s>=1&&s<=4?55:30}%,var(--surface));stroke:var(--gpcr)`));
+    gae.setAttribute("style", `fill:color-mix(in srgb,${col} 20%,var(--surface));stroke:${col}`);
+    const gtp = s>=2 && s<=4;
+    nuc.textContent = gtp ? "GTP" : "GDP";
+    nucb.setAttribute("style", gtp ? `fill:${col}` : "fill:var(--surface2);stroke:var(--muted)");
+    nuc.setAttribute("style", `font-size:10px;font-weight:700;fill:${gtp?"var(--surface)":"var(--ink)"}`);
+    // positions
+    mv(lig, 156, s>=1 ? 94 : 36);
+    mv(tm6, s>=1 && s<=4 ? 5 : 0, 0);
+    const sep = s===3 || s===4;
+    if (sep){ mv(ga, cl.gaPos[0], cl.gaPos[1]); mv(gbg, cl.gbgPos[0], cl.gbgPos[1]); }
+    else { mv(ga, 160, 186); mv(gbg, 214, 190); }
+    // effectors visible per class
+    ac.style.opacity = (k==="s"||k==="i") ? 1 : 0;
+    girk.style.opacity = k==="i" ? 1 : 0;
+    plc.style.opacity = k==="q" ? 1 : 0;
+    const active = s===4;
+    acbox.setAttribute("style", `fill:color-mix(in srgb,var(${k==="i"?"--gi":"--gs"}) ${active?(k==="i"?8:30):14}%,var(--surface));stroke:var(${k==="i"?"--gi":"--gs"});stroke-dasharray:${active&&k==="i"?"4 3":"none"}`);
+    mv($("#gp-girkL"), k==="i"&&active ? -5 : 0, 0); mv($("#gp-girkR"), k==="i"&&active ? 5 : 0, 0);
+    dag.forEach(d=>d.style.opacity = k==="q"&&active ? 1 : 0.0);
+    if (cl.ds){ $("#gp-ds1").textContent = cl.ds[0]; $("#gp-ds2").textContent = cl.ds[1]; }
+    ds.style.opacity = cl.ds && active ? 1 : 0;
+    flow.style.opacity = active ? 1 : 0;
+    P.style.opacity = s===5 ? 1 : 0; arr.style.opacity = s===5 ? 1 : 0;
+  }
+  const st = stepper({steps:caps, render, dots:"#gp-dots", play:"#gp-play", prev:"#gp-prev", next:"#gp-next", ms:2800});
+  document.querySelectorAll("#gpcr-fig .seg button").forEach(b=>b.addEventListener("click", ()=>{
+    G = b.dataset.g; document.querySelectorAll("#gpcr-fig .seg button").forEach(x=>x.setAttribute("aria-pressed", x===b?"true":"false"));
+    setFlow(G); render(st.i);
+  }));
+  setFlow(G); render(0);
+})();
+
+/* ---------------- RTK ---------------- */
+(function(){
+  const a=$("#rk-a"), b=$("#rk-b"), lig=$("#rk-lig"), casc=$("#rk-casc"), out=$("#rk-out"), ps=document.querySelectorAll(".rk-p");
+  const caps = [
+    "<b>Rest.</b> TrkB monomers diffuse separately in the membrane. Each has an extracellular ligand-binding domain (immunoglobulin-like domains bind the neurotrophin), one transmembrane helix, and an intracellular tyrosine kinase domain.",
+    "<b>Ligand-induced dimerization.</b> BDNF is a non-covalent homodimer. Each protomer binds one receptor, so the dimer bridges two TrkB molecules and brings their kinase domains into contact.",
+    "<b>Trans-autophosphorylation.</b> Each kinase phosphorylates tyrosines in its partner's activation loop (raising catalytic activity) and then at docking sites, notably Y515 (Shc site) and Y816 (PLCγ site) in rodent TrkB numbering (Y516 and Y817 in human).",
+    "<b>Adapters dock, cascades launch.</b> Phospho-Y515 recruits Shc → Grb2–SOS → Ras → Raf–MEK–ERK, and Gab1 → PI3K → Akt. Phospho-Y816 recruits PLCγ, which cleaves PIP₂ into IP₃ and DAG, the same messengers Gq produces.",
+    "<b>Long-term outcomes.</b> ERK and Ca²⁺/CaMK pathways converge on CREB-dependent transcription; Akt suppresses apoptosis and, via mTORC1, drives local protein synthesis at synapses. Together these support neuronal survival, dendritic growth, spine formation and late-phase LTP."
+  ];
+  function render(s){
+    $("#rk-cap").innerHTML = caps[s];
+    const dimer = s>=1;
+    mv(a, dimer?305:240, 0); mv(b, dimer?375:440, 0);
+    mv(lig, 0, dimer?42:0);
+    ps.forEach(p=>p.style.opacity = s>=2 ? 1 : 0);
+    casc.style.opacity = s>=3 ? 1 : 0;
+    out.style.opacity = s>=4 ? 1 : 0;
+  }
+  stepper({steps:caps, render, dots:"#rk-dots", play:"#rk-play", prev:"#rk-prev", next:"#rk-next", ms:2800});
+})();
+
+/* ---------------- finder ---------------- */
+(function(){
+  const R = [
+    ["Muscle nAChR","ACh","ion","Na⁺/K⁺; (α1)₂β1δε adult, γ in fetal","Neuromuscular junction","Succinylcholine (depolarizing), rocuronium (competitive); autoantibodies in myasthenia gravis"],
+    ["Neuronal nAChR α4β2","ACh","ion","Na⁺/K⁺ (some Ca²⁺)","Main high-affinity nicotine site; VTA reward","Nicotine; varenicline and cytisine (partial agonists)"],
+    ["nAChR α7","ACh","ion","Cation, high Ca²⁺; homopentamer","Hippocampus, interneurons; sensory gating research","Investigational agonists only"],
+    ["GABA-A","Amino acid","ion","Cl⁻ (some HCO₃⁻); typically 2α·2β·γ2","Fast inhibition; δ-containing extrasynaptic receptors carry tonic inhibition","BZDs (↑ burst frequency), barbiturates (↑ burst duration), zolpidem (α1-preferring), brexanolone, zuranolone, ethanol, propofol; flumazenil antagonizes the BZD site"],
+    ["Glycine receptor","Amino acid","ion","Cl⁻","Spinal cord and brainstem inhibition","Strychnine (antagonist); GLRA1 mutations → hyperekplexia"],
+    ["5-HT3","Monoamine","ion","Na⁺/K⁺ (some Ca²⁺)","Area postrema, vagal afferents; only ionotropic 5-HT receptor","Ondansetron (antagonist); mirtazapine and vortioxetine also antagonize"],
+    ["AMPA","Amino acid","ion","Na⁺/K⁺; Ca²⁺-permeable if GluA2-lacking","Fast excitation; receptor insertion expresses LTP","Perampanel (non-competitive antagonist); topiramate (AMPA/kainate)"],
+    ["NMDA","Amino acid","ion","Na⁺, K⁺, Ca²⁺; GluN1 + GluN2","Coincidence detector: glutamate + glycine/D-serine + depolarization; LTP trigger","Ketamine, esketamine, PCP, memantine, dextromethorphan (channel blockers); anti-GluN1 IgG in anti-NMDAR encephalitis"],
+    ["Kainate","Amino acid","ion","Na⁺/K⁺","Pre- and postsynaptic modulation","Topiramate (AMPA/kainate antagonism)"],
+    ["P2X","Other","ion","Cation incl. Ca²⁺; trimer","ATP-gated; P2X7 on microglia","None in psychiatric use"],
+    ["M1, M3, M5","ACh","gq","PLCβ → IP₃/DAG","M1: cortex and hippocampus (cognition); M3: glands, smooth muscle","Xanomeline (M1/M4-preferring agonist); anticholinergic burden from TCAs, clozapine, diphenhydramine"],
+    ["M2, M4","ACh","gi","↓ cAMP; M2 opens cardiac GIRK","M2: heart (vagal bradycardia); M4: striatum, modulates DA","Xanomeline (M4); benztropine (antagonist)"],
+    ["α1 adrenergic","Monoamine","gq","PLCβ","Vascular smooth muscle; cortex","Prazosin (antagonist; PTSD nightmares); orthostasis from TCAs, trazodone, quetiapine, clozapine"],
+    ["α2 adrenergic (α2A)","Monoamine","gi","↓ cAMP, GIRK ↑; auto- and heteroreceptor","Locus coeruleus, prefrontal cortex","Clonidine, guanfacine, lofexidine, dexmedetomidine (agonists); mirtazapine (antagonist)"],
+    ["β1–β3 adrenergic","Monoamine","gs","↑ cAMP","Heart (β1), airway and vessels (β2)","Propranolol (akathisia, performance anxiety, lithium tremor)"],
+    ["D1, D5","Monoamine","gs","↑ cAMP (Gαolf in striatum) → PKA → DARPP-32","Direct-pathway striatal neurons; prefrontal working memory","No selective agent in routine psychiatric use"],
+    ["D2, D3, D4","Monoamine","gi","↓ cAMP, GIRK ↑; D2 autoreceptors","Indirect pathway, mesolimbic, pituitary lactotrophs (prolactin)","Antipsychotics (antagonists); aripiprazole, brexpiprazole, cariprazine (partial agonists; cariprazine D3-preferring); clozapine has high D4 affinity"],
+    ["5-HT1A","Monoamine","gi","↓ cAMP, GIRK ↑; raphe somatodendritic autoreceptor","Raphe, hippocampus, cortex","Buspirone (partial agonist), vilazodone; partial agonism by aripiprazole, brexpiprazole, cariprazine"],
+    ["5-HT1B / 1D","Monoamine","gi","↓ cAMP; terminal autoreceptor","Cranial vessels, trigeminal afferents","Triptans (agonists)"],
+    ["5-HT2A","Monoamine","gq","PLCβ","Layer 5 cortical pyramidal neurons","Pimavanserin (inverse agonist); psilocybin, LSD (agonists); antagonism by SGAs, trazodone, mirtazapine"],
+    ["5-HT2B","Monoamine","gq","PLCβ","Heart valve interstitial cells","Agonism by fenfluramine, pergolide, cabergoline → valvulopathy"],
+    ["5-HT2C","Monoamine","gq","PLCβ","Hypothalamus, choroid plexus; restrains mesocortical DA","Antagonism linked to weight gain (olanzapine, clozapine); lorcaserin (agonist, withdrawn 2020)"],
+    ["5-HT4, 5-HT6, 5-HT7","Monoamine","gs","↑ cAMP","5-HT7: SCN, thalamus (circadian)","Prucalopride (5-HT4 agonist); lurasidone and vortioxetine (5-HT7 antagonism)"],
+    ["H1","Monoamine","gq","PLCβ","Wake-promoting tuberomammillary projections","Sedation and weight gain: diphenhydramine, mirtazapine, quetiapine, low-dose doxepin"],
+    ["H2","Monoamine","gs","↑ cAMP","Gastric parietal cells","Famotidine"],
+    ["H3","Monoamine","gi","↓ cAMP; presynaptic auto/heteroreceptor","Limits histamine and other transmitter release","Pitolisant (antagonist/inverse agonist; narcolepsy)"],
+    ["GABA-B","Amino acid","gi","Gβγ → GIRK ↑, VGCC ↓; obligate B1/B2 heterodimer","Slow IPSP; presynaptic inhibition","Baclofen (agonist); sodium oxybate (GHB, weak agonist)"],
+    ["mGlu1, mGlu5 (group I)","Amino acid","gq","PLCβ","Mostly postsynaptic, perisynaptic","Investigational modulators only"],
+    ["mGlu2/3, mGlu4/6/7/8 (groups II–III)","Amino acid","gi","↓ cAMP; mostly presynaptic","Limit glutamate release; mGlu6 in retinal ON bipolar cells","Pomaglumetad (mGlu2/3 agonist) failed schizophrenia trials"],
+    ["μ, δ, κ, NOP opioid","Peptide","gi","↓ cAMP, GIRK ↑, VGCC ↓","μ: analgesia, reward, respiratory depression; κ: dysphoria","Morphine, methadone, fentanyl; buprenorphine (μ partial agonist, κ antagonist); naloxone, naltrexone"],
+    ["CB1","Other","gi","↓ cAMP, VGCC ↓; presynaptic","Target of retrograde endocannabinoids (2-AG, anandamide)","THC (partial agonist); rimonabant (inverse agonist, withdrawn)"],
+    ["Adenosine A1","Other","gi","↓ cAMP, GIRK ↑","Sleep pressure; presynaptic inhibition","Caffeine (antagonist)"],
+    ["Adenosine A2A","Other","gs","↑ cAMP (Gαolf in striatum)","Indirect-pathway striatal neurons; opposes D2","Caffeine (antagonist); istradefylline (Parkinson disease)"],
+    ["Orexin OX1, OX2","Peptide","gq","PLCβ (OX2 also Gi/o)","Lateral hypothalamic projections; wake stability","Suvorexant, lemborexant, daridorexant (dual antagonists)"],
+    ["Melatonin MT1, MT2","Other","gi","↓ cAMP","Suprachiasmatic nucleus","Ramelteon, tasimelteon (agonists); melatonin"],
+    ["Oxytocin, V1a, V1b","Peptide","gq","PLCβ","Social behavior; V1b on pituitary corticotrophs","Investigational intranasal oxytocin"],
+    ["V2 vasopressin","Peptide","gs","↑ cAMP → aquaporin-2 insertion","Renal collecting duct","Desmopressin (agonist); lithium reduces AQP2 downstream → nephrogenic DI"],
+    ["CRF1","Peptide","gs","↑ cAMP","Pituitary corticotrophs, amygdala","CRF1 antagonists failed depression trials"],
+    ["TAAR1","Monoamine","gs","↑ cAMP","Modulates DA and 5-HT neuron firing","Ulotaront (investigational; phase 3 schizophrenia trials missed primary endpoints)"],
+    ["TrkA","Peptide","rtk","Ras-ERK, PI3K-Akt, PLCγ","NGF; nociceptors, basal forebrain cholinergic neurons","Anti-NGF antibodies (tanezumab) not approved"],
+    ["TrkB","Peptide","rtk","Ras-ERK, PI3K-Akt-mTOR, PLCγ","BDNF, NT-4; cortical and hippocampal plasticity","Proposed downstream mediator of ketamine; BDNF Val66Met"],
+    ["TrkC","Peptide","rtk","Ras-ERK, PI3K-Akt, PLCγ","NT-3; proprioceptive afferents","None in clinical use"]
+  ];
+  const lab = {ion:["ion","Ionotropic"], gs:["gs","Gs"], gi:["gi","Gi/o"], gq:["gq","Gq"], rtk:["rtk","RTK"]};
+  let mech="all";
+  const body=$("#f-body"), q=$("#f-q"), fam=$("#f-fam");
+  const esc = s => s.replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+  function draw(){
+    const t = q.value.trim().toLowerCase();
+    const rows = R.filter(r => (mech==="all"||r[2]===mech) && (fam.value==="all"||r[1]===fam.value) && (!t || r.join(" ").toLowerCase().includes(t)));
+    body.innerHTML = rows.length ? rows.map(r=>`<tr><td>${esc(r[0])}</td><td><span class="chip ${lab[r[2]][0]}">${lab[r[2]][1]}</span></td><td>${esc(r[3])}</td><td>${esc(r[4])}</td><td>${esc(r[5])}</td></tr>`).join("")
+      : `<tr><td colspan="5" class="muted">No receptor matches. Clear the search or switch the filters back to All.</td></tr>`;
+    $("#f-count").textContent = `${rows.length} of ${R.length}`;
+  }
+  document.querySelectorAll("#f-mech button").forEach(b=>b.addEventListener("click",()=>{ mech=b.dataset.m; document.querySelectorAll("#f-mech button").forEach(x=>x.setAttribute("aria-pressed", x===b?"true":"false")); draw(); }));
+  q.addEventListener("input", draw); fam.addEventListener("change", draw);
+  draw();
+})();
+
+/* ---------------- quiz ---------------- */
+(function(){
+  const Q = [
+    {s:"At the single-channel level, how do diazepam and phenobarbital differ in their enhancement of GABA-A receptor currents?", a:1, o:[
+      ["Diazepam increases burst duration; phenobarbital increases burst frequency","Reversed."],
+      ["Diazepam increases the frequency of openings/bursts; phenobarbital increases their duration","Correct. In Twyman et al. (1989), diazepam increased burst frequency and phenobarbital increased burst duration. Both also lengthened single openings, a nuance the exam shorthand drops."],
+      ["Both open the channel in the absence of GABA at therapeutic concentrations","Benzodiazepines have no efficacy without GABA. Barbiturates gate directly only at high concentrations, which removes the ceiling in overdose."],
+      ["Both bind the orthosteric GABA site","GABA binds the β–α interface. Benzodiazepines bind the α–γ2 interface; barbiturates bind within the transmembrane domain."]]},
+    {s:"A postsynaptic neuron at −70 mV receives glutamate at a synapse. Which additional condition is required for substantial current through its NMDA receptors?", a:2, o:[
+      ["None; glutamate alone is sufficient at rest","At −70 mV extracellular Mg²⁺ blocks the pore, and glutamate alone cannot open the channel without the GluN1 co-agonist."],
+      ["Hyperpolarization to −90 mV to expel Mg²⁺","Hyperpolarization drives Mg²⁺ deeper into the pore and strengthens the block."],
+      ["Glycine or D-serine at GluN1 plus depolarization to relieve the Mg²⁺ block","Correct. The NMDA receptor needs both agonists and depolarization: a coincidence detector for pre- and postsynaptic activity (Nowak 1984; Mayer 1984; Johnson & Ascher 1987)."],
+      ["Activation of a Gq-coupled mGluR","Group I mGluRs can modulate NMDA function but are not required for channel opening."]]},
+    {s:"Which best describes ketamine's action at the NMDA receptor?", a:0, o:[
+      ["Uncompetitive, use-dependent block at a site within the open channel pore","Correct. Ketamine (like PCP, memantine and dextromethorphan) enters the pore only when the channel is open and can be trapped when it closes."],
+      ["Competitive antagonism at the glutamate site on GluN2","Competitive glutamate-site antagonists exist experimentally (e.g., AP5) but ketamine is not one."],
+      ["Antagonism at the glycine site on GluN1","Glycine-site antagonists are a separate class; ketamine does not act there."],
+      ["Positive allosteric modulation","Ketamine reduces NMDA current; it does not enhance it."]]},
+    {s:"Which serotonin receptor is a ligand-gated ion channel?", a:2, o:[
+      ["5-HT1A","Gi/o-coupled; buspirone's target and a raphe autoreceptor."],
+      ["5-HT2A","Gq-coupled; target of pimavanserin and psychedelics."],
+      ["5-HT3","Correct. A Cys-loop pentameric cation channel; ondansetron, mirtazapine and vortioxetine antagonize it."],
+      ["5-HT7","Gs-coupled; antagonized by lurasidone and vortioxetine."]]},
+    {s:"According to the inositol-depletion hypothesis, lithium dampens Gq-coupled signaling by:", a:1, o:[
+      ["Blocking IP₃ receptors on the endoplasmic reticulum","Lithium does not directly block IP₃ receptors."],
+      ["Inhibiting inositol monophosphatase, limiting inositol available to regenerate PIP₂","Correct. Berridge, Downes & Hanley (1989) proposed this as a mechanism selective for highly active cells. Lithium also inhibits GSK-3β."],
+      ["Activating phospholipase Cβ","That would increase, not dampen, Gq signaling."],
+      ["Antagonizing 5-HT2A receptors","Lithium is not a receptor antagonist."]]},
+    {s:"Clonidine reduces autonomic signs of opioid withdrawal mainly by:", a:0, o:[
+      ["Activating Gi/o-coupled α2 receptors on locus coeruleus neurons, reducing firing and norepinephrine release","Correct. α2 → ↓cAMP, GIRK opening and reduced Ca²⁺ entry. Lofexidine works the same way."],
+      ["Blocking Gq-coupled α1 receptors","That is prazosin."],
+      ["Blocking Gs-coupled β receptors","That is propranolol, which does not address central noradrenergic hyperactivity."],
+      ["Partial agonism at μ-opioid receptors","That is buprenorphine. Clonidine has no opioid receptor activity."]]},
+    {s:"A 24-year-old woman develops psychosis, then seizures, orofacial dyskinesias and autonomic instability. The most likely antibody target is:", a:1, o:[
+      ["LGI1","LGI1 encephalitis typically presents in older men with faciobrachial dystonic seizures and hyponatremia."],
+      ["The GluN1 subunit of the NMDA receptor","Correct. In Dalmau et al. (2008), patients were mostly young women and 59% had tumors, most often ovarian teratoma. Order pelvic imaging."],
+      ["GABA-B receptor","Anti-GABA-B encephalitis presents mainly with seizures and is associated with small-cell lung cancer."],
+      ["Muscle nicotinic acetylcholine receptor","That is myasthenia gravis, a disorder of the neuromuscular junction."]]},
+    {s:"Pertussis toxin is used experimentally to show that a receptor couples to Gi/o. Its effect on Gαi/o is to:", a:2, o:[
+      ["ADP-ribosylate it and lock it in the GTP-bound active state","That describes cholera toxin acting on Gαs."],
+      ["Accelerate its GTPase activity","That is the function of RGS proteins."],
+      ["ADP-ribosylate it so it can no longer be activated by the receptor","Correct. Gi/o is uncoupled, adenylyl cyclase loses tonic inhibition, and cAMP rises."],
+      ["Block β-arrestin recruitment to the receptor","Pertussis toxin acts on the G protein, not on arrestin."]]},
+    {s:"BDNF signals primarily through which receptor and mechanism?", a:3, o:[
+      ["TrkA, a G-protein–coupled receptor","TrkA is the NGF receptor, and Trk receptors are tyrosine kinases, not GPCRs."],
+      ["p75NTR, a receptor tyrosine kinase","p75NTR binds all neurotrophins but is a TNF-receptor family member without kinase activity."],
+      ["TrkC, through PLCβ","TrkC prefers NT-3, and Trk receptors engage PLCγ, not PLCβ."],
+      ["TrkB, via dimerization and trans-autophosphorylation that recruits Ras-ERK, PI3K-Akt and PLCγ","Correct. TrkB binds BDNF and NT-4/5."]]},
+    {s:"In xanomeline–trospium, the role of trospium is to:", a:0, o:[
+      ["Block peripheral muscarinic receptors to reduce cholinergic adverse effects of xanomeline","Correct. Trospium is a quaternary amine that does not readily cross the blood–brain barrier (Brannan et al., 2021)."],
+      ["Provide D2 antagonism for antipsychotic effect","The combination has no direct D2-blocking activity."],
+      ["Act as a central M4 agonist","Xanomeline is the M1/M4-preferring agonist; trospium is an antagonist."],
+      ["Inhibit xanomeline metabolism to raise brain levels","Trospium's role is pharmacodynamic, not pharmacokinetic."]]},
+    {s:"Pitolisant improves daytime wakefulness in narcolepsy by acting at which receptor?", a:2, o:[
+      ["H1, as an agonist","There is no clinical H1 agonist; H1 antagonism sedates."],
+      ["H2, as an antagonist","H2 receptors are Gs-coupled and mainly gastric (famotidine)."],
+      ["H3, as an antagonist/inverse agonist at a Gi/o-coupled presynaptic autoreceptor","Correct. Removing the H3 brake increases histamine release."],
+      ["Orexin OX2, as an agonist","Pitolisant does not act at orexin receptors; approved orexin drugs are antagonists used for insomnia."]]},
+    {s:"In neonatal neurons, GABA-A receptor activation often depolarizes rather than hyperpolarizes. Why?", a:1, o:[
+      ["Immature GABA-A receptors are permeable to Na⁺","The channel remains anion-selective."],
+      ["High NKCC1 and low KCC2 keep intracellular Cl⁻ high, so E_Cl lies above the resting potential","Correct. Delayed expression of the KCC2 exporter shifts E_Cl negative and makes GABA inhibitory (Ben-Ari, 2002)."],
+      ["GABA acts mainly on GABA-B receptors early in development","GABA-B is Gi/o-coupled and inhibitory; it does not explain the depolarization."],
+      ["The Na⁺/K⁺-ATPase is not yet expressed","Neurons cannot maintain resting potential without it; this is not the mechanism."]]}
+  ];
+  const KEY = "nsr-quiz-v1";
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch(e){ saved = {}; }
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch(e){} };
+  const list = $("#q-list");
+  function score(){
+    const done = Object.keys(saved).length, right = Object.entries(saved).filter(([k,v])=>Q[k] && Q[k].a===v).length;
+    $("#q-score").textContent = `${right} correct · ${done} of ${Q.length} answered`;
+  }
+  function reveal(i, card, chosen){
+    const q = Q[i];
+    card.querySelectorAll("label.opt").forEach((l,j)=>{
+      l.classList.toggle("right", j===q.a); l.classList.toggle("wrong", j===chosen && j!==q.a);
+      l.querySelector(".why").hidden = false;
+    });
+    const v = card.querySelector(".verdict"); v.hidden = false;
+    v.textContent = chosen===q.a ? "Correct." : "Not quite. The correct answer is highlighted.";
+    v.className = "verdict " + (chosen===q.a?"ok":"no");
+  }
+  Q.forEach((q,i)=>{
+    const card = document.createElement("div"); card.className="q";
+    card.innerHTML = `<p class="stem"><b>${String(i+1).padStart(2,"0")}</b>${q.s}</p><fieldset><legend class="sr" style="position:absolute;left:-9999px">Question ${i+1} options</legend>${q.o.map((o,j)=>`<label class="opt"><input type="radio" name="q${i}" id="q${i}o${j}" value="${j}"><span>${o[0]}<span class="why" hidden>${o[1]}</span></span></label>`).join("")}</fieldset><div class="qfoot"><button type="button" class="btn primary">Check answer</button><span class="err" hidden>Choose an answer first.</span><span class="verdict" hidden></span></div>`;
+    const btn = card.querySelector("button"), err = card.querySelector(".err");
+    card.querySelectorAll("input").forEach(inp=>inp.addEventListener("change", ()=>{ err.hidden = true; }));
+    btn.addEventListener("click", ()=>{
+      const c = card.querySelector("input:checked");
+      if (!c){ err.hidden = false; return; }
+      const v = +c.value; saved[i] = v; save(); reveal(i, card, v); score();
+    });
+    list.appendChild(card);
+    if (saved[i]!==undefined){ const inp = card.querySelector(`#q${i}o${saved[i]}`); if (inp){ inp.checked = true; reveal(i, card, saved[i]); } }
+  });
+  $("#q-reset").addEventListener("click", ()=>{
+    saved = {}; save();
+    list.querySelectorAll(".q").forEach(card=>{
+      card.querySelectorAll("input").forEach(x=>x.checked=false);
+      card.querySelectorAll("label.opt").forEach(l=>{ l.classList.remove("right","wrong"); l.querySelector(".why").hidden = true; });
+      card.querySelector(".verdict").hidden = true; card.querySelector(".err").hidden = true;
+    });
+    score();
+  });
+  score();
+})();
+
+/* theme change → redraw canvas */
+const redraw = () => (window.__redraw||[]).forEach(f=>f());
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redraw);
+new MutationObserver(redraw).observe(document.documentElement, {attributes:true, attributeFilter:["data-theme"]});
+})();
+</script>
+</body>
+</html>
